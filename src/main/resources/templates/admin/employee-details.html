@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Employee Details | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/employee-details.css}">
+
+</head>
+
+
+<body>
+
+<div class="page-container">
+
+
+    <!-- ===================================================== -->
+    <!-- HEADER -->
+    <!-- ===================================================== -->
+
+    <header class="page-header">
+
+        <div>
+
+            <span class="eyebrow">
+                PRAVIN KITCHENS & INTERIORS
+            </span>
+
+            <h1>
+                Employee Details
+            </h1>
+
+            <p>
+                View employee information and quotation activity
+            </p>
+
+        </div>
+
+
+        <div class="header-actions">
+
+            <a th:href="@{'/admin/employees/edit/' + ${employee.id}}"
+               class="edit-button">
+
+                Edit Employee
+
+            </a>
+
+
+            <a th:href="@{/admin/employees}"
+               class="back-button">
+
+                Back to Employees
+
+            </a>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- ===================================================== -->
+    <!-- PROFILE -->
+    <!-- ===================================================== -->
+
+    <section class="profile-card">
+
+
+        <div class="profile-main">
+
+
+            <div class="profile-avatar"
+                 th:text="${employee.name != null and !employee.name.isEmpty()
+                 ? #strings.substring(employee.name, 0, 1).toUpperCase()
+                 : 'E'}">
+
+                E
+
+            </div>
+
+
+            <div class="profile-info">
+
+
+                <div class="profile-name-row">
+
+                    <h2 th:text="${employee.name}">
+                        Employee Name
+                    </h2>
+
+
+                    <span class="status"
+                          th:classappend="${employee.active ? ' active' : ' inactive'}"
+                          th:text="${employee.active ? 'Active' : 'Inactive'}">
+
+                        Active
+
+                    </span>
+
+                </div>
+
+
+                <p class="role">
+                    Employee
+                </p>
+
+
+                <p class="email"
+                   th:text="${employee.email}">
+
+                    employee@example.com
+
+                </p>
+
+
+            </div>
+
+        </div>
+
+
+
+        <div class="profile-meta">
+
+
+            <!-- DISTRICT -->
+
+            <div class="meta-item">
+
+                <span class="meta-label">
+                    District
+                </span>
+
+
+                <strong th:if="${employee.branch != null}"
+                        th:text="${employee.branch.name}">
+
+                    Chennai
+
+                </strong>
+
+
+                <strong th:if="${employee.branch == null}">
+
+                    Not Assigned
+
+                </strong>
+
+            </div>
+
+
+
+            <!-- JOINED -->
+
+            <div class="meta-item">
+
+                <span class="meta-label">
+                    Joined Date
+                </span>
+
+
+                <strong th:if="${employee.createdAt != null}"
+                        th:text="${#temporals.format(employee.createdAt, 'dd MMM yyyy')}">
+
+                    01 Oct 2026
+
+                </strong>
+
+
+                <strong th:if="${employee.createdAt == null}">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- SUMMARY -->
+    <!-- ===================================================== -->
+
+    <section class="summary-grid">
+
+
+        <!-- TOTAL QUOTATIONS -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                📄
+            </div>
+
+
+            <div>
+
+                <span>
+                    Total Quotations
+                </span>
+
+
+                <strong th:text="${totalQuotations}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- LAST 60 DAYS -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                📅
+            </div>
+
+
+            <div>
+
+                <span>
+                    Last 60 Days
+                </span>
+
+
+                <strong th:text="${last60Days}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- QUOTED VALUE -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ₹
+            </div>
+
+
+            <div>
+
+                <span>
+                    Quoted Value
+                </span>
+
+
+                <strong>
+
+                    ₹<span
+                        th:text="${#numbers.formatDecimal(quotedValue, 1, 2)}">
+
+                        0.00
+
+                    </span>
+
+                </strong>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- APPROVED -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ✓
+            </div>
+
+
+            <div>
+
+                <span>
+                    Approved
+                </span>
+
+
+                <strong th:text="${approvedCount}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- EMPLOYEE INFORMATION -->
+    <!-- ===================================================== -->
+
+    <section class="content-card">
+
+
+        <div class="section-header">
+
+            <div>
+
+                <h2>
+                    Employee Information
+                </h2>
+
+                <p>
+                    Basic account and assignment details.
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="details-grid">
+
+
+            <!-- NAME -->
+
+            <div class="detail-item">
+
+                <span>
+                    Full Name
+                </span>
+
+                <strong th:text="${employee.name}">
+                    Employee Name
+                </strong>
+
+            </div>
+
+
+
+            <!-- EMAIL -->
+
+            <div class="detail-item">
+
+                <span>
+                    Email Address
+                </span>
+
+                <strong th:text="${employee.email}">
+                    employee@example.com
+                </strong>
+
+            </div>
+
+
+
+            <!-- ROLE -->
+
+            <div class="detail-item">
+
+                <span>
+                    Role
+                </span>
+
+                <strong>
+                    Employee
+                </strong>
+
+            </div>
+
+
+
+            <!-- DISTRICT -->
+
+            <div class="detail-item">
+
+                <span>
+                    District
+                </span>
+
+
+                <strong th:if="${employee.branch != null}"
+                        th:text="${employee.branch.name}">
+
+                    Chennai
+
+                </strong>
+
+
+                <strong th:if="${employee.branch == null}">
+
+                    Not Assigned
+
+                </strong>
+
+            </div>
+
+
+
+            <!-- STATUS -->
+
+            <div class="detail-item">
+
+                <span>
+                    Account Status
+                </span>
+
+
+                <strong th:text="${employee.active ? 'Active' : 'Inactive'}">
+
+                    Active
+
+                </strong>
+
+            </div>
+
+
+
+            <!-- JOINED -->
+
+            <div class="detail-item">
+
+                <span>
+                    Joined
+                </span>
+
+
+                <strong th:if="${employee.createdAt != null}"
+                        th:text="${#temporals.format(employee.createdAt, 'dd MMM yyyy, hh:mm a')}">
+
+                    01 Oct 2026, 10:00 AM
+
+                </strong>
+
+
+                <strong th:if="${employee.createdAt == null}">
+
+                    —
+
+                </strong>
+
+            </div>
+
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- QUOTATION ACTIVITY -->
+    <!-- ===================================================== -->
+
+    <section class="content-card">
+
+
+        <div class="section-header quotation-header">
+
+            <div>
+
+                <h2>
+                    Quotation Activity
+                </h2>
+
+                <p>
+                    Quotations created or managed by this employee.
+                </p>
+
+            </div>
+
+
+            <span class="coming-label"
+                  th:text="${totalQuotations + ' Quotations'}">
+
+                0 Quotations
+
+            </span>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- EMPTY STATE -->
+        <!-- ================================================= -->
+
+        <div class="quotation-empty"
+             th:if="${#lists.isEmpty(quotations)}">
+
+
+            <div class="quotation-icon">
+                📋
+            </div>
+
+
+            <h3>
+                No quotations yet
+            </h3>
+
+
+            <p>
+                Quotations created by this employee will appear here.
+            </p>
+
+        </div>
+
+
+
+        <!-- ================================================= -->
+        <!-- QUOTATION TABLE -->
+        <!-- ================================================= -->
+
+        <div class="quotation-table-wrapper"
+             th:unless="${#lists.isEmpty(quotations)}">
+
+
+            <table class="quotation-table">
+
+
+                <thead>
+
+                <tr>
+
+                    <th>
+                        Quotation
+                    </th>
+
+                    <th>
+                        Customer
+                    </th>
+
+                    <th>
+                        District
+                    </th>
+
+                    <th>
+                        Date
+                    </th>
+
+                    <th>
+                        Status
+                    </th>
+
+                    <th>
+                        Amount
+                    </th>
+
+                    <th>
+                        Action
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+
+                <tr th:each="quotation : ${quotations}">
+
+
+                    <!-- QUOTATION NUMBER -->
+
+                    <td>
+
+                        <strong
+                                th:text="${quotation.quotationNumber}">
+
+                            QT-001
+
+                        </strong>
+
+                    </td>
+
+
+
+                    <!-- CUSTOMER -->
+
+                    <td>
+
+                        <span
+                                th:if="${quotation.customer != null}"
+                                th:text="${quotation.customer.name}">
+
+                            Customer Name
+
+                        </span>
+
+
+                        <span
+                                th:if="${quotation.customer == null}">
+
+                            —
+
+                        </span>
+
+                    </td>
+
+
+
+                    <!-- DISTRICT -->
+
+                    <td>
+
+                        <span
+                                th:if="${quotation.branch != null}"
+                                th:text="${quotation.branch.name}">
+
+                            Kanyakumari
+
+                        </span>
+
+
+                        <span
+                                th:if="${quotation.branch == null}">
+
+                            —
+
+                        </span>
+
+                    </td>
+
+
+
+                    <!-- DATE -->
+
+                    <td>
+
+                        <span
+                                th:if="${quotation.quotationDate != null}"
+                                th:text="${#temporals.format(quotation.quotationDate, 'dd MMM yyyy')}">
+
+                            01 Oct 2026
+
+                        </span>
+
+
+                        <span
+                                th:if="${quotation.quotationDate == null}">
+
+                            —
+
+                        </span>
+
+                    </td>
+
+
+
+                    <!-- STATUS -->
+
+                    <td>
+
+                        <span class="quotation-status"
+                              th:classappend="${quotation.status != null
+                              ? ' status-' + quotation.status.name().toLowerCase()
+                              : ''}"
+                              th:text="${quotation.status != null
+                              ? quotation.status.name()
+                              : 'DRAFT'}">
+
+                            DRAFT
+
+                        </span>
+
+                    </td>
+
+
+
+                    <!-- AMOUNT -->
+
+                    <td>
+
+                        <strong>
+
+                            ₹<span
+                                th:text="${quotation.grandTotal != null
+                                ? #numbers.formatDecimal(quotation.grandTotal, 1, 2)
+                                : '0.00'}">
+
+                                0.00
+
+                            </span>
+
+                        </strong>
+
+                    </td>
+
+
+
+                    <!-- VIEW -->
+
+                    <td>
+
+                        <a th:href="@{'/admin/quotations/view/' + ${quotation.id}}"
+                           class="quotation-view-button">
+
+                            View
+
+                        </a>
+
+                    </td>
+
+
+                </tr>
+
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- ===================================================== -->
+    <!-- ACCOUNT ACTIONS -->
+    <!-- ===================================================== -->
+
+    <section class="content-card">
+
+
+        <div class="section-header">
+
+            <div>
+
+                <h2>
+                    Account Actions
+                </h2>
+
+                <p>
+                    Manage this employee's account access.
+                </p>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="account-actions">
+
+
+            <!-- EDIT -->
+
+            <a th:href="@{'/admin/employees/edit/' + ${employee.id}}"
+               class="action-edit">
+
+                Edit Employee
+
+            </a>
+
+
+
+            <!-- TOGGLE -->
+
+            <form th:action="@{'/admin/employees/toggle/' + ${employee.id}}"
+                  method="post">
+
+                <input type="hidden"
+                       th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}">
+
+
+                <button type="submit"
+                        class="action-toggle"
+                        th:text="${employee.active
+                        ? 'Deactivate Employee'
+                        : 'Activate Employee'}">
+
+                    Deactivate Employee
+
+                </button>
+
+            </form>
+
+
+        </div>
+
+    </section>
+
+
+</div>
+
+</body>
+
+</html>

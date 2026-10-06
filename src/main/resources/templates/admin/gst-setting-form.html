@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${gstSetting.id == null
+        ? 'Add GST Rate | Pravin Kitchens'
+        : 'Edit GST Rate | Pravin Kitchens'}">
+        GST Rate | Pravin Kitchens
+    </title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/gst-setting-form.css}">
+</head>
+
+<body>
+
+<div class="gst-form-page">
+
+    <!-- Header -->
+    <div class="page-header">
+
+        <div>
+            <span class="page-label">ADMIN SETTINGS</span>
+
+            <h1
+                    th:text="${gstSetting.id == null
+                    ? 'Add GST Rate'
+                    : 'Edit GST Rate'}">
+                Add GST Rate
+            </h1>
+
+            <p>
+                Configure the GST percentage used for quotations.
+            </p>
+        </div>
+
+        <a th:href="@{/admin/gst-settings}"
+           class="back-btn">
+            ← Back to GST Settings
+        </a>
+
+    </div>
+
+
+    <!-- Alert -->
+    <div th:if="${errorMessage}"
+         class="alert error-alert"
+         th:text="${errorMessage}">
+    </div>
+
+
+    <!-- Main Layout -->
+    <div class="form-layout">
+
+
+        <!-- Form Card -->
+        <div class="form-card">
+
+            <div class="card-header">
+
+                <div>
+                    <h2>GST Configuration</h2>
+
+                    <p>
+                        Enter the GST percentage and optional description.
+                    </p>
+                </div>
+
+            </div>
+
+
+            <form
+                    th:action="${gstSetting.id == null
+                    ? '/admin/gst-settings/save'
+                    : '/admin/gst-settings/update/' + gstSetting.id}"
+                    method="post"
+                    id="gstForm">
+
+
+                <!-- GST Percentage -->
+                <div class="form-group">
+
+                    <label for="gstPercentage">
+                        GST Percentage
+                        <span>*</span>
+                    </label>
+
+                    <div class="percentage-input">
+
+                        <input
+                                type="number"
+                                id="gstPercentage"
+                                name="gstPercentage"
+                                min="0"
+                                max="100"
+                                step="0.01"
+                                placeholder="Enter GST percentage"
+                                th:value="${gstSetting.gstPercentage}"
+                                required>
+
+                        <span>%</span>
+
+                    </div>
+
+                    <small>
+                        Enter a value between 0% and 100%.
+                    </small>
+
+                    <div
+                            id="gstError"
+                            class="field-error">
+                    </div>
+
+                </div>
+
+
+                <!-- Description -->
+                <div class="form-group">
+
+                    <label for="description">
+                        Description
+                    </label>
+
+                    <textarea
+                            id="description"
+                            name="description"
+                            rows="4"
+                            maxlength="500"
+                            placeholder="Example: Standard GST rate for quotations"
+                            th:text="${gstSetting.description}">
+                    </textarea>
+
+                    <div class="character-count">
+                        <span id="characterCount">0</span>/500
+                    </div>
+
+                </div>
+
+
+                <!-- Active information -->
+                <div
+                        th:if="${gstSetting.id != null}"
+                        class="current-status">
+
+                    <div class="status-indicator"
+                         th:classappend="${gstSetting.active
+                            ? 'status-active'
+                            : 'status-inactive'}">
+                    </div>
+
+                    <div>
+
+                        <strong>Current Status</strong>
+
+                        <span
+                                th:if="${gstSetting.active}">
+                            This GST rate is currently active.
+                        </span>
+
+                        <span
+                                th:unless="${gstSetting.active}">
+                            This GST rate is currently inactive.
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- Buttons -->
+                <div class="form-actions">
+
+                    <a
+                            th:href="@{/admin/gst-settings}"
+                            class="cancel-btn">
+                        Cancel
+                    </a>
+
+                    <button
+                            type="reset"
+                            class="reset-btn">
+                        Reset
+                    </button>
+
+                    <button
+                            type="submit"
+                            class="save-btn"
+                            id="saveButton"
+                            th:text="${gstSetting.id == null
+                            ? 'Save GST Rate'
+                            : 'Update GST Rate'}">
+                        Save GST Rate
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <!-- Preview Card -->
+        <div class="preview-card">
+
+            <div class="preview-header">
+
+                <span class="preview-label">
+                    LIVE PREVIEW
+                </span>
+
+                <h2>Quotation GST</h2>
+
+            </div>
+
+
+            <div class="gst-preview">
+
+                <div class="preview-percent"
+                     id="previewPercentage">
+                    0%
+                </div>
+
+                <p>
+                    GST will be calculated on the taxable
+                    amount of the quotation.
+                </p>
+
+            </div>
+
+
+            <!-- Example Calculation -->
+            <div class="calculation-card">
+
+                <h3>Example Calculation</h3>
+
+                <div class="calculation-row">
+
+                    <span>Taxable Amount</span>
+
+                    <strong>₹1,00,000.00</strong>
+
+                </div>
+
+                <div class="calculation-row">
+
+                    <span>GST</span>
+
+                    <strong id="previewGstAmount">
+                        ₹0.00
+                    </strong>
+
+                </div>
+
+                <div class="calculation-divider"></div>
+
+                <div class="calculation-row total-row">
+
+                    <span>Grand Total</span>
+
+                    <strong id="previewGrandTotal">
+                        ₹1,00,000.00
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <!-- Information -->
+            <div class="info-box">
+
+                <div class="info-icon">
+                    i
+                </div>
+
+                <p>
+                    When a new GST rate is created,
+                    the previous active rate will automatically
+                    become inactive.
+                </p>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    const gstInput =
+        document.getElementById("gstPercentage");
+
+    const previewPercentage =
+        document.getElementById("previewPercentage");
+
+    const previewGstAmount =
+        document.getElementById("previewGstAmount");
+
+    const previewGrandTotal =
+        document.getElementById("previewGrandTotal");
+
+    const gstError =
+        document.getElementById("gstError");
+
+    const gstForm =
+        document.getElementById("gstForm");
+
+    const description =
+        document.getElementById("description");
+
+    const characterCount =
+        document.getElementById("characterCount");
+
+    const saveButton =
+        document.getElementById("saveButton");
+
+
+    function formatCurrency(value) {
+
+        return new Intl.NumberFormat("en-IN", {
+            style: "currency",
+            currency: "INR",
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        }).format(value);
+
+    }
+
+
+    function updatePreview() {
+
+        let gst =
+            parseFloat(gstInput.value);
+
+        if (isNaN(gst)) {
+            gst = 0;
+        }
+
+        if (gst < 0) {
+            gst = 0;
+        }
+
+        if (gst > 100) {
+            gst = 100;
+        }
+
+        const taxableAmount = 100000;
+
+        const gstAmount =
+            taxableAmount * gst / 100;
+
+        const grandTotal =
+            taxableAmount + gstAmount;
+
+
+        previewPercentage.textContent =
+            gst.toFixed(2).replace(/\.00$/, "") + "%";
+
+        previewGstAmount.textContent =
+            formatCurrency(gstAmount);
+
+        previewGrandTotal.textContent =
+            formatCurrency(grandTotal);
+
+    }
+
+
+    function updateCharacterCount() {
+
+        characterCount.textContent =
+            description.value.length;
+
+    }
+
+
+    gstInput.addEventListener(
+        "input",
+        function () {
+
+            updatePreview();
+
+            const value =
+                parseFloat(this.value);
+
+            if (
+                this.value !== "" &&
+                (value < 0 || value > 100)
+            ) {
+
+                gstError.textContent =
+                    "GST percentage must be between 0% and 100%.";
+
+                this.classList.add("input-error");
+
+            } else {
+
+                gstError.textContent = "";
+
+                this.classList.remove("input-error");
+
+            }
+
+        }
+    );
+
+
+    description.addEventListener(
+        "input",
+        updateCharacterCount
+    );
+
+
+    gstForm.addEventListener(
+        "submit",
+        function (event) {
+
+            const value =
+                parseFloat(gstInput.value);
+
+            if (
+                isNaN(value) ||
+                value < 0 ||
+                value > 100
+            ) {
+
+                event.preventDefault();
+
+                gstError.textContent =
+                    "Please enter a valid GST percentage between 0% and 100%.";
+
+                gstInput.classList.add("input-error");
+
+                gstInput.focus();
+
+                return;
+            }
+
+            saveButton.disabled = true;
+
+            saveButton.textContent =
+                "Saving...";
+
+        }
+    );
+
+
+    gstForm.addEventListener(
+        "reset",
+        function () {
+
+            setTimeout(function () {
+
+                updatePreview();
+                updateCharacterCount();
+
+                gstInput.classList.remove(
+                    "input-error"
+                );
+
+                gstError.textContent = "";
+
+            }, 0);
+
+        }
+    );
+
+
+    updatePreview();
+    updateCharacterCount();
+
+</script>
+
+</body>
+
+</html>

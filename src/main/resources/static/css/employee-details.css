@@ -1,0 +1,696 @@
+/* =========================================================
+   PRAVIN KITCHENS - EMPLOYEE DETAILS
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family:
+        Inter,
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #f5f7fb;
+    color: #172033;
+}
+
+a {
+    text-decoration: none;
+}
+
+button {
+    font-family: inherit;
+}
+
+.page-container {
+    width: 100%;
+    max-width: 1300px;
+
+    margin: 0 auto;
+
+    padding: 35px 40px 60px;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+
+    gap: 25px;
+
+    margin-bottom: 25px;
+}
+
+.eyebrow {
+    display: inline-block;
+
+    margin-bottom: 8px;
+
+    color: #7b8497;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    letter-spacing: 1.8px;
+}
+
+.page-header h1 {
+    font-size: 32px;
+    font-weight: 750;
+
+    letter-spacing: -0.6px;
+}
+
+.page-header p {
+    margin-top: 8px;
+
+    color: #747e91;
+
+    font-size: 14px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 9px;
+}
+
+.edit-button,
+.back-button {
+    min-height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 16px;
+
+    border-radius: 9px;
+
+    font-size: 12px;
+    font-weight: 650;
+}
+
+.edit-button {
+    background: #172033;
+    color: #ffffff;
+}
+
+.edit-button:hover {
+    background: #273248;
+}
+
+.back-button {
+    border: 1px solid #dfe3e9;
+
+    background: #ffffff;
+    color: #596376;
+}
+
+.back-button:hover {
+    background: #f6f7f9;
+}
+
+
+/* =========================================================
+   PROFILE
+   ========================================================= */
+
+.profile-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    gap: 30px;
+
+    padding: 26px;
+
+    margin-bottom: 22px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9ef;
+    border-radius: 15px;
+
+    box-shadow:
+        0 5px 22px rgba(30, 41, 59, 0.04);
+}
+
+.profile-main {
+    display: flex;
+    align-items: center;
+
+    gap: 17px;
+}
+
+.profile-avatar {
+    width: 68px;
+    height: 68px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 68px;
+
+    border-radius: 17px;
+
+    background: #edf0f4;
+
+    color: #172033;
+
+    font-size: 25px;
+    font-weight: 750;
+}
+
+.profile-name-row {
+    display: flex;
+    align-items: center;
+
+    gap: 10px;
+
+    flex-wrap: wrap;
+}
+
+.profile-name-row h2 {
+    color: #20293a;
+
+    font-size: 21px;
+    font-weight: 750;
+}
+
+.role {
+    margin-top: 4px;
+
+    color: #818a9a;
+
+    font-size: 12px;
+}
+
+.email {
+    margin-top: 7px;
+
+    color: #596376;
+
+    font-size: 13px;
+}
+
+.status {
+    display: inline-flex;
+    align-items: center;
+
+    gap: 6px;
+
+    padding: 5px 9px;
+
+    border-radius: 20px;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.status::before {
+    content: "";
+
+    width: 6px;
+    height: 6px;
+
+    border-radius: 50%;
+}
+
+.status.active {
+    background: #eef8f2;
+    color: #31734f;
+}
+
+.status.active::before {
+    background: #43a56f;
+}
+
+.status.inactive {
+    background: #fff2ed;
+    color: #a35c45;
+}
+
+.status.inactive::before {
+    background: #c67a58;
+}
+
+.profile-meta {
+    display: flex;
+
+    gap: 50px;
+
+    padding-right: 20px;
+}
+
+.meta-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 6px;
+}
+
+.meta-label {
+    color: #8992a2;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.meta-item strong {
+    color: #30394b;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   SUMMARY CARDS
+   ========================================================= */
+
+.summary-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 16px;
+
+    margin-bottom: 22px;
+}
+
+.summary-card {
+    display: flex;
+    align-items: center;
+
+    gap: 13px;
+
+    padding: 19px;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9ef;
+    border-radius: 13px;
+
+    box-shadow:
+        0 4px 18px rgba(30, 41, 59, 0.035);
+}
+
+.summary-icon {
+    width: 42px;
+    height: 42px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    flex: 0 0 42px;
+
+    border-radius: 10px;
+
+    background: #f0f2f6;
+
+    color: #4f596b;
+
+    font-size: 18px;
+}
+
+.summary-card div:last-child {
+    display: flex;
+    flex-direction: column;
+
+    gap: 3px;
+}
+
+.summary-card span {
+    color: #858ea0;
+
+    font-size: 11px;
+    font-weight: 600;
+}
+
+.summary-card strong {
+    color: #20293a;
+
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   CONTENT CARD
+   ========================================================= */
+
+.content-card {
+    margin-bottom: 22px;
+
+    overflow: hidden;
+
+    background: #ffffff;
+
+    border: 1px solid #e5e9ef;
+    border-radius: 15px;
+
+    box-shadow:
+        0 5px 22px rgba(30, 41, 59, 0.035);
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 23px 25px;
+
+    border-bottom: 1px solid #edf0f4;
+}
+
+.section-header h2 {
+    color: #252e3f;
+
+    font-size: 17px;
+    font-weight: 700;
+}
+
+.section-header p {
+    margin-top: 5px;
+
+    color: #858ea0;
+
+    font-size: 12px;
+}
+
+.coming-label {
+    padding: 6px 10px;
+
+    border-radius: 7px;
+
+    background: #f2f4f7;
+
+    color: #737d8e;
+
+    font-size: 10px;
+    font-weight: 700;
+
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+
+/* =========================================================
+   DETAILS GRID
+   ========================================================= */
+
+.details-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, minmax(0, 1fr));
+
+    gap: 0;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+
+    gap: 7px;
+
+    padding: 21px 25px;
+
+    border-right: 1px solid #edf0f4;
+    border-bottom: 1px solid #edf0f4;
+}
+
+.detail-item:nth-child(3n) {
+    border-right: none;
+}
+
+.detail-item:nth-last-child(-n + 3) {
+    border-bottom: none;
+}
+
+.detail-item span {
+    color: #8992a2;
+
+    font-size: 11px;
+    font-weight: 600;
+
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.detail-item strong {
+    color: #30394b;
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   QUOTATION EMPTY
+   ========================================================= */
+
+.quotation-empty {
+    padding: 55px 20px;
+
+    text-align: center;
+}
+
+.quotation-icon {
+    width: 55px;
+    height: 55px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0 auto 14px;
+
+    border-radius: 14px;
+
+    background: #f1f3f6;
+
+    font-size: 22px;
+}
+
+.quotation-empty h3 {
+    color: #30394b;
+
+    font-size: 16px;
+}
+
+.quotation-empty p {
+    margin-top: 6px;
+
+    color: #8992a2;
+
+    font-size: 12px;
+}
+
+
+/* =========================================================
+   ACCOUNT ACTIONS
+   ========================================================= */
+
+.account-actions {
+    display: flex;
+
+    gap: 10px;
+
+    padding: 22px 25px;
+}
+
+.action-edit,
+.action-toggle {
+    min-height: 40px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 15px;
+
+    border-radius: 8px;
+
+    font-size: 12px;
+    font-weight: 650;
+
+    cursor: pointer;
+}
+
+.action-edit {
+    background: #172033;
+    color: #ffffff;
+}
+
+.action-edit:hover {
+    background: #273248;
+}
+
+.account-actions form {
+    margin: 0;
+}
+
+.action-toggle {
+    border: 1px solid #dfe3e9;
+
+    background: #ffffff;
+    color: #9a5c42;
+}
+
+.action-toggle:hover {
+    background: #fff5f1;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .page-container {
+        padding: 30px 25px 50px;
+    }
+
+    .profile-card {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .profile-meta {
+        width: 100%;
+
+        padding-right: 0;
+
+        justify-content: flex-start;
+    }
+
+    .summary-grid {
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
+    }
+
+}
+
+
+@media (max-width: 768px) {
+
+    .page-container {
+        padding: 25px 18px 45px;
+    }
+
+    .page-header {
+        align-items: flex-start;
+
+        flex-direction: column;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .edit-button,
+    .back-button {
+        flex: 1;
+    }
+
+    .details-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .detail-item,
+    .detail-item:nth-child(3n) {
+        border-right: none;
+        border-bottom: 1px solid #edf0f4;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+}
+
+
+@media (max-width: 520px) {
+
+    .page-container {
+        padding: 20px 13px 40px;
+    }
+
+    .page-header h1 {
+        font-size: 26px;
+    }
+
+    .header-actions {
+        flex-direction: column;
+    }
+
+    .edit-button,
+    .back-button {
+        width: 100%;
+    }
+
+    .profile-card {
+        padding: 20px;
+    }
+
+    .profile-main {
+        align-items: flex-start;
+    }
+
+    .profile-avatar {
+        width: 55px;
+        height: 55px;
+
+        flex-basis: 55px;
+
+        border-radius: 14px;
+
+        font-size: 21px;
+    }
+
+    .profile-name-row h2 {
+        font-size: 18px;
+    }
+
+    .profile-meta {
+        flex-direction: column;
+
+        gap: 15px;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .section-header {
+        padding: 20px;
+    }
+
+    .account-actions {
+        flex-direction: column;
+
+        padding: 20px;
+    }
+
+    .action-edit,
+    .action-toggle {
+        width: 100%;
+    }
+
+}

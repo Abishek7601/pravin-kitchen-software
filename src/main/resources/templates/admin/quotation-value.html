@@ -1,0 +1,290 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>60-Day Quotation Value | Pravin Kitchens</title>
+
+    <style>
+        :root {
+            --primary: #00695c;
+            --primary-dark: #004d40;
+            --background: #f4f7f7;
+            --text: #243333;
+            --muted: #718080;
+            --border: #e0e8e6;
+            --white: #ffffff;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 28px;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+        }
+
+        .page {
+            max-width: 1250px;
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .heading h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+            color: var(--primary-dark);
+        }
+
+        .heading p {
+            margin: 0;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .back-btn {
+            display: inline-block;
+            padding: 11px 18px;
+            border-radius: 8px;
+            background: var(--primary);
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .summary-card {
+            padding: 26px;
+            margin-bottom: 28px;
+            background: linear-gradient(
+                135deg,
+                #00695c,
+                #008577
+            );
+            color: white;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 77, 64, 0.12);
+        }
+
+        .summary-label {
+            margin-bottom: 12px;
+            font-size: 15px;
+            opacity: 0.9;
+        }
+
+        .summary-value {
+            font-size: 34px;
+            font-weight: 700;
+            overflow-wrap: anywhere;
+        }
+
+        .summary-period {
+            margin-top: 12px;
+            font-size: 13px;
+            opacity: 0.85;
+        }
+
+        .table-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 18px rgba(25, 50, 45, 0.04);
+        }
+
+        .table-heading {
+            padding: 22px 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .table-heading h2 {
+            margin: 0;
+            font-size: 19px;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            min-width: 850px;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 15px 18px;
+            text-align: left;
+            border-bottom: 1px solid #edf1f0;
+            font-size: 14px;
+        }
+
+        th {
+            background: #f7faf9;
+            color: #536663;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        tbody tr:hover {
+            background: #f8fbfa;
+        }
+
+        .amount {
+            font-weight: 700;
+            color: var(--primary-dark);
+            white-space: nowrap;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: #e8f4f1;
+            color: #00695c;
+            font-size: 12px;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        .empty-state {
+            padding: 45px 20px;
+            text-align: center;
+            color: var(--muted);
+        }
+
+        .empty-state h3 {
+            margin: 0 0 8px;
+            color: var(--text);
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 16px;
+            }
+
+            .heading h1 {
+                font-size: 23px;
+            }
+
+            .summary-card {
+                padding: 22px;
+            }
+
+            .summary-value {
+                font-size: 27px;
+            }
+
+            .table-heading {
+                padding: 18px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+<div class="page">
+
+    <header class="topbar">
+        <div class="heading">
+            <h1>Quotation Value</h1>
+            <p>Pravin Kitchens · Last 60 days quotation report</p>
+        </div>
+
+        <a th:href="@{/admin/dashboard}" class="back-btn">
+            &larr; Back to Dashboard
+        </a>
+    </header>
+
+    <section class="summary-card">
+        <div class="summary-label">Total Quoted Value</div>
+
+        <div class="summary-value">
+            ₹ <span th:text="${#numbers.formatDecimal(
+                totalQuotedValue, 1, 'COMMA', 2, 'POINT'
+            )}">0.00</span>
+        </div>
+
+        <div class="summary-period">
+            <span th:text="${startDate}"></span>
+            &nbsp; to &nbsp;
+            <span th:text="${endDate}"></span>
+        </div>
+    </section>
+
+    <section class="table-card">
+        <div class="table-heading">
+            <h2>Quotation Details</h2>
+        </div>
+
+        <div th:if="${#lists.isEmpty(quotations)}" class="empty-state">
+            <h3>No quotations found</h3>
+            <p>No quotations were found for the selected 60-day period.</p>
+        </div>
+
+        <div th:unless="${#lists.isEmpty(quotations)}"
+             class="table-wrapper">
+
+            <table>
+                <thead>
+                <tr>
+                    <th>Quotation No.</th>
+                    <th>Customer</th>
+                    <th>Branch / District</th>
+                    <th>Quotation Date</th>
+                    <th>Status</th>
+                    <th>Quoted Amount</th>
+                </tr>
+                </thead>
+
+                <tbody>
+                <tr th:each="quotation : ${quotations}">
+                    <td th:text="${quotation.quotationNumber}">PK-2026-000001</td>
+
+                    <td th:text="${quotation.customer.name}">Customer</td>
+
+                    <td th:text="${quotation.branch.name}">Branch</td>
+
+                    <td th:text="${quotation.quotationDate}">2026-10-01</td>
+
+                    <td>
+                        <span class="status"
+                              th:text="${quotation.status}">
+                            DRAFT
+                        </span>
+                    </td>
+
+                    <td class="amount">
+                        ₹ <span th:text="${#numbers.formatDecimal(
+                            quotation.grandTotal != null
+                                ? quotation.grandTotal : 0,
+                            1, 'COMMA', 2, 'POINT'
+                        )}">0.00</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+</div>
+</body>
+</html>

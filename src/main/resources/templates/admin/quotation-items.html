@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Quotation Items | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotation-items.css}">
+</head>
+
+<body>
+
+<div class="quotation-items-page">
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <div class="page-header">
+
+        <div class="header-left">
+
+            <a class="back-btn"
+               th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}">
+                ← Back to Rooms
+            </a>
+
+            <div class="title-block">
+
+                <span class="page-label">
+                    QUOTATION ITEMS
+                </span>
+
+                <h1>
+                    <span th:text="${quotationRoom.room}">
+                        Kitchen
+                    </span>
+                </h1>
+
+                <p>
+                    <span th:text="${quotationRoom.floor}">
+                        Ground Floor
+                    </span>
+
+                    <span class="separator">•</span>
+
+                    Quotation
+                    <strong th:text="${quotation.quotationNumber}">
+                        QT-2026-001
+                    </strong>
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <div class="header-actions">
+
+            <a class="btn btn-primary"
+               th:href="@{/admin/quotation-items/new/{id}(id=${quotationRoom.id})}">
+                <span class="btn-icon">+</span>
+                Add Item
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ROOM INFORMATION
+    ====================================================== -->
+
+    <div class="room-info-card">
+
+        <div class="info-item">
+
+            <span class="info-label">
+                Customer
+            </span>
+
+            <strong th:text="${quotation.customer.name}">
+                Customer Name
+            </strong>
+
+        </div>
+
+
+        <div class="info-item">
+
+            <span class="info-label">
+                Quotation
+            </span>
+
+            <strong th:text="${quotation.quotationNumber}">
+                QT-2026-001
+            </strong>
+
+        </div>
+
+
+        <div class="info-item">
+
+            <span class="info-label">
+                Floor
+            </span>
+
+            <strong th:text="${quotationRoom.floor}">
+                Ground Floor
+            </strong>
+
+        </div>
+
+
+        <div class="info-item">
+
+            <span class="info-label">
+                Room
+            </span>
+
+            <strong th:text="${quotationRoom.room}">
+                Kitchen
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         WORK DESCRIPTION
+    ====================================================== -->
+
+    <div class="description-card"
+         th:if="${quotationRoom.workDescription != null
+                 and !#strings.isEmpty(quotationRoom.workDescription)}">
+
+        <div class="description-icon">
+            🏠
+        </div>
+
+        <div>
+
+            <span class="description-label">
+                WORK DESCRIPTION
+            </span>
+
+            <p th:text="${quotationRoom.workDescription}">
+                Modular kitchen work
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         SUMMARY CARDS
+    ====================================================== -->
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                📦
+            </div>
+
+            <div>
+
+                <span>
+                    Total Items
+                </span>
+
+                <strong th:text="${items.size()}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                📐
+            </div>
+
+            <div>
+
+                <span>
+                    Room Sq.Ft
+                </span>
+
+                <strong
+                        th:text="${#numbers.formatDecimal(
+                        #aggregates.sum(
+                            items.?[active].![calculatedSqft]
+                        ),
+                        2,
+                        2
+                    )}">
+                    0.00
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ₹
+            </div>
+
+            <div>
+
+                <span>
+                    Room Amount
+                </span>
+
+                <strong
+                        th:text="${#numbers.formatDecimal(
+                        #aggregates.sum(
+                            items.?[active].![offerPrice]
+                        ),
+                        2,
+                        2
+                    )}">
+                    0.00
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         ITEMS TABLE
+    ====================================================== -->
+
+    <div class="items-card">
+
+        <div class="card-header">
+
+            <div>
+
+                <span class="card-label">
+                    ROOM ITEMS
+                </span>
+
+                <h2>
+                    Item Breakdown
+                </h2>
+
+            </div>
+
+            <span class="item-count"
+                  th:text="${items.size()} + ' Items'">
+                0 Items
+            </span>
+
+        </div>
+
+
+        <!-- EMPTY STATE -->
+
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(items)}">
+
+            <div class="empty-icon">
+                📦
+            </div>
+
+            <h3>
+                No items added yet
+            </h3>
+
+            <p>
+                Start adding work items for this room
+                to build the quotation.
+            </p>
+
+            <a class="btn btn-primary"
+               th:href="@{/admin/quotation-items/new/{id}(id=${quotationRoom.id})}">
+                + Add First Item
+            </a>
+
+        </div>
+
+
+        <!-- TABLE -->
+
+        <div class="table-wrapper"
+             th:unless="${#lists.isEmpty(items)}">
+
+            <table class="items-table">
+
+                <thead>
+
+                <tr>
+
+                    <th>
+                        #
+                    </th>
+
+                    <th>
+                        WORK
+                    </th>
+
+                    <th>
+                        MATERIAL
+                    </th>
+
+                    <th>
+                        SPECIFICATION
+                    </th>
+
+                    <th>
+                        SIZE
+                    </th>
+
+                    <th>
+                        SQ.FT
+                    </th>
+
+                    <th>
+                        RATE
+                    </th>
+
+                    <th>
+                        AMOUNT
+                    </th>
+
+                    <th>
+                        OFFER PRICE
+                    </th>
+
+                    <th>
+                        STATUS
+                    </th>
+
+                    <th>
+                        ACTIONS
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <tr th:each="item, stat : ${items}">
+
+                    <!-- NUMBER -->
+
+                    <td class="number-cell"
+                        th:text="${stat.count}">
+                        1
+                    </td>
+
+
+                    <!-- WORK -->
+
+                    <td>
+
+                        <div class="work-cell">
+
+                            <strong
+                                    th:if="${item.item != null}"
+                                    th:text="${item.item.name}">
+                                Base Cabinet
+                            </strong>
+
+                            <strong
+                                    th:if="${item.item == null}">
+                                Custom Work
+                            </strong>
+
+                            <span
+                                    th:if="${item.itemDescription != null
+                                        and !#strings.isEmpty(item.itemDescription)}"
+                                    th:text="${item.itemDescription}">
+                                Cabinet work
+                            </span>
+
+                            <small
+                                    th:if="${item.workCategory != null}"
+                                    th:text="${item.workCategory.name}">
+                                Modular Kitchen
+                            </small>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- MATERIAL -->
+
+                    <td>
+
+                        <div class="material-cell">
+
+                            <strong
+                                    th:if="${item.material != null}"
+                                    th:text="${item.material.name}">
+                                Marine Ply
+                            </strong>
+
+                            <span
+                                    th:if="${item.materialOption != null}"
+                                    th:text="${item.materialOption.name}">
+                                18mm
+                            </span>
+
+                            <span
+                                    th:if="${item.material == null}">
+                                —
+                            </span>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- SPECIFICATION -->
+
+                    <td>
+
+                        <span
+                                th:if="${item.specification != null
+                                    and !#strings.isEmpty(item.specification)}"
+                                th:text="${item.specification}">
+                            18mm thick marine plywood
+                        </span>
+
+                        <span
+                                th:if="${item.specification == null
+                                    or #strings.isEmpty(item.specification)}"
+                                class="muted">
+                            —
+                        </span>
+
+                    </td>
+
+
+                    <!-- SIZE -->
+
+                    <td>
+
+                        <div class="size-cell">
+
+                            <span
+                                    th:if="${item.lengthValue != null}"
+                                    th:text="${item.lengthValue} + ' × '">
+                                120 ×
+                            </span>
+
+                            <span
+                                    th:if="${item.widthValue != null}"
+                                    th:text="${item.widthValue} + ' × '">
+                                24 ×
+                            </span>
+
+                            <span
+                                    th:if="${item.heightValue != null}"
+                                    th:text="${item.heightValue}">
+                                30
+                            </span>
+
+                            <span
+                                    th:if="${item.lengthValue == null
+                                        and item.widthValue == null
+                                        and item.heightValue == null}"
+                                    class="muted">
+                                —
+                            </span>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- SQ.FT -->
+
+                    <td class="numeric-cell">
+
+                        <strong
+                                th:text="${item.calculatedSqft != null
+                                ? #numbers.formatDecimal(
+                                    item.calculatedSqft,
+                                    2,
+                                    2
+                                  )
+                                : '0.00'}">
+                            0.00
+                        </strong>
+
+                    </td>
+
+
+                    <!-- RATE -->
+
+                    <td class="numeric-cell">
+
+                        <span>
+                            ₹
+                        </span>
+
+                        <span
+                                th:text="${item.rate != null
+                                ? #numbers.formatDecimal(
+                                    item.rate,
+                                    2,
+                                    2
+                                  )
+                                : '0.00'}">
+                            0.00
+                        </span>
+
+                    </td>
+
+
+                    <!-- AMOUNT -->
+
+                    <td class="numeric-cell">
+
+                        <strong>
+                            ₹
+                            <span
+                                    th:text="${item.amount != null
+                                    ? #numbers.formatDecimal(
+                                        item.amount,
+                                        2,
+                                        2
+                                      )
+                                    : '0.00'}">
+                                0.00
+                            </span>
+                        </strong>
+
+                    </td>
+
+
+                    <!-- OFFER PRICE -->
+
+                    <td class="numeric-cell offer-price">
+
+                        <strong>
+                            ₹
+                            <span
+                                    th:text="${item.offerPrice != null
+                                    ? #numbers.formatDecimal(
+                                        item.offerPrice,
+                                        2,
+                                        2
+                                      )
+                                    : '0.00'}">
+                                0.00
+                            </span>
+                        </strong>
+
+                    </td>
+
+
+                    <!-- STATUS -->
+
+                    <td>
+
+                        <span class="status-badge status-active"
+                              th:if="${item.active}">
+                            Active
+                        </span>
+
+                        <span class="status-badge status-inactive"
+                              th:unless="${item.active}">
+                            Inactive
+                        </span>
+
+                    </td>
+
+
+                    <!-- ACTIONS -->
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <!-- EDIT -->
+
+                            <a class="action-btn edit-btn"
+                               th:href="@{/admin/quotation-items/edit/{id}(id=${item.id})}"
+                               title="Edit">
+                                ✏️
+                            </a>
+
+
+                            <!-- ACTIVATE -->
+
+                            <form th:if="${!item.active}"
+                                  th:action="@{/admin/quotation-items/activate/{id}(id=${item.id})}"
+                                  method="post">
+
+                                <button type="submit"
+                                        class="action-btn activate-btn"
+                                        title="Activate">
+                                    ✓
+                                </button>
+
+                            </form>
+
+
+                            <!-- DEACTIVATE -->
+
+                            <form th:if="${item.active}"
+                                  th:action="@{/admin/quotation-items/deactivate/{id}(id=${item.id})}"
+                                  method="post">
+
+                                <button type="submit"
+                                        class="action-btn deactivate-btn"
+                                        title="Deactivate">
+                                    ⏸
+                                </button>
+
+                            </form>
+
+
+                            <!-- DELETE -->
+
+                            <form
+                                    th:action="@{/admin/quotation-items/delete/{id}(id=${item.id})}"
+                                    method="post"
+                                    onsubmit="return confirm('Are you sure you want to delete this item?');">
+
+                                <button type="submit"
+                                        class="action-btn delete-btn"
+                                        title="Delete">
+                                    🗑
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FOOTER ACTIONS
+    ====================================================== -->
+
+    <div class="bottom-actions">
+
+        <a class="btn btn-secondary"
+           th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}">
+            ← Back to Rooms
+        </a>
+
+        <a class="btn btn-primary"
+           th:href="@{/admin/quotation-items/new/{id}(id=${quotationRoom.id})}">
+            + Add Item
+        </a>
+
+    </div>
+
+</div>
+
+
+<!-- =====================================================
+     CONFIRMATION SCRIPT
+====================================================== -->
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const forms =
+            document.querySelectorAll(
+                'form[action*="/delete/"]'
+            );
+
+        forms.forEach(function (form) {
+
+            form.addEventListener("submit", function (event) {
+
+                const confirmed =
+                    confirm(
+                        "Are you sure you want to permanently delete this item?"
+                    );
+
+                if (!confirmed) {
+                    event.preventDefault();
+                }
+
+            });
+
+        });
+
+    });
+
+</script>
+
+</body>
+</html>

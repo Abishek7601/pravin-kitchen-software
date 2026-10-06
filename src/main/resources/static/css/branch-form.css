@@ -1,0 +1,536 @@
+
+/* =====================================================
+   PRAVIN KITCHENS
+   PEACOCK GREEN - DISTRICT ADD / EDIT FORM
+   ===================================================== */
+
+:root {
+    --peacock-dark: #063b35;
+    --peacock-deep: #075548;
+    --peacock-green: #087f69;
+    --peacock-bright: #10a889;
+    --peacock-light: #e0f5ec;
+    --peacock-pale: #f0faf5;
+
+    --text-primary: #163b32;
+    --text-secondary: #70847b;
+    --border: #d9e9df;
+    --white: #ffffff;
+
+    --danger: #c33d46;
+    --shadow: 0 12px 35px rgba(6, 59, 53, 0.09);
+    --transition: 0.25s ease;
+}
+
+/* ================= GLOBAL ================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: "Segoe UI", Arial, sans-serif;
+    color: var(--text-primary);
+    background:
+        radial-gradient(
+            circle at top left,
+            rgba(16, 168, 137, 0.09),
+            transparent 35%
+        ),
+        linear-gradient(135deg, #f4faf6, #eaf5ef);
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+a {
+    text-decoration: none;
+}
+
+/* ================= PAGE LAYOUT ================= */
+
+.form-page {
+    width: 100%;
+    min-height: 100vh;
+    padding: 42px 20px 60px;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+}
+
+.form-container {
+    width: 100%;
+    max-width: 780px;
+    padding: 36px;
+    background: var(--white);
+    border: 1px solid rgba(8, 127, 105, 0.12);
+    border-radius: 22px;
+    box-shadow: var(--shadow);
+}
+
+/* ================= BACK LINK ================= */
+
+.form-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 28px;
+    color: var(--peacock-green);
+    font-size: 14px;
+    font-weight: 700;
+    transition: color var(--transition),
+                transform var(--transition);
+}
+
+.form-back-link:hover {
+    color: var(--peacock-dark);
+    transform: translateX(-3px);
+}
+
+/* ================= HEADER ================= */
+
+.form-header {
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 30px;
+    padding: 28px;
+    color: var(--white);
+    background: linear-gradient(
+        130deg,
+        var(--peacock-dark),
+        var(--peacock-deep) 60%,
+        var(--peacock-green)
+    );
+    border-radius: 16px;
+}
+
+.form-header::after {
+    content: "";
+    position: absolute;
+    width: 190px;
+    height: 190px;
+    right: -65px;
+    top: -90px;
+    border: 30px solid rgba(255, 255, 255, 0.07);
+    border-radius: 50%;
+    pointer-events: none;
+}
+
+.form-header .eyebrow {
+    display: inline-block;
+    margin-bottom: 9px;
+    color: #a8f0d7;
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 2px;
+}
+
+.form-header h1 {
+    position: relative;
+    z-index: 1;
+    margin: 0 0 10px;
+    color: var(--white);
+    font-size: clamp(25px, 4vw, 34px);
+    line-height: 1.25;
+    letter-spacing: -0.6px;
+}
+
+.form-header p {
+    position: relative;
+    z-index: 1;
+    max-width: 480px;
+    margin: 0;
+    color: #d2eee4;
+    font-size: 14px;
+}
+
+/* ================= FORM ================= */
+
+.branch-form {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+}
+
+.form-section {
+    padding: 25px;
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 15px;
+    transition: border-color var(--transition),
+                box-shadow var(--transition);
+}
+
+.form-section:hover {
+    border-color: #b7ddcb;
+    box-shadow: 0 5px 18px rgba(6, 59, 53, 0.04);
+}
+
+/* ================= SECTION HEADING ================= */
+
+.section-heading {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 24px;
+    padding-bottom: 19px;
+    border-bottom: 1px solid #e7f0ea;
+}
+
+.section-icon {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    background: var(--peacock-light);
+    border: 1px solid #ccebdd;
+    border-radius: 13px;
+    font-size: 22px;
+}
+
+.section-heading h2 {
+    margin: 0 0 4px;
+    color: var(--peacock-dark);
+    font-size: 19px;
+    font-weight: 750;
+}
+
+.section-heading p {
+    margin: 0;
+    color: var(--text-secondary);
+    font-size: 13px;
+}
+
+/* ================= FORM GROUPS ================= */
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 21px;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    color: var(--text-primary);
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.required {
+    color: var(--danger);
+    margin-left: 3px;
+}
+
+.form-group input {
+    width: 100%;
+    min-height: 48px;
+    padding: 12px 14px;
+    background: #fbfdfb;
+    border: 1px solid #d5e5db;
+    border-radius: 9px;
+    color: var(--text-primary);
+    font: inherit;
+    outline: none;
+    transition: border-color var(--transition),
+                box-shadow var(--transition),
+                background var(--transition);
+}
+
+.form-group input:hover {
+    border-color: #9ccbb5;
+}
+
+.form-group input:focus {
+    background: #ffffff;
+    border-color: var(--peacock-green);
+    box-shadow: 0 0 0 4px rgba(8, 127, 105, 0.11);
+}
+
+.form-group input::placeholder {
+    color: #a1b2a8;
+    font-weight: 400;
+}
+
+.form-group small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* ================= STATUS TOGGLE ================= */
+
+.status-toggle {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 17px;
+    background: var(--peacock-pale);
+    border: 1px solid #d5ebdf;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.status-toggle input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+}
+
+.toggle-slider {
+    position: relative;
+    flex-shrink: 0;
+    width: 49px;
+    height: 27px;
+    background: #cbd8d0;
+    border-radius: 30px;
+    transition: background var(--transition);
+}
+
+.toggle-slider::before {
+    content: "";
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 21px;
+    height: 21px;
+    background: #ffffff;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+    transition: transform var(--transition);
+}
+
+.status-toggle input:checked + .toggle-slider {
+    background: var(--peacock-green);
+}
+
+.status-toggle input:checked + .toggle-slider::before {
+    transform: translateX(22px);
+}
+
+.status-toggle input:focus-visible + .toggle-slider {
+    outline: 3px solid rgba(8, 127, 105, 0.25);
+    outline-offset: 3px;
+}
+
+.toggle-text {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.toggle-text strong {
+    color: var(--peacock-dark);
+    font-size: 14px;
+}
+
+.toggle-text small {
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 400;
+}
+
+/* ================= FORM ACTIONS ================= */
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding-top: 6px;
+}
+
+.cancel-button,
+.save-button {
+    min-height: 46px;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 23px;
+    border-radius: 9px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 750;
+    cursor: pointer;
+    transition: background var(--transition),
+                border-color var(--transition),
+                color var(--transition),
+                box-shadow var(--transition),
+                transform var(--transition);
+}
+
+.cancel-button {
+    color: var(--peacock-dark);
+    background: #ffffff;
+    border: 1px solid #cbded2;
+}
+
+.cancel-button:hover {
+    color: var(--peacock-dark);
+    background: #edf7f1;
+    border-color: #9ccbb5;
+}
+
+.save-button {
+    color: #ffffff;
+    background: linear-gradient(
+        135deg,
+        var(--peacock-green),
+        var(--peacock-bright)
+    );
+    border: 1px solid var(--peacock-green);
+    box-shadow: 0 5px 12px rgba(8, 127, 105, 0.17);
+}
+
+.save-button:hover {
+    background: linear-gradient(
+        135deg,
+        var(--peacock-dark),
+        var(--peacock-green)
+    );
+    box-shadow: 0 7px 17px rgba(8, 127, 105, 0.22);
+    transform: translateY(-1px);
+}
+
+.cancel-button:focus-visible,
+.save-button:focus-visible {
+    outline: 3px solid rgba(8, 127, 105, 0.25);
+    outline-offset: 3px;
+}
+
+/* ================= RESPONSIVE ================= */
+
+@media (max-width: 768px) {
+    .form-page {
+        padding: 24px 14px 35px;
+    }
+
+    .form-container {
+        padding: 22px;
+        border-radius: 17px;
+    }
+
+    .form-header {
+        padding: 23px;
+    }
+
+    .form-section {
+        padding: 20px;
+    }
+
+    .section-heading h2 {
+        font-size: 17px;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-page {
+        padding: 13px 10px 25px;
+    }
+
+    .form-container {
+        padding: 13px;
+        border-radius: 13px;
+    }
+
+    .form-back-link {
+        margin-bottom: 19px;
+        font-size: 13px;
+    }
+
+    .form-header {
+        padding: 20px 17px;
+        margin-bottom: 21px;
+        border-radius: 12px;
+    }
+
+    .form-header h1 {
+        font-size: 25px;
+    }
+
+    .form-header p {
+        font-size: 13px;
+    }
+
+    .branch-form {
+        gap: 16px;
+    }
+
+    .form-section {
+        padding: 16px 13px;
+        border-radius: 12px;
+    }
+
+    .section-heading {
+        gap: 11px;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+    }
+
+    .section-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        font-size: 19px;
+    }
+
+    .section-heading h2 {
+        font-size: 16px;
+    }
+
+    .section-heading p {
+        font-size: 12px;
+    }
+
+    .form-group input {
+        min-height: 46px;
+        font-size: 14px;
+    }
+
+    .status-toggle {
+        padding: 13px 10px;
+        gap: 11px;
+    }
+
+    .toggle-text small {
+        font-size: 11px;
+    }
+
+    .form-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+
+    .cancel-button,
+    .save-button {
+        width: 100%;
+        padding: 11px 8px;
+        font-size: 13px;
+    }
+}
+
+/* ================= REDUCED MOTION ================= */
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+    }
+}

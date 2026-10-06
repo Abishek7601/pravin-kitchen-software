@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${material.id == null ? 'Add Material' : 'Edit Material'}">
+        Add Material | Pravin Kitchens
+    </title>
+
+    <link rel="stylesheet"
+          href="/css/material-form.css">
+</head>
+
+<body>
+
+<div class="form-page">
+
+    <!-- HEADER -->
+
+    <div class="form-header">
+
+        <div>
+
+            <a href="/admin/materials"
+               class="back-link">
+                ← Back to Materials
+            </a>
+
+            <h1
+                    th:text="${material.id == null
+                    ? 'Add Material'
+                    : 'Edit Material'}">
+
+                Add Material
+
+            </h1>
+
+            <p>
+                Create and manage materials used for quotation items.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- FORM CARD -->
+
+    <div class="form-card">
+
+        <form
+                th:action="${material.id == null
+                ? '/admin/materials/save'
+                : '/admin/materials/update/' + material.id}"
+                method="post">
+
+
+            <!-- MATERIAL NAME -->
+
+            <div class="form-group">
+
+                <label for="name">
+                    Material Name
+                    <span>*</span>
+                </label>
+
+                <input
+                        type="text"
+                        id="name"
+                        name="name"
+                        th:value="${material.name}"
+                        placeholder="Example: Marine Ply"
+                        required>
+
+                <small>
+                    Enter the material name that will appear in quotations.
+                </small>
+
+            </div>
+
+
+            <!-- ITEM -->
+
+            <div class="form-group">
+
+                <label for="itemId">
+                    Item
+                    <span>*</span>
+                </label>
+
+                <select
+                        id="itemId"
+                        name="itemId"
+                        required>
+
+                    <option value="">
+                        Select Item
+                    </option>
+
+                    <option
+                            th:each="item : ${items}"
+                            th:value="${item.id}"
+                            th:text="${item.name + ' — '
+                            + item.division.name + ' — '
+                            + item.division.workCategory.name}"
+                            th:selected="${material.item != null
+                            and material.item.id == item.id}">
+
+                        Base Cabinet
+
+                    </option>
+
+                </select>
+
+                <small>
+                    Select the quotation item this material belongs to.
+                </small>
+
+            </div>
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="form-group">
+
+                <label for="description">
+                    Description
+                </label>
+
+                <textarea
+                        id="description"
+                        name="description"
+                        rows="4"
+                        th:text="${material.description}"
+                        placeholder="Enter material description or specifications...">
+                </textarea>
+
+            </div>
+
+
+            <!-- DISPLAY ORDER -->
+
+            <div class="form-group">
+
+                <label for="displayOrder">
+                    Display Order
+                </label>
+
+                <input
+                        type="number"
+                        id="displayOrder"
+                        name="displayOrder"
+                        min="0"
+                        th:value="${material.displayOrder}"
+                        placeholder="0">
+
+                <small>
+                    Lower numbers appear first.
+                </small>
+
+            </div>
+
+
+            <!-- INFORMATION -->
+
+            <div class="info-box">
+
+                <div class="info-icon">
+                    ℹ️
+                </div>
+
+                <div>
+
+                    <strong>
+                        Pricing will be configured separately
+                    </strong>
+
+                    <p>
+                        Material rates such as Premium, Middle,
+                        Economy and district-specific pricing will
+                        be managed in the Pricing module.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="form-actions">
+
+                <a
+                        href="/admin/materials"
+                        class="btn btn-secondary">
+                    Cancel
+                </a>
+
+                <button
+                        type="submit"
+                        class="btn btn-primary"
+                        th:text="${material.id == null
+                        ? 'Save Material'
+                        : 'Update Material'}">
+
+                    Save Material
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>

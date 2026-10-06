@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    ```
+    <title>Create Quotation | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/employee-dashboard.css}">
+
+    <style>
+        .quotation-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .form-card {
+            background: #fff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 28px;
+            margin-bottom: 22px;
+            box-shadow: 0 8px 25px rgba(0,0,0,.04);
+        }
+
+        .form-card h2 {
+            margin: 0 0 6px;
+            color: #111827;
+            font-size: 21px;
+        }
+
+        .form-card > p {
+            margin: 0 0 24px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .form-group.full {
+            grid-column: 1 / -1;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: #374151;
+        }
+
+        .required {
+            color: #dc2626;
+        }
+
+        .form-control {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            background: #fff;
+            color: #111827;
+            font-size: 14px;
+            outline: none;
+            transition: border-color .2s, box-shadow .2s;
+        }
+
+        .form-control:focus {
+            border-color: #111827;
+            box-shadow: 0 0 0 3px rgba(17,24,39,.08);
+        }
+
+        textarea.form-control {
+            min-height: 110px;
+            resize: vertical;
+        }
+
+        .readonly-box {
+            padding: 12px 14px;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            color: #374151;
+            font-size: 14px;
+        }
+
+        .employee-info {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 14px;
+            margin-bottom: 22px;
+        }
+
+        .info-box {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+        }
+
+        .info-box span {
+            display: block;
+            color: #6b7280;
+            font-size: 12px;
+            margin-bottom: 5px;
+        }
+
+        .info-box strong {
+            color: #111827;
+            font-size: 14px;
+        }
+
+        .pricing-options {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+        }
+
+        .pricing-option {
+            position: relative;
+        }
+
+        .pricing-option input {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .pricing-option label {
+            display: block;
+            padding: 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 12px;
+            cursor: pointer;
+            background: #fff;
+        }
+
+        .pricing-option input:checked + label {
+            border-color: #111827;
+            background: #f3f4f6;
+            box-shadow: 0 0 0 2px rgba(17,24,39,.08);
+        }
+
+        .pricing-name {
+            display: block;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 4px;
+        }
+
+        .pricing-description {
+            display: block;
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-primary {
+            background: #111827;
+            color: #fff;
+        }
+
+        .btn-primary:hover {
+            background: #000;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .page-note {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #6b7280;
+            font-size: 13px;
+            margin-bottom: 22px;
+        }
+
+        @media (max-width: 900px) {
+            .employee-info {
+                grid-template-columns: 1fr;
+            }
+
+            .pricing-options {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 700px) {
+            .form-card {
+                padding: 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .form-group.full {
+                grid-column: auto;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+            }
+        }
+    </style>
+    ```
+
+</head>
+
+<body>
+
+<div class="dashboard-wrapper">
+
+    ```
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-icon">PK</div>
+
+            <div class="brand-text">
+                <h2>Pravin Kitchens</h2>
+                <span>Employee Portal</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-menu">
+
+            <a th:href="@{/employee/dashboard}"
+               class="menu-item">
+                <span class="menu-icon">⌂</span>
+                <span>Dashboard</span>
+            </a>
+
+            <a th:href="@{/employee/quotations}"
+               class="menu-item active">
+                <span class="menu-icon">▣</span>
+                <span>Quotations</span>
+            </a>
+
+            <a th:href="@{/employee/customers}"
+               class="menu-item">
+                <span class="menu-icon">◉</span>
+                <span>Customers</span>
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <form th:action="@{/logout}" method="post">
+
+                <button type="submit" class="logout-btn">
+                    <span>↪</span>
+                    <span>Logout</span>
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+        <header class="topbar">
+
+            <div class="page-heading">
+
+            <span class="page-label">
+                QUOTATION MANAGEMENT
+            </span>
+
+                <h1>
+                    Create Quotation
+                </h1>
+
+                <p>
+                    Create a new customer quotation and continue
+                    to rooms, materials and pricing.
+                </p>
+
+            </div>
+
+
+            <div class="employee-profile">
+
+                <div class="profile-avatar">
+
+                <span
+                        th:text="${employee.name != null and !employee.name.isEmpty()
+                    ? #strings.substring(employee.name,0,1).toUpperCase()
+                    : 'E'}">
+                    E
+                </span>
+
+                </div>
+
+                <div class="profile-info">
+
+                    <strong th:text="${employee.name}">
+                        Employee
+                    </strong>
+
+                    <small th:text="${employee.email}">
+                        employee@email.com
+                    </small>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <div class="quotation-container">
+
+            <div class="page-note">
+                First create the basic quotation. After saving,
+                you can add rooms, work areas, materials,
+                dimensions, pricing and quotation totals.
+            </div>
+
+
+            <!-- EMPLOYEE INFORMATION -->
+            <section class="form-card">
+
+                <h2>Employee Information</h2>
+
+                <p>
+                    This quotation will be created under your employee account.
+                </p>
+
+                <div class="employee-info">
+
+                    <div class="info-box">
+
+                        <span>Employee</span>
+
+                        <strong th:text="${employee.name}">
+                            Employee
+                        </strong>
+
+                    </div>
+
+                    <div class="info-box">
+
+                        <span>Email</span>
+
+                        <strong th:text="${employee.email}">
+                            employee@email.com
+                        </strong>
+
+                    </div>
+
+                    <div class="info-box">
+
+                        <span>District / Branch</span>
+
+                        <strong
+                                th:text="${employee.branch != null
+                        ? employee.branch.name
+                        : 'Not Assigned'}">
+                            Not Assigned
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </section>
+
+
+            <!-- QUOTATION FORM -->
+            <form th:action="@{/employee/quotations/save}"
+                  method="post"
+                  id="quotationForm">
+
+
+                <!-- CUSTOMER -->
+                <section class="form-card">
+
+                    <h2>Customer & Quotation Details</h2>
+
+                    <p>
+                        Select the customer and enter the basic quotation information.
+                    </p>
+
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label for="customerId">
+                                Customer <span class="required">*</span>
+                            </label>
+
+                            <select id="customerId"
+                                    name="customerId"
+                                    class="form-control"
+                                    required>
+
+                                <option value="">
+                                    Select Customer
+                                </option>
+
+                                <option th:each="customer : ${customers}"
+                                        th:value="${customer.id}"
+                                        th:text="${customer.name + ' - ' + customer.phone}">
+                                    Customer
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="quotationDate">
+                                Quotation Date <span class="required">*</span>
+                            </label>
+
+                            <input type="date"
+                                   id="quotationDate"
+                                   name="quotationDate"
+                                   class="form-control"
+                                   th:value="${quotationDate}"
+                                   required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="divisionId">
+                                Division <span class="required">*</span>
+                            </label>
+
+                            <select id="divisionId"
+                                    name="divisionId"
+                                    class="form-control"
+                                    required>
+
+                                <option value="">
+                                    Select Division
+                                </option>
+
+                                <option th:each="division : ${divisions}"
+                                        th:value="${division.id}"
+                                        th:text="${division.name}">
+                                    Division
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="branchId">
+                                District / Branch <span class="required">*</span>
+                            </label>
+
+                            <select id="branchId"
+                                    name="branchId"
+                                    class="form-control"
+                                    required>
+
+                                <option value="">
+                                    Select District / Branch
+                                </option>
+
+                                <option th:each="branch : ${branches}"
+                                        th:value="${branch.id}"
+                                        th:text="${branch.name}">
+                                    Branch
+                                </option>
+
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- PRICING -->
+                <section class="form-card">
+
+                    <h2>Pricing Mode</h2>
+
+                    <p>
+                        Select the quotation grade. Rates will be applied
+                        from the configured pricing system.
+                    </p>
+
+
+                    <div class="pricing-options">
+
+                        <div class="pricing-option"
+                             th:each="mode : ${pricingModes}">
+
+                            <input type="radio"
+                                   th:id="${'pricing-' + mode.name()}"
+                                   name="pricingMode"
+                                   th:value="${mode.name()}"
+                                   required>
+
+                            <label th:for="${'pricing-' + mode.name()}">
+
+                            <span class="pricing-name"
+                                  th:text="${mode.name() == 'MIDDLE'
+                                  ? 'Middle / Standard'
+                                  : mode.name()}">
+                                Premium
+                            </span>
+
+                                <span class="pricing-description"
+                                      th:if="${mode.name() == 'PREMIUM'}">
+                                Premium material and finish
+                            </span>
+
+                                <span class="pricing-description"
+                                      th:if="${mode.name() == 'MIDDLE'}">
+                                Standard balanced option
+                            </span>
+
+                                <span class="pricing-description"
+                                      th:if="${mode.name() == 'ECONOMY'}">
+                                Cost-effective option
+                            </span>
+
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- WORK LOCATION -->
+                <section class="form-card">
+
+                    <h2>Work Location</h2>
+
+                    <p>
+                        Enter where the work will be carried out.
+                    </p>
+
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label for="floor">
+                                Floor
+                            </label>
+
+                            <input type="text"
+                                   id="floor"
+                                   name="floor"
+                                   class="form-control"
+                                   placeholder="Example: Ground Floor">
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label for="workArea">
+                                Primary Work Area
+                            </label>
+
+                            <select id="workArea"
+                                    name="workArea"
+                                    class="form-control">
+
+                                <option value="">
+                                    Select Work Area
+                                </option>
+
+                                <option value="Kitchen">
+                                    Kitchen
+                                </option>
+
+                                <option value="Bedroom">
+                                    Bedroom
+                                </option>
+
+                                <option value="Living Room">
+                                    Living Room
+                                </option>
+
+                                <option value="Dining Room">
+                                    Dining Room
+                                </option>
+
+                                <option value="Wall Panel">
+                                    Wall Panel
+                                </option>
+
+                                <option value="Wardrobe">
+                                    Wardrobe
+                                </option>
+
+                                <option value="TV Unit">
+                                    TV Unit
+                                </option>
+
+                                <option value="Full Interior">
+                                    Full Interior
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group full">
+
+                            <label for="customerRequirements">
+                                Customer Requirements
+                            </label>
+
+                            <textarea id="customerRequirements"
+                                      name="customerRequirements"
+                                      class="form-control"
+                                      placeholder="Enter customer requirements, preferred materials, design requirements, etc."></textarea>
+
+                        </div>
+
+
+                        <div class="form-group full">
+
+                            <label for="notes">
+                                Internal Notes
+                            </label>
+
+                            <textarea id="notes"
+                                      name="notes"
+                                      class="form-control"
+                                      placeholder="Enter additional quotation notes..."></textarea>
+
+                        </div>
+
+                    </div>
+
+                </section>
+
+
+                <!-- ACTIONS -->
+                <div class="form-actions">
+
+                    <a th:href="@{/employee/quotations}"
+                       class="btn btn-secondary">
+                        ← Cancel
+                    </a>
+
+                    <button type="submit"
+                            class="btn btn-primary">
+                        Save & Continue →
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+
+        <footer class="dashboard-footer">
+
+        <span>
+            © 2026 Pravin Kitchens & Interiors
+        </span>
+
+            <span>
+            Employee Portal
+        </span>
+
+        </footer>
+
+    </main>
+    ```
+
+</div>
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const dateInput = document.getElementById("quotationDate");
+
+        if (dateInput && !dateInput.value) {
+
+            const today = new Date();
+
+            const year = today.getFullYear();
+
+            const month = String(today.getMonth() + 1).padStart(2, "0");
+
+            const day = String(today.getDate()).padStart(2, "0");
+
+            dateInput.value = `${year}-${month}-${day}`;
+
+        }
+
+    });
+
+</script>
+
+</body>
+</html>

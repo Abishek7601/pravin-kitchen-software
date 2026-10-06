@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>
+    Customer Details | Pravin Kitchens
+  </title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/customer-details.css}">
+
+</head>
+
+
+<body>
+
+<div class="customer-details-page">
+
+
+  <!-- =========================================
+       HEADER
+  ========================================== -->
+
+  <header class="details-header">
+
+    <div class="brand-section">
+
+      <div class="brand-mark">
+        PK
+      </div>
+
+      <div>
+
+        <div class="brand-name">
+          PRAVIN KITCHENS
+        </div>
+
+        <div class="brand-subtitle">
+          Customer Management
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <a th:href="@{/admin/customers}"
+       class="back-button">
+
+      ← Customers
+
+    </a>
+
+  </header>
+
+
+
+  <!-- =========================================
+       MAIN
+  ========================================== -->
+
+  <main class="details-container">
+
+
+    <!-- BREADCRUMB -->
+
+    <div class="breadcrumb">
+
+      <a th:href="@{/admin/customers}">
+        Customers
+      </a>
+
+      <span>›</span>
+
+      <span th:text="${customer.name}">
+                Customer
+            </span>
+
+    </div>
+
+
+
+    <!-- =====================================
+         PROFILE HEADER
+    ====================================== -->
+
+    <section class="profile-card">
+
+      <div class="profile-main">
+
+        <div class="large-avatar"
+             th:text="${#strings.substring(customer.name, 0, 1).toUpperCase()}">
+          C
+        </div>
+
+
+        <div class="profile-info">
+
+                    <span class="profile-label">
+                        CUSTOMER PROFILE
+                    </span>
+
+          <h1 th:text="${customer.name}">
+            Customer Name
+          </h1>
+
+          <div class="profile-meta">
+
+                        <span
+                                th:if="${customer.branch != null}"
+                                th:text="${customer.branch.name}">
+                            Chennai
+                        </span>
+
+            <span class="meta-divider">•</span>
+
+            <span
+                    th:text="${customer.phone}">
+                            9876543210
+                        </span>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <div class="profile-actions">
+
+                <span
+                        class="status-badge active"
+                        th:if="${customer.active}">
+                    Active
+                </span>
+
+        <span
+                class="status-badge inactive"
+                th:unless="${customer.active}">
+                    Inactive
+                </span>
+
+
+        <a
+                th:href="@{/admin/customers/edit/{id}(id=${customer.id})}"
+                class="edit-button">
+
+          Edit Customer
+
+        </a>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         SUMMARY CARDS
+    ====================================== -->
+
+    <section class="summary-grid">
+
+
+      <div class="summary-card">
+
+        <div class="summary-icon">
+          #
+        </div>
+
+        <div>
+
+                    <span>
+                        Total Quotations
+                    </span>
+
+          <strong>
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-icon">
+          60
+        </div>
+
+        <div>
+
+                    <span>
+                        60-Day Quotations
+                    </span>
+
+          <strong>
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-icon">
+          ₹
+        </div>
+
+        <div>
+
+                    <span>
+                        Total Quoted Value
+                    </span>
+
+          <strong>
+            ₹0
+          </strong>
+
+        </div>
+
+      </div>
+
+
+      <div class="summary-card">
+
+        <div class="summary-icon">
+          ✓
+        </div>
+
+        <div>
+
+                    <span>
+                        Approved Quotations
+                    </span>
+
+          <strong>
+            0
+          </strong>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         TWO COLUMN AREA
+    ====================================== -->
+
+    <section class="content-grid">
+
+
+      <!-- CUSTOMER INFORMATION -->
+
+      <div class="content-card">
+
+        <div class="card-heading">
+
+          <div>
+
+            <h2>
+              Customer Information
+            </h2>
+
+            <p>
+              Contact and account details
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="information-list">
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            Customer Name
+                        </span>
+
+            <strong
+                    th:text="${customer.name}">
+              Customer Name
+            </strong>
+
+          </div>
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            Email Address
+                        </span>
+
+            <strong
+                    th:text="${customer.email != null and !customer.email.isEmpty()
+                                ? customer.email
+                                : 'Not provided'}">
+
+              Not provided
+
+            </strong>
+
+          </div>
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            Phone Number
+                        </span>
+
+            <strong
+                    th:text="${customer.phone}">
+              9876543210
+            </strong>
+
+          </div>
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            District
+                        </span>
+
+            <strong
+                    th:if="${customer.branch != null}"
+                    th:text="${customer.branch.name}">
+              Chennai
+            </strong>
+
+            <strong
+                    th:unless="${customer.branch != null}">
+              Not assigned
+            </strong>
+
+          </div>
+
+
+          <div class="information-row address-row">
+
+                        <span class="information-label">
+                            Address
+                        </span>
+
+            <strong
+                    th:text="${customer.address != null and !customer.address.isEmpty()
+                                ? customer.address
+                                : 'Not provided'}">
+
+              Not provided
+
+            </strong>
+
+          </div>
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            Customer Since
+                        </span>
+
+            <strong
+                    th:text="${#temporals.format(customer.createdAt, 'dd MMM yyyy')}">
+              01 Oct 2026
+            </strong>
+
+          </div>
+
+
+          <div class="information-row">
+
+                        <span class="information-label">
+                            Account Status
+                        </span>
+
+            <strong
+                    class="status-text active-text"
+                    th:if="${customer.active}">
+              Active
+            </strong>
+
+            <strong
+                    class="status-text inactive-text"
+                    th:unless="${customer.active}">
+              Inactive
+            </strong>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+
+      <!-- QUICK ACTIONS -->
+
+      <div class="content-card">
+
+        <div class="card-heading">
+
+          <div>
+
+            <h2>
+              Quick Actions
+            </h2>
+
+            <p>
+              Customer-related actions
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <div class="quick-actions">
+
+
+          <a
+                  th:href="@{/admin/customers/edit/{id}(id=${customer.id})}"
+                  class="quick-action">
+
+            <div class="quick-icon">
+              ✎
+            </div>
+
+            <div>
+
+              <strong>
+                Edit Customer
+              </strong>
+
+              <span>
+                                Update customer information
+                            </span>
+
+            </div>
+
+            <span class="arrow">
+                            →
+                        </span>
+
+          </a>
+
+
+          <div class="quick-action disabled-action">
+
+            <div class="quick-icon">
+              #
+            </div>
+
+            <div>
+
+              <strong>
+                Quotations
+              </strong>
+
+              <span>
+                                Available after quotation module
+                            </span>
+
+            </div>
+
+            <span class="arrow">
+                            →
+                        </span>
+
+          </div>
+
+
+          <div class="quick-action disabled-action">
+
+            <div class="quick-icon">
+              ₹
+            </div>
+
+            <div>
+
+              <strong>
+                Quoted Value
+              </strong>
+
+              <span>
+                                Financial summary will appear here
+                            </span>
+
+            </div>
+
+            <span class="arrow">
+                            →
+                        </span>
+
+          </div>
+
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         QUOTATION HISTORY
+    ====================================== -->
+
+    <section class="content-card quotation-card">
+
+      <div class="card-heading quotation-heading">
+
+        <div>
+
+          <h2>
+            Quotation History
+          </h2>
+
+          <p>
+            All quotations created for this customer
+            will appear here.
+          </p>
+
+        </div>
+
+
+        <button
+                type="button"
+                class="disabled-button"
+                disabled>
+
+          + New Quotation
+
+        </button>
+
+      </div>
+
+
+      <div class="quotation-empty">
+
+        <div class="empty-icon">
+          #
+        </div>
+
+        <h3>
+          No quotations yet
+        </h3>
+
+        <p>
+          Quotation history will appear here after
+          the quotation module is connected.
+        </p>
+
+      </div>
+
+    </section>
+
+
+
+    <!-- =====================================
+         COMMUNICATION HISTORY
+    ====================================== -->
+
+    <section class="content-card communication-card">
+
+      <div class="card-heading">
+
+        <div>
+
+          <h2>
+            Communication History
+          </h2>
+
+          <p>
+            PDF, WhatsApp and email activity
+            related to this customer.
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <div class="communication-empty">
+
+        <div class="empty-icon">
+          ↗
+        </div>
+
+        <div>
+
+          <h3>
+            No communication activity
+          </h3>
+
+          <p>
+            Communication records will appear after
+            quotations are generated or shared.
+          </p>
+
+        </div>
+
+      </div>
+
+    </section>
+
+
+
+  </main>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Quotation Preview - Pravin Kitchens</title>
+
+    <link rel="stylesheet" th:href="@{/css/quotation-preview.css}">
+</head>
+
+<body>
+
+<div class="preview-page">
+
+    <!-- TOP ACTION BAR -->
+    <div class="top-bar">
+
+        <a th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+           class="back-link">
+            ← Back to Quotation
+        </a>
+
+        <div class="top-actions">
+
+            <button type="button"
+                    class="btn btn-print"
+                    onclick="window.print()">
+                🖨 Print
+            </button>
+
+            <button type="button"
+                    class="btn btn-primary"
+                    onclick="window.print()">
+                Download / Print PDF
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- QUOTATION DOCUMENT -->
+    <div class="quotation-document">
+
+        <!-- COMPANY HEADER -->
+        <div class="company-header">
+
+            <div class="company-info">
+
+                <h1>PRAVIN KITCHENS</h1>
+
+                <p>
+                    Premium Modular Kitchens &amp; Interior Solutions
+                </p>
+
+                <p>
+                    Kanyakumari District, Tamil Nadu
+                </p>
+
+            </div>
+
+            <div class="quotation-title">
+
+                <span>QUOTATION</span>
+
+                <strong th:text="${quotation.quotationNumber}">
+                    QT-001
+                </strong>
+
+                <small>
+                    Date:
+                    <span th:text="${quotation.quotationDate}">
+                        2026-10-05
+                    </span>
+                </small>
+
+            </div>
+
+        </div>
+
+
+        <!-- CUSTOMER + PROJECT DETAILS -->
+        <div class="info-section">
+
+            <div class="info-box">
+
+                <h3>Customer Details</h3>
+
+                <div class="info-row">
+
+                    <span>Name</span>
+
+                    <strong
+                            th:text="${quotation.customer != null ? quotation.customer.name : 'N/A'}">
+                        Rahul
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Phone</span>
+
+                    <strong
+                            th:text="${quotation.customer != null ? quotation.customer.phone : 'N/A'}">
+                        N/A
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Email</span>
+
+                    <strong
+                            th:text="${quotation.customer != null && quotation.customer.email != null
+                            ? quotation.customer.email : 'N/A'}">
+                        N/A
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Address</span>
+
+                    <strong
+                            th:text="${quotation.customer != null && quotation.customer.address != null
+                            ? quotation.customer.address : 'N/A'}">
+                        N/A
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <h3>Project Details</h3>
+
+                <div class="info-row">
+
+                    <span>District</span>
+
+                    <strong
+                            th:text="${quotation.branch != null ? quotation.branch.name : 'N/A'}">
+                        Kanyakumari
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Pricing Mode</span>
+
+                    <strong
+                            th:text="${quotation.pricingMode != null ? quotation.pricingMode : 'N/A'}">
+                        PREMIUM
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Prepared By</span>
+
+                    <strong
+                            th:text="${quotation.employee != null ? quotation.employee.name : 'N/A'}">
+                        Employee
+                    </strong>
+
+                </div>
+
+                <div class="info-row">
+
+                    <span>Status</span>
+
+                    <strong
+                            th:text="${quotation.status}">
+                        DRAFT
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- ROOMS & ITEMS -->
+        <div class="quotation-section">
+
+            <div class="section-heading">
+
+                <h2>Work Details</h2>
+
+                <span>
+                    Quotation Items
+                </span>
+
+            </div>
+
+
+            <div th:if="${rooms == null || rooms.isEmpty()}"
+                 class="empty-message">
+
+                No rooms or items have been added to this quotation.
+
+            </div>
+
+
+            <div th:each="room : ${rooms}"
+                 class="room-block">
+
+                <!-- ROOM HEADER -->
+
+                <div class="room-header">
+
+                    <div>
+
+                        <span class="room-floor"
+                              th:text="${room.floor}">
+                            Ground
+                        </span>
+
+                        <h3 th:text="${room.room}">
+                            Kitchen
+                        </h3>
+
+                    </div>
+
+                    <div class="room-work"
+                         th:text="${room.workDescription != null
+                         ? room.workDescription : 'Interior Work'}">
+                        Modular Kitchen
+                    </div>
+
+                </div>
+
+
+                <!-- ITEMS -->
+
+                <table class="items-table">
+
+                    <thead>
+
+                    <tr>
+
+                        <th>#</th>
+
+                        <th>Work / Item</th>
+
+                        <th>Material</th>
+
+                        <th>Specification</th>
+
+                        <th>Size</th>
+
+                        <th>Sq.Ft</th>
+
+                        <th>Rate</th>
+
+                        <th>Amount</th>
+
+                        <th>Offer Price</th>
+
+                    </tr>
+
+                    </thead>
+
+                    <tbody>
+
+                    <tr th:each="item, itemStat :
+                        ${roomItems[room.id]}">
+
+                        <td th:text="${itemStat.count}">
+                            1
+                        </td>
+
+                        <td>
+
+                            <strong
+                                    th:text="${item.item != null
+                                    ? item.item.name
+                                    : (item.itemDescription != null
+                                    ? item.itemDescription : 'Item')}">
+                                Base Cabinet
+                            </strong>
+
+                            <small
+                                    th:if="${item.workCategory != null}"
+                                    th:text="${item.workCategory.name}">
+                                Modular Kitchen
+                            </small>
+
+                        </td>
+
+                        <td>
+
+                            <span
+                                    th:if="${item.material != null}"
+                                    th:text="${item.material.name}">
+                                Marine Ply
+                            </span>
+
+                            <span
+                                    th:if="${item.material == null}">
+                                -
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span
+                                    th:if="${item.specification != null
+                                    && !#strings.isEmpty(item.specification)}"
+                                    th:text="${item.specification}">
+                                18mm
+                            </span>
+
+                            <span
+                                    th:if="${item.specification == null
+                                    || #strings.isEmpty(item.specification)}">
+                                -
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            <span th:if="${item.lengthValue != null}"
+                                  th:text="${item.lengthValue}">
+                                5
+                            </span>
+
+                            <span th:if="${item.lengthValue != null}">
+                                ×
+                            </span>
+
+                            <span th:if="${item.widthValue != null}"
+                                  th:text="${item.widthValue}">
+                                6
+                            </span>
+
+                            <span th:if="${item.widthValue != null}">
+                                ×
+                            </span>
+
+                            <span th:if="${item.heightValue != null}"
+                                  th:text="${item.heightValue}">
+                                8
+                            </span>
+
+                            <span
+                                    th:if="${item.lengthValue == null
+                                    && item.widthValue == null
+                                    && item.heightValue == null}">
+                                -
+                            </span>
+
+                        </td>
+
+                        <td th:text="${item.calculatedSqft != null
+                            ? item.calculatedSqft : 0}">
+                            0.61
+                        </td>
+
+                        <td>
+
+                            ₹
+                            <span th:text="${item.rate != null
+                                ? item.rate : 0}">
+                                200
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            ₹
+                            <span th:text="${item.amount != null
+                                ? item.amount : 0}">
+                                122
+                            </span>
+
+                        </td>
+
+                        <td>
+
+                            ₹
+                            <span th:text="${item.offerPrice != null
+                                ? item.offerPrice : 0}">
+                                122
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+
+                <!-- ROOM TOTAL -->
+
+                <div class="room-total">
+
+                    <span>
+                        Room Total
+                    </span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${room.offerPrice != null
+                            ? room.offerPrice : 0}">
+                            122
+                        </span>
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- FINANCIAL SUMMARY -->
+        <div class="summary-section">
+
+            <div class="summary-left">
+
+                <h3>Customer Requirements</h3>
+
+                <div class="notes-box">
+
+                    <span
+                            th:if="${quotation.customerRequirements != null
+                            && !#strings.isEmpty(quotation.customerRequirements)}"
+                            th:text="${quotation.customerRequirements}">
+                        Customer requirements
+                    </span>
+
+                    <span
+                            th:if="${quotation.customerRequirements == null
+                            || #strings.isEmpty(quotation.customerRequirements)}">
+                        No specific requirements added.
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="amount-summary">
+
+                <div class="amount-row">
+
+                    <span>Subtotal</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.subtotal != null
+                            ? quotation.subtotal : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row">
+
+                    <span>Accessories</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.accessoriesAmount != null
+                            ? quotation.accessoriesAmount : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row">
+
+                    <span>Travel Charge</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.travelCharge != null
+                            ? quotation.travelCharge : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row">
+
+                    <span>Other Charges</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.otherCharges != null
+                            ? quotation.otherCharges : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row discount-row">
+
+                    <span>Discount</span>
+
+                    <strong>
+
+                        - ₹
+
+                        <span th:text="${quotation.discountAmount != null
+                            ? quotation.discountAmount : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row">
+
+                    <span>
+                        GST
+                        (<span th:text="${quotation.gstPercentage != null
+                            ? quotation.gstPercentage : 0}">
+                            0
+                        </span>%)
+                    </span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.gstAmount != null
+                            ? quotation.gstAmount : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="grand-total">
+
+                    <span>Grand Total</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.grandTotal != null
+                            ? quotation.grandTotal : 0}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- NOTES -->
+        <div class="notes-section"
+             th:if="${quotation.notes != null
+             && !#strings.isEmpty(quotation.notes)}">
+
+            <h3>Notes</h3>
+
+            <p th:text="${quotation.notes}">
+                Notes
+            </p>
+
+        </div>
+
+
+        <!-- TERMS -->
+        <div class="terms-section">
+
+            <h3>Terms &amp; Conditions</h3>
+
+            <ol>
+
+                <li>
+                    Quotation is valid subject to the agreed project requirements.
+                </li>
+
+                <li>
+                    Any additional work or material will be charged separately.
+                </li>
+
+                <li>
+                    Final measurements will be confirmed before production.
+                </li>
+
+                <li>
+                    Payment terms will be as agreed with the customer.
+                </li>
+
+            </ol>
+
+        </div>
+
+
+        <!-- FOOTER -->
+        <div class="quotation-footer">
+
+            <div>
+
+                <strong>PRAVIN KITCHENS</strong>
+
+                <p>
+                    Thank you for choosing us.
+                </p>
+
+            </div>
+
+            <div class="signature-box">
+
+                <span>Authorized Signature</span>
+
+                <div class="signature-line"></div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

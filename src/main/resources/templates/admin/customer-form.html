@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${customer.id == null ? 'Add Customer | Pravin Kitchens' : 'Edit Customer | Pravin Kitchens'}">
+    Add Customer | Pravin Kitchens
+  </title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/customer-form.css}">
+
+</head>
+
+
+<body>
+
+<div class="customer-form-page">
+
+  <!-- =========================================
+       HEADER
+  ========================================== -->
+
+  <header class="form-header">
+
+    <div class="brand-section">
+
+      <div class="brand-mark">
+        PK
+      </div>
+
+      <div>
+
+        <div class="brand-name">
+          PRAVIN KITCHENS
+        </div>
+
+        <div class="brand-subtitle">
+          Customer Management
+        </div>
+
+      </div>
+
+    </div>
+
+
+    <a th:href="@{/admin/customers}"
+       class="back-button">
+
+      ← Customers
+
+    </a>
+
+  </header>
+
+
+  <!-- =========================================
+       MAIN
+  ========================================== -->
+
+  <main class="form-container">
+
+
+    <!-- PAGE HEADING -->
+
+    <section class="page-heading">
+
+      <div>
+
+                <span class="section-label">
+                    CUSTOMER MANAGEMENT
+                </span>
+
+        <h1
+                th:text="${customer.id == null ? 'Add Customer' : 'Edit Customer'}">
+
+          Add Customer
+
+        </h1>
+
+        <p
+                th:text="${customer.id == null
+                        ? 'Create a new customer profile and assign a district.'
+                        : 'Update the customer information and district assignment.'}">
+
+          Create a new customer profile and assign a district.
+
+        </p>
+
+      </div>
+
+    </section>
+
+
+    <!-- =========================================
+         FORM CARD
+    ========================================== -->
+
+    <section class="form-card">
+
+
+      <div class="form-card-header">
+
+        <div>
+
+          <h2>
+            Customer Information
+          </h2>
+
+          <p>
+            Enter the customer's contact and district details.
+          </p>
+
+        </div>
+
+        <div class="required-note">
+          * Required fields
+        </div>
+
+      </div>
+
+
+      <!-- =====================================
+           FORM
+      ====================================== -->
+
+      <form
+              th:action="${customer.id == null
+                    ? '/admin/customers/save'
+                    : '/admin/customers/update/' + customer.id}"
+              method="post"
+              class="customer-form">
+
+
+        <!-- CUSTOMER NAME -->
+
+        <div class="form-group">
+
+          <label for="name">
+            Customer Name
+            <span>*</span>
+          </label>
+
+          <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  th:value="${customer.name}"
+                  placeholder="Enter customer full name"
+                  autocomplete="name"
+                  required>
+
+          <small>
+            Enter the customer's full name.
+          </small>
+
+        </div>
+
+
+        <!-- EMAIL -->
+
+        <div class="form-group">
+
+          <label for="email">
+            Email Address
+          </label>
+
+          <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  th:value="${customer.email}"
+                  placeholder="customer@example.com"
+                  autocomplete="email">
+
+          <small>
+            Optional. Used for quotation communication.
+          </small>
+
+        </div>
+
+
+        <!-- PHONE -->
+
+        <div class="form-group">
+
+          <label for="phone">
+            Phone Number
+            <span>*</span>
+          </label>
+
+          <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  th:value="${customer.phone}"
+                  placeholder="Enter phone number"
+                  autocomplete="tel"
+                  maxlength="15"
+                  required>
+
+          <small>
+            Enter the customer's primary contact number.
+          </small>
+
+        </div>
+
+
+        <!-- ADDRESS -->
+
+        <div class="form-group full-width">
+
+          <label for="address">
+            Address
+          </label>
+
+          <textarea
+                  id="address"
+                  name="address"
+                  rows="4"
+                  placeholder="Enter customer address"
+                  th:text="${customer.address}"></textarea>
+
+          <small>
+            Optional. You can update the complete address later.
+          </small>
+
+        </div>
+
+
+        <!-- DISTRICT -->
+
+        <div class="form-group full-width">
+
+          <label for="branchId">
+            District
+            <span>*</span>
+          </label>
+
+          <select
+                  id="branchId"
+                  name="branchId"
+                  required>
+
+            <option value="">
+              Select district
+            </option>
+
+            <option
+                    th:each="branch : ${branches}"
+                    th:value="${branch.id}"
+                    th:text="${branch.name}"
+                    th:selected="${customer.branch != null and customer.branch.id == branch.id}">
+
+              Chennai
+
+            </option>
+
+          </select>
+
+          <small>
+            Select the district associated with this customer.
+          </small>
+
+        </div>
+
+
+        <!-- =================================
+             INFORMATION BOX
+        ================================== -->
+
+        <div class="info-box full-width">
+
+          <div class="info-icon">
+            i
+          </div>
+
+          <div>
+
+            <strong>
+              Customer & quotation tracking
+            </strong>
+
+            <p>
+              Once a quotation is created for this customer,
+              quotation history, approval status and quoted
+              value will be available from the customer profile.
+            </p>
+
+          </div>
+
+        </div>
+
+
+        <!-- =================================
+             FORM ACTIONS
+        ================================== -->
+
+        <div class="form-actions">
+
+          <a
+                  th:href="@{/admin/customers}"
+                  class="cancel-button">
+
+            Cancel
+
+          </a>
+
+
+          <button
+                  type="submit"
+                  class="save-button">
+
+                        <span
+                                th:text="${customer.id == null
+                                ? 'Save Customer'
+                                : 'Update Customer'}">
+
+                            Save Customer
+
+                        </span>
+
+          </button>
+
+        </div>
+
+
+      </form>
+
+    </section>
+
+
+  </main>
+
+</div>
+
+
+<!-- =============================================
+     JAVASCRIPT
+============================================== -->
+
+<script>
+
+  document.addEventListener("DOMContentLoaded", function () {
+
+      const phoneInput =
+          document.getElementById("phone");
+
+      if (phoneInput) {
+
+          phoneInput.addEventListener("input", function () {
+
+              this.value =
+                  this.value.replace(/[^0-9+\-\s]/g, "");
+
+          });
+
+      }
+
+
+      const form =
+          document.querySelector(".customer-form");
+
+      if (form) {
+
+          form.addEventListener("submit", function (event) {
+
+              const name =
+                  document.getElementById("name").value.trim();
+
+              const phone =
+                  document.getElementById("phone").value.trim();
+
+              const district =
+                  document.getElementById("branchId").value;
+
+
+              if (!name) {
+
+                  event.preventDefault();
+
+                  alert("Please enter customer name.");
+
+                  document.getElementById("name").focus();
+
+                  return;
+
+              }
+
+
+              if (!phone) {
+
+                  event.preventDefault();
+
+                  alert("Please enter customer phone number.");
+
+                  document.getElementById("phone").focus();
+
+                  return;
+
+              }
+
+
+              if (!district) {
+
+                  event.preventDefault();
+
+                  alert("Please select a district.");
+
+                  document.getElementById("branchId").focus();
+
+                  return;
+
+              }
+
+          });
+
+      }
+
+  });
+
+</script>
+
+
+</body>
+
+</html>

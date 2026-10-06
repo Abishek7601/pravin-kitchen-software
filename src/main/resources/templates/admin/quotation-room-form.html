@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${quotationRoom.id == null ? 'Add Room' : 'Edit Room'} + ' | Pravin Kitchens'">
+        Add Room | Pravin Kitchens
+    </title>
+
+    <link rel="stylesheet"
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotation-room-form.css}">
+</head>
+
+<body>
+
+<div class="room-form-page">
+
+    <div class="room-form-container">
+
+        <!-- =========================
+             PAGE HEADER
+        ========================== -->
+
+        <div class="page-header">
+
+            <div class="header-content">
+
+                <div class="page-eyebrow">
+                    QUOTATION MANAGEMENT
+                </div>
+
+                <h1 th:text="${quotationRoom.id == null
+                    ? 'Add Quotation Room'
+                    : 'Edit Quotation Room'}">
+                    Add Quotation Room
+                </h1>
+
+                <p>
+                    Define the floor, room and work area for this quotation.
+                </p>
+
+            </div>
+
+            <div class="header-actions">
+
+                <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+                   class="btn-custom btn-secondary-custom">
+                    ← Back to Rooms
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             QUOTATION INFORMATION
+        ========================== -->
+
+        <div class="quotation-summary-card">
+
+            <div class="summary-heading">
+
+                <div>
+                    <span class="summary-label">
+                        QUOTATION
+                    </span>
+
+                    <h2 th:text="${quotation.quotationNumber}">
+                        QT-0001
+                    </h2>
+                </div>
+
+                <div class="quotation-status">
+
+                    <span class="status-dot"></span>
+
+                    <span th:text="${quotation.status != null
+                        ? quotation.status
+                        : 'DRAFT'}">
+                        DRAFT
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="summary-grid">
+
+                <div class="summary-item">
+
+                    <span class="summary-item-label">
+                        Customer
+                    </span>
+
+                    <strong th:text="${quotation.customer != null
+                        ? quotation.customer.name
+                        : '—'}">
+                        Customer Name
+                    </strong>
+
+                </div>
+
+
+                <div class="summary-item">
+
+                    <span class="summary-item-label">
+                        District
+                    </span>
+
+                    <strong th:text="${quotation.branch != null
+                        ? quotation.branch.name
+                        : '—'}">
+                        Kanyakumari
+                    </strong>
+
+                </div>
+
+
+                <div class="summary-item">
+
+                    <span class="summary-item-label">
+                        Quotation Date
+                    </span>
+
+                    <strong th:text="${quotation.quotationDate != null
+                        ? quotation.quotationDate
+                        : '—'}">
+                        2026-10-03
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =========================
+             ROOM FORM CARD
+        ========================== -->
+
+        <div class="form-card">
+
+            <div class="form-card-header">
+
+                <div class="section-number">
+                    01
+                </div>
+
+                <div>
+
+                    <h2>
+                        Room / Work Area
+                    </h2>
+
+                    <p>
+                        Enter the location where the quotation work will be carried out.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 FORM
+            ========================== -->
+
+            <form th:action="${quotationRoom.id == null
+                    ? '/admin/quotation-rooms/save'
+                    : '/admin/quotation-rooms/update'}"
+                  method="post"
+                  class="room-form">
+
+
+                <!-- Hidden ID for EDIT -->
+                <input type="hidden"
+                       name="id"
+                       th:if="${quotationRoom.id != null}"
+                       th:value="${quotationRoom.id}">
+
+
+                <!-- Quotation ID -->
+                <input type="hidden"
+                       name="quotationId"
+                       th:value="${quotation.id}">
+
+
+                <div class="form-grid">
+
+
+                    <!-- =========================
+                         FLOOR
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="floor">
+                            Floor
+                            <span class="required">*</span>
+                        </label>
+
+                        <select id="floor"
+                                name="floor"
+                                required>
+
+                            <option value="">
+                                Select Floor
+                            </option>
+
+                            <option value="Ground Floor"
+                                    th:selected="${quotationRoom.floor == 'Ground Floor'}">
+                                Ground Floor
+                            </option>
+
+                            <option value="First Floor"
+                                    th:selected="${quotationRoom.floor == 'First Floor'}">
+                                First Floor
+                            </option>
+
+                            <option value="Second Floor"
+                                    th:selected="${quotationRoom.floor == 'Second Floor'}">
+                                Second Floor
+                            </option>
+
+                            <option value="Third Floor"
+                                    th:selected="${quotationRoom.floor == 'Third Floor'}">
+                                Third Floor
+                            </option>
+
+                            <option value="Fourth Floor"
+                                    th:selected="${quotationRoom.floor == 'Fourth Floor'}">
+                                Fourth Floor
+                            </option>
+
+                            <option value="Fifth Floor"
+                                    th:selected="${quotationRoom.floor == 'Fifth Floor'}">
+                                Fifth Floor
+                            </option>
+
+                            <option value="Other"
+                                    th:selected="${quotationRoom.floor == 'Other'}">
+                                Other
+                            </option>
+
+                        </select>
+
+                        <small class="field-help">
+                            Select the floor where the work will be performed.
+                        </small>
+
+                    </div>
+
+
+                    <!-- =========================
+                         ROOM
+                    ========================== -->
+
+                    <div class="form-group">
+
+                        <label for="room">
+                            Room / Area
+                            <span class="required">*</span>
+                        </label>
+
+                        <input type="text"
+                               id="room"
+                               name="room"
+                               maxlength="150"
+                               placeholder="Example: Kitchen, Master Bedroom"
+                               th:value="${quotationRoom.room}"
+                               required>
+
+                        <small class="field-help">
+                            Enter the exact room or work area name.
+                        </small>
+
+                    </div>
+
+
+                </div>
+
+
+                <!-- =========================
+                     WORK DESCRIPTION
+                ========================== -->
+
+                <div class="form-group full-width">
+
+                    <label for="workDescription">
+                        Work Description
+                    </label>
+
+                    <textarea id="workDescription"
+                              name="workDescription"
+                              rows="5"
+                              maxlength="1000"
+                              placeholder="Example: Modular kitchen work including base cabinets, wall cabinets and countertop."
+                              th:text="${quotationRoom.workDescription}"></textarea>
+
+                    <div class="textarea-footer">
+
+                        <small class="field-help">
+                            Describe the work that will be performed in this room.
+                        </small>
+
+                        <span id="characterCount">
+                            0 / 1000
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     INFORMATION NOTE
+                ========================== -->
+
+                <div class="information-box">
+
+                    <div class="information-icon">
+                        i
+                    </div>
+
+                    <div>
+
+                        <strong>
+                            Next step
+                        </strong>
+
+                        <p>
+                            After saving this room, you can add work items,
+                            materials, dimensions, rates and calculated amounts
+                            to this room.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================
+                     FORM ACTIONS
+                ========================== -->
+
+                <div class="form-actions">
+
+                    <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+                       class="btn-custom btn-cancel">
+                        Cancel
+                    </a>
+
+
+                    <button type="submit"
+                            class="btn-custom btn-save">
+
+                        <span th:text="${quotationRoom.id == null
+                            ? 'Save Room'
+                            : 'Update Room'}">
+                            Save Room
+                        </span>
+
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     CHARACTER COUNTER
+========================== -->
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        const textarea = document.getElementById("workDescription");
+        const counter = document.getElementById("characterCount");
+
+        if (!textarea || !counter) {
+            return;
+        }
+
+        function updateCharacterCount() {
+
+            const length = textarea.value.length;
+
+            counter.textContent = length + " / 1000";
+
+        }
+
+        textarea.addEventListener("input", updateCharacterCount);
+
+        updateCharacterCount();
+
+    });
+
+</script>
+
+</body>
+</html>

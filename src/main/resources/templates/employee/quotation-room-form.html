@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Add Room | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/employee-dashboard.css}">
+
+    <style>
+
+        .room-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .room-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 18px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.04);
+        }
+
+        .room-header {
+            margin-bottom: 25px;
+        }
+
+        .room-header h2 {
+            margin: 0 0 6px;
+            color: #111827;
+        }
+
+        .room-header p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .quote-info {
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+        }
+
+        .quote-info strong {
+            color: #111827;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .full {
+            grid-column: 1 / -1;
+        }
+
+        label {
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            border-color: #111827;
+            box-shadow: 0 0 0 3px rgba(17,24,39,.08);
+        }
+
+        textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: #374151;
+        }
+
+        .btn-primary {
+            background: #111827;
+            color: #ffffff;
+        }
+
+        @media(max-width:700px) {
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .full {
+                grid-column: auto;
+            }
+
+            .room-card {
+                padding: 20px;
+            }
+
+            .actions {
+                flex-direction: column;
+            }
+
+            .actions .btn {
+                width: 100%;
+            }
+
+        }
+
+    </style>
+
+</head>
+
+<body>
+
+<div class="dashboard-wrapper">
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                PK
+            </div>
+
+            <div class="brand-text">
+
+                <h2>Pravin Kitchens</h2>
+
+                <span>Employee Portal</span>
+
+            </div>
+
+        </div>
+
+        <nav class="sidebar-menu">
+
+            <a th:href="@{/employee/dashboard}"
+               class="menu-item">
+
+                <span class="menu-icon">⌂</span>
+                <span>Dashboard</span>
+
+            </a>
+
+            <a th:href="@{/employee/quotations}"
+               class="menu-item active">
+
+                <span class="menu-icon">▣</span>
+                <span>Quotations</span>
+
+            </a>
+
+            <a th:href="@{/employee/customers}"
+               class="menu-item">
+
+                <span class="menu-icon">◉</span>
+                <span>Customers</span>
+
+            </a>
+
+        </nav>
+
+        <div class="sidebar-bottom">
+
+            <form th:action="@{/logout}"
+                  method="post">
+
+                <button type="submit"
+                        class="logout-btn">
+
+                    <span>↪</span>
+                    <span>Logout</span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <main class="main-content">
+
+        <header class="topbar">
+
+            <div class="page-heading">
+
+                <span class="page-label">
+                    QUOTATION MANAGEMENT
+                </span>
+
+                <h1>
+                    Add Room / Work Area
+                </h1>
+
+                <p>
+                    Add a work area to this quotation.
+                </p>
+
+            </div>
+
+            <div class="employee-profile">
+
+                <div class="profile-avatar">
+
+                    <span
+                            th:text="${employee.name != null and !employee.name.isEmpty()
+                            ? #strings.substring(employee.name,0,1).toUpperCase()
+                            : 'E'}">
+                        E
+                    </span>
+
+                </div>
+
+                <div class="profile-info">
+
+                    <strong th:text="${employee.name}">
+                        Employee
+                    </strong>
+
+                    <small th:text="${employee.email}">
+                        employee@email.com
+                    </small>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <div class="room-container">
+
+            <div class="room-card">
+
+                <div class="room-header">
+
+                    <h2>
+                        Add Room / Work Area
+                    </h2>
+
+                    <p>
+                        Define where the work will be carried out.
+                    </p>
+
+                </div>
+
+
+                <div class="quote-info">
+
+                    Quotation:
+
+                    <strong
+                            th:text="${quotation.quotationNumber}">
+                        QT-00001
+                    </strong>
+
+                    &nbsp; | &nbsp;
+
+                    Customer:
+
+                    <strong
+                            th:text="${quotation.customer.name}">
+                        Customer
+                    </strong>
+
+                </div>
+
+
+                <form method="post"
+                      th:action="@{/employee/quotations/view/{id}/room/save(id=${quotation.id})}">
+
+
+                    <div class="form-grid">
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Floor
+                            </label>
+
+                            <input type="text"
+                                   name="floor"
+                                   placeholder="Example: Ground Floor"
+                                   required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Room / Work Area
+                            </label>
+
+                            <select name="room"
+                                    required>
+
+                                <option value="">
+                                    Select Work Area
+                                </option>
+
+                                <option value="Kitchen">
+                                    Kitchen
+                                </option>
+
+                                <option value="Bedroom">
+                                    Bedroom
+                                </option>
+
+                                <option value="Living Room">
+                                    Living Room
+                                </option>
+
+                                <option value="Dining Room">
+                                    Dining Room
+                                </option>
+
+                                <option value="Wall Panel">
+                                    Wall Panel
+                                </option>
+
+                                <option value="Wardrobe">
+                                    Wardrobe
+                                </option>
+
+                                <option value="TV Unit">
+                                    TV Unit
+                                </option>
+
+                                <option value="Full Interior">
+                                    Full Interior
+                                </option>
+
+                                <option value="Other">
+                                    Other
+                                </option>
+
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group full">
+
+                            <label>
+                                Work Description
+                            </label>
+
+                            <textarea
+                                    name="workDescription"
+                                    placeholder="Example: Modular kitchen with bottom cabinet, wall cabinet and accessories"></textarea>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="actions">
+
+                        <a class="btn btn-secondary"
+                           th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}">
+
+                            Cancel
+
+                        </a>
+
+
+                        <button type="submit"
+                                class="btn btn-primary">
+
+                            Save Room & Continue →
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+
+        <footer class="dashboard-footer">
+
+            <span>
+                © 2026 Pravin Kitchens & Interiors
+            </span>
+
+            <span>
+                Employee Portal
+            </span>
+
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

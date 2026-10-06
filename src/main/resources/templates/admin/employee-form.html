@@ -1,0 +1,288 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${employee.id == null ? 'Add Employee' : 'Edit Employee'}">
+        Add Employee
+    </title>
+
+    <link rel="stylesheet" th:href="@{/css/employee-form.css}">
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- HEADER -->
+    <header class="page-header">
+        <div>
+            <span class="eyebrow">PRAVIN KITCHENS</span>
+
+            <h1 th:text="${employee.id == null ? 'Add Employee' : 'Edit Employee'}">
+                Add Employee
+            </h1>
+
+            <p>
+                Create and manage employee account information.
+            </p>
+        </div>
+    </header>
+
+    <!-- BACK -->
+    <div class="back-section">
+        <a th:href="@{/admin/employees}">
+            ← Back to Employees
+        </a>
+    </div>
+
+    <!-- FORM CARD -->
+    <section class="form-card">
+
+        <div class="form-header">
+            <div class="form-icon">👨‍💼</div>
+
+            <div>
+                <h2>Employee Information</h2>
+                <p>Enter the employee details and assign a district.</p>
+            </div>
+        </div>
+
+        <!-- =========================
+             ADD EMPLOYEE FORM
+        ========================== -->
+        <form th:if="${employee.id == null}"
+              th:action="@{/admin/employees/save}"
+              method="post"
+              id="addEmployeeForm">
+
+            <!-- CSRF -->
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <div class="form-grid">
+
+                <!-- NAME -->
+                <div class="form-group">
+                    <label for="name">
+                        Employee Name <span>*</span>
+                    </label>
+
+                    <input type="text"
+                           id="name"
+                           name="name"
+                           placeholder="Enter employee name"
+                           minlength="2"
+                           maxlength="100"
+                           autocomplete="name"
+                           required>
+                </div>
+
+                <!-- EMAIL -->
+                <div class="form-group">
+                    <label for="email">
+                        Email Address <span>*</span>
+                    </label>
+
+                    <input type="email"
+                           id="email"
+                           name="email"
+                           placeholder="employee@example.com"
+                           maxlength="150"
+                           autocomplete="email"
+                           required>
+                </div>
+
+                <!-- PASSWORD -->
+                <div class="form-group">
+                    <label for="password">
+                        Password <span>*</span>
+                    </label>
+
+                    <input type="password"
+                           id="password"
+                           name="password"
+                           placeholder="Create login password"
+                           minlength="6"
+                           autocomplete="new-password"
+                           required>
+
+                    <small>
+                        The employee will use this password to log in.
+                    </small>
+                </div>
+
+                <!-- DISTRICT -->
+                <div class="form-group">
+                    <label for="branchId">
+                        District <span>*</span>
+                    </label>
+
+                    <select id="branchId"
+                            name="branchId"
+                            required>
+
+                        <option value="">Select District</option>
+
+                        <option th:each="branch : ${branches}"
+                                th:value="${branch.id}"
+                                th:text="${branch.name}"
+                                th:selected="${selectedBranchId != null
+                                    and selectedBranchId.equals(branch.id)}">
+                            Kanyakumari
+                        </option>
+                    </select>
+
+                    <small>
+                        Only active districts are available for new employees.
+                    </small>
+                </div>
+
+            </div>
+
+            <!-- INFORMATION -->
+            <div class="info-box">
+                <div class="info-icon">ℹ</div>
+
+                <div>
+                    <strong>Employee Access</strong>
+
+                    <p>
+                        Employee accounts are assigned to a district.
+                        The Super Admin can activate or deactivate employee
+                        accounts.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="form-actions">
+                <a th:href="@{/admin/employees}"
+                   class="cancel-button">
+                    Cancel
+                </a>
+
+                <button type="submit" class="save-button">
+                    Create Employee
+                </button>
+            </div>
+
+        </form>
+
+        <!-- =========================
+             EDIT EMPLOYEE FORM
+        ========================== -->
+        <form th:unless="${employee.id == null}"
+              th:action="@{'/admin/employees/update/' + ${employee.id}}"
+              method="post"
+              id="editEmployeeForm">
+
+            <!-- CSRF -->
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+            <div class="form-grid">
+
+                <!-- NAME -->
+                <div class="form-group">
+                    <label for="edit-name">
+                        Employee Name <span>*</span>
+                    </label>
+
+                    <input type="text"
+                           id="edit-name"
+                           name="name"
+                           th:value="${employee.name}"
+                           placeholder="Enter employee name"
+                           minlength="2"
+                           maxlength="100"
+                           autocomplete="name"
+                           required>
+                </div>
+
+                <!-- EMAIL -->
+                <div class="form-group">
+                    <label for="edit-email">
+                        Email Address <span>*</span>
+                    </label>
+
+                    <input type="email"
+                           id="edit-email"
+                           name="email"
+                           th:value="${employee.email}"
+                           placeholder="employee@example.com"
+                           maxlength="150"
+                           autocomplete="email"
+                           required>
+                </div>
+
+                <!-- DISTRICT -->
+                <div class="form-group">
+                    <label for="edit-branch">
+                        District <span>*</span>
+                    </label>
+
+                    <select id="edit-branch"
+                            name="branchId"
+                            required>
+
+                        <option value="">Select District</option>
+
+                        <option th:each="branch : ${branches}"
+                                th:value="${branch.id}"
+                                th:text="${branch.name}"
+                                th:selected="${employee.branch != null
+                                    and employee.branch.id.equals(branch.id)}">
+                            Kanyakumari
+                        </option>
+                    </select>
+
+                    <small>
+                        The employee's existing district is retained unless
+                        you select another district.
+                    </small>
+                </div>
+
+            </div>
+
+            <!-- PASSWORD INFORMATION -->
+            <div class="info-box">
+                <div class="info-icon">ℹ</div>
+
+                <div>
+                    <strong>Password</strong>
+
+                    <p>
+                        The existing password will remain unchanged.
+                        Password management can be handled separately.
+                    </p>
+                </div>
+            </div>
+
+            <!-- ACTIONS -->
+            <div class="form-actions">
+                <a th:href="@{/admin/employees}"
+                   class="cancel-button">
+                    Cancel
+                </a>
+
+                <button type="submit" class="save-button">
+                    Save Changes
+                </button>
+            </div>
+
+        </form>
+
+    </section>
+
+</div>
+
+</body>
+</html>
+

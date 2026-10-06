@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${option.id == null ? 'Add Material Option' : 'Edit Material Option'}">
+    Material Option
+  </title>
+
+  <link rel="stylesheet"
+        href="/css/material-option-form.css">
+</head>
+
+<body>
+
+<div class="form-page">
+
+  <!-- HEADER -->
+
+  <div class="page-header">
+
+    <div>
+
+      <a href="/admin/material-options"
+         class="back-link">
+        ← Back to Material Options
+      </a>
+
+      <h1 th:text="${option.id == null ? 'Add Material Option' : 'Edit Material Option'}">
+        Add Material Option
+      </h1>
+
+      <p>
+        Define material sizes, grades and specifications.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- FORM CARD -->
+
+  <div class="form-card">
+
+    <div class="form-card-header">
+
+      <div class="header-icon">
+        ⚙️
+      </div>
+
+      <div>
+
+        <h2>Option Information</h2>
+
+        <p>
+          Add an option that belongs to a specific material.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <form
+            th:action="${option.id == null
+                    ? '/admin/material-options/save'
+                    : '/admin/material-options/update/' + option.id}"
+            method="post">
+
+
+      <!-- OPTION NAME -->
+
+      <div class="form-group">
+
+        <label for="name">
+          Option Name
+          <span>*</span>
+        </label>
+
+        <input
+                type="text"
+                id="name"
+                name="name"
+                th:value="${option.name}"
+                placeholder="Example: 18mm"
+                required
+                maxlength="150">
+
+        <small>
+          Enter the material size, grade or option name.
+        </small>
+
+      </div>
+
+
+      <!-- DESCRIPTION -->
+
+      <div class="form-group">
+
+        <label for="description">
+          Description / Specification
+        </label>
+
+        <textarea
+                id="description"
+                name="description"
+                rows="4"
+                maxlength="500"
+                placeholder="Example: 18mm thick marine plywood specification"
+                th:text="${option.description}"></textarea>
+
+        <small>
+          Optional specification or additional information.
+        </small>
+
+      </div>
+
+
+      <!-- MATERIAL -->
+
+      <div class="form-group">
+
+        <label for="materialId">
+          Material
+          <span>*</span>
+        </label>
+
+        <select
+                id="materialId"
+                name="materialId"
+                required>
+
+          <option value="">
+            Select Material
+          </option>
+
+          <option
+                  th:each="material : ${materials}"
+                  th:value="${material.id}"
+                  th:selected="${option.material != null
+                                and option.material.id == material.id}"
+                  th:text="${material.name
+                                + ' — '
+                                + material.item.name}">
+            Marine Ply — Base Cabinet
+          </option>
+
+        </select>
+
+        <small>
+          Select the material to which this option belongs.
+        </small>
+
+      </div>
+
+
+      <!-- DISPLAY ORDER -->
+
+      <div class="form-group">
+
+        <label for="displayOrder">
+          Display Order
+        </label>
+
+        <input
+                type="number"
+                id="displayOrder"
+                name="displayOrder"
+                min="0"
+                th:value="${option.displayOrder != null
+                            ? option.displayOrder
+                            : 0}"
+                placeholder="0">
+
+        <small>
+          Controls the order in which options appear.
+        </small>
+
+      </div>
+
+
+      <!-- ACTIONS -->
+
+      <div class="form-actions">
+
+        <a
+                href="/admin/material-options"
+                class="btn btn-secondary">
+          Cancel
+        </a>
+
+        <button
+                type="submit"
+                class="btn btn-primary"
+                th:text="${option.id == null
+                            ? 'Save Option'
+                            : 'Update Option'}">
+
+          Save Option
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+</body>
+
+</html>

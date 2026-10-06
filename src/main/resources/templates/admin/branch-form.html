@@ -1,0 +1,371 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${branch.id == null
+            ? 'Add District'
+            : 'Edit District'}">
+        Add District
+    </title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/branch-form.css}">
+
+</head>
+
+<body>
+
+<div class="form-page">
+
+    <div class="form-container">
+
+        <!-- =========================
+             BACK
+        ========================== -->
+
+        <a th:href="@{/admin/branches}"
+           class="form-back-link">
+
+            ← Back to Districts
+
+        </a>
+
+
+        <!-- =========================
+             HEADER
+        ========================== -->
+
+        <div class="form-header">
+
+            <span class="eyebrow">
+                PRAVIN KITCHENS
+            </span>
+
+            <h1 th:text="${branch.id == null
+                    ? 'Add New District'
+                    : 'Edit District'}">
+
+                Add New District
+
+            </h1>
+
+            <p>
+                Enter the district contact information and branch details.
+            </p>
+
+        </div>
+
+
+        <!-- =========================
+             FORM
+        ========================== -->
+
+        <form th:action="@{/admin/branches/save}"
+              th:object="${branch}"
+              method="post"
+              class="branch-form"
+              onsubmit="return validateBranchForm();">
+
+            <!-- Branch ID -->
+
+            <input type="hidden"
+                   th:field="*{id}">
+
+
+            <!-- CSRF -->
+
+            <input type="hidden"
+                   th:name="${_csrf.parameterName}"
+                   th:value="${_csrf.token}">
+
+
+            <!-- =========================
+                 DISTRICT INFORMATION
+            ========================== -->
+
+            <div class="form-section">
+
+                <div class="section-heading">
+
+                    <span class="section-icon">
+                        🏢
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            District Information
+                        </h2>
+
+                        <p>
+                            Enter the basic district details.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- DISTRICT NAME -->
+
+                <div class="form-group">
+
+                    <label for="name">
+
+                        District Name
+
+                        <span class="required">
+                            *
+                        </span>
+
+                    </label>
+
+                    <input type="text"
+                           id="name"
+                           th:field="*{name}"
+                           placeholder="Example: Kanyakumari"
+                           maxlength="100"
+                           autocomplete="off"
+                           required>
+
+                    <small>
+                        Enter a unique district or branch name.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 CONTACT INFORMATION
+            ========================== -->
+
+            <div class="form-section">
+
+                <div class="section-heading">
+
+                    <span class="section-icon">
+                        📞
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            Contact Information
+                        </h2>
+
+                        <p>
+                            Add contact details for this district.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- EMAIL -->
+
+                <div class="form-group">
+
+                    <label for="email">
+                        Email
+                    </label>
+
+                    <input type="email"
+                           id="email"
+                           th:field="*{email}"
+                           placeholder="district@example.com"
+                           maxlength="150"
+                           autocomplete="email">
+
+                    <small>
+                        Optional. Used for district communication.
+                    </small>
+
+                </div>
+
+
+                <!-- WHATSAPP -->
+
+                <div class="form-group">
+
+                    <label for="whatsapp">
+                        WhatsApp Number
+                    </label>
+
+                    <input type="tel"
+                           id="whatsapp"
+                           th:field="*{whatsapp}"
+                           placeholder="Example: 9876543210"
+                           maxlength="15"
+                           autocomplete="tel"
+                           inputmode="numeric">
+
+                    <small>
+                        Optional. Include country code if required.
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 CURRENT STATUS - EDIT ONLY
+            ========================== -->
+
+            <div class="form-section"
+                 th:if="${branch.id != null}">
+
+                <div class="section-heading">
+
+                    <span class="section-icon">
+                        ⚙
+                    </span>
+
+                    <div>
+
+                        <h2>
+                            District Status
+                        </h2>
+
+                        <p>
+                            Control whether this district is available.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <label class="status-toggle">
+
+                    <input type="checkbox"
+                           th:field="*{active}">
+
+                    <span class="toggle-slider"></span>
+
+                    <span class="toggle-text">
+
+                        <strong>
+                            Active District
+                        </strong>
+
+                        <small>
+                            Active districts can be used for quotations.
+                        </small>
+
+                    </span>
+
+                </label>
+
+            </div>
+
+
+            <!-- =========================
+                 FORM ACTIONS
+            ========================== -->
+
+            <div class="form-actions">
+
+                <a th:href="@{/admin/branches}"
+                   class="cancel-button">
+
+                    Cancel
+
+                </a>
+
+                <button type="submit"
+                        class="save-button">
+
+                    <span th:text="${branch.id == null
+                            ? 'Save District'
+                            : 'Update District'}">
+
+                        Save District
+
+                    </span>
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     VALIDATION
+========================== -->
+
+<script>
+
+    function validateBranchForm() {
+
+        const nameInput =
+            document.getElementById("name");
+
+        const whatsappInput =
+            document.getElementById("whatsapp");
+
+        const name =
+            nameInput.value.trim();
+
+        const whatsapp =
+            whatsappInput.value.trim();
+
+
+        /* District name */
+
+        if (name.length < 2) {
+
+            alert(
+                "Please enter a valid district name."
+            );
+
+            nameInput.focus();
+
+            return false;
+        }
+
+
+        /* WhatsApp */
+
+        if (whatsapp !== "") {
+
+            const cleaned =
+                whatsapp.replace(/[\s\-+()]/g, "");
+
+            if (!/^\d{10,15}$/.test(cleaned)) {
+
+                alert(
+                    "Please enter a valid WhatsApp number."
+                );
+
+                whatsappInput.focus();
+
+                return false;
+            }
+        }
+
+
+        return true;
+    }
+
+</script>
+
+</body>
+</html>
+

@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${districtPricing.id == null
+        ? 'Add District Pricing'
+        : 'Edit District Pricing'} + ' | Pravin Kitchens'">
+        District Pricing | Pravin Kitchens
+    </title>
+
+    <link rel="stylesheet" href="/css/district-pricing-form.css">
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- HEADER -->
+
+    <div class="page-header">
+
+        <div>
+
+            <a href="/admin/district-pricing" class="back-link">
+                ← Back to District Pricing
+            </a>
+
+            <h1 th:text="${districtPricing.id == null
+                ? 'Add District Pricing'
+                : 'Edit District Pricing'}">
+                Add District Pricing
+            </h1>
+
+            <p>
+                Configure a district-specific rate for an existing pricing item.
+            </p>
+
+        </div>
+
+    </div>
+
+
+    <!-- FORM CARD -->
+
+    <div class="form-card">
+
+        <div class="form-header">
+
+            <div class="form-icon">
+                📍
+            </div>
+
+            <div>
+
+                <h2>District Pricing Details</h2>
+
+                <p>
+                    Set a customized price for a specific district.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- FORM -->
+
+        <form
+                th:action="${districtPricing.id == null}
+                    ? @{/admin/district-pricing/save}
+                    : @{/admin/district-pricing/update/{id}(id=${districtPricing.id})}"
+                method="post"
+                class="district-pricing-form"
+                onsubmit="return validateDistrictPricingForm();">
+
+
+            <!-- DISTRICT -->
+
+            <div class="form-group">
+
+                <label for="branchId">
+                    District
+                    <span class="required">*</span>
+                </label>
+
+                <select
+                        id="branchId"
+                        name="branchId"
+                        required>
+
+                    <option value="">
+                        Select District
+                    </option>
+
+                    <option
+                            th:each="branch : ${branches}"
+                            th:value="${branch.id}"
+                            th:selected="${districtPricing.branch != null
+                                and districtPricing.branch.id == branch.id}"
+                            th:text="${branch.name}">
+                        Kanniyakumari
+                    </option>
+
+                </select>
+
+                <small>
+                    Select the district where this pricing should apply.
+                </small>
+
+            </div>
+
+
+            <!-- PRICING -->
+
+            <div class="form-group">
+
+                <label for="pricingId">
+                    Base Pricing
+                    <span class="required">*</span>
+                </label>
+
+                <select
+                        id="pricingId"
+                        name="pricingId"
+                        required
+                        onchange="updatePricingPreview();">
+
+                    <option value="">
+                        Select Base Pricing
+                    </option>
+
+                    <option
+                            th:each="pricing : ${pricingList}"
+                            th:value="${pricing.id}"
+                            th:selected="${districtPricing.pricing != null
+                                and districtPricing.pricing.id == pricing.id}"
+                            th:data-mode="${pricing.pricingMode}"
+                            th:data-rate="${pricing.rate}"
+                            th:data-unit="${pricing.unit}"
+                            th:data-option="${pricing.materialOption.name}"
+                            th:data-material="${pricing.materialOption.material.name}"
+                            th:text="${pricing.materialOption.material.name
+                                + ' - '
+                                + pricing.materialOption.name
+                                + ' - '
+                                + pricing.pricingMode
+                                + ' - ₹'
+                                + pricing.rate
+                                + '/'
+                                + pricing.unit}">
+                        Marine Ply - 18mm - PREMIUM - ₹250/SQFT
+                    </option>
+
+                </select>
+
+                <small>
+                    Select the existing base pricing that will be customized
+                    for this district.
+                </small>
+
+            </div>
+
+
+            <!-- BASE / DISTRICT RATE -->
+
+            <div class="rate-comparison">
+
+                <div class="rate-box">
+
+                    <span class="rate-label">
+                        Base Rate
+                    </span>
+
+                    <strong id="baseRate">
+                        ₹ 0.00
+                    </strong>
+
+                    <small id="baseUnit">
+                        Unit
+                    </small>
+
+                </div>
+
+
+                <div class="rate-arrow">
+                    →
+                </div>
+
+
+                <div class="rate-box district-rate-box">
+
+                    <span class="rate-label">
+                        District Rate
+                    </span>
+
+                    <div class="rate-input">
+
+                        <span>
+                            ₹
+                        </span>
+
+                        <input
+                                type="number"
+                                id="rate"
+                                name="rate"
+                                step="0.01"
+                                min="0.01"
+                                placeholder="Enter rate"
+                                th:value="${districtPricing.rate}"
+                                required
+                                oninput="updateDistrictPreview();">
+
+                    </div>
+
+                    <small id="districtUnit">
+                        Unit
+                    </small>
+
+                </div>
+
+            </div>
+
+
+            <!-- PRICING PREVIEW -->
+
+            <div class="pricing-preview">
+
+                <div class="preview-icon">
+                    💡
+                </div>
+
+                <div>
+
+                    <h3>
+                        Pricing Preview
+                    </h3>
+
+                    <p>
+
+                        <span id="previewDistrict">
+                            District
+                        </span>
+
+                        <strong> · </strong>
+
+                        <span id="previewOption">
+                            Material Option
+                        </span>
+
+                        <strong> · </strong>
+
+                        <span id="previewMode">
+                            Pricing Mode
+                        </span>
+
+                        <strong> · </strong>
+
+                        <span id="previewRate">
+                            ₹ 0.00
+                        </span>
+
+                        <strong> / </strong>
+
+                        <span id="previewUnit">
+                            Unit
+                        </span>
+
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- DESCRIPTION -->
+
+            <div class="form-group">
+
+                <label for="description">
+                    Description / Reason
+                </label>
+
+                <textarea
+                        id="description"
+                        name="description"
+                        rows="5"
+                        maxlength="500"
+                        placeholder="Example: Additional transportation and district-specific cost."
+                        th:text="${districtPricing.description}"></textarea>
+
+                <div class="character-info">
+                    Maximum 500 characters
+                </div>
+
+            </div>
+
+
+            <!-- INFO -->
+
+            <div class="info-box">
+
+                <div class="info-icon">
+                    ℹ️
+                </div>
+
+                <div>
+
+                    <strong>
+                        District-specific pricing
+                    </strong>
+
+                    <p>
+                        This rate will be used for quotations created
+                        for the selected district instead of the base rate.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <!-- ACTIONS -->
+
+            <div class="form-actions">
+
+                <a
+                        href="/admin/district-pricing"
+                        class="btn btn-cancel">
+                    Cancel
+                </a>
+
+                <button
+                        type="reset"
+                        class="btn btn-reset">
+                    Reset
+                </button>
+
+                <button
+                        type="submit"
+                        class="btn btn-primary">
+
+                    <span th:if="${districtPricing.id == null}">
+                        + Save District Pricing
+                    </span>
+
+                    <span th:if="${districtPricing.id != null}">
+                        ✓ Update District Pricing
+                    </span>
+
+                </button>
+
+            </div>
+
+        </form>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    function updatePricingPreview() {
+
+        const select =
+            document.getElementById("pricingId");
+
+        const option =
+            select.options[select.selectedIndex];
+
+
+        if (!option || !option.value) {
+
+            document.getElementById("baseRate").textContent =
+                "₹ 0.00";
+
+            document.getElementById("baseUnit").textContent =
+                "Unit";
+
+            document.getElementById("districtUnit").textContent =
+                "Unit";
+
+            document.getElementById("previewOption").textContent =
+                "Material Option";
+
+            document.getElementById("previewMode").textContent =
+                "Pricing Mode";
+
+            document.getElementById("previewUnit").textContent =
+                "Unit";
+
+            return;
+        }
+
+
+        const mode =
+            option.dataset.mode;
+
+        const baseRate =
+            option.dataset.rate;
+
+        const unit =
+            option.dataset.unit;
+
+        const materialOption =
+            option.dataset.option;
+
+
+        document.getElementById("baseRate").textContent =
+            "₹ " + parseFloat(baseRate).toFixed(2);
+
+        document.getElementById("baseUnit").textContent =
+            unit;
+
+
+        document.getElementById("districtUnit").textContent =
+            unit;
+
+
+        document.getElementById("previewOption").textContent =
+            materialOption;
+
+        document.getElementById("previewMode").textContent =
+            mode;
+
+        document.getElementById("previewUnit").textContent =
+            unit;
+
+
+        updateDistrictPreview();
+    }
+
+
+    function updateDistrictPreview() {
+
+        const districtSelect =
+            document.getElementById("branchId");
+
+        const districtOption =
+            districtSelect.options[
+                districtSelect.selectedIndex
+            ];
+
+        const districtName =
+            districtOption && districtOption.value
+                ? districtOption.text
+                : "District";
+
+
+        const rate =
+            document.getElementById("rate").value;
+
+
+        document.getElementById("previewDistrict").textContent =
+            districtName;
+
+
+        document.getElementById("previewRate").textContent =
+            rate
+                ? "₹ " + parseFloat(rate).toFixed(2)
+                : "₹ 0.00";
+    }
+
+
+    function validateDistrictPricingForm() {
+
+        const branchId =
+            document.getElementById("branchId").value;
+
+        const pricingId =
+            document.getElementById("pricingId").value;
+
+        const rate =
+            parseFloat(
+                document.getElementById("rate").value
+            );
+
+
+        if (!branchId) {
+
+            alert("Please select a district.");
+
+            return false;
+        }
+
+
+        if (!pricingId) {
+
+            alert("Please select a base pricing.");
+
+            return false;
+        }
+
+
+        if (isNaN(rate) || rate <= 0) {
+
+            alert(
+                "Please enter a valid district rate greater than 0."
+            );
+
+            return false;
+        }
+
+
+        return true;
+    }
+
+
+    document.addEventListener(
+        "DOMContentLoaded",
+        function () {
+
+            updatePricingPreview();
+            updateDistrictPreview();
+
+        }
+    );
+
+
+    document
+        .getElementById("branchId")
+        .addEventListener(
+            "change",
+            updateDistrictPreview
+        );
+
+</script>
+
+</body>
+
+</html>

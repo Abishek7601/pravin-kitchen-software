@@ -1,0 +1,378 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Branches / Districts | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/branches.css}">
+
+</head>
+
+<body>
+
+<div class="page-container">
+
+    <!-- =========================
+         PAGE HEADER
+    ========================== -->
+
+    <header class="page-header">
+
+        <div class="header-content">
+
+            <a th:href="@{/admin/dashboard}"
+               class="brand-small">
+
+                PRAVIN KITCHENS
+
+            </a>
+
+            <h1>
+                Branches / Districts
+            </h1>
+
+            <p>
+                Manage districts, contact details and branch status.
+            </p>
+
+        </div>
+
+        <a th:href="@{/admin/branches/new}"
+           class="add-district-button">
+
+            <span class="plus-icon">+</span>
+
+            <span>Add District</span>
+
+        </a>
+
+    </header>
+
+
+    <!-- =========================
+         BACK TO DASHBOARD
+    ========================== -->
+
+    <div class="back-section">
+
+        <a th:href="@{/admin/dashboard}"
+           class="back-link">
+
+            <span>←</span>
+
+            Back to Dashboard
+
+        </a>
+
+    </div>
+
+
+    <!-- =========================
+         SUMMARY
+    ========================== -->
+
+    <div class="branch-summary">
+
+        <!-- TOTAL -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                🏢
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Total Districts
+                </span>
+
+                <strong th:text="${#lists.size(branches)}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- ACTIVE -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ✓
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Active
+                </span>
+
+                <strong
+                        th:text="${#lists.size(branches.?[active != null and active])}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- INACTIVE -->
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ⏸
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Inactive
+                </span>
+
+                <strong
+                        th:text="${#lists.size(branches.?[active == null or !active])}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         BRANCH GRID
+    ========================== -->
+
+    <div class="branch-grid"
+         th:if="${not #lists.isEmpty(branches)}">
+
+        <div class="branch-card"
+             th:each="branch : ${branches}">
+
+            <!-- =========================
+                 CARD TOP
+            ========================== -->
+
+            <div class="branch-card-top">
+
+                <div class="branch-icon">
+                    🏢
+                </div>
+
+                <span class="status-badge"
+                      th:if="${branch.active != null and branch.active}">
+
+                    Active
+
+                </span>
+
+                <span class="status-badge inactive"
+                      th:if="${branch.active == null or !branch.active}">
+
+                    Inactive
+
+                </span>
+
+            </div>
+
+
+            <!-- =========================
+                 DISTRICT NAME
+            ========================== -->
+
+            <h2 th:text="${branch.name}">
+                Chennai
+            </h2>
+
+
+            <!-- =========================
+                 CONTACT DETAILS
+            ========================== -->
+
+            <div class="contact-details">
+
+                <!-- EMAIL -->
+
+                <div class="contact-row">
+
+                    <span class="contact-icon">
+                        ✉
+                    </span>
+
+                    <span class="contact-value"
+                          th:if="${branch.email != null and !#strings.isEmpty(branch.email)}"
+                          th:text="${branch.email}">
+
+                        email@example.com
+
+                    </span>
+
+                    <span class="contact-value muted"
+                          th:if="${branch.email == null or #strings.isEmpty(branch.email)}">
+
+                        Email not provided
+
+                    </span>
+
+                </div>
+
+
+                <!-- WHATSAPP -->
+
+                <div class="contact-row">
+
+                    <span class="contact-icon">
+                        ☎
+                    </span>
+
+                    <span class="contact-value"
+                          th:if="${branch.whatsapp != null and !#strings.isEmpty(branch.whatsapp)}"
+                          th:text="${branch.whatsapp}">
+
+                        9876543210
+
+                    </span>
+
+                    <span class="contact-value muted"
+                          th:if="${branch.whatsapp == null or #strings.isEmpty(branch.whatsapp)}">
+
+                        WhatsApp not provided
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- =========================
+                 DIVIDER
+            ========================== -->
+
+            <div class="card-divider"></div>
+
+
+            <!-- =========================
+                 ACTION BUTTONS
+            ========================== -->
+
+            <div class="branch-actions">
+
+                <!-- VIEW -->
+
+                <a th:href="@{'/admin/branches/view/' + ${branch.id}}"
+                   class="action-button view-button">
+
+                    <span>View</span>
+
+                </a>
+
+
+                <!-- EDIT -->
+
+                <a th:href="@{'/admin/branches/edit/' + ${branch.id}}"
+                   class="action-button edit-button">
+
+                    <span>Edit</span>
+
+                </a>
+
+
+                <!-- ACTIVATE / DEACTIVATE -->
+
+                <form th:action="@{'/admin/branches/toggle/' + ${branch.id}}"
+                      method="post"
+                      class="status-form">
+
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}">
+
+                    <button type="submit"
+                            class="action-button status-button">
+
+                        <span th:if="${branch.active != null and branch.active}">
+                            Deactivate
+                        </span>
+
+                        <span th:if="${branch.active == null or !branch.active}">
+                            Activate
+                        </span>
+
+                    </button>
+
+                </form>
+
+            </div>
+
+
+            <!-- =========================
+                 BRANCH STATUS NOTE
+            ========================== -->
+
+            <div class="branch-status-note"
+                 th:if="${branch.active == null or !branch.active}">
+
+                <span>⚠</span>
+
+                This district is currently inactive.
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         EMPTY STATE
+    ========================== -->
+
+    <div class="empty-state"
+         th:if="${#lists.isEmpty(branches)}">
+
+        <div class="empty-icon">
+            🏢
+        </div>
+
+        <h3>
+            No Districts Added
+        </h3>
+
+        <p>
+            Add your first district to start managing branches.
+        </p>
+
+        <a th:href="@{/admin/branches/new}"
+           class="empty-button">
+
+            <span>+</span>
+
+            Add District
+
+        </a>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
+

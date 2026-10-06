@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Quotations | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotations.css}">
+</head>
+
+<body>
+
+<div class="quotation-page">
+
+    <!-- =========================
+         PAGE HEADER
+    ========================== -->
+
+    <div class="page-header">
+
+        <div class="header-content">
+
+            <div>
+                <span class="page-eyebrow">
+                    PRAVIN KITCHENS
+                </span>
+
+                <h1>Quotations</h1>
+
+                <p>
+                    Manage customer quotations, pricing,
+                    status and quotation history.
+                </p>
+            </div>
+
+            <a th:href="@{/admin/quotations/new}"
+               class="btn btn-primary">
+                + Create Quotation
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MESSAGES
+    ========================== -->
+
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}">
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-error"
+         th:text="${errorMessage}">
+    </div>
+
+
+    <!-- =========================
+         SUMMARY CARDS
+    ========================== -->
+
+    <div class="summary-grid">
+
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                📄
+            </div>
+
+            <div>
+                <span>Total Quotations</span>
+
+                <strong th:text="${quotationList.size()}">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon pending-icon">
+                ⏳
+            </div>
+
+            <div>
+                <span>Pending</span>
+
+                <strong
+                        th:text="${quotationList.?[status.name() == 'PENDING'].size()}">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon approved-icon">
+                ✓
+            </div>
+
+            <div>
+                <span>Approved</span>
+
+                <strong
+                        th:text="${quotationList.?[status.name() == 'APPROVED'].size()}">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+
+        <div class="summary-card">
+
+            <div class="summary-icon sent-icon">
+                ↗
+            </div>
+
+            <div>
+                <span>Sent</span>
+
+                <strong
+                        th:text="${quotationList.?[status.name() == 'SENT'].size()}">
+                    0
+                </strong>
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         FILTER BAR
+    ========================== -->
+
+    <div class="filter-card">
+
+        <div class="filter-header">
+
+            <div>
+                <h2>Quotation Records</h2>
+
+                <p>
+                    Search and manage quotations.
+                </p>
+            </div>
+
+            <a th:href="@{/admin/quotations}"
+               class="btn btn-light">
+                Reset
+            </a>
+
+        </div>
+
+
+        <div class="filter-row">
+
+            <div class="search-box">
+
+                <span class="search-icon">
+                    🔍
+                </span>
+
+                <input
+                        type="text"
+                        id="quotationSearch"
+                        placeholder="Search quotation, customer, employee..."
+                        autocomplete="off">
+
+            </div>
+
+
+            <div class="status-filter">
+
+                <label for="statusFilter">
+                    Status
+                </label>
+
+                <select id="statusFilter"
+                        onchange="filterByStatus(this.value)">
+
+                    <option value="">
+                        All Status
+                    </option>
+
+                    <option
+                            th:each="status : ${quotationStatuses}"
+                            th:value="${status.name()}"
+                            th:text="${status.name()}">
+                    </option>
+
+                </select>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         QUOTATION TABLE
+    ========================== -->
+
+    <div class="table-card">
+
+        <div class="table-wrapper">
+
+            <table id="quotationTable">
+
+                <thead>
+
+                <tr>
+
+                    <th>Quotation</th>
+
+                    <th>Date</th>
+
+                    <th>Customer</th>
+
+                    <th>District</th>
+
+                    <th>Employee</th>
+
+                    <th>Pricing</th>
+
+                    <th>Grand Total</th>
+
+                    <th>Status</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <tr th:each="quotation : ${quotationList}"
+                    class="quotation-row">
+
+                    <!-- Quotation Number -->
+
+                    <td>
+
+                        <a th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                           class="quotation-number"
+                           th:text="${quotation.quotationNumber}">
+                            PK-2026-000001
+                        </a>
+
+                    </td>
+
+
+                    <!-- Date -->
+
+                    <td
+                            th:text="${#temporals.format(quotation.quotationDate, 'dd MMM yyyy')}">
+                        01 Oct 2026
+                    </td>
+
+
+                    <!-- Customer -->
+
+                    <td>
+
+                        <div class="customer-cell">
+
+                            <strong
+                                    th:text="${quotation.customer.name}">
+                                Customer Name
+                            </strong>
+
+                            <span
+                                    th:if="${quotation.customer.phone}"
+                                    th:text="${quotation.customer.phone}">
+                                Phone
+                            </span>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- District -->
+
+                    <td
+                            th:text="${quotation.branch.name}">
+                        Kanyakumari
+                    </td>
+
+
+                    <!-- Employee -->
+
+                    <td
+                            th:text="${quotation.employee.name}">
+                        Employee
+                    </td>
+
+
+                    <!-- Pricing -->
+
+                    <td>
+
+                        <span class="pricing-badge"
+                              th:text="${quotation.pricingMode}">
+                            PREMIUM
+                        </span>
+
+                    </td>
+
+
+                    <!-- Grand Total -->
+
+                    <td>
+
+                        <strong class="amount"
+                                th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                            ₹ 0.00
+                        </strong>
+
+                    </td>
+
+
+                    <!-- Status -->
+
+                    <td>
+
+                        <span
+                                class="status-badge"
+                                th:classappend="${' status-' + quotation.status.name().toLowerCase()}"
+                                th:text="${quotation.status}">
+                            DRAFT
+                        </span>
+
+                    </td>
+
+
+                    <!-- Actions -->
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <a
+                                    th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                                    class="action-btn view-btn"
+                                    title="View">
+                                View
+                            </a>
+
+                            <a
+                                    th:href="@{/admin/quotations/edit/{id}(id=${quotation.id})}"
+                                    class="action-btn edit-btn"
+                                    title="Edit">
+                                Edit
+                            </a>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- Empty State -->
+
+                <tr th:if="${#lists.isEmpty(quotationList)}">
+
+                    <td colspan="9">
+
+                        <div class="empty-state">
+
+                            <div class="empty-icon">
+                                📄
+                            </div>
+
+                            <h3>
+                                No quotations found
+                            </h3>
+
+                            <p>
+                                Create your first quotation
+                                to get started.
+                            </p>
+
+                            <a
+                                    th:href="@{/admin/quotations/new}"
+                                    class="btn btn-primary">
+                                Create Quotation
+                            </a>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     SEARCH SCRIPT
+========================== -->
+
+<script>
+
+    const searchInput =
+        document.getElementById("quotationSearch");
+
+    const rows =
+        document.querySelectorAll(".quotation-row");
+
+
+    searchInput.addEventListener("input", function () {
+
+        const searchValue =
+            this.value.toLowerCase().trim();
+
+        rows.forEach(function (row) {
+
+            const rowText =
+                row.textContent.toLowerCase();
+
+            row.style.display =
+                rowText.includes(searchValue)
+                    ? ""
+                    : "none";
+
+        });
+
+    });
+
+
+    function filterByStatus(status) {
+
+        const url =
+            "/admin/quotations/status/" + status;
+
+        if (!status) {
+
+            window.location.href =
+                "/admin/quotations";
+
+            return;
+        }
+
+        window.location.href = url;
+    }
+
+</script>
+
+</body>
+
+</html>

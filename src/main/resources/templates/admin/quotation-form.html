@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${quotation.id == null ? 'Create Quotation' : 'Edit Quotation'} + ' | Pravin Kitchens'">
+        Create Quotation | Pravin Kitchens
+    </title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotation-form.css}">
+
+</head>
+
+<body>
+
+<div class="quotation-form-page">
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <div class="page-header">
+
+        <div>
+
+            <span class="page-eyebrow">
+                PRAVIN KITCHENS
+            </span>
+
+            <h1 th:text="${quotation.id == null ? 'Create Quotation' : 'Edit Quotation'}">
+                Create Quotation
+            </h1>
+
+            <p>
+                Enter customer, district and quotation details.
+            </p>
+
+        </div>
+
+        <a th:href="@{/admin/quotations}"
+           class="btn btn-secondary">
+            ← Back to Quotations
+        </a>
+
+    </div>
+
+
+    <!-- =====================================================
+         MESSAGES
+    ====================================================== -->
+
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}">
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-error"
+         th:text="${errorMessage}">
+    </div>
+
+
+    <!-- =====================================================
+         FORM
+    ====================================================== -->
+
+    <form id="quotationForm"
+          th:action="${quotation.id == null
+                    ? '/admin/quotations/save'
+                    : '/admin/quotations/update/' + quotation.id}"
+          method="post">
+
+
+        <!-- =================================================
+             SECTION 1 - QUOTATION INFORMATION
+        ================================================== -->
+
+        <div class="form-card">
+
+            <div class="section-header">
+
+                <div class="section-number">
+                    01
+                </div>
+
+                <div>
+
+                    <h2>Quotation Information</h2>
+
+                    <p>
+                        Basic quotation identification, division
+                        and pricing.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <!-- Quotation Number -->
+
+                <div class="form-group">
+
+                    <label for="quotationNumber">
+                        Quotation Number
+                        <span>*</span>
+                    </label>
+
+                    <input
+                            type="text"
+                            id="quotationNumber"
+                            name="quotationNumber"
+                            th:value="${quotation.quotationNumber}"
+                            placeholder="Example: PK-2026-000001"
+                            maxlength="50"
+                            th:readonly="${quotation.id != null}"
+                            required>
+
+                    <small>
+                        Unique quotation identification number.
+                    </small>
+
+                </div>
+
+
+                <!-- Quotation Date -->
+
+                <div class="form-group">
+
+                    <label for="quotationDate">
+                        Quotation Date
+                        <span>*</span>
+                    </label>
+
+                    <input
+                            type="date"
+                            id="quotationDate"
+                            name="quotationDate"
+                            th:value="${quotation.quotationDate}"
+                            required>
+
+                </div>
+
+
+                <!-- Division -->
+
+                <div class="form-group">
+
+                    <label for="divisionId">
+                        Division
+                        <span>*</span>
+                    </label>
+
+                    <select
+                            id="divisionId"
+                            name="divisionId"
+                            required>
+
+                        <option value="">
+                            Select division
+                        </option>
+
+                        <option
+                                th:each="division : ${divisions}"
+                                th:value="${division.id}"
+                                th:text="${division.name}"
+                                th:selected="${quotation.division != null
+                                             and quotation.division.id == division.id}">
+                        </option>
+
+                    </select>
+
+                    <small>
+                        Example: Marketing, Showroom, etc.
+                    </small>
+
+                </div>
+
+
+                <!-- Pricing Mode -->
+
+                <div class="form-group">
+
+                    <label for="pricingMode">
+                        Quotation Type
+                        <span>*</span>
+                    </label>
+
+                    <select
+                            id="pricingMode"
+                            name="pricingMode"
+                            required>
+
+                        <option value="">
+                            Select quotation type
+                        </option>
+
+                        <option
+                                th:each="mode : ${pricingModes}"
+                                th:value="${mode.name()}"
+                                th:text="${mode.name() == 'MIDDLE'
+                                         ? 'Middle / Standard'
+                                         : mode.name()}"
+                                th:selected="${quotation.pricingMode == mode}">
+                        </option>
+
+                    </select>
+
+                    <small>
+                        Select the pricing grade for this quotation.
+                    </small>
+
+                </div>
+
+
+                <!-- Current Status -->
+
+                <div class="form-group">
+
+                    <label>
+                        Current Status
+                    </label>
+
+                    <div class="readonly-status">
+
+                        <span class="status-dot"></span>
+
+                        <span
+                                th:text="${quotation.status != null
+                                        ? quotation.status
+                                        : 'DRAFT'}">
+                            DRAFT
+                        </span>
+
+                    </div>
+
+                    <small>
+                        New quotations are created as Draft.
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SECTION 2 - CUSTOMER
+        ================================================== -->
+
+        <div class="form-card">
+
+            <div class="section-header">
+
+                <div class="section-number">
+                    02
+                </div>
+
+                <div>
+
+                    <h2>Customer Details</h2>
+
+                    <p>
+                        Select the customer for this quotation.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group full-width">
+
+                    <label for="customerId">
+                        Customer
+                        <span>*</span>
+                    </label>
+
+                    <select
+                            id="customerId"
+                            name="customerId"
+                            required>
+
+                        <option value="">
+                            Select customer
+                        </option>
+
+                        <option
+                                th:each="customer : ${customers}"
+                                th:value="${customer.id}"
+                                th:text="${customer.name + ' — ' + customer.phone}"
+                                th:selected="${quotation.customer != null
+                                             and quotation.customer.id == customer.id}">
+                        </option>
+
+                    </select>
+
+                    <small>
+                        Only active customers are displayed.
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SECTION 3 - EMPLOYEE & DISTRICT
+        ================================================== -->
+
+        <div class="form-card">
+
+            <div class="section-header">
+
+                <div class="section-number">
+                    03
+                </div>
+
+                <div>
+
+                    <h2>Employee & District</h2>
+
+                    <p>
+                        Assign the quotation to an employee and district.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <!-- Employee -->
+
+                <div class="form-group">
+
+                    <label for="employeeId">
+                        Employee
+                        <span>*</span>
+                    </label>
+
+                    <select
+                            id="employeeId"
+                            name="employeeId"
+                            required>
+
+                        <option value="">
+                            Select employee
+                        </option>
+
+                        <option
+                                th:each="employee : ${employees}"
+                                th:value="${employee.id}"
+                                th:text="${employee.name + ' — ' + employee.email}"
+                                th:selected="${quotation.employee != null
+                                             and quotation.employee.id == employee.id}">
+                        </option>
+
+                    </select>
+
+                </div>
+
+
+                <!-- District -->
+
+                <div class="form-group">
+
+                    <label for="branchId">
+                        District
+                        <span>*</span>
+                    </label>
+
+                    <select
+                            id="branchId"
+                            name="branchId"
+                            required>
+
+                        <option value="">
+                            Select district
+                        </option>
+
+                        <option
+                                th:each="branch : ${branches}"
+                                th:value="${branch.id}"
+                                th:text="${branch.name}"
+                                th:selected="${quotation.branch != null
+                                             and quotation.branch.id == branch.id}">
+                        </option>
+
+                    </select>
+
+                    <small>
+                        District-specific pricing and travel charges
+                        will be applied later.
+                    </small>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SECTION 4 - CUSTOMER REQUIREMENTS
+        ================================================== -->
+
+        <div class="form-card">
+
+            <div class="section-header">
+
+                <div class="section-number">
+                    04
+                </div>
+
+                <div>
+
+                    <h2>Customer Requirements</h2>
+
+                    <p>
+                        Capture the customer's requirements and notes.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="form-grid">
+
+                <div class="form-group full-width">
+
+                    <label for="customerRequirements">
+                        Customer Requirements
+                    </label>
+
+                    <textarea
+                            id="customerRequirements"
+                            name="customerRequirements"
+                            rows="5"
+                            maxlength="5000"
+                            placeholder="Enter customer requirements..."
+                            th:text="${quotation.customerRequirements}">
+                    </textarea>
+
+                </div>
+
+
+                <div class="form-group full-width">
+
+                    <label for="notes">
+                        Internal Notes
+                    </label>
+
+                    <textarea
+                            id="notes"
+                            name="notes"
+                            rows="4"
+                            maxlength="5000"
+                            placeholder="Enter internal notes..."
+                            th:text="${quotation.notes}">
+                    </textarea>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             SECTION 5 - CURRENT FINANCIAL SUMMARY
+        ================================================== -->
+
+        <div class="form-card financial-card">
+
+            <div class="section-header">
+
+                <div class="section-number">
+                    05
+                </div>
+
+                <div>
+
+                    <h2>Quotation Summary</h2>
+
+                    <p>
+                        Amounts will be calculated from quotation items.
+                    </p>
+
+                </div>
+
+            </div>
+
+
+            <div class="financial-grid">
+
+                <div class="financial-item">
+
+                    <span>Subtotal</span>
+
+                    <strong>
+                        ₹
+                        <span
+                                th:text="${quotation.subtotal != null
+                                        ? #numbers.formatDecimal(quotation.subtotal, 1, 2)
+                                        : '0.00'}">
+                            0.00
+                        </span>
+                    </strong>
+
+                </div>
+
+
+                <div class="financial-item">
+
+                    <span>Travel Charge</span>
+
+                    <strong>
+                        ₹
+                        <span
+                                th:text="${quotation.travelCharge != null
+                                        ? #numbers.formatDecimal(quotation.travelCharge, 1, 2)
+                                        : '0.00'}">
+                            0.00
+                        </span>
+                    </strong>
+
+                </div>
+
+
+                <div class="financial-item">
+
+                    <span>Discount</span>
+
+                    <strong>
+                        ₹
+                        <span
+                                th:text="${quotation.discountAmount != null
+                                        ? #numbers.formatDecimal(quotation.discountAmount, 1, 2)
+                                        : '0.00'}">
+                            0.00
+                        </span>
+                    </strong>
+
+                </div>
+
+
+                <div class="financial-item grand-total">
+
+                    <span>Grand Total</span>
+
+                    <strong>
+                        ₹
+                        <span
+                                th:text="${quotation.grandTotal != null
+                                        ? #numbers.formatDecimal(quotation.grandTotal, 1, 2)
+                                        : '0.00'}">
+                            0.00
+                        </span>
+                    </strong>
+
+                </div>
+
+            </div>
+
+
+            <div class="calculation-note">
+
+                <span>ⓘ</span>
+
+                <p>
+                    Detailed room, work, material, dimension,
+                    quantity, rate and GST calculations will be
+                    added in the quotation builder.
+                </p>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             FORM ACTIONS
+        ================================================== -->
+
+        <div class="form-actions">
+
+            <a
+                    th:href="@{/admin/quotations}"
+                    class="btn btn-secondary">
+                Cancel
+            </a>
+
+            <button
+                    type="submit"
+                    class="btn btn-primary">
+
+                <span th:text="${quotation.id == null
+                                ? 'Create Quotation'
+                                : 'Save Changes'}">
+                    Create Quotation
+                </span>
+
+            </button>
+
+        </div>
+
+    </form>
+
+</div>
+
+
+<!-- =========================================================
+     FORM JAVASCRIPT
+========================================================== -->
+
+<script>
+
+    document
+        .getElementById("quotationForm")
+        .addEventListener("submit", function (event) {
+
+            const quotationNumber =
+                document
+                    .getElementById("quotationNumber")
+                    .value
+                    .trim();
+
+            const customer =
+                document
+                    .getElementById("customerId")
+                    .value;
+
+            const employee =
+                document
+                    .getElementById("employeeId")
+                    .value;
+
+            const branch =
+                document
+                    .getElementById("branchId")
+                    .value;
+
+            const division =
+                document
+                    .getElementById("divisionId")
+                    .value;
+
+            const pricingMode =
+                document
+                    .getElementById("pricingMode")
+                    .value;
+
+
+            if (!quotationNumber) {
+
+                alert("Please enter quotation number.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+
+            if (!customer) {
+
+                alert("Please select a customer.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+
+            if (!employee) {
+
+                alert("Please select an employee.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+
+            if (!branch) {
+
+                alert("Please select a district.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+
+            if (!division) {
+
+                alert("Please select a division.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+
+            if (!pricingMode) {
+
+                alert("Please select quotation type.");
+
+                event.preventDefault();
+
+                return;
+            }
+
+        });
+
+</script>
+
+</body>
+
+</html>

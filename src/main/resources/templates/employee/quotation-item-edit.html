@@ -1,0 +1,589 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Quotation Item</title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/employee-quotation-item.css}">
+</head>
+
+<body>
+
+<div class="item-page">
+
+  <!-- HEADER -->
+  <header class="page-header">
+    <div>
+      <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+         class="back-link">
+        ← Back to Quotation
+      </a>
+
+      <h1>Edit Quotation Item</h1>
+
+      <p>
+        Update item details, dimensions and pricing for this quotation.
+      </p>
+    </div>
+  </header>
+
+  <!-- DEBUG / ITEM ID CHECK -->
+  <section class="info-card">
+    <div class="info-box">
+      <span class="info-label">DEBUG ITEM ID</span>
+
+      <strong th:text="${quotationItem.id != null
+                              ? quotationItem.id
+                              : 'MISSING'}">
+        MISSING
+      </strong>
+    </div>
+
+    <div class="info-box">
+      <span class="info-label">QUOTATION</span>
+      <strong th:text="${quotation.quotationNumber}">QT-00001</strong>
+    </div>
+
+    <div class="info-box">
+      <span class="info-label">CUSTOMER</span>
+      <strong th:text="${quotation.customer != null
+                              ? quotation.customer.name : 'N/A'}">
+        Customer Name
+      </strong>
+    </div>
+
+    <div class="info-box">
+      <span class="info-label">FLOOR</span>
+      <strong th:text="${quotationRoom.floor}">Ground Floor</strong>
+    </div>
+
+    <div class="info-box">
+      <span class="info-label">ROOM</span>
+      <strong th:text="${quotationRoom.room}">Kitchen</strong>
+    </div>
+  </section>
+
+  <!-- WARNING IF ITEM ID IS MISSING -->
+  <div th:if="${quotationItem.id == null}"
+       style="margin: 16px 0; padding: 14px; border: 1px solid #dc2626;
+                border-radius: 8px; color: #b91c1c; background: #fef2f2;">
+    <strong>Item ID is missing!</strong>
+    <p>
+      The item ID is not available in the form. Please do not submit
+      this form. The controller or item-loading code must be checked.
+    </p>
+  </div>
+
+  <!-- EDIT FORM -->
+  <form th:action="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/{itemId}/update(
+                            quotationId=${quotation.id},
+                            roomId=${quotationRoom.id},
+                            itemId=${quotationItem.id}
+                       )}"
+        method="post"
+        class="item-form"
+        id="quotationItemForm">
+
+    <!-- CSRF TOKEN -->
+    <input type="hidden"
+           th:name="${_csrf.parameterName}"
+           th:value="${_csrf.token}">
+
+    <!-- Preserve and inspect the item ID -->
+    <input type="hidden"
+           id="debugItemId"
+           th:value="${quotationItem.id}">
+
+    <!-- SECTION 1: WORK DETAILS -->
+    <section class="form-section">
+
+      <div class="section-title">
+        <span class="section-number">01</span>
+        <div>
+          <h2>Work Details</h2>
+          <p>Select the category and item for this quotation.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+
+        <!-- WORK CATEGORY -->
+        <div class="form-group">
+          <label for="workCategoryId">Work Category</label>
+
+          <select id="workCategoryId"
+                  name="workCategoryId"
+                  required>
+
+            <option value="">Select Work Category</option>
+
+            <option th:each="category : ${workCategories}"
+                    th:value="${category.id}"
+                    th:text="${category.name}"
+                    th:selected="${quotationItem.workCategory != null
+                                    and quotationItem.workCategory.id == category.id}">
+              Kitchen
+            </option>
+          </select>
+        </div>
+
+        <!-- DIVISION -->
+        <div class="form-group">
+          <label for="divisionId">Division</label>
+
+          <select id="divisionId"
+                  name="divisionId"
+                  required>
+
+            <option value="">Select Division</option>
+
+            <option th:each="division : ${divisions}"
+                    th:value="${division.id}"
+                    th:text="${division.name}"
+                    th:selected="${quotationItem.division != null
+                                    and quotationItem.division.id == division.id}">
+              Modular Kitchen
+            </option>
+          </select>
+        </div>
+
+        <!-- ITEM MASTER -->
+        <div class="form-group">
+          <label for="itemIdValue">Item</label>
+
+          <select id="itemIdValue"
+                  name="itemIdValue"
+                  required>
+
+            <option value="">Select Item</option>
+
+            <option th:each="masterItem : ${items}"
+                    th:value="${masterItem.id}"
+                    th:text="${masterItem.name}"
+                    th:selected="${quotationItem.item != null
+                                    and quotationItem.item.id == masterItem.id}">
+              Bottom Cabinet
+            </option>
+          </select>
+        </div>
+
+        <!-- MATERIAL -->
+        <div class="form-group">
+          <label for="materialId">Material</label>
+
+          <select id="materialId"
+                  name="materialId"
+                  required>
+
+            <option value="">Select Material</option>
+
+            <option th:each="material : ${materials}"
+                    th:value="${material.id}"
+                    th:text="${material.name}"
+                    th:selected="${quotationItem.material != null
+                                    and quotationItem.material.id == material.id}">
+              Marine Ply
+            </option>
+          </select>
+        </div>
+
+        <!-- MATERIAL OPTION -->
+        <div class="form-group">
+          <label for="materialOptionId">Material Option</label>
+
+          <select id="materialOptionId"
+                  name="materialOptionId"
+                  required>
+
+            <option value="">Select Material Option</option>
+
+            <option th:each="option : ${materialOptions}"
+                    th:value="${option.id}"
+                    th:text="${option.name}"
+                    th:selected="${quotationItem.materialOption != null
+                                    and quotationItem.materialOption.id == option.id}">
+              Lamination
+            </option>
+          </select>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 2: DESCRIPTION -->
+    <section class="form-section">
+
+      <div class="section-title">
+        <span class="section-number">02</span>
+        <div>
+          <h2>Description</h2>
+          <p>Add additional information about the work item.</p>
+        </div>
+      </div>
+
+      <div class="form-grid">
+
+        <div class="form-group full-width">
+          <label for="itemDescription">Item Description</label>
+
+          <textarea id="itemDescription"
+                    name="itemDescription"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="Enter item description..."
+                    th:text="${quotationItem.itemDescription}"></textarea>
+        </div>
+
+        <div class="form-group full-width">
+          <label for="specification">Specification</label>
+
+          <textarea id="specification"
+                    name="specification"
+                    rows="4"
+                    maxlength="2000"
+                    placeholder="Enter specification..."
+                    th:text="${quotationItem.specification}"></textarea>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- SECTION 3: DIMENSIONS -->
+    <section class="form-section">
+
+      <div class="section-title">
+        <span class="section-number">03</span>
+        <div>
+          <h2>Dimensions</h2>
+          <p>Enter dimensions in inches.</p>
+        </div>
+      </div>
+
+      <div class="form-grid three-columns">
+
+        <div class="form-group">
+          <label for="lengthValue">Length (inches)</label>
+
+          <input type="number"
+                 id="lengthValue"
+                 name="lengthValue"
+                 min="0.01"
+                 max="100000"
+                 step="0.01"
+                 required
+                 placeholder="Example: 5"
+                 th:value="${quotationItem.lengthValue}">
+        </div>
+
+        <div class="form-group">
+          <label for="widthValue">Width (inches)</label>
+
+          <input type="number"
+                 id="widthValue"
+                 name="widthValue"
+                 min="0.01"
+                 max="100000"
+                 step="0.01"
+                 required
+                 placeholder="Example: 4.76"
+                 th:value="${quotationItem.widthValue}">
+        </div>
+
+        <div class="form-group">
+          <label for="heightValue">Height (inches)</label>
+
+          <input type="number"
+                 id="heightValue"
+                 name="heightValue"
+                 min="0.01"
+                 max="100000"
+                 step="0.01"
+                 required
+                 placeholder="Example: 2.5"
+                 th:value="${quotationItem.heightValue}">
+        </div>
+
+      </div>
+
+      <div class="formula-box">
+        <span class="formula-label">SQ.FT CALCULATION</span>
+        <strong>(Length + Width) × Height ÷ 144</strong>
+
+        <small>
+          Dimensions are calculated using the quotation measurement formula.
+        </small>
+      </div>
+
+    </section>
+
+    <!-- SECTION 4: PRICING -->
+    <section class="form-section">
+
+      <div class="section-title">
+        <span class="section-number">04</span>
+        <div>
+          <h2>Pricing</h2>
+          <p>Enter the rate and optional offer price for this item.</p>
+        </div>
+      </div>
+
+      <div class="form-grid three-columns">
+
+        <!-- RATE -->
+        <div class="form-group">
+          <label for="rate">Rate / Sq.Ft</label>
+
+          <div class="input-with-symbol">
+            <span>₹</span>
+
+            <input type="number"
+                   id="rate"
+                   name="rate"
+                   min="0"
+                   max="100000000"
+                   step="0.01"
+                   required
+                   placeholder="1000"
+                   th:value="${quotationItem.rate}">
+          </div>
+        </div>
+
+        <!-- OFFER PRICE -->
+        <div class="form-group">
+          <label for="offerPrice">Offer Price (Optional)</label>
+
+          <div class="input-with-symbol">
+            <span>₹</span>
+
+            <input type="number"
+                   id="offerPrice"
+                   name="offerPrice"
+                   min="0"
+                   max="100000000"
+                   step="0.01"
+                   placeholder="Leave blank for calculated amount"
+                   th:value="${quotationItem.offerPrice}">
+          </div>
+        </div>
+
+        <!-- SQFT DISPLAY -->
+        <div class="form-group">
+          <label for="calculatedSqftDisplay">Calculated Sq.Ft</label>
+
+          <input type="text"
+                 id="calculatedSqftDisplay"
+                 readonly
+                 value="0.00">
+        </div>
+
+      </div>
+
+      <!-- HIDDEN CALCULATION FIELDS -->
+      <input type="hidden"
+             id="calculatedSqft"
+             name="calculatedSqft"
+             th:value="${quotationItem.calculatedSqft}">
+
+      <input type="hidden"
+             id="amount"
+             name="amount"
+             th:value="${quotationItem.amount}">
+
+      <input type="hidden"
+             id="formula"
+             name="formula"
+             th:value="${quotationItem.formula}">
+
+      <!-- CALCULATION PREVIEW -->
+      <div class="calculation-preview">
+
+        <div>
+          <span>Calculated Sq.Ft</span>
+          <strong id="previewSqft">0.00</strong>
+        </div>
+
+        <div>
+          <span>Rate</span>
+          <strong>₹<span id="previewRate">0.00</span></strong>
+        </div>
+
+        <div>
+          <span>Estimated Amount</span>
+          <strong>₹<span id="previewAmount">0.00</span></strong>
+        </div>
+
+      </div>
+
+      <p id="calculationNote"
+         class="calculation-note"
+         aria-live="polite"></p>
+
+    </section>
+
+    <!-- FORM ACTIONS -->
+    <div class="form-actions">
+
+      <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+         class="btn btn-secondary">
+        Cancel
+      </a>
+
+      <button type="submit"
+              class="btn btn-primary"
+              id="updateItemButton"
+              th:disabled="${quotationItem.id == null}">
+        Update Item
+      </button>
+
+    </div>
+
+  </form>
+
+</div>
+
+<!-- CALCULATION SCRIPT -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+
+      const form = document.getElementById("quotationItemForm");
+
+      const itemId = document.getElementById("debugItemId").value;
+      const updateButton = document.getElementById("updateItemButton");
+
+      const lengthInput = document.getElementById("lengthValue");
+      const widthInput = document.getElementById("widthValue");
+      const heightInput = document.getElementById("heightValue");
+      const rateInput = document.getElementById("rate");
+      const offerPriceInput = document.getElementById("offerPrice");
+
+      const sqftDisplay = document.getElementById("calculatedSqftDisplay");
+      const calculatedSqftInput = document.getElementById("calculatedSqft");
+      const amountInput = document.getElementById("amount");
+      const formulaInput = document.getElementById("formula");
+
+      const previewSqft = document.getElementById("previewSqft");
+      const previewRate = document.getElementById("previewRate");
+      const previewAmount = document.getElementById("previewAmount");
+      const calculationNote = document.getElementById("calculationNote");
+
+      // Prevent submission if the quotation item ID is missing.
+      if (!itemId || !itemId.trim()) {
+          updateButton.disabled = true;
+          console.error("Quotation item ID is missing.");
+      }
+
+      function numberValue(input) {
+          if (input.value.trim() === "") {
+              return 0;
+          }
+
+          const value = Number(input.value);
+          return Number.isFinite(value) ? value : 0;
+      }
+
+      function calculateItem() {
+
+          const length = numberValue(lengthInput);
+          const width = numberValue(widthInput);
+          const height = numberValue(heightInput);
+          const rate = numberValue(rateInput);
+
+          const offerEntered = offerPriceInput.value.trim() !== "";
+          const offerPrice = numberValue(offerPriceInput);
+
+          let sqft = 0;
+
+          if (length > 0 && width > 0 && height > 0) {
+              sqft = ((length + width) * height) / 144;
+          }
+
+          sqft = Number(sqft.toFixed(2));
+
+          const baseAmount = Number((sqft * rate).toFixed(2));
+
+          const finalPreviewAmount =
+              offerEntered && offerPrice >= 0
+                  ? offerPrice
+                  : baseAmount;
+
+          sqftDisplay.value = sqft.toFixed(2);
+          previewSqft.textContent = sqft.toFixed(2);
+          previewRate.textContent = rate.toFixed(2);
+          previewAmount.textContent = finalPreviewAmount.toFixed(2);
+
+          calculatedSqftInput.value = sqft.toFixed(2);
+          amountInput.value = finalPreviewAmount.toFixed(2);
+          formulaInput.value = "(L + W) × H / 144";
+
+          calculationNote.textContent = offerEntered
+              ? "Preview uses the entered offer price. The server determines the saved quotation amount."
+              : "Preview uses calculated Sq.Ft × Rate. The server determines the saved quotation amount.";
+      }
+
+      [
+          lengthInput,
+          widthInput,
+          heightInput,
+          rateInput,
+          offerPriceInput
+      ].forEach(function (input) {
+          input.addEventListener("input", calculateItem);
+          input.addEventListener("change", calculateItem);
+      });
+
+      form.addEventListener("submit", function (event) {
+
+          if (!itemId || !itemId.trim()) {
+              event.preventDefault();
+              alert("Item ID is missing. Please go back and reopen this item.");
+              return;
+          }
+
+          calculateItem();
+
+          if (!form.checkValidity()) {
+              event.preventDefault();
+              form.reportValidity();
+              return;
+          }
+
+          const dimensions = [
+              lengthInput,
+              widthInput,
+              heightInput
+          ];
+
+          const hasInvalidDimension = dimensions.some(function (input) {
+              return numberValue(input) <= 0;
+          });
+
+          if (hasInvalidDimension) {
+              event.preventDefault();
+              alert("Length, width and height must all be greater than zero.");
+              return;
+          }
+
+          if (numberValue(rateInput) < 0) {
+              event.preventDefault();
+              alert("Rate cannot be negative.");
+              return;
+          }
+
+          if (offerPriceInput.value.trim() !== "" &&
+              numberValue(offerPriceInput) < 0) {
+              event.preventDefault();
+              alert("Offer price cannot be negative.");
+          }
+      });
+
+      calculateItem();
+
+  });
+</script>
+
+</body>
+</html>

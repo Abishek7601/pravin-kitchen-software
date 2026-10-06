@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Customers | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/employee-dashboard.css}">
+
+</head>
+
+<body>
+
+<div class="dashboard-wrapper">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+
+            <div class="brand-icon">
+                PK
+            </div>
+
+            <div class="brand-text">
+
+                <h2>Pravin Kitchens</h2>
+
+                <span>Employee Portal</span>
+
+            </div>
+
+        </div>
+
+
+        <nav class="sidebar-menu">
+
+            <a th:href="@{/employee/dashboard}"
+               class="menu-item">
+
+                <span class="menu-icon">⌂</span>
+
+                <span>Dashboard</span>
+
+            </a>
+
+
+            <a th:href="@{/employee/quotations}"
+               class="menu-item">
+
+                <span class="menu-icon">▣</span>
+
+                <span>Quotations</span>
+
+            </a>
+
+
+            <a th:href="@{/employee/customers}"
+               class="menu-item active">
+
+                <span class="menu-icon">◉</span>
+
+                <span>Customers</span>
+
+            </a>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <form th:action="@{/logout}"
+                  method="post">
+
+                <button type="submit"
+                        class="logout-btn">
+
+                    <span>↪</span>
+
+                    <span>Logout</span>
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main-content">
+
+        <!-- TOPBAR -->
+
+        <header class="topbar">
+
+            <div class="page-heading">
+
+                <span class="page-label">
+                    CUSTOMER MANAGEMENT
+                </span>
+
+                <h1>
+                    Customers
+                </h1>
+
+                <p>
+                    View customers assigned to your branch.
+                </p>
+
+            </div>
+
+
+            <div class="employee-profile">
+
+                <div class="profile-avatar">
+
+                    <span
+                            th:text="${employee.name != null and !employee.name.isEmpty()
+                            ? #strings.substring(employee.name,0,1).toUpperCase()
+                            : 'E'}">
+                        E
+                    </span>
+
+                </div>
+
+
+                <div class="profile-info">
+
+                    <strong
+                            th:text="${employee.name}">
+                        Employee
+                    </strong>
+
+                    <small
+                            th:text="${employee.email}">
+                        employee@email.com
+                    </small>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- CUSTOMER CARD -->
+
+        <section class="section-card">
+
+            <div class="section-header">
+
+                <div>
+
+                    <span class="section-label">
+                        CUSTOMER LIST
+                    </span>
+
+                    <h2>
+                        My Customers
+                    </h2>
+
+                    <p>
+                        Customers belonging to your assigned branch.
+                    </p>
+
+                </div>
+
+
+                <div class="customer-count">
+
+                    <strong
+                            th:text="${customers.size()}">
+                        0
+                    </strong>
+
+                    <span>
+                        Customers
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <!-- TABLE -->
+
+            <div class="table-wrapper"
+                 th:if="${customers != null and !customers.isEmpty()}">
+
+                <table class="quotation-table">
+
+                    <thead>
+
+                    <tr>
+
+                        <th>
+                            Customer
+                        </th>
+
+                        <th>
+                            Phone
+                        </th>
+
+                        <th>
+                            Email
+                        </th>
+
+                        <th>
+                            Branch
+                        </th>
+
+                        <th>
+                            Status
+                        </th>
+
+                    </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    <tr th:each="customer : ${customers}">
+
+                        <!-- NAME -->
+
+                        <td>
+
+                            <strong
+                                    th:text="${customer.name}">
+                                Customer Name
+                            </strong>
+
+                        </td>
+
+
+                        <!-- PHONE -->
+
+                        <td>
+
+                            <span
+                                    th:text="${customer.phone != null
+                                    ? customer.phone
+                                    : 'Not Available'}">
+                                Not Available
+                            </span>
+
+                        </td>
+
+
+                        <!-- EMAIL -->
+
+                        <td>
+
+                            <span
+                                    th:text="${customer.email != null
+                                    ? customer.email
+                                    : 'Not Available'}">
+                                Not Available
+                            </span>
+
+                        </td>
+
+
+                        <!-- BRANCH -->
+
+                        <td>
+
+                            <span
+                                    th:text="${customer.branch != null
+                                    ? customer.branch.name
+                                    : 'Not Assigned'}">
+                                Not Assigned
+                            </span>
+
+                        </td>
+
+
+                        <!-- STATUS -->
+
+                        <td>
+
+                            <span class="status-badge status-approved"
+                                  th:if="${customer.active}">
+                                Active
+                            </span>
+
+                            <span class="status-badge status-cancelled"
+                                  th:unless="${customer.active}">
+                                Inactive
+                            </span>
+
+                        </td>
+
+                    </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+
+            <!-- EMPTY -->
+
+            <div class="empty-state"
+                 th:if="${customers == null or customers.isEmpty()}">
+
+                <div class="empty-icon">
+                    C
+                </div>
+
+                <h3>
+                    No customers found
+                </h3>
+
+                <p>
+                    There are currently no customers assigned
+                    to your branch.
+                </p>
+
+            </div>
+
+        </section>
+
+
+        <!-- BACK -->
+
+        <div class="page-actions">
+
+            <a th:href="@{/employee/dashboard}"
+               class="view-all-btn">
+
+                ← Back to Dashboard
+
+            </a>
+
+        </div>
+
+
+        <footer class="dashboard-footer">
+
+            <span>
+                © 2026 Pravin Kitchens & Interiors
+            </span>
+
+            <span>
+                Employee Portal
+            </span>
+
+        </footer>
+
+    </main>
+
+</div>
+
+</body>
+
+</html>

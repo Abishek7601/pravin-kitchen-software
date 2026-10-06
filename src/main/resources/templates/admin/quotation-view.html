@@ -1,0 +1,1894 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Quotation Details - Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotation-view.css}">
+
+</head>
+
+
+<body>
+
+<div class="page-container">
+
+
+    <!-- =====================================================
+         PAGE HEADER
+    ====================================================== -->
+
+    <header class="page-header">
+
+        <div>
+
+            <p class="eyebrow">
+                PRAVIN KITCHENS
+            </p>
+
+            <h1>
+                Quotation Details
+            </h1>
+
+            <p class="subtitle">
+                View quotation information, work details and current status.
+            </p>
+
+        </div>
+
+
+        <div class="header-actions">
+
+            <a th:href="@{/admin/quotations}"
+               class="btn btn-secondary">
+                ← Back
+            </a>
+
+
+            <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
+               class="btn btn-primary">
+                👁 Preview
+            </a>
+
+
+            <a th:href="@{/admin/quotations/pdf/{id}(id=${quotation.id})}"
+               class="btn btn-success">
+                ↓ Download PDF
+            </a>
+
+        </div>
+
+    </header>
+
+
+
+    <!-- =====================================================
+         QUOTATION BANNER
+    ====================================================== -->
+
+    <section class="quotation-banner">
+
+        <div>
+
+            <span class="field-label">
+                Quotation Number
+            </span>
+
+            <h2 th:text="${quotation.quotationNumber}">
+                QT-001
+            </h2>
+
+            <p>
+
+                Created on:
+
+                <strong
+                        th:text="${quotation.quotationDate != null
+                        ? #temporals.format(quotation.quotationDate, 'dd MMM yyyy')
+                        : 'N/A'}">
+
+                    05 Oct 2026
+
+                </strong>
+
+            </p>
+
+        </div>
+
+
+        <span class="status-badge"
+              th:classappend="' status-' + ${#strings.toLowerCase(quotation.status.name())}"
+              th:text="${quotation.status}">
+
+            DRAFT
+
+        </span>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         STATUS MANAGEMENT
+    ====================================================== -->
+
+    <section class="status-management">
+
+        <div class="status-management-header">
+
+            <div>
+
+                <h3>
+                    Quotation Status
+                </h3>
+
+                <p>
+                    Update the current quotation status.
+                </p>
+
+            </div>
+
+
+            <div class="current-status">
+
+                Current:
+
+                <strong th:text="${quotation.status}">
+                    DRAFT
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <div class="status-buttons">
+
+
+            <!-- DRAFT -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="DRAFT">
+
+                <button type="submit"
+                        class="status-action draft"
+                        th:disabled="${quotation.status.name() == 'DRAFT'}">
+
+                    Draft
+
+                </button>
+
+            </form>
+
+
+
+            <!-- PENDING -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="PENDING">
+
+                <button type="submit"
+                        class="status-action pending"
+                        th:disabled="${quotation.status.name() == 'PENDING'}">
+
+                    Pending
+
+                </button>
+
+            </form>
+
+
+
+            <!-- SENT -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="SENT">
+
+                <button type="submit"
+                        class="status-action sent"
+                        th:disabled="${quotation.status.name() == 'SENT'}">
+
+                    Sent
+
+                </button>
+
+            </form>
+
+
+
+            <!-- APPROVED -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="APPROVED">
+
+                <button type="submit"
+                        class="status-action approved"
+                        th:disabled="${quotation.status.name() == 'APPROVED'}">
+
+                    Approved
+
+                </button>
+
+            </form>
+
+
+
+            <!-- REJECTED -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="REJECTED">
+
+                <button type="submit"
+                        class="status-action rejected"
+                        th:disabled="${quotation.status.name() == 'REJECTED'}">
+
+                    Rejected
+
+                </button>
+
+            </form>
+
+
+
+            <!-- CANCELLED -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="CANCELLED">
+
+                <button type="submit"
+                        class="status-action cancelled"
+                        th:disabled="${quotation.status.name() == 'CANCELLED'}">
+
+                    Cancelled
+
+                </button>
+
+            </form>
+
+
+
+            <!-- EXPIRED -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="EXPIRED">
+
+                <button type="submit"
+                        class="status-action expired"
+                        th:disabled="${quotation.status.name() == 'EXPIRED'}">
+
+                    Expired
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         CUSTOMER + PROJECT INFORMATION
+    ====================================================== -->
+
+    <section class="details-grid">
+
+
+        <!-- CUSTOMER -->
+
+        <article class="detail-card">
+
+            <h3>
+                Customer Information
+            </h3>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Customer Name
+                </span>
+
+                <strong
+                        th:text="${quotation.customer != null
+                        ? quotation.customer.name
+                        : 'N/A'}">
+
+                    Rahul
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Phone Number
+                </span>
+
+                <strong
+                        th:text="${quotation.customer != null
+                        ? quotation.customer.phone
+                        : 'N/A'}">
+
+                    N/A
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Email Address
+                </span>
+
+                <strong
+                        th:text="${quotation.customer != null
+                        && quotation.customer.email != null
+                        ? quotation.customer.email
+                        : 'N/A'}">
+
+                    N/A
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Address
+                </span>
+
+                <strong
+                        th:text="${quotation.customer != null
+                        && quotation.customer.address != null
+                        ? quotation.customer.address
+                        : 'N/A'}">
+
+                    N/A
+
+                </strong>
+
+            </div>
+
+        </article>
+
+
+
+        <!-- PROJECT -->
+
+        <article class="detail-card">
+
+            <h3>
+                Project Information
+            </h3>
+
+
+            <div class="detail-row">
+
+                <span>
+                    District
+                </span>
+
+                <strong
+                        th:text="${quotation.branch != null
+                        ? quotation.branch.name
+                        : 'N/A'}">
+
+                    Madurai
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Division
+                </span>
+
+                <strong
+                        th:text="${quotation.division != null
+                        ? quotation.division.name
+                        : 'N/A'}">
+
+                    Marketing
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Pricing Mode
+                </span>
+
+                <strong
+                        th:text="${quotation.pricingMode}">
+
+                    PREMIUM
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Prepared By
+                </span>
+
+                <strong
+                        th:text="${quotation.employee != null
+                        ? quotation.employee.name
+                        : 'N/A'}">
+
+                    Abin
+
+                </strong>
+
+            </div>
+
+
+            <div class="detail-row">
+
+                <span>
+                    Quotation Status
+                </span>
+
+                <strong
+                        th:text="${quotation.status}">
+
+                    DRAFT
+
+                </strong>
+
+            </div>
+
+        </article>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         ROOMS & WORK ITEMS
+    ====================================================== -->
+
+    <section class="detail-card quotation-work-section">
+
+
+        <div class="work-section-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    QUOTATION BREAKDOWN
+                </p>
+
+                <h2>
+                    Rooms & Work Items
+                </h2>
+
+                <p>
+                    Detailed work, materials, dimensions and pricing
+                    included in this quotation.
+                </p>
+
+            </div>
+
+
+            <div class="work-count"
+                 th:text="${quotationRooms != null
+                 ? #lists.size(quotationRooms)
+                 : 0} + ' Rooms'">
+
+                0 Rooms
+
+            </div>
+
+        </div>
+
+
+
+        <!-- =================================================
+             NO ROOMS
+        ================================================== -->
+
+        <div class="work-empty"
+             th:if="${quotationRooms == null
+             || #lists.isEmpty(quotationRooms)}">
+
+            <div class="work-empty-icon">
+                🏠
+            </div>
+
+            <h3>
+                No rooms added yet
+            </h3>
+
+            <p>
+                Add rooms and work items to build the quotation.
+            </p>
+
+            <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+               class="btn btn-primary">
+
+                Manage Rooms & Items
+
+            </a>
+
+        </div>
+
+
+
+        <!-- =================================================
+             ROOMS
+        ================================================== -->
+
+        <div class="rooms-container"
+             th:if="${quotationRooms != null
+             && !#lists.isEmpty(quotationRooms)}">
+
+
+            <div class="quotation-room"
+                 th:each="room, roomStat : ${quotationRooms}">
+
+
+                <!-- ROOM HEADER -->
+
+                <div class="room-header">
+
+
+                    <div class="room-title-area">
+
+                        <div class="room-number"
+                             th:text="${roomStat.count}">
+
+                            1
+
+                        </div>
+
+
+                        <div>
+
+                            <span class="room-floor"
+                                  th:text="${room.floor}">
+
+                                Ground Floor
+
+                            </span>
+
+                            <h3
+                                    th:text="${room.room}">
+
+                                Kitchen
+
+                            </h3>
+
+                        </div>
+
+                    </div>
+
+
+
+                    <div class="room-total">
+
+                        <span>
+                            Room Offer Price
+                        </span>
+
+                        <strong
+                                th:text="${'₹ ' +
+                                #numbers.formatDecimal(
+                                room.offerPrice != null
+                                ? room.offerPrice
+                                : 0,
+                                1, 2)}">
+
+                            ₹ 0.00
+
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- WORK DESCRIPTION -->
+
+                <div class="room-description"
+                     th:if="${room.workDescription != null
+                     && !#strings.isEmpty(room.workDescription)}">
+
+                    <span class="description-label">
+                        Work
+                    </span>
+
+                    <span
+                            th:text="${room.workDescription}">
+
+                        Modular Kitchen
+
+                    </span>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     ITEMS
+                ================================================== -->
+
+                <div class="room-items"
+                     th:with="roomItems=${itemsByRoom[room.id]}">
+
+
+                    <!-- NO ITEMS -->
+
+                    <div class="room-items-empty"
+                         th:if="${roomItems == null
+                         || #lists.isEmpty(roomItems)}">
+
+                        <span>
+                            No active work items added to this room.
+                        </span>
+
+                    </div>
+
+
+
+                    <!-- ITEM CARDS -->
+
+                    <div class="work-item"
+                         th:each="item : ${roomItems}">
+
+
+                        <!-- ITEM TOP -->
+
+                        <div class="work-item-header">
+
+
+                            <div>
+
+                                <span class="item-category"
+                                      th:if="${item.workCategory != null}"
+                                      th:text="${item.workCategory.name}">
+
+                                    Modular Kitchen
+
+                                </span>
+
+
+                                <h4
+                                        th:text="${item.item != null
+                                        ? item.item.name
+                                        : (item.itemDescription != null
+                                        ? item.itemDescription
+                                        : 'Work Item')}">
+
+                                    Base Cabinet
+
+                                </h4>
+
+                            </div>
+
+
+                            <div class="item-offer-price">
+
+                                <span>
+                                    Offer Price
+                                </span>
+
+                                <strong
+                                        th:text="${'₹ ' +
+                                        #numbers.formatDecimal(
+                                        item.offerPrice != null
+                                        ? item.offerPrice
+                                        : 0,
+                                        1, 2)}">
+
+                                    ₹ 0.00
+
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- MATERIAL INFORMATION -->
+
+                        <div class="item-info-grid">
+
+
+                            <div class="item-info">
+
+                                <span>
+                                    Division
+                                </span>
+
+                                <strong
+                                        th:text="${item.division != null
+                                        ? item.division.name
+                                        : 'N/A'}">
+
+                                    Marketing
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="item-info">
+
+                                <span>
+                                    Material
+                                </span>
+
+                                <strong
+                                        th:text="${item.material != null
+                                        ? item.material.name
+                                        : 'N/A'}">
+
+                                    Marine Ply
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="item-info">
+
+                                <span>
+                                    Material Option
+                                </span>
+
+                                <strong
+                                        th:text="${item.materialOption != null
+                                        ? item.materialOption.name
+                                        : 'N/A'}">
+
+                                    18mm
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="item-info">
+
+                                <span>
+                                    Sq.Ft
+                                </span>
+
+                                <strong
+                                        th:text="${#numbers.formatDecimal(
+                                        item.calculatedSqft != null
+                                        ? item.calculatedSqft
+                                        : 0,
+                                        1, 2)}">
+
+                                    0.00
+
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- DIMENSIONS -->
+
+                        <div class="item-dimensions">
+
+
+                            <div class="dimension-box">
+
+                                <span>
+                                    Length
+                                </span>
+
+                                <strong
+                                        th:text="${item.lengthValue != null
+                                        ? #numbers.formatDecimal(
+                                        item.lengthValue, 1, 2)
+                                        : '0.00'}">
+
+                                    0.00
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="dimension-symbol">
+                                ×
+                            </div>
+
+
+                            <div class="dimension-box">
+
+                                <span>
+                                    Width
+                                </span>
+
+                                <strong
+                                        th:text="${item.widthValue != null
+                                        ? #numbers.formatDecimal(
+                                        item.widthValue, 1, 2)
+                                        : '0.00'}">
+
+                                    0.00
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="dimension-symbol">
+                                ×
+                            </div>
+
+
+                            <div class="dimension-box">
+
+                                <span>
+                                    Height
+                                </span>
+
+                                <strong
+                                        th:text="${item.heightValue != null
+                                        ? #numbers.formatDecimal(
+                                        item.heightValue, 1, 2)
+                                        : '0.00'}">
+
+                                    0.00
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="dimension-unit">
+                                inches
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- SPECIFICATION / FORMULA -->
+
+                        <div class="item-details-extra">
+
+
+                            <div class="extra-detail"
+                                 th:if="${item.specification != null
+                                 && !#strings.isEmpty(item.specification)}">
+
+                                <span>
+                                    Specification
+                                </span>
+
+                                <p
+                                        th:text="${item.specification}">
+
+                                    Specification details
+
+                                </p>
+
+                            </div>
+
+
+                            <div class="extra-detail"
+                                 th:if="${item.formula != null
+                                 && !#strings.isEmpty(item.formula)}">
+
+                                <span>
+                                    Formula
+                                </span>
+
+                                <p
+                                        th:text="${item.formula}">
+
+                                    (L + W) × H / 144
+
+                                </p>
+
+                            </div>
+
+
+                            <div class="extra-detail"
+                                 th:if="${item.itemDescription != null
+                                 && !#strings.isEmpty(item.itemDescription)}">
+
+                                <span>
+                                    Description
+                                </span>
+
+                                <p
+                                        th:text="${item.itemDescription}">
+
+                                    Work item description
+
+                                </p>
+
+                            </div>
+
+                        </div>
+
+
+
+                        <!-- ITEM FINANCIALS -->
+
+                        <div class="item-financials">
+
+
+                            <div>
+
+                                <span>
+                                    Rate
+                                </span>
+
+                                <strong
+                                        th:text="${'₹ ' +
+                                        #numbers.formatDecimal(
+                                        item.rate != null
+                                        ? item.rate
+                                        : 0,
+                                        1, 2)}">
+
+                                    ₹ 0.00
+
+                                </strong>
+
+                            </div>
+
+
+                            <div>
+
+                                <span>
+                                    Amount
+                                </span>
+
+                                <strong
+                                        th:text="${'₹ ' +
+                                        #numbers.formatDecimal(
+                                        item.amount != null
+                                        ? item.amount
+                                        : 0,
+                                        1, 2)}">
+
+                                    ₹ 0.00
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="item-final-price">
+
+                                <span>
+                                    Offer Price
+                                </span>
+
+                                <strong
+                                        th:text="${'₹ ' +
+                                        #numbers.formatDecimal(
+                                        item.offerPrice != null
+                                        ? item.offerPrice
+                                        : 0,
+                                        1, 2)}">
+
+                                    ₹ 0.00
+
+                                </strong>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- =================================================
+                     ROOM TOTAL
+                ================================================== -->
+
+                <div class="room-summary">
+
+
+                    <div>
+
+                        <span>
+                            Room Subtotal
+                        </span>
+
+                        <strong
+                                th:text="${'₹ ' +
+                                #numbers.formatDecimal(
+                                room.subtotal != null
+                                ? room.subtotal
+                                : 0,
+                                1, 2)}">
+
+                            ₹ 0.00
+
+                        </strong>
+
+                    </div>
+
+
+                    <div>
+
+                        <span>
+                            Room Offer Price
+                        </span>
+
+                        <strong
+                                th:text="${'₹ ' +
+                                #numbers.formatDecimal(
+                                room.offerPrice != null
+                                ? room.offerPrice
+                                : 0,
+                                1, 2)}">
+
+                            ₹ 0.00
+
+                        </strong>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- MANAGE BUTTON -->
+
+        <div class="work-section-footer"
+             th:if="${quotationRooms != null
+             && !#lists.isEmpty(quotationRooms)}">
+
+            <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+               class="btn btn-secondary">
+
+                ⚙ Manage Rooms & Items
+
+            </a>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         FINANCIAL SUMMARY
+    ====================================================== -->
+
+    <section class="detail-card financial-card">
+
+        <h3>
+            Quotation Amount Summary
+        </h3>
+
+
+        <div class="amount-row">
+
+            <span>
+                Subtotal
+            </span>
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.subtotal != null
+                    ? quotation.subtotal
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row">
+
+            <span>
+                Accessories
+            </span>
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.accessoriesAmount != null
+                    ? quotation.accessoriesAmount
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row">
+
+            <span>
+                Travel Charges
+            </span>
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.travelCharge != null
+                    ? quotation.travelCharge
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row">
+
+            <span>
+                Other Charges
+            </span>
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.otherCharges != null
+                    ? quotation.otherCharges
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row discount-row">
+
+            <span>
+                Discount
+            </span>
+
+            <strong
+                    th:text="${'- ₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.discountAmount != null
+                    ? quotation.discountAmount
+                    : 0,
+                    1, 2)}">
+
+                - ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row">
+
+            <span>
+
+                GST
+
+                (<span
+                    th:text="${#numbers.formatDecimal(
+                    quotation.gstPercentage != null
+                    ? quotation.gstPercentage
+                    : 0,
+                    1, 2)}">
+
+                    0.00
+
+                </span>%)
+
+            </span>
+
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.gstAmount != null
+                    ? quotation.gstAmount
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+
+        <div class="amount-row grand-total">
+
+            <span>
+                Grand Total
+            </span>
+
+            <strong
+                    th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.grandTotal != null
+                    ? quotation.grandTotal
+                    : 0,
+                    1, 2)}">
+
+                ₹ 0.00
+
+            </strong>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         NOTES
+    ====================================================== -->
+
+    <section class="detail-card notes-card">
+
+        <h3>
+            Customer Requirements
+        </h3>
+
+
+        <p
+                th:if="${quotation.customerRequirements != null
+                && !#strings.isEmpty(quotation.customerRequirements)}"
+                th:text="${quotation.customerRequirements}">
+
+            Customer requirements
+
+        </p>
+
+
+        <p class="muted"
+           th:unless="${quotation.customerRequirements != null
+           && !#strings.isEmpty(quotation.customerRequirements)}">
+
+            No specific requirements added.
+
+        </p>
+
+
+        <h3>
+            Internal Notes
+        </h3>
+
+
+        <p
+                th:if="${quotation.notes != null
+                && !#strings.isEmpty(quotation.notes)}"
+                th:text="${quotation.notes}">
+
+            Internal notes
+
+        </p>
+
+
+        <p class="muted"
+           th:unless="${quotation.notes != null
+           && !#strings.isEmpty(quotation.notes)}">
+
+            No notes added.
+
+        </p>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         STATUS HISTORY
+    ====================================================== -->
+
+    <section class="detail-card history-card">
+
+
+        <div class="history-header">
+
+            <div>
+
+                <h3>
+                    Status History
+                </h3>
+
+                <p>
+                    Track every status change made to this quotation.
+                </p>
+
+            </div>
+
+
+            <span class="history-count"
+                  th:text="${#lists.size(statusHistory)} + ' Changes'">
+
+                0 Changes
+
+            </span>
+
+        </div>
+
+
+
+        <div class="history-list"
+             th:if="${statusHistory != null
+             && !#lists.isEmpty(statusHistory)}">
+
+
+            <div class="history-item"
+                 th:each="history : ${statusHistory}">
+
+
+                <div class="history-dot"></div>
+
+
+                <div class="history-content">
+
+
+                    <div class="history-top">
+
+
+                        <div>
+
+                            <span class="history-old"
+                                  th:if="${history.oldStatus != null}"
+                                  th:text="${history.oldStatus}">
+
+                                DRAFT
+
+                            </span>
+
+
+                            <span class="history-arrow"
+                                  th:if="${history.oldStatus != null}">
+
+                                →
+
+                            </span>
+
+
+                            <span class="history-new"
+                                  th:text="${history.newStatus}">
+
+                                PENDING
+
+                            </span>
+
+                        </div>
+
+
+                        <span class="history-date"
+                              th:text="${history.changedAt != null
+                              ? #temporals.format(
+                              history.changedAt,
+                              'dd MMM yyyy, hh:mm a')
+                              : 'N/A'}">
+
+                            05 Oct 2026, 11:30 AM
+
+                        </span>
+
+                    </div>
+
+
+                    <div class="history-meta">
+
+
+                        <span>
+
+                            Changed by:
+
+                            <strong
+                                    th:text="${history.changedBy != null
+                                    ? history.changedBy.name
+                                    : 'System'}">
+
+                                Abin
+
+                            </strong>
+
+                        </span>
+
+
+                        <span
+                                th:if="${history.remarks != null
+                                && !#strings.isEmpty(history.remarks)}">
+
+                            <span class="meta-separator">
+                                •
+                            </span>
+
+                            <span
+                                    th:text="${history.remarks}">
+
+                                Status updated
+
+                            </span>
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+        <div class="history-empty"
+             th:unless="${statusHistory != null
+             && !#lists.isEmpty(statusHistory)}">
+
+
+            <div class="empty-icon">
+                ↻
+            </div>
+
+
+            <h4>
+                No status history yet
+            </h4>
+
+
+            <p>
+                Status changes for this quotation will appear here.
+            </p>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         COMMUNICATION HISTORY
+    ====================================================== -->
+
+    <section class="history-card communication-history-card">
+
+
+        <div class="section-heading">
+
+            <div>
+
+                <p class="eyebrow">
+                    ACTIVITY
+                </p>
+
+                <h2>
+                    Communication History
+                </h2>
+
+            </div>
+
+
+            <span class="history-count"
+                  th:text="${#lists.size(communicationHistory)}">
+
+                0
+
+            </span>
+
+        </div>
+
+
+
+        <div th:if="${#lists.isEmpty(communicationHistory)}"
+             class="empty-history">
+
+            <div class="empty-history-icon">
+                📭
+            </div>
+
+            <h3>
+                No communication yet
+            </h3>
+
+            <p>
+                Email, WhatsApp and PDF activities
+                will appear here.
+            </p>
+
+        </div>
+
+
+
+        <div th:unless="${#lists.isEmpty(communicationHistory)}"
+             class="communication-list">
+
+
+            <div class="communication-item"
+                 th:each="communication : ${communicationHistory}">
+
+
+                <div class="communication-icon"
+                     th:switch="${communication.type}">
+
+
+                    <span
+                            th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">
+
+                        📧
+
+                    </span>
+
+
+                    <span
+                            th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">
+
+                        💬
+
+                    </span>
+
+
+                    <span
+                            th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">
+
+                        📄
+
+                    </span>
+
+
+                    <span th:case="*">
+                        📌
+                    </span>
+
+                </div>
+
+
+
+                <div class="communication-content">
+
+
+                    <div class="communication-top">
+
+
+                        <h3 th:switch="${communication.type}">
+
+
+                            <span
+                                    th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">
+
+                                Email
+
+                            </span>
+
+
+                            <span
+                                    th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">
+
+                                WhatsApp
+
+                            </span>
+
+
+                            <span
+                                    th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">
+
+                                PDF
+
+                            </span>
+
+
+                            <span
+                                    th:case="*"
+                                    th:text="${communication.type}">
+                            </span>
+
+                        </h3>
+
+
+                        <span class="communication-status"
+                              th:classappend="${communication.status.name() == 'SENT'}
+                              ? ' status-success'
+                              : ' status-failed'"
+                              th:text="${communication.status}">
+
+                            SENT
+
+                        </span>
+
+                    </div>
+
+
+                    <p class="communication-recipient"
+                       th:if="${communication.recipient != null}"
+                       th:text="${communication.recipient}">
+
+                        Recipient
+
+                    </p>
+
+
+                    <p class="communication-message"
+                       th:if="${communication.message != null}"
+                       th:text="${communication.message}">
+
+                        Communication details
+
+                    </p>
+
+
+                    <p class="communication-date"
+                       th:if="${communication.sentAt != null}"
+                       th:text="${#temporals.format(
+                       communication.sentAt,
+                       'dd MMM yyyy, hh:mm a')}">
+
+                        05 Oct 2026, 04:30 PM
+
+                    </p>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+
+    <!-- =====================================================
+         BOTTOM ACTIONS
+    ====================================================== -->
+
+    <section class="bottom-actions">
+
+
+        <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+           class="btn btn-secondary">
+
+            Manage Rooms & Items
+
+        </a>
+
+
+        <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
+           class="btn btn-primary">
+
+            👁 Preview PDF
+
+        </a>
+
+
+        <a th:href="@{/admin/quotations/pdf/{id}(id=${quotation.id})}"
+           class="btn btn-success">
+
+            ↓ Download PDF
+
+        </a>
+
+
+        <button type="button"
+                class="btn btn-dark"
+                onclick="window.print()">
+
+            🖨 Print
+
+        </button>
+
+
+        <a href="#"
+           class="btn btn-whatsapp"
+
+           th:attr="
+           data-id=${quotation.id},
+           data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
+           data-name=${quotation.customer != null ? quotation.customer.name : ''},
+           data-number=${quotation.quotationNumber},
+           data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
+
+           onclick="openWhatsApp(this); return false;">
+
+            💬 WhatsApp
+
+        </a>
+
+
+        <form
+                th:action="@{/admin/quotations/email/{id}(id=${quotation.id})}"
+                method="post"
+                style="display: inline;">
+
+            <button type="submit"
+                    class="btn btn-email">
+
+                📧 Email Quotation
+
+            </button>
+
+        </form>
+
+    </section>
+
+</div>
+
+
+
+<!-- =========================================================
+     WHATSAPP SCRIPT
+========================================================= -->
+
+<script>
+
+    function openWhatsApp(button) {
+
+        const phone =
+            button.dataset.phone;
+
+        const name =
+            button.dataset.name;
+
+        const quotationNumber =
+            button.dataset.number;
+
+        const total =
+            button.dataset.total;
+
+        const quotationId =
+            button.dataset.id;
+
+
+        if (!phone) {
+
+            alert(
+                "Customer phone number is not available."
+            );
+
+            return;
+        }
+
+
+        let cleanPhone =
+            phone.replace(/\D/g, "");
+
+
+        if (cleanPhone.length === 10) {
+
+            cleanPhone =
+                "91" + cleanPhone;
+        }
+
+
+        const message =
+
+            "Hello " +
+            name +
+            ",\n\n" +
+
+            "Your quotation has been prepared.\n\n" +
+
+            "Quotation No: " +
+            quotationNumber +
+            "\n" +
+
+            "Quotation Amount: ₹" +
+            total +
+            "\n\n" +
+
+            "Thank you,\n" +
+
+            "Pravin Kitchens & Interiors";
+
+
+        const whatsappUrl =
+
+            "https://wa.me/" +
+            cleanPhone +
+            "?text=" +
+            encodeURIComponent(message);
+
+
+        /*
+         * Track communication.
+         *
+         * We use a normal GET request so Spring Security
+         * CSRF does not block it.
+         */
+
+        fetch(
+            "/admin/quotations/whatsapp/" +
+            quotationId
+        )
+
+        .then(() => {
+
+            window.open(
+                whatsappUrl,
+                "_blank"
+            );
+
+        })
+
+        .catch(() => {
+
+            window.open(
+                whatsappUrl,
+                "_blank"
+            );
+
+        });
+
+    }
+
+</script>
+
+
+</body>
+
+</html>

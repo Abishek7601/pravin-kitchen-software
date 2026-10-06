@@ -1,0 +1,607 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+/* =========================
+   PAGE
+========================= */
+
+.room-form-page {
+    min-height: 100vh;
+    padding: 32px;
+}
+
+.room-form-container {
+    max-width: 1050px;
+    margin: 0 auto;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 25px;
+    margin-bottom: 25px;
+}
+
+.header-content {
+    max-width: 700px;
+}
+
+.page-eyebrow {
+    margin-bottom: 7px;
+    color: #6b7280;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+}
+
+.page-header h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 30px;
+    font-weight: 700;
+}
+
+.page-header p {
+    margin: 8px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+.btn-custom {
+    min-height: 42px;
+    padding: 0 17px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 9px;
+    text-decoration: none;
+
+    font-size: 13px;
+    font-weight: 600;
+
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-secondary-custom {
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+}
+
+.btn-secondary-custom:hover {
+    background: #f9fafb;
+    border-color: #9ca3af;
+    color: #111827;
+}
+
+
+/* =========================
+   QUOTATION SUMMARY
+========================= */
+
+.quotation-summary-card {
+    margin-bottom: 22px;
+    padding: 22px;
+
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+}
+
+.summary-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding-bottom: 17px;
+    margin-bottom: 17px;
+
+    border-bottom: 1px solid #eef0f3;
+}
+
+.summary-label {
+    display: block;
+    margin-bottom: 5px;
+
+    color: #9ca3af;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1px;
+}
+
+.summary-heading h2 {
+    margin: 0;
+
+    color: #111827;
+    font-size: 20px;
+    font-weight: 700;
+}
+
+.quotation-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+
+    padding: 7px 11px;
+
+    background: #f3f4f6;
+    border-radius: 20px;
+
+    color: #4b5563;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+
+    background: #9ca3af;
+    border-radius: 50%;
+}
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+}
+
+.summary-item {
+    padding: 14px;
+
+    background: #f9fafb;
+    border: 1px solid #eef0f3;
+    border-radius: 9px;
+}
+
+.summary-item-label {
+    display: block;
+    margin-bottom: 6px;
+
+    color: #9ca3af;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.summary-item strong {
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+}
+
+
+/* =========================
+   FORM CARD
+========================= */
+
+.form-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.form-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+
+    padding: 23px;
+
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.section-number {
+    width: 34px;
+    height: 34px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    background: #111827;
+    color: #ffffff;
+
+    border-radius: 8px;
+
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.form-card-header h2 {
+    margin: 2px 0 5px;
+
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.form-card-header p {
+    margin: 0;
+
+    color: #6b7280;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+
+/* =========================
+   FORM
+========================= */
+
+.room-form {
+    padding: 25px;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 20px;
+}
+
+.form-group {
+    margin-bottom: 21px;
+}
+
+.form-group.full-width {
+    width: 100%;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+
+    color: #374151;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+.required {
+    color: #dc2626;
+    margin-left: 2px;
+}
+
+
+/* =========================
+   INPUTS
+========================= */
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+
+    padding: 12px 13px;
+
+    background: #ffffff;
+
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+
+    color: #1f2937;
+
+    font-family: inherit;
+    font-size: 13px;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.form-group input,
+.form-group select {
+    height: 45px;
+}
+
+.form-group textarea {
+    min-height: 125px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.form-group input::placeholder,
+.form-group textarea::placeholder {
+    color: #9ca3af;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: #6b7280;
+
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.06);
+}
+
+.form-group select {
+    cursor: pointer;
+}
+
+
+/* =========================
+   HELP TEXT
+========================= */
+
+.field-help {
+    display: block;
+    margin-top: 6px;
+
+    color: #9ca3af;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================
+   TEXTAREA FOOTER
+========================= */
+
+.textarea-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 15px;
+}
+
+.textarea-footer .field-help {
+    margin-top: 6px;
+}
+
+#characterCount {
+    flex-shrink: 0;
+    margin-top: 7px;
+
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+
+/* =========================
+   INFORMATION BOX
+========================= */
+
+.information-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+
+    margin-top: 4px;
+    padding: 15px;
+
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 9px;
+}
+
+.information-icon {
+    width: 24px;
+    height: 24px;
+
+    flex-shrink: 0;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 50%;
+
+    background: #e5e7eb;
+    color: #374151;
+
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.information-box strong {
+    display: block;
+    margin-bottom: 4px;
+
+    color: #374151;
+    font-size: 12px;
+}
+
+.information-box p {
+    margin: 0;
+
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* =========================
+   FORM ACTIONS
+========================= */
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 10px;
+
+    margin-top: 25px;
+    padding-top: 20px;
+
+    border-top: 1px solid #eef0f3;
+}
+
+.btn-cancel {
+    min-width: 95px;
+
+    background: #ffffff;
+    border: 1px solid #d1d5db;
+    color: #374151;
+}
+
+.btn-cancel:hover {
+    background: #f9fafb;
+    color: #111827;
+}
+
+.btn-save {
+    min-width: 120px;
+
+    background: #111827;
+    border: 1px solid #111827;
+    color: #ffffff;
+}
+
+.btn-save:hover {
+    background: #000000;
+    border-color: #000000;
+}
+
+
+/* =========================
+   TABLET
+========================= */
+
+@media (max-width: 992px) {
+
+    .room-form-page {
+        padding: 24px;
+    }
+
+    .summary-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+    .room-form-page {
+        padding: 16px;
+    }
+
+    .page-header {
+        flex-direction: column;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .btn-custom {
+        width: 100%;
+    }
+
+    .page-header h1 {
+        font-size: 25px;
+    }
+
+    .summary-heading {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .summary-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-card-header {
+        padding: 18px;
+    }
+
+    .room-form {
+        padding: 18px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+    }
+
+    .form-actions .btn-custom {
+        width: 100%;
+    }
+}
+
+
+/* =========================
+   SMALL MOBILE
+========================= */
+
+@media (max-width: 480px) {
+
+    .room-form-page {
+        padding: 12px;
+    }
+
+    .quotation-summary-card {
+        padding: 16px;
+        border-radius: 10px;
+    }
+
+    .form-card {
+        border-radius: 10px;
+    }
+
+    .page-header h1 {
+        font-size: 22px;
+    }
+
+    .page-header p {
+        font-size: 12px;
+    }
+
+    .form-card-header {
+        gap: 10px;
+    }
+
+    .form-card-header h2 {
+        font-size: 16px;
+    }
+
+    .form-card-header p {
+        font-size: 12px;
+    }
+
+    .room-form {
+        padding: 15px;
+    }
+
+    .information-box {
+        padding: 13px;
+    }
+}

@@ -1,0 +1,665 @@
+
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'} + ' | Pravin Kitchens'">
+    Pricing Form | Pravin Kitchens
+  </title>
+
+  <link rel="stylesheet" th:href="@{/css/pricing-form.css}">
+</head>
+
+<body>
+
+<div class="page-container">
+
+  <!-- =========================
+       HEADER
+  ========================== -->
+  <div class="page-header">
+
+    <div>
+
+      <a th:href="@{/admin/pricing}" class="back-link">
+        ← Back to Pricing
+      </a>
+
+      <h1 th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'}">
+        Add Pricing
+      </h1>
+
+      <p>
+        Configure material pricing for quotation calculations.
+      </p>
+
+    </div>
+
+  </div>
+
+
+  <!-- =========================
+       FORM CARD
+  ========================== -->
+  <div class="form-card">
+
+    <div class="form-header">
+
+      <div class="form-icon">
+        💰
+      </div>
+
+      <div>
+
+        <h2>Pricing Details</h2>
+
+        <p>
+          Set the rate and pricing mode for a material option.
+        </p>
+
+      </div>
+
+    </div>
+
+
+    <!-- =========================
+         PRICING FORM
+    ========================== -->
+
+    <form
+            th:action="${pricing.id == null}
+                    ? @{/admin/pricing/save}
+                    : @{/admin/pricing/update/{id}(id=${pricing.id})}"
+            method="post"
+            class="pricing-form"
+            onsubmit="return validatePricingForm();">
+
+      <!-- CSRF TOKEN -->
+      <input
+              type="hidden"
+              th:name="${_csrf.parameterName}"
+              th:value="${_csrf.token}">
+
+
+      <!-- =========================
+           MATERIAL OPTION
+      ========================== -->
+
+      <div class="form-group">
+
+        <label for="materialOptionId">
+
+          Material Option
+
+          <span class="required">*</span>
+
+        </label>
+
+        <select
+                id="materialOptionId"
+                name="materialOptionId"
+                required>
+
+          <option value="">
+            Select Material Option
+          </option>
+
+          <option
+                  th:each="option : ${materialOptions}"
+                  th:value="${option.id}"
+                  th:selected="${pricing.materialOption != null
+                                and pricing.materialOption.id == option.id}"
+                  th:text="${option.material != null
+                                ? option.material.name + ' - ' + option.name
+                                : option.name}">
+
+            Marine Ply - 18mm
+
+          </option>
+
+        </select>
+
+        <small>
+          Select the material option for which this price applies.
+        </small>
+
+      </div>
+
+
+      <!-- =========================
+           PRICING MODE
+      ========================== -->
+
+      <div class="form-group">
+
+        <label for="pricingMode">
+
+          Pricing Mode
+
+          <span class="required">*</span>
+
+        </label>
+
+        <select
+                id="pricingMode"
+                name="pricingMode"
+                required>
+
+          <option value="">
+            Select Pricing Mode
+          </option>
+
+          <option
+                  th:each="mode : ${pricingModes}"
+                  th:value="${mode}"
+                  th:selected="${pricing.pricingMode == mode}"
+                  th:text="${mode}">
+
+            PREMIUM
+
+          </option>
+
+        </select>
+
+        <small>
+          Choose the pricing grade used during quotation creation.
+        </small>
+
+      </div>
+
+
+      <!-- =========================
+           RATE + UNIT
+      ========================== -->
+
+      <div class="form-row">
+
+
+        <!-- RATE -->
+
+        <div class="form-group">
+
+          <label for="rate">
+
+            Rate
+
+            <span class="required">*</span>
+
+          </label>
+
+          <div class="input-with-prefix">
+
+                        <span class="input-prefix">
+                            ₹
+                        </span>
+
+            <input
+                    type="number"
+                    id="rate"
+                    name="rate"
+                    step="0.01"
+                    min="0.01"
+                    max="999999999999.99"
+                    placeholder="Enter rate"
+                    th:value="${pricing.rate}"
+                    required>
+
+          </div>
+
+          <small>
+            Enter the pricing amount.
+          </small>
+
+        </div>
+
+
+        <!-- UNIT -->
+
+        <div class="form-group">
+
+          <label for="unit">
+
+            Unit
+
+            <span class="required">*</span>
+
+          </label>
+
+          <select
+                  id="unit"
+                  name="unit"
+                  required>
+
+            <option value="">
+              Select Unit
+            </option>
+
+            <option
+                    value="SQFT"
+                    th:selected="${pricing.unit == 'SQFT'}">
+
+              SQFT
+
+            </option>
+
+            <option
+                    value="NOS"
+                    th:selected="${pricing.unit == 'NOS'}">
+
+              NOS
+
+            </option>
+
+            <option
+                    value="RUNNING_FEET"
+                    th:selected="${pricing.unit == 'RUNNING_FEET'}">
+
+              Running Feet
+
+            </option>
+
+            <option
+                    value="LUMP_SUM"
+                    th:selected="${pricing.unit == 'LUMP_SUM'}">
+
+              Lump Sum
+
+            </option>
+
+          </select>
+
+          <small>
+            Select how the rate will be calculated.
+          </small>
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           DESCRIPTION
+      ========================== -->
+
+      <div class="form-group">
+
+        <label for="description">
+
+          Description / Specification
+
+        </label>
+
+        <textarea
+                id="description"
+                name="description"
+                rows="5"
+                maxlength="500"
+                placeholder="Enter pricing specification or additional details..."
+                th:text="${pricing.description}"></textarea>
+
+        <div class="character-info">
+          Maximum 500 characters
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           PRICING PREVIEW
+      ========================== -->
+
+      <div class="pricing-preview">
+
+        <div class="preview-icon">
+          💡
+        </div>
+
+        <div>
+
+          <h3>
+            Pricing Preview
+          </h3>
+
+          <p>
+
+                        <span id="previewMode">
+                            Pricing Mode
+                        </span>
+
+            <strong> · </strong>
+
+            <span id="previewRate">
+                            ₹ 0.00
+                        </span>
+
+            <strong> / </strong>
+
+            <span id="previewUnit">
+                            Unit
+                        </span>
+
+          </p>
+
+        </div>
+
+      </div>
+
+
+      <!-- =========================
+           ACTIONS
+      ========================== -->
+
+      <div class="form-actions">
+
+        <a
+                th:href="@{/admin/pricing}"
+                class="btn btn-cancel">
+
+          Cancel
+
+        </a>
+
+
+        <button
+                type="reset"
+                class="btn btn-reset">
+
+          Reset
+
+        </button>
+
+
+        <button
+                type="submit"
+                class="btn btn-primary">
+
+                    <span th:if="${pricing.id == null}">
+                        + Save Pricing
+                    </span>
+
+          <span th:if="${pricing.id != null}">
+                        ✓ Update Pricing
+                    </span>
+
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+</div>
+
+
+<!-- =========================
+     JAVASCRIPT
+========================== -->
+
+<script>
+
+  /*
+   * Update pricing preview
+   */
+  function updatePreview() {
+
+      const modeElement =
+          document.getElementById("pricingMode");
+
+      const rateElement =
+          document.getElementById("rate");
+
+      const unitElement =
+          document.getElementById("unit");
+
+      const previewMode =
+          document.getElementById("previewMode");
+
+      const previewRate =
+          document.getElementById("previewRate");
+
+      const previewUnit =
+          document.getElementById("previewUnit");
+
+
+      if (!modeElement || !rateElement || !unitElement) {
+          return;
+      }
+
+
+      const mode =
+          modeElement.value;
+
+      const rate =
+          rateElement.value;
+
+      const unit =
+          unitElement.value;
+
+
+      /*
+       * Pricing Mode
+       */
+      previewMode.textContent =
+          mode || "Pricing Mode";
+
+
+      /*
+       * Rate
+       */
+      if (rate !== "" && !isNaN(parseFloat(rate))) {
+
+          previewRate.textContent =
+              "₹ " + parseFloat(rate).toFixed(2);
+
+      } else {
+
+          previewRate.textContent =
+              "₹ 0.00";
+
+      }
+
+
+      /*
+       * Unit
+       */
+      previewUnit.textContent =
+          unit || "Unit";
+
+  }
+
+
+  /*
+   * Validate form before submit
+   */
+  function validatePricingForm() {
+
+      const materialOption =
+          document.getElementById("materialOptionId").value;
+
+      const pricingMode =
+          document.getElementById("pricingMode").value;
+
+      const rateValue =
+          document.getElementById("rate").value;
+
+      const unit =
+          document.getElementById("unit").value;
+
+
+      const rate =
+          parseFloat(rateValue);
+
+
+      /*
+       * Material Option validation
+       */
+      if (!materialOption) {
+
+          alert("Please select a material option.");
+
+          document
+              .getElementById("materialOptionId")
+              .focus();
+
+          return false;
+
+      }
+
+
+      /*
+       * Pricing Mode validation
+       */
+      if (!pricingMode) {
+
+          alert("Please select a pricing mode.");
+
+          document
+              .getElementById("pricingMode")
+              .focus();
+
+          return false;
+
+      }
+
+
+      /*
+       * Rate validation
+       */
+      if (
+          rateValue === "" ||
+          isNaN(rate) ||
+          rate <= 0
+      ) {
+
+          alert(
+              "Please enter a valid rate greater than 0."
+          );
+
+          document
+              .getElementById("rate")
+              .focus();
+
+          return false;
+
+      }
+
+
+      /*
+       * Unit validation
+       */
+      if (!unit) {
+
+          alert("Please select a unit.");
+
+          document
+              .getElementById("unit")
+              .focus();
+
+          return false;
+
+      }
+
+
+      /*
+       * Everything is valid
+       */
+      return true;
+
+  }
+
+
+  /*
+   * Update preview whenever values change
+   */
+  document.addEventListener(
+      "DOMContentLoaded",
+      function () {
+
+          const pricingMode =
+              document.getElementById("pricingMode");
+
+          const rate =
+              document.getElementById("rate");
+
+          const unit =
+              document.getElementById("unit");
+
+
+          if (pricingMode) {
+
+              pricingMode.addEventListener(
+                  "change",
+                  updatePreview
+              );
+
+          }
+
+
+          if (rate) {
+
+              rate.addEventListener(
+                  "input",
+                  updatePreview
+              );
+
+          }
+
+
+          if (unit) {
+
+              unit.addEventListener(
+                  "change",
+                  updatePreview
+              );
+
+          }
+
+
+          /*
+           * Initial preview
+           *
+           * Important for Edit Pricing.
+           * Existing values will immediately appear
+           * in the preview.
+           */
+          updatePreview();
+
+
+          /*
+           * Reset button
+           *
+           * Native reset happens first,
+           * then preview is updated.
+           */
+          const form =
+              document.querySelector(".pricing-form");
+
+          if (form) {
+
+              form.addEventListener(
+                  "reset",
+                  function () {
+
+                      setTimeout(
+                          updatePreview,
+                          50
+                      );
+
+                  }
+              );
+
+          }
+
+      }
+  );
+
+</script>
+
+</body>
+
+</html>
+```

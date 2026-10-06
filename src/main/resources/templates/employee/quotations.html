@@ -1,0 +1,292 @@
+
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>My Quotations | Pravin Kitchens</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            font-family: Arial, sans-serif;
+            background: #f5f6fa;
+            color: #222;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        h1 {
+            margin: 0 0 8px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin: 0;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 11px 16px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 600;
+            border: 1px solid #ccc;
+        }
+
+        .btn-primary {
+            background: #183153;
+            color: white;
+            border-color: #183153;
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #333;
+        }
+
+        .table-card {
+            background: white;
+            padding: 18px;
+            border-radius: 10px;
+            box-shadow: 0 3px 15px rgba(0, 0, 0, 0.06);
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        th, td {
+            padding: 13px 12px;
+            border-bottom: 1px solid #e8eaf0;
+            text-align: left;
+            white-space: nowrap;
+        }
+
+        th {
+            background: #f0f3f8;
+            color: #333;
+            font-size: 13px;
+        }
+
+        td {
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #f8faff;
+        }
+
+        .quotation-number {
+            font-weight: 700;
+            color: #183153;
+        }
+
+        .status {
+            display: inline-block;
+            padding: 5px 9px;
+            border-radius: 20px;
+            background: #eef1f5;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .status-approved {
+            background: #e0f6e9;
+            color: #187044;
+        }
+
+        .status-pending {
+            background: #fff2d8;
+            color: #8a5b00;
+        }
+
+        .status-draft {
+            background: #e9eefc;
+            color: #304e91;
+        }
+
+        .open-btn {
+            display: inline-block;
+            padding: 8px 12px;
+            background: #183153;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+
+        .empty-message {
+            text-align: center;
+            padding: 28px;
+            color: #777;
+        }
+
+        @media (max-width: 600px) {
+            body {
+                padding: 14px;
+            }
+
+            .page-header {
+                align-items: flex-start;
+            }
+
+            h1 {
+                font-size: 23px;
+            }
+
+            .header-actions {
+                width: 100%;
+            }
+
+            .header-actions .btn {
+                text-align: center;
+            }
+
+            .table-card {
+                padding: 10px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="page-header">
+
+    <div>
+        <h1>My Quotations</h1>
+        <p class="subtitle">
+            View and manage your customer quotations.
+        </p>
+    </div>
+
+    <div class="header-actions">
+
+        <a th:href="@{/employee/dashboard}"
+           class="btn btn-secondary">
+            ← Back to Dashboard
+        </a>
+
+        <a th:href="@{/employee/quotations/new}"
+           class="btn btn-primary">
+            + Create Quotation
+        </a>
+
+    </div>
+
+</div>
+
+<div class="table-card">
+
+    <table>
+
+        <thead>
+        <tr>
+            <th>Quotation No</th>
+            <th>Date</th>
+            <th>Customer</th>
+            <th>Branch</th>
+            <th>Status</th>
+            <th>Total</th>
+            <th>Action</th>
+        </tr>
+        </thead>
+
+        <tbody>
+
+        <tr th:each="quotation : ${quotations}">
+
+            <td class="quotation-number"
+                th:text="${quotation.quotationNumber}">
+                QT-00001
+            </td>
+
+            <td th:text="${quotation.quotationDate}">
+                01/10/2026
+            </td>
+
+            <td th:text="${quotation.customer != null
+                    ? quotation.customer.name
+                    : 'N/A'}">
+                Customer
+            </td>
+
+            <td th:text="${quotation.branch != null
+                    ? quotation.branch.name
+                    : 'N/A'}">
+                Branch
+            </td>
+
+            <td>
+                <span class="status"
+                      th:classappend="${quotation.status != null
+                          and quotation.status.name() == 'APPROVED'
+                          ? ' status-approved'
+                          : (quotation.status != null
+                              and quotation.status.name() == 'PENDING'
+                              ? ' status-pending'
+                              : (quotation.status != null
+                                  and quotation.status.name() == 'DRAFT'
+                                  ? ' status-draft' : ''))}"
+                      th:text="${quotation.status}">
+                    DRAFT
+                </span>
+            </td>
+
+            <td>
+                ₹ <span th:text="${quotation.grandTotal}">0.00</span>
+            </td>
+
+            <td>
+                <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+                   class="open-btn">
+                    Open Quotation →
+                </a>
+            </td>
+
+        </tr>
+
+        <tr th:if="${#lists.isEmpty(quotations)}">
+            <td colspan="7" class="empty-message">
+                No quotations found. Create your first quotation to get started.
+            </td>
+        </tr>
+
+        </tbody>
+
+    </table>
+
+</div>
+
+</body>
+</html>
+

@@ -1,0 +1,596 @@
+/* =========================================
+   PRAVIN KITCHENS
+   TRAVEL CHARGE FORM
+   ========================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    background: #f5f7fb;
+    color: #1f2937;
+}
+
+
+/* =========================================
+   PAGE
+   ========================================= */
+
+.travel-form-page {
+    width: 100%;
+    max-width: 1050px;
+    margin: 0 auto;
+    padding: 32px;
+}
+
+
+/* =========================================
+   HEADER
+   ========================================= */
+
+.form-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 28px;
+}
+
+.form-eyebrow {
+    display: block;
+    margin-bottom: 8px;
+    color: #8b5cf6;
+    font-size: 12px;
+    font-weight: 750;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+}
+
+.form-header h1 {
+    margin: 0;
+    color: #111827;
+    font-size: 31px;
+    line-height: 1.2;
+    font-weight: 750;
+}
+
+.form-header p {
+    margin: 8px 0 0;
+    color: #6b7280;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+
+/* =========================================
+   BACK BUTTON
+   ========================================= */
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    background: #ffffff;
+    color: #374151;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 650;
+    white-space: nowrap;
+    transition: 0.2s ease;
+}
+
+.back-btn:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+    color: #111827;
+}
+
+
+/* =========================================
+   ALERT
+   ========================================= */
+
+.alert-message {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.error-message {
+    border: 1px solid #fecaca;
+    background: #fef2f2;
+    color: #b91c1c;
+}
+
+.message-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 24px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+
+/* =========================================
+   FORM CARD
+   ========================================= */
+
+.form-card {
+    padding: 30px;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px;
+    background: #ffffff;
+    box-shadow: 0 5px 24px rgba(15, 23, 42, 0.05);
+}
+
+
+/* =========================================
+   CARD HEADING
+   ========================================= */
+
+.card-heading {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding-bottom: 24px;
+    margin-bottom: 26px;
+    border-bottom: 1px solid #eef0f3;
+}
+
+.heading-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    flex: 0 0 48px;
+    border-radius: 12px;
+    background: #f3e8ff;
+    color: #7c3aed;
+    font-size: 21px;
+    font-weight: 750;
+}
+
+.card-heading h2 {
+    margin: 0 0 4px;
+    color: #111827;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.card-heading p {
+    margin: 0;
+    color: #9ca3af;
+    font-size: 13px;
+}
+
+
+/* =========================================
+   FORM GROUP
+   ========================================= */
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: #374151;
+    font-size: 13px;
+    font-weight: 700;
+}
+
+.required {
+    color: #dc2626;
+    margin-left: 2px;
+}
+
+
+/* =========================================
+   INPUTS
+   ========================================= */
+
+.form-group select,
+.form-group input,
+.form-group textarea {
+    width: 100%;
+    border: 1px solid #d1d5db;
+    border-radius: 9px;
+    outline: none;
+    background: #ffffff;
+    color: #111827;
+    font-family: inherit;
+    font-size: 14px;
+    transition: 0.2s ease;
+}
+
+.form-group select {
+    height: 46px;
+    padding: 0 13px;
+    cursor: pointer;
+}
+
+.form-group input {
+    height: 46px;
+    padding: 0 13px;
+}
+
+.form-group textarea {
+    min-height: 105px;
+    padding: 13px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.form-group select:focus,
+.form-group input:focus,
+.form-group textarea:focus {
+    border-color: #8b5cf6;
+    box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.form-group select:hover,
+.form-group input:hover,
+.form-group textarea:hover {
+    border-color: #a78bfa;
+}
+
+.form-group small {
+    display: block;
+    margin-top: 7px;
+    color: #9ca3af;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+
+/* =========================================
+   AMOUNT INPUT
+   ========================================= */
+
+.amount-input {
+    position: relative;
+}
+
+.amount-input .currency-symbol {
+    position: absolute;
+    top: 50%;
+    left: 14px;
+    z-index: 2;
+    transform: translateY(-50%);
+    color: #6b7280;
+    font-size: 15px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.amount-input input {
+    padding-left: 34px;
+}
+
+
+/* =========================================
+   CHARACTER COUNT
+   ========================================= */
+
+.character-info {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 7px;
+    color: #9ca3af;
+    font-size: 11px;
+}
+
+
+/* =========================================
+   PREVIEW
+   ========================================= */
+
+.preview-card {
+    margin-top: 28px;
+    overflow: hidden;
+    border: 1px solid #ddd6fe;
+    border-radius: 13px;
+    background: #faf9ff;
+}
+
+.preview-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 17px 18px;
+    border-bottom: 1px solid #ede9fe;
+}
+
+.preview-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 35px;
+    height: 35px;
+    flex: 0 0 35px;
+    border-radius: 9px;
+    background: #ede9fe;
+    color: #7c3aed;
+    font-size: 15px;
+    font-weight: 750;
+}
+
+.preview-header strong {
+    display: block;
+    margin-bottom: 2px;
+    color: #312e81;
+    font-size: 13px;
+}
+
+.preview-header span:not(.preview-icon) {
+    display: block;
+    color: #7c6f9d;
+    font-size: 11px;
+}
+
+.preview-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+}
+
+.preview-item {
+    padding: 17px 18px;
+}
+
+.preview-item + .preview-item {
+    border-left: 1px solid #ede9fe;
+}
+
+.preview-item span {
+    display: block;
+    margin-bottom: 6px;
+    color: #8b7aa8;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.preview-item strong {
+    color: #312e81;
+    font-size: 15px;
+}
+
+
+/* =========================================
+   INFORMATION BOX
+   ========================================= */
+
+.info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-top: 20px;
+    padding: 15px 16px;
+    border: 1px solid #e5e7eb;
+    border-radius: 11px;
+    background: #f9fafb;
+}
+
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    border-radius: 50%;
+    background: #e5e7eb;
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 750;
+}
+
+.info-box strong {
+    display: block;
+    margin-bottom: 4px;
+    color: #374151;
+    font-size: 12px;
+}
+
+.info-box p {
+    margin: 0;
+    color: #6b7280;
+    font-size: 12px;
+    line-height: 1.6;
+}
+
+
+/* =========================================
+   FORM ACTIONS
+   ========================================= */
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+    padding-top: 24px;
+    border-top: 1px solid #eef0f3;
+}
+
+.form-actions a,
+.form-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 17px;
+    border-radius: 9px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 650;
+    text-decoration: none;
+    cursor: pointer;
+    transition: 0.2s ease;
+}
+
+.cancel-btn {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #4b5563;
+}
+
+.cancel-btn:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+    color: #111827;
+}
+
+.reset-btn {
+    border: 1px solid #d1d5db;
+    background: #ffffff;
+    color: #6b7280;
+}
+
+.reset-btn:hover {
+    border-color: #9ca3af;
+    background: #f9fafb;
+    color: #374151;
+}
+
+.save-btn {
+    border: 1px solid #111827;
+    background: #111827;
+    color: #ffffff;
+}
+
+.save-btn:hover {
+    border-color: #1f2937;
+    background: #1f2937;
+    transform: translateY(-1px);
+}
+
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+
+@media (max-width: 768px) {
+
+    .travel-form-page {
+        padding: 22px 16px;
+    }
+
+    .form-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .back-btn {
+        width: 100%;
+    }
+
+    .form-header h1 {
+        font-size: 27px;
+    }
+
+    .form-card {
+        padding: 23px;
+    }
+}
+
+
+@media (max-width: 576px) {
+
+    .travel-form-page {
+        padding: 17px 12px;
+    }
+
+    .form-header {
+        margin-bottom: 22px;
+    }
+
+    .form-header h1 {
+        font-size: 24px;
+    }
+
+    .form-header p {
+        font-size: 13px;
+    }
+
+    .form-card {
+        padding: 18px 15px;
+        border-radius: 12px;
+    }
+
+    .card-heading {
+        align-items: flex-start;
+        padding-bottom: 20px;
+        margin-bottom: 22px;
+    }
+
+    .heading-icon {
+        width: 42px;
+        height: 42px;
+        flex-basis: 42px;
+    }
+
+    .card-heading h2 {
+        font-size: 16px;
+    }
+
+    .preview-content {
+        grid-template-columns: 1fr;
+    }
+
+    .preview-item + .preview-item {
+        border-top: 1px solid #ede9fe;
+        border-left: none;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+        align-items: stretch;
+    }
+
+    .form-actions a,
+    .form-actions button {
+        width: 100%;
+    }
+}
+
+
+@media (max-width: 400px) {
+
+    .travel-form-page {
+        padding: 14px 10px;
+    }
+
+    .form-card {
+        padding: 16px 13px;
+    }
+
+    .form-header h1 {
+        font-size: 22px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+}

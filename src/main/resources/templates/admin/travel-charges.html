@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Travel Charges | Pravin Kitchens</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/travel-charges.css}">
+</head>
+
+<body>
+
+<div class="travel-page">
+
+    <!-- ================= HEADER ================= -->
+    <header class="page-header">
+
+        <div class="header-left">
+
+            <a th:href="@{/admin/branches}"
+               class="back-link">
+                ← Back to Districts
+            </a>
+
+            <div class="brand">
+                <span class="brand-name">
+                    PRAVIN KITCHENS
+                </span>
+
+                <span class="brand-subtitle">
+                    Pricing Management
+                </span>
+            </div>
+
+        </div>
+
+        <a th:href="@{/admin/travel-charges/new}"
+           class="add-button">
+            <span>+</span>
+            Add Travel Charge
+        </a>
+
+    </header>
+
+
+    <!-- ================= FLASH MESSAGES ================= -->
+
+    <div th:if="${successMessage != null}"
+         class="alert success-alert">
+
+        <span class="alert-icon">✓</span>
+
+        <span th:text="${successMessage}">
+            Success message
+        </span>
+
+    </div>
+
+
+    <div th:if="${errorMessage != null}"
+         class="alert error-alert">
+
+        <span class="alert-icon">!</span>
+
+        <span th:text="${errorMessage}">
+            Error message
+        </span>
+
+    </div>
+
+
+    <!-- ================= PAGE INTRO ================= -->
+
+    <section class="page-intro">
+
+        <div>
+
+            <span class="eyebrow">
+                DISTRICT PRICING
+            </span>
+
+            <h1>
+                Travel Charges
+            </h1>
+
+            <p>
+                Manage travel charges for each district.
+                These charges can be applied to quotations based
+                on the selected district.
+            </p>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= SUMMARY ================= -->
+
+    <section class="summary-grid">
+
+        <!-- Total -->
+        <div class="summary-card">
+
+            <div class="summary-icon">
+                ₹
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Total Charges
+                </span>
+
+                <strong th:text="${travelChargeList != null
+                    ? #lists.size(travelChargeList)
+                    : 0}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- Active -->
+        <div class="summary-card active-card">
+
+            <div class="summary-icon">
+                ✓
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Active
+                </span>
+
+                <strong
+                        th:text="${travelChargeList != null
+                    ? #lists.size(
+                        travelChargeList.?[
+                            active != null and active
+                        ]
+                    )
+                    : 0}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- Inactive -->
+        <div class="summary-card inactive-card">
+
+            <div class="summary-icon">
+                ⏸
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Inactive
+                </span>
+
+                <strong
+                        th:text="${travelChargeList != null
+                    ? #lists.size(
+                        travelChargeList.?[
+                            active == null or !active
+                        ]
+                    )
+                    : 0}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- ================= TABLE ================= -->
+
+    <section class="charges-section">
+
+        <div class="section-header">
+
+            <div>
+
+                <span class="section-eyebrow">
+                    DISTRICT WISE
+                </span>
+
+                <h2>
+                    Travel Charge Details
+                </h2>
+
+            </div>
+
+            <span class="record-count"
+                  th:text="${travelChargeList != null
+                    ? #lists.size(travelChargeList)
+                    : 0} + ' records'">
+                0 records
+            </span>
+
+        </div>
+
+
+        <!-- ================= DESKTOP TABLE ================= -->
+
+        <div class="table-wrapper"
+             th:if="${travelChargeList != null and !#lists.isEmpty(travelChargeList)}">
+
+            <table class="charges-table">
+
+                <thead>
+
+                <tr>
+
+                    <th>#</th>
+
+                    <th>District</th>
+
+                    <th>Travel Charge</th>
+
+                    <th>Description</th>
+
+                    <th>Status</th>
+
+                    <th>Created</th>
+
+                    <th class="actions-column">
+                        Actions
+                    </th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <tr th:each="charge, stat : ${travelChargeList}">
+
+                    <!-- Number -->
+                    <td class="number-cell"
+                        th:text="${stat.count}">
+                        1
+                    </td>
+
+
+                    <!-- District -->
+                    <td>
+
+                        <div class="district-info">
+
+                            <div class="district-icon">
+                                📍
+                            </div>
+
+                            <div>
+
+                                <strong
+                                        th:text="${charge.branch != null
+                                        ? charge.branch.name
+                                        : 'Unknown District'}">
+                                    District
+                                </strong>
+
+                                <small
+                                        th:if="${charge.branch != null and charge.branch.email != null}"
+                                        th:text="${charge.branch.email}">
+                                    email
+                                </small>
+
+                            </div>
+
+                        </div>
+
+                    </td>
+
+
+                    <!-- Amount -->
+                    <td>
+
+                        <span class="amount"
+                              th:text="${charge.amount != null
+                                  ? '₹ ' + #numbers.formatDecimal(
+                                      charge.amount,
+                                      1,
+                                      2
+                                  )
+                                  : '₹ 0.00'}">
+                            ₹ 0.00
+                        </span>
+
+                    </td>
+
+
+                    <!-- Description -->
+                    <td>
+
+                        <span class="description"
+                              th:if="${charge.description != null and !#strings.isEmpty(charge.description)}"
+                              th:text="${charge.description}">
+                            Description
+                        </span>
+
+                        <span class="muted"
+                              th:if="${charge.description == null or #strings.isEmpty(charge.description)}">
+                            No description
+                        </span>
+
+                    </td>
+
+
+                    <!-- Status -->
+                    <td>
+
+                        <span class="status active"
+                              th:if="${charge.active != null and charge.active}">
+                            Active
+                        </span>
+
+                        <span class="status inactive"
+                              th:if="${charge.active == null or !charge.active}">
+                            Inactive
+                        </span>
+
+                    </td>
+
+
+                    <!-- Created -->
+                    <td>
+
+                        <span class="date"
+                              th:if="${charge.createdAt != null}"
+                              th:text="${#temporals.format(
+                                  charge.createdAt,
+                                  'dd MMM yyyy'
+                              )}">
+                            01 Jan 2026
+                        </span>
+
+                        <span class="muted"
+                              th:if="${charge.createdAt == null}">
+                            —
+                        </span>
+
+                    </td>
+
+
+                    <!-- Actions -->
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <!-- Edit -->
+                            <a th:href="@{'/admin/travel-charges/edit/' + ${charge.id}}"
+                               class="action-button edit-button"
+                               title="Edit Travel Charge">
+                                ✎
+                            </a>
+
+
+                            <!-- Toggle -->
+                            <form th:action="@{'/admin/travel-charges/toggle/' + ${charge.id}}"
+                                  method="post"
+                                  class="inline-form">
+
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}">
+
+                                <button type="submit"
+                                        class="action-button toggle-button"
+                                        th:title="${charge.active != null and charge.active
+                                            ? 'Deactivate'
+                                            : 'Activate'}">
+
+                                    <span th:if="${charge.active != null and charge.active}">
+                                        ⏸
+                                    </span>
+
+                                    <span th:if="${charge.active == null or !charge.active}">
+                                        ▶
+                                    </span>
+
+                                </button>
+
+                            </form>
+
+
+                            <!-- Delete -->
+                            <form th:action="@{'/admin/travel-charges/delete/' + ${charge.id}}"
+                                  method="post"
+                                  class="inline-form"
+                                  onsubmit="return confirmDelete(this);">
+
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}">
+
+                                <button type="submit"
+                                        class="action-button delete-button"
+                                        title="Delete Travel Charge">
+                                    🗑
+                                </button>
+
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+
+        <!-- ================= MOBILE CARDS ================= -->
+
+        <div class="mobile-charge-list"
+             th:if="${travelChargeList != null and !#lists.isEmpty(travelChargeList)}">
+
+            <article class="charge-card"
+                     th:each="charge, stat : ${travelChargeList}">
+
+                <div class="charge-card-header">
+
+                    <div class="mobile-district">
+
+                        <div class="district-icon">
+                            📍
+                        </div>
+
+                        <div>
+
+                            <h3
+                                    th:text="${charge.branch != null
+                                    ? charge.branch.name
+                                    : 'Unknown District'}">
+                                District
+                            </h3>
+
+                            <span
+                                    th:text="'#' + ${stat.count}">
+                                #1
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <span class="status active"
+                          th:if="${charge.active != null and charge.active}">
+                        Active
+                    </span>
+
+                    <span class="status inactive"
+                          th:if="${charge.active == null or !charge.active}">
+                        Inactive
+                    </span>
+
+                </div>
+
+
+                <div class="mobile-charge-body">
+
+                    <div class="mobile-amount">
+
+                        <span>
+                            Travel Charge
+                        </span>
+
+                        <strong
+                                th:text="${charge.amount != null
+                                ? '₹ ' + #numbers.formatDecimal(
+                                    charge.amount,
+                                    1,
+                                    2
+                                )
+                                : '₹ 0.00'}">
+                            ₹ 0.00
+                        </strong>
+
+                    </div>
+
+
+                    <div class="mobile-description">
+
+                        <span>
+                            Description
+                        </span>
+
+                        <p
+                                th:text="${charge.description != null
+                                and !#strings.isEmpty(charge.description)
+                                ? charge.description
+                                : 'No description'}">
+                            No description
+                        </p>
+
+                    </div>
+
+
+                    <div class="mobile-date">
+
+                        <span>
+                            Created
+                        </span>
+
+                        <strong
+                                th:if="${charge.createdAt != null}"
+                                th:text="${#temporals.format(
+                                charge.createdAt,
+                                'dd MMM yyyy'
+                            )}">
+                            01 Jan 2026
+                        </strong>
+
+                        <strong
+                                th:if="${charge.createdAt == null}">
+                            —
+                        </strong>
+
+                    </div>
+
+                </div>
+
+
+                <div class="mobile-actions">
+
+                    <a th:href="@{'/admin/travel-charges/edit/' + ${charge.id}}"
+                       class="mobile-action edit">
+                        ✎ Edit
+                    </a>
+
+
+                    <form th:action="@{'/admin/travel-charges/toggle/' + ${charge.id}}"
+                          method="post">
+
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+
+                        <button type="submit"
+                                class="mobile-action toggle">
+
+                            <span th:if="${charge.active != null and charge.active}">
+                                ⏸ Deactivate
+                            </span>
+
+                            <span th:if="${charge.active == null or !charge.active}">
+                                ▶ Activate
+                            </span>
+
+                        </button>
+
+                    </form>
+
+
+                    <form th:action="@{'/admin/travel-charges/delete/' + ${charge.id}}"
+                          method="post"
+                          onsubmit="return confirmDelete(this);">
+
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+
+                        <button type="submit"
+                                class="mobile-action delete">
+                            🗑 Delete
+                        </button>
+
+                    </form>
+
+                </div>
+
+            </article>
+
+        </div>
+
+
+        <!-- ================= EMPTY STATE ================= -->
+
+        <div class="empty-state"
+             th:if="${travelChargeList == null or #lists.isEmpty(travelChargeList)}">
+
+            <div class="empty-icon">
+                ₹
+            </div>
+
+            <h3>
+                No Travel Charges Yet
+            </h3>
+
+            <p>
+                Add travel charges for your districts
+                to use them in quotations.
+            </p>
+
+            <a th:href="@{/admin/travel-charges/new}"
+               class="empty-button">
+                + Add Travel Charge
+            </a>
+
+        </div>
+
+    </section>
+
+</div>
+
+
+<script>
+
+    function confirmDelete(form) {
+
+        return confirm(
+            "Are you sure you want to delete this travel charge?\n\n" +
+            "This action cannot be undone."
+        );
+    }
+
+    setTimeout(function () {
+
+        const alerts =
+            document.querySelectorAll(".alert");
+
+        alerts.forEach(function (alert) {
+
+            alert.style.opacity = "0";
+
+            setTimeout(function () {
+                alert.remove();
+            }, 400);
+
+        });
+
+    }, 4000);
+
+</script>
+
+</body>
+</html>
