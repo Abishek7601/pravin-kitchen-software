@@ -1,229 +1,835 @@
+/* =========================================================
+   PRAVIN KITCHENS - MATERIAL OPTION FORM
+   Premium Peacock Green Theme
+   File: material-option-form.css
+   ========================================================= */
+
+:root {
+    --peacock-dark: #063b35;
+    --peacock-deep: #075548;
+    --peacock-green: #087f69;
+    --peacock-bright: #10a889;
+
+    --peacock-light: #e0f5ec;
+    --peacock-pale: #f0faf5;
+
+    --page-bg: #f3f8f5;
+    --surface: #ffffff;
+
+    --text-main: #19352e;
+    --text-dark: #14352d;
+    --text-muted: #71847b;
+
+    --border-color: #dfeae5;
+    --border-light: #edf3ef;
+
+    --success: #16845d;
+    --danger: #c94b4b;
+
+    --shadow-sm: 0 5px 18px rgba(6, 59, 53, 0.07);
+    --shadow-md: 0 12px 32px rgba(6, 59, 53, 0.10);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+
+    --transition: 0.25s ease;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
 * {
-    margin: 0;
-    padding: 0;
     box-sizing: border-box;
 }
 
-body {
-    font-family: Arial, Helvetica, sans-serif;
-    background: #f5f7fb;
-    color: #1f2937;
+html {
+    scroll-behavior: smooth;
 }
+
+body {
+    margin: 0;
+    padding: 0;
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    background: var(--page-bg);
+    color: var(--text-main);
+
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* =========================================================
+   MAIN PAGE
+   ========================================================= */
 
 .form-page {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1050px;
+
     margin: 0 auto;
-    padding: 35px 24px;
+
+    padding: 42px 30px 65px;
 }
 
-/* HEADER */
+
+/* =========================================================
+   PAGE HEADER
+   ========================================================= */
 
 .page-header {
-    margin-bottom: 25px;
+    margin-bottom: 28px;
 }
 
 .back-link {
-    display: inline-block;
+    display: inline-flex;
+    align-items: center;
+
+    margin-bottom: 16px;
+
+    color: var(--peacock-green);
+
+    font-size: 14px;
+    font-weight: 700;
+
     text-decoration: none;
-    color: #6b7280;
-    font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 12px;
+
+    transition:
+        color var(--transition),
+        transform var(--transition);
 }
 
 .back-link:hover {
-    color: #111827;
+    color: var(--peacock-deep);
+
+    transform: translateX(-2px);
+}
+
+.back-link:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.20);
+    outline-offset: 4px;
+
+    border-radius: 5px;
 }
 
 .page-header h1 {
-    font-size: 30px;
-    color: #111827;
-    margin-bottom: 7px;
+    margin: 0;
+
+    color: var(--peacock-dark);
+
+    font-size: 34px;
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    letter-spacing: -0.6px;
 }
 
 .page-header p {
-    color: #6b7280;
-    font-size: 14px;
+    margin: 9px 0 0;
+
+    color: var(--text-muted);
+
+    font-size: 15px;
+
+    line-height: 1.6;
 }
 
-/* FORM CARD */
+
+/* =========================================================
+   FORM CARD
+   ========================================================= */
 
 .form-card {
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
-    border-radius: 16px;
-    box-shadow: 0 5px 20px rgba(15, 23, 42, 0.05);
+    width: 100%;
+
+    padding: 0;
+
+    background: var(--surface);
+
+    border: 1px solid var(--border-color);
+
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-md);
+
     overflow: hidden;
 }
+
+
+/* =========================================================
+   FORM CARD HEADER
+   ========================================================= */
 
 .form-card-header {
     display: flex;
     align-items: center;
+
     gap: 15px;
-    padding: 24px;
-    border-bottom: 1px solid #e5e7eb;
+
+    padding: 25px 30px;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f2faf6 0%,
+            #ffffff 100%
+        );
+
+    border-bottom: 1px solid var(--border-light);
 }
 
 .header-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 12px;
-    background: #f3f4f6;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 22px;
+
+    width: 52px;
+    height: 52px;
+
+    flex-shrink: 0;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-light),
+            #f1faf6
+        );
+
+    border: 1px solid #cde8dd;
+
+    border-radius: 14px;
+
+    font-size: 24px;
+
+    box-shadow:
+        0 4px 12px rgba(8, 127, 105, 0.08);
 }
 
 .form-card-header h2 {
+    margin: 0;
+
+    color: var(--peacock-dark);
+
     font-size: 19px;
-    color: #111827;
-    margin-bottom: 5px;
+    font-weight: 750;
 }
 
 .form-card-header p {
+    margin: 5px 0 0;
+
+    color: var(--text-muted);
+
     font-size: 13px;
-    color: #6b7280;
+
+    line-height: 1.5;
 }
 
-/* FORM */
 
-form {
-    padding: 28px;
+/* =========================================================
+   FORM BODY
+   ========================================================= */
+
+.form-card form {
+    padding: 30px;
 }
+
+
+/* =========================================================
+   FORM GROUP
+   ========================================================= */
 
 .form-group {
-    margin-bottom: 24px;
+    margin-bottom: 25px;
+}
+
+.form-group:last-of-type {
+    margin-bottom: 0;
 }
 
 .form-group label {
     display: block;
+
+    margin-bottom: 9px;
+
+    color: var(--text-dark);
+
     font-size: 14px;
-    font-weight: 700;
-    color: #374151;
-    margin-bottom: 8px;
+    font-weight: 750;
 }
 
 .form-group label span {
-    color: #dc2626;
+    margin-left: 3px;
+
+    color: var(--danger);
+
+    font-size: 14px;
 }
 
+
+/* =========================================================
+   INPUT / SELECT / TEXTAREA
+   ========================================================= */
+
 .form-group input,
-.form-group textarea,
-.form-group select {
+.form-group select,
+.form-group textarea {
+    display: block;
+
     width: 100%;
-    border: 1px solid #d1d5db;
-    border-radius: 9px;
+
     padding: 12px 14px;
+
+    color: var(--text-dark);
+
+    background: #ffffff;
+
+    border: 1px solid #d7e4de;
+
+    border-radius: 10px;
+
     font-family: inherit;
     font-size: 14px;
-    color: #111827;
-    background: #ffffff;
+
+    line-height: 1.5;
+
     outline: none;
-    transition: 0.2s ease;
+
+    transition:
+        border-color var(--transition),
+        box-shadow var(--transition),
+        background var(--transition);
 }
 
-.form-group input,
-.form-group select {
-    height: 45px;
+
+/* =========================================================
+   INPUT
+   ========================================================= */
+
+.form-group input {
+    min-height: 48px;
 }
+
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.form-group select {
+    min-height: 48px;
+
+    padding-right: 40px;
+
+    cursor: pointer;
+
+    appearance: auto;
+}
+
+.form-group select option {
+    color: var(--text-dark);
+
+    background: #ffffff;
+
+    font-size: 14px;
+}
+
+
+/* =========================================================
+   TEXTAREA
+   ========================================================= */
 
 .form-group textarea {
+    min-height: 120px;
+
     resize: vertical;
-    min-height: 105px;
 }
 
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group select:focus {
-    border-color: #111827;
-    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.05);
-}
+
+/* =========================================================
+   PLACEHOLDER
+   ========================================================= */
 
 .form-group input::placeholder,
 .form-group textarea::placeholder {
-    color: #9ca3af;
+    color: #9aa9a3;
+
+    opacity: 1;
 }
+
+
+/* =========================================================
+   HOVER
+   ========================================================= */
+
+.form-group input:hover,
+.form-group select:hover,
+.form-group textarea:hover {
+    border-color: #b9d2c8;
+}
+
+
+/* =========================================================
+   FOCUS
+   ========================================================= */
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    border-color: var(--peacock-green);
+
+    box-shadow:
+        0 0 0 3px rgba(8, 127, 105, 0.10);
+}
+
+
+/* =========================================================
+   HELPER TEXT
+   ========================================================= */
 
 .form-group small {
     display: block;
+
     margin-top: 7px;
-    color: #9ca3af;
+
+    color: var(--text-muted);
+
     font-size: 12px;
+
+    line-height: 1.5;
 }
 
-/* ACTIONS */
+
+/* =========================================================
+   NUMBER INPUT
+   ========================================================= */
+
+.form-group input[type="number"] {
+    max-width: 260px;
+}
+
+.form-group input[type="number"]::-webkit-inner-spin-button,
+.form-group input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0.7;
+}
+
+
+/* =========================================================
+   REQUIRED FIELD
+   ========================================================= */
+
+.form-group input:required:invalid:not(:placeholder-shown),
+.form-group select:required:invalid {
+    border-color: #e2b1b1;
+}
+
+.form-group input:required:valid,
+.form-group select:required:valid {
+    border-color: #cfe4da;
+}
+
+
+/* =========================================================
+   FORM ACTIONS
+   ========================================================= */
 
 .form-actions {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    gap: 10px;
-    padding-top: 8px;
-    border-top: 1px solid #e5e7eb;
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    margin-top: 30px;
+
+    padding-top: 25px;
+
+    border-top: 1px solid var(--border-light);
 }
 
+
+/* =========================================================
+   BUTTON BASE
+   ========================================================= */
+
 .btn {
-    min-width: 120px;
-    height: 44px;
-    padding: 0 18px;
-    border: none;
-    border-radius: 8px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    text-decoration: none;
-    cursor: pointer;
+
+    min-height: 46px;
+
+    padding: 0 22px;
+
+    border-radius: 10px;
+
+    font-family: inherit;
+
     font-size: 14px;
-    font-weight: 700;
-    transition: 0.2s ease;
+    font-weight: 750;
+
+    line-height: 1;
+
+    text-decoration: none;
+
+    cursor: pointer;
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition);
 }
 
-.btn-primary {
-    background: #111827;
-    color: #ffffff;
-}
 
-.btn-primary:hover {
-    background: #1f2937;
-}
+/* =========================================================
+   CANCEL BUTTON
+   ========================================================= */
 
 .btn-secondary {
-    background: #f3f4f6;
-    color: #374151;
+    color: var(--peacock-dark);
+
+    background: #ffffff;
+
+    border: 1px solid #d5e3dd;
 }
 
 .btn-secondary:hover {
-    background: #e5e7eb;
+    color: var(--peacock-dark);
+
+    background: var(--peacock-pale);
+
+    border-color: #bfd8ce;
+
+    transform: translateY(-1px);
+
+    box-shadow: var(--shadow-sm);
 }
 
-/* RESPONSIVE */
 
-@media (max-width: 600px) {
+/* =========================================================
+   SAVE / UPDATE BUTTON
+   ========================================================= */
+
+.btn-primary {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-deep),
+            var(--peacock-green)
+        );
+
+    border: 1px solid transparent;
+
+    box-shadow:
+        0 7px 18px rgba(8, 127, 105, 0.20);
+}
+
+.btn-primary:hover {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-green),
+            var(--peacock-bright)
+        );
+
+    transform: translateY(-2px);
+
+    box-shadow:
+        0 10px 24px rgba(8, 127, 105, 0.25);
+}
+
+
+/* =========================================================
+   BUTTON FOCUS
+   ========================================================= */
+
+.btn:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.20);
+
+    outline-offset: 3px;
+}
+
+
+/* =========================================================
+   DISABLED
+   ========================================================= */
+
+.form-group input:disabled,
+.form-group select:disabled,
+.form-group textarea:disabled {
+    color: #899991;
+
+    background: #f5f8f6;
+
+    cursor: not-allowed;
+
+    opacity: 0.8;
+}
+
+.btn:disabled {
+    cursor: not-allowed;
+
+    opacity: 0.6;
+
+    transform: none;
+
+    box-shadow: none;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
 
     .form-page {
-        padding: 22px 16px;
+        max-width: 850px;
+
+        padding: 34px 24px 55px;
+    }
+
+    .page-header h1 {
+        font-size: 31px;
+    }
+
+    .form-card-header {
+        padding: 23px 26px;
+    }
+
+    .form-card form {
+        padding: 28px;
+    }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .form-page {
+        padding: 27px 18px 45px;
+    }
+
+    .page-header {
+        margin-bottom: 22px;
+    }
+
+    .back-link {
+        margin-bottom: 14px;
+
+        font-size: 13px;
+    }
+
+    .page-header h1 {
+        font-size: 28px;
+    }
+
+    .page-header p {
+        font-size: 14px;
+    }
+
+    .form-card {
+        border-radius: 16px;
+    }
+
+    .form-card-header {
+        align-items: flex-start;
+
+        padding: 20px;
+    }
+
+    .header-icon {
+        width: 46px;
+        height: 46px;
+
+        border-radius: 12px;
+
+        font-size: 21px;
+    }
+
+    .form-card-header h2 {
+        font-size: 17px;
+    }
+
+    .form-card-header p {
+        font-size: 12px;
+    }
+
+    .form-card form {
+        padding: 23px 20px;
+    }
+
+    .form-group {
+        margin-bottom: 22px;
+    }
+
+    .form-group input,
+    .form-group select {
+        min-height: 46px;
+    }
+
+    .form-group textarea {
+        min-height: 110px;
+    }
+
+    .form-group input[type="number"] {
+        max-width: 100%;
+    }
+
+    .form-actions {
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+
+        gap: 10px;
+
+        margin-top: 26px;
+
+        padding-top: 21px;
+    }
+
+    .btn {
+        width: 100%;
+
+        min-height: 48px;
+    }
+
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 540px) {
+
+    .form-page {
+        padding: 20px 14px 35px;
     }
 
     .page-header h1 {
         font-size: 25px;
     }
 
+    .page-header p {
+        font-size: 13px;
+
+        line-height: 1.5;
+    }
+
     .form-card-header {
-        padding: 20px;
+        gap: 11px;
+
+        padding: 18px;
     }
 
-    form {
-        padding: 20px;
+    .header-icon {
+        width: 42px;
+        height: 42px;
+
+        font-size: 19px;
     }
 
-    .form-actions {
-        flex-direction: column-reverse;
-        align-items: stretch;
+    .form-card-header h2 {
+        font-size: 16px;
     }
 
-    .btn {
-        width: 100%;
+    .form-card-header p {
+        margin-top: 4px;
+
+        font-size: 11px;
     }
+
+    .form-card form {
+        padding: 21px 16px;
+    }
+
+    .form-group label {
+        font-size: 13px;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+        font-size: 13px;
+    }
+
+    .form-group small {
+        font-size: 11px;
+    }
+
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .form-page {
+        padding: 17px 11px 30px;
+    }
+
+    .page-header h1 {
+        font-size: 23px;
+    }
+
+    .back-link {
+        font-size: 12px;
+    }
+
+    .form-card-header {
+        padding: 16px;
+    }
+
+    .header-icon {
+        width: 39px;
+        height: 39px;
+
+        font-size: 17px;
+    }
+
+    .form-card form {
+        padding: 18px 14px;
+    }
+
+}
+
+
+/* =========================================================
+   ACCESSIBILITY / REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+
 }

@@ -1,0 +1,882 @@
+/* =========================================================
+   PRAVIN KITCHENS - TOTAL PORTFOLIO VALUE
+   Premium Peacock Green Theme
+   ========================================================= */
+
+:root {
+    --peacock-dark: #063b35;
+    --peacock-deep: #075548;
+    --peacock-green: #087f69;
+    --peacock-bright: #10a889;
+
+    --peacock-light: #e0f5ec;
+    --peacock-pale: #f0faf5;
+
+    --page-bg: #f3f8f5;
+    --surface: #ffffff;
+
+    --text-main: #19352e;
+    --text-muted: #71847b;
+
+    --border-color: #e0ebe5;
+
+    --success-bg: #e6f7ef;
+    --success-text: #08704f;
+
+    --warning-bg: #fff7df;
+    --warning-text: #9a6b00;
+
+    --danger-bg: #fdecec;
+    --danger-text: #b42318;
+
+    --shadow-sm: 0 4px 15px rgba(6, 59, 53, 0.06);
+    --shadow-md: 0 10px 30px rgba(6, 59, 53, 0.09);
+}
+
+
+/* =========================================================
+   GLOBAL
+   ========================================================= */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    background:
+        radial-gradient(
+            circle at top right,
+            rgba(16, 168, 137, 0.06),
+            transparent 28%
+        ),
+        var(--page-bg);
+
+    color: var(--text-main);
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* =========================================================
+   MAIN CONTAINER
+   ========================================================= */
+
+.portfolio-container {
+    width: 100%;
+    max-width: 1450px;
+
+    margin: 0 auto;
+    padding: 40px 32px 60px;
+}
+
+
+/* =========================================================
+   PAGE HEADING
+   ========================================================= */
+
+.page-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 24px;
+
+    margin-bottom: 30px;
+}
+
+.page-heading > div {
+    min-width: 0;
+}
+
+.page-heading h2 {
+    margin: 0 0 8px;
+
+    color: var(--peacock-dark);
+
+    font-size: 30px;
+    font-weight: 750;
+
+    letter-spacing: -0.6px;
+}
+
+.page-heading p {
+    margin: 0;
+
+    color: var(--text-muted) !important;
+
+    font-size: 15px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   BACK TO DASHBOARD BUTTON
+   ========================================================= */
+
+.page-heading .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding: 10px 18px;
+
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+
+    background: var(--surface);
+
+    color: var(--peacock-deep);
+
+    font-size: 14px;
+    font-weight: 650;
+
+    text-decoration: none;
+
+    white-space: nowrap;
+
+    transition:
+        background 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.page-heading .btn:hover {
+    background: var(--peacock-deep);
+    border-color: var(--peacock-deep);
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 7px 18px rgba(7, 85, 72, 0.18);
+}
+
+.page-heading .btn:active {
+    transform: translateY(0);
+}
+
+
+/* =========================================================
+   SUMMARY CARD
+   ========================================================= */
+
+.summary-card {
+    position: relative;
+
+    overflow: hidden;
+
+    margin-bottom: 28px;
+
+    padding: 30px 34px;
+
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 18px;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-dark) 0%,
+            var(--peacock-deep) 48%,
+            var(--peacock-green) 100%
+        );
+
+    box-shadow:
+        0 15px 35px rgba(6, 59, 53, 0.18);
+
+    color: #ffffff;
+}
+
+
+/* Decorative circle */
+
+.summary-card::before {
+    content: "";
+
+    position: absolute;
+
+    width: 210px;
+    height: 210px;
+
+    top: -110px;
+    right: -45px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.07);
+
+    pointer-events: none;
+}
+
+.summary-card::after {
+    content: "";
+
+    position: absolute;
+
+    width: 130px;
+    height: 130px;
+
+    bottom: -80px;
+    left: 35%;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.045);
+
+    pointer-events: none;
+}
+
+
+/* =========================================================
+   SUMMARY LABEL
+   ========================================================= */
+
+.summary-label {
+    position: relative;
+    z-index: 1;
+
+    margin-bottom: 10px;
+
+    color: rgba(255, 255, 255, 0.76);
+
+    font-size: 14px;
+    font-weight: 650;
+
+    letter-spacing: 0.4px;
+
+    text-transform: uppercase;
+}
+
+
+/* =========================================================
+   SUMMARY VALUE
+   ========================================================= */
+
+.summary-value {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    color: #ffffff;
+
+    font-size: 38px;
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    letter-spacing: -0.7px;
+}
+
+.summary-value span {
+    font-variant-numeric: tabular-nums;
+}
+
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.table-card {
+    padding: 28px;
+
+    border: 1px solid var(--border-color);
+    border-radius: 18px;
+
+    background: var(--surface);
+
+    box-shadow: var(--shadow-sm);
+}
+
+
+/* =========================================================
+   TABLE CARD HEADING
+   ========================================================= */
+
+.table-card h5 {
+    display: flex;
+    align-items: center;
+
+    margin: 0 0 22px;
+
+    color: var(--peacock-dark);
+
+    font-size: 19px;
+    font-weight: 750;
+}
+
+
+/* Small green indicator */
+
+.table-card h5::before {
+    content: "";
+
+    display: inline-block;
+
+    width: 5px;
+    height: 23px;
+
+    margin-right: 11px;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            to bottom,
+            var(--peacock-bright),
+            var(--peacock-deep)
+        );
+}
+
+
+/* =========================================================
+   TABLE RESPONSIVE WRAPPER
+   ========================================================= */
+
+.table-card .table-responsive {
+    width: 100%;
+
+    overflow-x: auto;
+
+    border: 1px solid var(--border-color);
+    border-radius: 13px;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--peacock-green) #eef5f1;
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-card table {
+    width: 100%;
+
+    min-width: 760px;
+
+    margin: 0;
+
+    border-collapse: separate;
+    border-spacing: 0;
+
+    color: var(--text-main);
+}
+
+
+/* =========================================================
+   TABLE HEADER
+   ========================================================= */
+
+.table-card .table thead th {
+    padding: 15px 18px;
+
+    border-bottom: 1px solid var(--border-color);
+
+    background: var(--peacock-pale);
+
+    color: var(--peacock-deep);
+
+    font-size: 12px;
+    font-weight: 750;
+
+    letter-spacing: 0.5px;
+
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+/* First header */
+
+.table-card .table thead th:first-child {
+    border-top-left-radius: 12px;
+}
+
+
+/* Last header */
+
+.table-card .table thead th:last-child {
+    border-top-right-radius: 12px;
+}
+
+
+/* =========================================================
+   TABLE BODY
+   ========================================================= */
+
+.table-card .table tbody td {
+    padding: 17px 18px;
+
+    border-bottom: 1px solid #edf2ef;
+
+    background: #ffffff;
+
+    color: var(--text-main);
+
+    font-size: 14px;
+
+    vertical-align: middle;
+}
+
+
+/* Remove last border */
+
+.table-card .table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   HOVER EFFECT
+   ========================================================= */
+
+.table-card .table-hover > tbody > tr:hover > * {
+    background-color: #f6fbf8;
+
+    color: var(--text-main);
+}
+
+
+/* =========================================================
+   QUOTATION NUMBER
+   ========================================================= */
+
+.table-card .table tbody td:first-child {
+    color: var(--peacock-deep);
+
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   CUSTOMER
+   ========================================================= */
+
+.table-card .table tbody td:nth-child(2) {
+    font-weight: 600;
+}
+
+
+/* =========================================================
+   DATE
+   ========================================================= */
+
+.table-card .table tbody td:nth-child(3) {
+    color: var(--text-muted);
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   AMOUNT
+   ========================================================= */
+
+.table-card .table tbody td:last-child {
+    color: var(--peacock-dark);
+
+    font-size: 15px;
+    font-weight: 750;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   STATUS BADGE
+   ========================================================= */
+
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 88px;
+
+    padding: 6px 12px;
+
+    border: 1px solid rgba(16, 168, 137, 0.16);
+    border-radius: 999px;
+
+    background: var(--peacock-light);
+
+    color: var(--peacock-deep);
+
+    font-size: 11px;
+    font-weight: 750;
+
+    letter-spacing: 0.35px;
+
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   STATUS COLORS
+   Works with text generated by Thymeleaf.
+   ========================================================= */
+
+.status-badge:has(+ *) {
+    /* Keeps badge layout stable where supported */
+}
+
+
+/* Pending */
+
+.status-badge {
+    /* Default status */
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.table-card tbody tr td.text-center {
+    min-height: 100px;
+
+    padding: 38px 20px !important;
+
+    color: var(--text-muted) !important;
+
+    font-size: 14px;
+
+    background: #fbfdfc !important;
+}
+
+
+/* =========================================================
+   BOOTSTRAP OVERRIDES
+   ========================================================= */
+
+.table-card .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: transparent;
+    --bs-table-hover-bg: #f6fbf8;
+
+    margin-bottom: 0;
+}
+
+.table-card .table > :not(caption) > * > * {
+    border-bottom-color: #edf2ef;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.table-card .table-responsive::-webkit-scrollbar {
+    height: 7px;
+}
+
+.table-card .table-responsive::-webkit-scrollbar-track {
+    background: #eef5f1;
+
+    border-radius: 10px;
+}
+
+.table-card .table-responsive::-webkit-scrollbar-thumb {
+    background: var(--peacock-green);
+
+    border-radius: 10px;
+}
+
+.table-card .table-responsive::-webkit-scrollbar-thumb:hover {
+    background: var(--peacock-deep);
+}
+
+
+/* =========================================================
+   FOCUS ACCESSIBILITY
+   ========================================================= */
+
+.page-heading .btn:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.25);
+    outline-offset: 3px;
+}
+
+
+/* =========================================================
+   LARGE TABLET
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .portfolio-container {
+        padding: 32px 24px 50px;
+    }
+
+    .page-heading h2 {
+        font-size: 27px;
+    }
+
+    .summary-card {
+        padding: 27px 30px;
+    }
+
+    .summary-value {
+        font-size: 34px;
+    }
+
+    .table-card {
+        padding: 24px;
+    }
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .portfolio-container {
+        padding: 25px 18px 40px;
+    }
+
+    .page-heading {
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 18px;
+
+        margin-bottom: 24px;
+    }
+
+    .page-heading h2 {
+        font-size: 25px;
+    }
+
+    .page-heading p {
+        font-size: 14px;
+    }
+
+    .page-heading .btn {
+        width: 100%;
+    }
+
+    .summary-card {
+        padding: 25px;
+
+        margin-bottom: 22px;
+
+        border-radius: 16px;
+    }
+
+    .summary-label {
+        font-size: 12px;
+    }
+
+    .summary-value {
+        font-size: 31px;
+    }
+
+    .table-card {
+        padding: 20px;
+
+        border-radius: 16px;
+    }
+
+    .table-card h5 {
+        font-size: 18px;
+
+        margin-bottom: 18px;
+    }
+
+    .table-card .table thead th {
+        padding: 13px 15px;
+
+        font-size: 11px;
+    }
+
+    .table-card .table tbody td {
+        padding: 14px 15px;
+
+        font-size: 13px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 576px) {
+
+    .portfolio-container {
+        padding: 20px 14px 35px;
+    }
+
+    .page-heading {
+        margin-bottom: 20px;
+    }
+
+    .page-heading h2 {
+        font-size: 22px;
+
+        letter-spacing: -0.3px;
+    }
+
+    .page-heading p {
+        font-size: 13px;
+
+        line-height: 1.5;
+    }
+
+    .page-heading .btn {
+        min-height: 42px;
+
+        padding: 9px 15px;
+
+        font-size: 13px;
+    }
+
+    .summary-card {
+        padding: 22px 20px;
+
+        border-radius: 14px;
+    }
+
+    .summary-label {
+        margin-bottom: 8px;
+
+        font-size: 11px;
+    }
+
+    .summary-value {
+        font-size: 27px;
+
+        gap: 5px;
+    }
+
+    .table-card {
+        padding: 16px;
+
+        border-radius: 14px;
+    }
+
+    .table-card h5 {
+        margin-bottom: 15px;
+
+        font-size: 16px;
+    }
+
+    .table-card h5::before {
+        width: 4px;
+        height: 20px;
+
+        margin-right: 8px;
+    }
+
+    .table-card .table-responsive {
+        border-radius: 10px;
+    }
+
+    .table-card .table thead th {
+        padding: 12px 13px;
+
+        font-size: 10px;
+    }
+
+    .table-card .table tbody td {
+        padding: 13px;
+
+        font-size: 12.5px;
+    }
+
+    .status-badge {
+        min-width: 78px;
+
+        padding: 5px 9px;
+
+        font-size: 10px;
+    }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 400px) {
+
+    .portfolio-container {
+        padding: 16px 11px 30px;
+    }
+
+    .page-heading h2 {
+        font-size: 20px;
+    }
+
+    .summary-card {
+        padding: 20px 17px;
+    }
+
+    .summary-value {
+        font-size: 24px;
+    }
+
+    .table-card {
+        padding: 13px;
+    }
+
+    .table-card h5 {
+        font-size: 15px;
+    }
+
+    .table-card .table thead th,
+    .table-card .table tbody td {
+        padding-left: 11px;
+        padding-right: 11px;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+    }
+}

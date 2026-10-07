@@ -1,0 +1,834 @@
+/* =========================================================
+   PRAVIN KITCHENS - QUOTATION VALUE REPORT
+   Premium Peacock Green Theme
+   ========================================================= */
+
+:root {
+    --peacock-dark: #063b35;
+    --peacock-deep: #075548;
+    --peacock-green: #087f69;
+    --peacock-bright: #10a889;
+
+    --peacock-light: #e0f5ec;
+    --peacock-pale: #f0faf5;
+
+    --page-bg: #f3f8f5;
+    --surface: #ffffff;
+
+    --text-main: #19352e;
+    --text-muted: #71847b;
+
+    --border-color: #e0ebe5;
+
+    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.07);
+    --shadow-md: 0 10px 30px rgba(6, 59, 53, 0.10);
+
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 20px;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+    background: var(--page-bg);
+    color: var(--text-main);
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
+        Helvetica,
+        Arial,
+        sans-serif;
+
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+
+
+/* =========================================================
+   PAGE
+   ========================================================= */
+
+.page {
+    width: 100%;
+    max-width: 1500px;
+    margin: 0 auto;
+    padding: 36px 32px 60px;
+}
+
+
+/* =========================================================
+   TOP BAR
+   ========================================================= */
+
+.topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+
+    margin-bottom: 28px;
+}
+
+.heading {
+    min-width: 0;
+}
+
+.heading h1 {
+    font-size: 32px;
+    line-height: 1.2;
+    font-weight: 750;
+    letter-spacing: -0.6px;
+    color: var(--peacock-dark);
+
+    margin-bottom: 7px;
+}
+
+.heading p {
+    color: var(--text-muted);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 44px;
+    padding: 10px 18px;
+
+    border-radius: 10px;
+
+    background: var(--surface);
+    border: 1px solid var(--border-color);
+
+    color: var(--peacock-deep);
+    text-decoration: none;
+
+    font-size: 14px;
+    font-weight: 650;
+
+    white-space: nowrap;
+
+    box-shadow: var(--shadow-sm);
+
+    transition:
+        background-color 0.2s ease,
+        color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.back-btn:hover {
+    background: var(--peacock-deep);
+    border-color: var(--peacock-deep);
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 8px 18px rgba(6, 59, 53, 0.16);
+}
+
+.back-btn:active {
+    transform: translateY(0);
+}
+
+.back-btn:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.25);
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   SUMMARY CARD
+   ========================================================= */
+
+.summary-card {
+    position: relative;
+    overflow: hidden;
+
+    margin-bottom: 28px;
+    padding: 28px 32px;
+
+    border-radius: var(--radius-lg);
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-dark) 0%,
+            var(--peacock-deep) 52%,
+            var(--peacock-green) 100%
+        );
+
+    color: #ffffff;
+
+    box-shadow:
+        0 14px 35px rgba(6, 59, 53, 0.18);
+}
+
+
+/* Decorative circles */
+
+.summary-card::before {
+    content: "";
+    position: absolute;
+
+    width: 220px;
+    height: 220px;
+
+    right: -70px;
+    top: -100px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.07);
+}
+
+.summary-card::after {
+    content: "";
+    position: absolute;
+
+    width: 150px;
+    height: 150px;
+
+    right: 130px;
+    bottom: -100px;
+
+    border-radius: 50%;
+
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.summary-label {
+    position: relative;
+    z-index: 1;
+
+    margin-bottom: 7px;
+
+    color: rgba(255, 255, 255, 0.76);
+
+    font-size: 13px;
+    font-weight: 650;
+
+    text-transform: uppercase;
+    letter-spacing: 0.9px;
+}
+
+.summary-value {
+    position: relative;
+    z-index: 1;
+
+    display: flex;
+    align-items: baseline;
+    gap: 7px;
+
+    margin-bottom: 10px;
+
+    font-size: 38px;
+    line-height: 1.15;
+    font-weight: 800;
+
+    letter-spacing: -0.7px;
+}
+
+.summary-value span {
+    font-variant-numeric: tabular-nums;
+}
+
+.summary-period {
+    position: relative;
+    z-index: 1;
+
+    color: rgba(255, 255, 255, 0.72);
+
+    font-size: 13px;
+    font-weight: 500;
+}
+
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.table-card {
+    background: var(--surface);
+
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-sm);
+
+    overflow: hidden;
+}
+
+
+/* =========================================================
+   TABLE HEADING
+   ========================================================= */
+
+.table-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    padding: 23px 26px;
+
+    border-bottom: 1px solid var(--border-color);
+
+    background:
+        linear-gradient(
+            180deg,
+            #ffffff 0%,
+            #fbfefc 100%
+        );
+}
+
+.table-heading h2 {
+    color: var(--peacock-dark);
+
+    font-size: 19px;
+    line-height: 1.3;
+    font-weight: 750;
+
+    letter-spacing: -0.2px;
+}
+
+
+/* =========================================================
+   TABLE WRAPPER
+   ========================================================= */
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+
+    scrollbar-width: thin;
+    scrollbar-color: var(--peacock-green) #edf4f0;
+}
+
+.table-wrapper::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-wrapper::-webkit-scrollbar-track {
+    background: #edf4f0;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb {
+    background: #9bc9bc;
+    border-radius: 10px;
+}
+
+.table-wrapper::-webkit-scrollbar-thumb:hover {
+    background: var(--peacock-green);
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+table {
+    width: 100%;
+    min-width: 950px;
+
+    border-collapse: collapse;
+
+    font-size: 14px;
+}
+
+thead {
+    background: var(--peacock-pale);
+}
+
+thead tr {
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    padding: 15px 18px;
+
+    color: var(--peacock-deep);
+
+    font-size: 11px;
+    font-weight: 750;
+
+    text-align: left;
+    text-transform: uppercase;
+    letter-spacing: 0.65px;
+
+    white-space: nowrap;
+}
+
+td {
+    padding: 17px 18px;
+
+    color: var(--text-main);
+
+    font-size: 14px;
+    font-weight: 500;
+
+    border-bottom: 1px solid #edf2ef;
+
+    vertical-align: middle;
+}
+
+tbody tr {
+    transition:
+        background-color 0.18s ease;
+}
+
+tbody tr:hover {
+    background: #f7fcf9;
+}
+
+tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   QUOTATION NUMBER
+   ========================================================= */
+
+tbody td:first-child {
+    color: var(--peacock-deep);
+    font-weight: 700;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   CUSTOMER
+   ========================================================= */
+
+tbody td:nth-child(2) {
+    font-weight: 650;
+    color: var(--text-main);
+}
+
+
+/* =========================================================
+   BRANCH / DISTRICT
+   ========================================================= */
+
+tbody td:nth-child(3) {
+    color: #536b63;
+}
+
+
+/* =========================================================
+   DATE
+   ========================================================= */
+
+tbody td:nth-child(4) {
+    color: #60756d;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: 78px;
+
+    padding: 6px 11px;
+
+    border-radius: 999px;
+
+    background: var(--peacock-light);
+    color: var(--peacock-deep);
+
+    border: 1px solid rgba(8, 127, 105, 0.14);
+
+    font-size: 11px;
+    font-weight: 750;
+
+    letter-spacing: 0.35px;
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+/* Different status colors based on text/classes if
+   the backend renders these values */
+
+.status.sent {
+    background: #e8f4ff;
+    color: #1769aa;
+}
+
+.status.pending {
+    background: #fff7df;
+    color: #956b00;
+}
+
+.status.approved {
+    background: #e4f7ec;
+    color: #16734d;
+}
+
+.status.rejected {
+    background: #fdebec;
+    color: #a13d46;
+}
+
+.status.draft {
+    background: #eef1f3;
+    color: #59666d;
+}
+
+
+/* =========================================================
+   AMOUNT
+   ========================================================= */
+
+.amount {
+    color: var(--peacock-dark);
+
+    font-size: 15px;
+    font-weight: 750;
+
+    white-space: nowrap;
+
+    font-variant-numeric: tabular-nums;
+}
+
+.amount span {
+    letter-spacing: 0.1px;
+}
+
+
+/* =========================================================
+   EMPTY STATE
+   ========================================================= */
+
+.empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 280px;
+
+    padding: 45px 24px;
+
+    text-align: center;
+}
+
+.empty-state::before {
+    content: "₹";
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 64px;
+    height: 64px;
+
+    margin-bottom: 18px;
+
+    border-radius: 50%;
+
+    background: var(--peacock-light);
+    color: var(--peacock-green);
+
+    font-size: 26px;
+    font-weight: 800;
+
+    border: 1px solid rgba(8, 127, 105, 0.12);
+}
+
+.empty-state h3 {
+    margin-bottom: 7px;
+
+    color: var(--peacock-dark);
+
+    font-size: 18px;
+    font-weight: 750;
+}
+
+.empty-state p {
+    max-width: 480px;
+
+    color: var(--text-muted);
+
+    font-size: 14px;
+    line-height: 1.6;
+}
+
+
+/* =========================================================
+   TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+
+    .page {
+        padding: 30px 22px 50px;
+    }
+
+    .heading h1 {
+        font-size: 29px;
+    }
+
+    .summary-card {
+        padding: 26px 28px;
+    }
+
+    .summary-value {
+        font-size: 34px;
+    }
+
+    .table-heading {
+        padding: 21px 22px;
+    }
+
+    th,
+    td {
+        padding-left: 15px;
+        padding-right: 15px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .page {
+        padding: 22px 16px 40px;
+    }
+
+    .topbar {
+        flex-direction: column;
+        align-items: stretch;
+
+        gap: 16px;
+
+        margin-bottom: 22px;
+    }
+
+    .heading h1 {
+        font-size: 26px;
+    }
+
+    .heading p {
+        font-size: 13px;
+        line-height: 1.5;
+    }
+
+    .back-btn {
+        width: 100%;
+    }
+
+    .summary-card {
+        margin-bottom: 22px;
+        padding: 23px 22px;
+
+        border-radius: 16px;
+    }
+
+    .summary-label {
+        font-size: 11px;
+    }
+
+    .summary-value {
+        font-size: 30px;
+    }
+
+    .summary-period {
+        font-size: 12px;
+    }
+
+    .table-card {
+        border-radius: 16px;
+    }
+
+    .table-heading {
+        padding: 19px 18px;
+    }
+
+    .table-heading h2 {
+        font-size: 17px;
+    }
+
+    table {
+        min-width: 900px;
+    }
+
+    th {
+        font-size: 10px;
+    }
+
+    td {
+        font-size: 13px;
+    }
+
+    .empty-state {
+        min-height: 250px;
+        padding: 38px 20px;
+    }
+}
+
+
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 540px) {
+
+    .page {
+        padding: 18px 12px 32px;
+    }
+
+    .heading h1 {
+        font-size: 23px;
+    }
+
+    .heading p {
+        font-size: 12px;
+    }
+
+    .back-btn {
+        min-height: 42px;
+
+        font-size: 13px;
+    }
+
+    .summary-card {
+        padding: 21px 18px;
+    }
+
+    .summary-value {
+        font-size: 26px;
+
+        gap: 5px;
+    }
+
+    .summary-period {
+        line-height: 1.7;
+    }
+
+    .table-heading {
+        padding: 17px 16px;
+    }
+
+    .table-heading h2 {
+        font-size: 16px;
+    }
+
+    .empty-state {
+        min-height: 230px;
+    }
+
+    .empty-state h3 {
+        font-size: 17px;
+    }
+
+    .empty-state p {
+        font-size: 13px;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE
+   ========================================================= */
+
+@media (max-width: 380px) {
+
+    .page {
+        padding-left: 10px;
+        padding-right: 10px;
+    }
+
+    .heading h1 {
+        font-size: 21px;
+    }
+
+    .summary-card {
+        padding: 19px 16px;
+    }
+
+    .summary-value {
+        font-size: 23px;
+    }
+
+    .summary-period {
+        font-size: 11px;
+    }
+
+    .table-heading {
+        padding: 16px 14px;
+    }
+
+    .table-heading h2 {
+        font-size: 15px;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+a:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.28);
+    outline-offset: 3px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}

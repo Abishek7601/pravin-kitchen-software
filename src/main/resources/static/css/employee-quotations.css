@@ -1,0 +1,721 @@
+/* =========================================================
+   PRAVIN KITCHENS & INTERIORS
+   EMPLOYEE - MY QUOTATIONS
+   Premium Peacock Green Theme
+   ========================================================= */
+
+:root {
+    --peacock-dark: #063b35;
+    --peacock-deep: #075548;
+    --peacock-green: #087f69;
+    --peacock-bright: #10a889;
+
+    --peacock-light: #e0f5ec;
+    --peacock-pale: #f0faf5;
+
+    --page-bg: #f3f8f5;
+    --surface: #ffffff;
+    --surface-soft: #f8fbf9;
+
+    --text-dark: #102c25;
+    --text-main: #19352e;
+    --text-muted: #71847b;
+    --text-light: #9aa9a3;
+
+    --border: #dfeae5;
+    --border-light: #ebf2ee;
+
+    --success: #16845d;
+    --success-bg: #e9f8f0;
+
+    --warning: #a96f12;
+    --warning-bg: #fff6df;
+
+    --danger: #c84d4d;
+    --danger-bg: #fff0f0;
+
+    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.06);
+    --shadow-md: 0 10px 28px rgba(6, 59, 53, 0.09);
+    --shadow-lg: 0 18px 45px rgba(6, 59, 53, 0.12);
+
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+}
+
+
+/* =========================================================
+   RESET
+   ========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    min-height: 100vh;
+
+    padding: 32px;
+
+    font-family:
+        Inter,
+        "Segoe UI",
+        Roboto,
+        Arial,
+        sans-serif;
+
+    background:
+        linear-gradient(
+            135deg,
+            #f3f8f5 0%,
+            #eef8f3 50%,
+            #f8fbf9 100%
+        );
+
+    color: var(--text-main);
+
+    line-height: 1.5;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+
+/* =========================================================
+   PAGE HEADER
+   ========================================================= */
+
+.page-header {
+    width: min(1400px, 100%);
+
+    margin: 0 auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+
+    gap: 25px;
+
+    padding: 5px 0 25px;
+
+    border-bottom: 1px solid var(--border);
+}
+
+.page-header h1 {
+    color: var(--text-dark);
+
+    font-size: clamp(25px, 2.6vw, 32px);
+
+    line-height: 1.15;
+
+    font-weight: 800;
+
+    letter-spacing: -0.4px;
+}
+
+.subtitle {
+    margin-top: 6px;
+
+    color: var(--text-muted);
+
+    font-size: 13px;
+}
+
+
+/* =========================================================
+   HEADER ACTIONS
+   ========================================================= */
+
+.header-actions {
+    display: flex;
+    align-items: center;
+
+    gap: 9px;
+
+    flex-shrink: 0;
+}
+
+
+/* =========================================================
+   BUTTONS
+   ========================================================= */
+
+.btn {
+    min-height: 42px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    padding: 0 16px;
+
+    border-radius: 9px;
+
+    border: 1px solid transparent;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    white-space: nowrap;
+
+    transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.btn:hover {
+    transform: translateY(-1px);
+}
+
+.btn-secondary {
+    color: var(--peacock-deep);
+
+    background: #ffffff;
+
+    border-color: var(--border);
+
+    box-shadow: var(--shadow-sm);
+}
+
+.btn-secondary:hover {
+    background: var(--peacock-pale);
+
+    border-color: #b9ddd0;
+
+    box-shadow: var(--shadow-md);
+}
+
+.btn-primary {
+    color: #ffffff;
+
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-green),
+            var(--peacock-bright)
+        );
+
+    border-color: var(--peacock-green);
+
+    box-shadow:
+        0 7px 17px rgba(8, 127, 105, 0.18);
+}
+
+.btn-primary:hover {
+    box-shadow:
+        0 10px 23px rgba(8, 127, 105, 0.25);
+}
+
+
+/* =========================================================
+   TABLE CARD
+   ========================================================= */
+
+.table-card {
+    width: min(1400px, 100%);
+
+    margin: 25px auto 0;
+
+    overflow: hidden;
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius-lg);
+
+    box-shadow: var(--shadow-md);
+}
+
+
+/* =========================================================
+   TABLE
+   ========================================================= */
+
+.table-card table {
+    width: 100%;
+
+    border-collapse: collapse;
+
+    table-layout: auto;
+}
+
+.table-card thead {
+    background:
+        linear-gradient(
+            135deg,
+            #f1f8f5,
+            #eaf5f0
+        );
+}
+
+.table-card th {
+    padding: 15px 16px;
+
+    border-bottom: 1px solid var(--border);
+
+    color: var(--text-muted);
+
+    font-size: 10px;
+
+    font-weight: 800;
+
+    text-transform: uppercase;
+
+    letter-spacing: 0.8px;
+
+    text-align: left;
+
+    white-space: nowrap;
+}
+
+.table-card td {
+    padding: 16px;
+
+    border-bottom: 1px solid var(--border-light);
+
+    color: var(--text-main);
+
+    font-size: 12px;
+
+    vertical-align: middle;
+}
+
+.table-card tbody tr {
+    background: #ffffff;
+
+    transition:
+        background 0.15s ease;
+}
+
+.table-card tbody tr:hover {
+    background: #f8fcfa;
+}
+
+.table-card tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+/* =========================================================
+   QUOTATION NUMBER
+   ========================================================= */
+
+.quotation-number {
+    color: var(--peacock-deep) !important;
+
+    font-size: 12px !important;
+
+    font-weight: 800 !important;
+
+    letter-spacing: 0.2px;
+
+    white-space: nowrap;
+}
+
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.status {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 27px;
+
+    padding: 4px 10px;
+
+    border-radius: 20px;
+
+    background: #f2f5f3;
+
+    border: 1px solid #dde6e1;
+
+    color: var(--text-muted);
+
+    font-size: 9px;
+
+    font-weight: 800;
+
+    letter-spacing: 0.55px;
+
+    text-transform: uppercase;
+
+    white-space: nowrap;
+}
+
+
+/* DRAFT */
+
+.status-draft {
+    background: #f3f5f4;
+
+    border-color: #dce5e0;
+
+    color: #687b73;
+}
+
+
+/* PENDING */
+
+.status-pending {
+    background: var(--warning-bg);
+
+    border-color: #efdda9;
+
+    color: var(--warning);
+}
+
+
+/* APPROVED */
+
+.status-approved {
+    background: var(--success-bg);
+
+    border-color: #c8ead9;
+
+    color: var(--success);
+}
+
+
+/* =========================================================
+   OPEN BUTTON
+   ========================================================= */
+
+.open-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    min-height: 34px;
+
+    padding: 0 12px;
+
+    border: 1px solid #cbe4da;
+
+    border-radius: 8px;
+
+    background: var(--peacock-pale);
+
+    color: var(--peacock-green);
+
+    font-size: 11px;
+
+    font-weight: 750;
+
+    white-space: nowrap;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.open-btn:hover {
+    background:
+        linear-gradient(
+            135deg,
+            var(--peacock-green),
+            var(--peacock-bright)
+        );
+
+    border-color: var(--peacock-green);
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+    box-shadow:
+        0 6px 15px rgba(8, 127, 105, 0.17);
+}
+
+
+/* =========================================================
+   EMPTY MESSAGE
+   ========================================================= */
+
+.empty-message {
+    height: 220px;
+
+    padding: 30px !important;
+
+    text-align: center !important;
+
+    color: var(--text-muted) !important;
+
+    font-size: 13px !important;
+
+    background:
+        linear-gradient(
+            135deg,
+            #ffffff,
+            #f8fcfa
+        ) !important;
+}
+
+.empty-message::before {
+    content: "▣";
+
+    display: block;
+
+    width: 48px;
+    height: 48px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    margin: 0 auto 12px;
+
+    border-radius: 13px;
+
+    background: var(--peacock-pale);
+
+    border: 1px solid #d1ebe0;
+
+    color: var(--peacock-green);
+
+    font-size: 20px;
+}
+
+
+/* =========================================================
+   TABLET - 1100px
+   ========================================================= */
+
+@media (max-width: 1100px) {
+
+    body {
+        padding: 25px;
+    }
+
+    .page-header {
+        align-items: flex-start;
+    }
+
+    .table-card {
+        overflow-x: auto;
+    }
+
+    .table-card table {
+        min-width: 900px;
+    }
+}
+
+
+/* =========================================================
+   TABLET - 800px
+   ========================================================= */
+
+@media (max-width: 800px) {
+
+    body {
+        padding: 20px;
+    }
+
+    .page-header {
+        flex-direction: column;
+
+        align-items: stretch;
+
+        gap: 17px;
+    }
+
+    .header-actions {
+        width: 100%;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+    }
+
+    .table-card {
+        margin-top: 20px;
+
+        border-radius: 14px;
+    }
+
+    .table-card table {
+        min-width: 850px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE - 600px
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    body {
+        padding: 15px;
+    }
+
+    .page-header h1 {
+        font-size: 23px;
+    }
+
+    .subtitle {
+        font-size: 11px;
+
+        line-height: 1.6;
+    }
+
+    .header-actions {
+        display: grid;
+
+        grid-template-columns:
+            1fr 1fr;
+
+        gap: 8px;
+    }
+
+    .header-actions .btn {
+        width: 100%;
+
+        padding-left: 8px;
+        padding-right: 8px;
+
+        font-size: 11px;
+    }
+
+    .table-card {
+        margin-top: 17px;
+    }
+
+    .table-card table {
+        min-width: 820px;
+    }
+
+    .table-card th {
+        padding: 12px;
+
+        font-size: 9px;
+    }
+
+    .table-card td {
+        padding: 13px 12px;
+
+        font-size: 11px;
+    }
+
+    .open-btn {
+        min-height: 32px;
+
+        padding: 0 10px;
+
+        font-size: 10px;
+    }
+}
+
+
+/* =========================================================
+   MOBILE - 450px
+   ========================================================= */
+
+@media (max-width: 450px) {
+
+    body {
+        padding: 12px;
+    }
+
+    .page-header h1 {
+        font-size: 21px;
+    }
+
+    .header-actions {
+        grid-template-columns: 1fr;
+    }
+
+    .table-card {
+        border-radius: 12px;
+    }
+
+    /*
+       Keep the table horizontally scrollable
+       so all quotation information remains visible.
+    */
+    .table-card table {
+        min-width: 800px;
+    }
+
+    .empty-message {
+        height: 190px;
+
+        font-size: 11px !important;
+    }
+}
+
+
+/* =========================================================
+   VERY SMALL MOBILE - 350px
+   ========================================================= */
+
+@media (max-width: 350px) {
+
+    body {
+        padding: 9px;
+    }
+
+    .page-header h1 {
+        font-size: 20px;
+    }
+
+    .subtitle {
+        font-size: 10px;
+    }
+
+    .btn {
+        min-height: 40px;
+
+        font-size: 10px;
+    }
+
+    .table-card table {
+        min-width: 780px;
+    }
+}
+
+
+/* =========================================================
+   ACCESSIBILITY
+   ========================================================= */
+
+.btn:focus-visible,
+.open-btn:focus-visible {
+    outline: 3px solid rgba(16, 168, 137, 0.25);
+
+    outline-offset: 2px;
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+        scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+        transition: none !important;
+        animation: none !important;
+    }
+}
