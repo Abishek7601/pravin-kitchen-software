@@ -9,7 +9,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Employee Details | Pravin Kitchens</title>
+    <title>Employee Details | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/employee-details.css}">
@@ -31,7 +31,7 @@
         <div>
 
             <span class="eyebrow">
-                PRAVIN KITCHENS & INTERIORS
+                Pravin KITCHENS & INTERIORS
             </span>
 
             <h1>
@@ -45,20 +45,20 @@
         </div>
 
 
-        <div class="header-actions">
+        <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
+            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                    <span>← Back</span>
+                </button>
+                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                    <span>⌂ Dashboard</span>
+                </a>
+            </div>
 
             <a th:href="@{'/admin/employees/edit/' + ${employee.id}}"
                class="edit-button">
 
                 Edit Employee
-
-            </a>
-
-
-            <a th:href="@{/admin/employees}"
-               class="back-button">
-
-                Back to Employees
 
             </a>
 

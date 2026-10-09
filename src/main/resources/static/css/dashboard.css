@@ -1,8 +1,4 @@
 
-/* =========================================================
-   PRAVIN KITCHENS — PEACOCK GREEN DASHBOARD THEME
-   File: src/main/resources/static/css/dashboard.css
-   ========================================================= */
 
 :root {
     --peacock: #006D68;
@@ -101,8 +97,8 @@ a:focus-visible {
     justify-content: center;
     flex-shrink: 0;
 
-    width: 48px;
-    height: 48px;
+    width: 60px;
+    height: 60px;
 
     color: var(--white);
     background: linear-gradient(
@@ -114,6 +110,15 @@ a:focus-visible {
     border-radius: 14px;
     font-size: 23px;
     box-shadow: 0 5px 14px rgba(0, 109, 104, 0.18);
+}
+
+.brand-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: inherit;
+    padding: 3px;
+    background: #ffffff;
 }
 
 .brand-text h5 {

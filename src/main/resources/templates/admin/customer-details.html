@@ -9,7 +9,7 @@
         content="width=device-width, initial-scale=1.0">
 
   <title>
-    Customer Details | Pravin Kitchens
+    Customer Details | Pravin KITCHENS & INTERIORS
   </title>
 
   <link rel="stylesheet"
@@ -32,13 +32,13 @@
     <div class="brand-section">
 
       <div class="brand-mark">
-        PK
+        <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: inherit;">
       </div>
 
       <div>
 
         <div class="brand-name">
-          PRAVIN KITCHENS
+          Pravin KITCHENS & INTERIORS
         </div>
 
         <div class="brand-subtitle">
@@ -50,12 +50,14 @@
     </div>
 
 
-    <a th:href="@{/admin/customers}"
-       class="back-button">
-
-      ← Customers
-
-    </a>
+    <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/customers'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <span>← Back</span>
+        </button>
+        <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+            <span>⌂ Dashboard</span>
+        </a>
+    </div>
 
   </header>
 

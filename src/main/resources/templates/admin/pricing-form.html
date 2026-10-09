@@ -6,8 +6,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'} + ' | Pravin Kitchens'">
-    Pricing Form | Pravin Kitchens
+  <title th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'} + ' | Pravin KITCHENS & INTERIORS'">
+    Pricing Form | Pravin KITCHENS & INTERIORS
   </title>
 
   <link rel="stylesheet" th:href="@{/css/pricing-form.css}">
@@ -24,10 +24,6 @@
 
     <div>
 
-      <a th:href="@{/admin/pricing}" class="back-link">
-        ← Back to Pricing
-      </a>
-
       <h1 th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'}">
         Add Pricing
       </h1>
@@ -36,6 +32,13 @@
         Configure material pricing for quotation calculations.
       </p>
 
+    <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <span>← Back</span>
+        </button>
+        <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+            <span>⌂ Dashboard</span>
+        </a>
     </div>
 
   </div>
@@ -662,4 +665,5 @@
 </body>
 
 </html>
+
 

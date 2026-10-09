@@ -19,9 +19,13 @@ import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.DistrictPricingRepository;
+import com.example.pravin_quotation.repository.ItemRepository;
+import com.example.pravin_quotation.repository.MaterialOptionRepository;
+import com.example.pravin_quotation.repository.MaterialRepository;
 import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
+import com.example.pravin_quotation.repository.WorkCategoryRepository;
 
 import com.example.pravin_quotation.service.*;
 
@@ -54,6 +58,11 @@ public class EmployeeQuotationController {
     private final DivisionRepository divisionRepository;
     private final PricingRepository pricingRepository;
     private final DistrictPricingRepository districtPricingRepository;
+    private final WorkCategoryRepository workCategoryRepository;
+    private final ItemRepository itemRepository;
+    private final MaterialRepository materialRepository;
+    private final MaterialOptionRepository materialOptionRepository;
+    private final AdminQuotationBuilderService builderService;
     private final CustomerService customerService;
 
     private final QuotationService quotationService;
@@ -94,6 +103,16 @@ public class EmployeeQuotationController {
             PricingRepository pricingRepository,
 
             DistrictPricingRepository districtPricingRepository,
+
+            WorkCategoryRepository workCategoryRepository,
+
+            ItemRepository itemRepository,
+
+            MaterialRepository materialRepository,
+
+            MaterialOptionRepository materialOptionRepository,
+
+            AdminQuotationBuilderService builderService,
 
             CustomerService customerService,
 
@@ -146,6 +165,21 @@ public class EmployeeQuotationController {
 
         this.districtPricingRepository =
                 districtPricingRepository;
+
+        this.workCategoryRepository =
+                workCategoryRepository;
+
+        this.itemRepository =
+                itemRepository;
+
+        this.materialRepository =
+                materialRepository;
+
+        this.materialOptionRepository =
+                materialOptionRepository;
+
+        this.builderService =
+                builderService;
 
         this.customerService =
                 customerService;
@@ -228,11 +262,11 @@ public class EmployeeQuotationController {
 
 
     // ============================================================
-    // CREATE NEW QUOTATION PAGE
+    // UNIFIED QUOTATION BUILDER (CREATION)
     // ============================================================
 
-    @GetMapping("/new")
-    public String newQuotation(
+    @GetMapping({"/new", "/builder"})
+    public String builder(
             Authentication authentication,
             Model model
     ) {
@@ -240,16 +274,19 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        if (employee.getBranch() == null) {
-
-            throw new IllegalStateException(
-                    "Employee is not assigned to a branch"
-            );
-        }
-
         model.addAttribute(
                 "employee",
                 employee
+        );
+
+        model.addAttribute(
+                "branches",
+                branchRepository.findByActiveTrueOrderByNameAsc()
+        );
+
+        model.addAttribute(
+                "workCategories",
+                workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc()
         );
 
         model.addAttribute(
@@ -258,16 +295,86 @@ public class EmployeeQuotationController {
         );
 
         model.addAttribute(
-                "quotationDate",
+                "today",
                 LocalDate.now()
         );
 
         model.addAttribute(
-                "nextQuotationNumber",
-                previewQuotationNumber()
+                "employeeBranchId",
+                employee.getBranch() != null ? employee.getBranch().getId() : null
         );
 
-        return "employee/quotation-new";
+        return "employee/quotation-builder";
+    }
+
+    @GetMapping("/builder/divisions")
+    @ResponseBody
+    public List<Map<String, Object>> builderDivisions(@RequestParam Long workCategoryId) {
+        return divisionRepository.findByWorkCategoryIdAndActiveTrueOrderByDisplayOrderAsc(workCategoryId)
+                .stream().map(d -> mapData("id", d.getId(), "name", d.getName(), "description", d.getDescription()))
+                .toList();
+    }
+
+    @GetMapping("/builder/items")
+    @ResponseBody
+    public List<Map<String, Object>> builderItems(@RequestParam Long divisionId) {
+        return itemRepository.findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(divisionId)
+                .stream().map(i -> mapData("id", i.getId(), "name", i.getName(), "description", i.getDescription()))
+                .toList();
+    }
+
+    @GetMapping("/builder/materials")
+    @ResponseBody
+    public List<Map<String, Object>> builderMaterials(@RequestParam Long itemId) {
+        return materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId)
+                .stream().map(m -> mapData("id", m.getId(), "name", m.getName(), "description", m.getDescription()))
+                .toList();
+    }
+
+    @GetMapping("/builder/material-options")
+    @ResponseBody
+    public List<Map<String, Object>> builderMaterialOptions(@RequestParam Long materialId) {
+        return materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId)
+                .stream().map(o -> mapData("id", o.getId(), "name", o.getName(), "description", o.getDescription()))
+                .toList();
+    }
+
+    @GetMapping("/builder/rate")
+    @ResponseBody
+    public ResponseEntity<?> builderRate(
+            @RequestParam Long branchId,
+            @RequestParam Long materialOptionId,
+            @RequestParam PricingMode pricingMode) {
+        try {
+            BigDecimal rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
+            return ResponseEntity.ok(mapData("rate", rate, "pricingMode", pricingMode.name()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(mapData("message", e.getMessage()));
+        }
+    }
+
+    @PostMapping("/builder/save")
+    public String saveBuilderQuotation(
+            @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        try {
+            Quotation quotation = builderService.save(request, authentication.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    "Quotation " + quotation.getQuotationNumber() + " created successfully.");
+            return "redirect:/employee/quotations/view/" + quotation.getId();
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/employee/quotations/builder";
+        }
+    }
+
+    private Map<String, Object> mapData(Object... values) {
+        Map<String, Object> result = new LinkedHashMap<>();
+        for (int i = 0; i < values.length; i += 2) {
+            result.put(String.valueOf(values[i]), values[i + 1]);
+        }
+        return result;
     }
 
 

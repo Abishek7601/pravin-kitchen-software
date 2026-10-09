@@ -25,7 +25,7 @@
     <div class="page-header">
 
         <div>
-            <span class="page-eyebrow">PRAVIN KITCHENS</span>
+            <span class="page-eyebrow">Pravin KITCHENS & INTERIORS</span>
 
             <h1 th:text="${division.id == null ? 'Add Division' : 'Edit Division'}">
                 Add Division
@@ -36,10 +36,14 @@
             </p>
         </div>
 
-        <a th:href="@{/admin/divisions}"
-           class="back-btn">
-            ← Back to Divisions
-        </a>
+        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/divisions'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                <span>← Back</span>
+            </button>
+            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                <span>⌂ Dashboard</span>
+            </a>
+        </div>
 
     </div>
 

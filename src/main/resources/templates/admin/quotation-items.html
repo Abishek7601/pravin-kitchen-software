@@ -8,7 +8,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Quotation Items | Pravin Kitchens</title>
+    <title>Quotation Items | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/quotation-items.css}">
@@ -26,10 +26,14 @@
 
         <div class="header-left">
 
-            <a class="back-btn"
-               th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}">
-                ← Back to Rooms
-            </a>
+            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                    <span>← Back</span>
+                </button>
+                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                    <span>⌂ Dashboard</span>
+                </a>
+            </div>
 
             <div class="title-block">
 
@@ -672,11 +676,6 @@
     ====================================================== -->
 
     <div class="bottom-actions">
-
-        <a class="btn btn-secondary"
-           th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}">
-            ← Back to Rooms
-        </a>
 
         <a class="btn btn-primary"
            th:href="@{/admin/quotation-items/new/{id}(id=${quotationRoom.id})}">

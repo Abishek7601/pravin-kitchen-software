@@ -29,18 +29,22 @@
 
     <!-- ================= BACK ================= -->
 
-    <a th:href="@{/admin/travel-charges}"
-       class="form-back-link">
-      ← Back to Travel Charges
-    </a>
+    <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/travel-charges'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <span>← Back</span>
+        </button>
+        <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+            <span>⌂ Dashboard</span>
+    </div>
 
 
     <!-- ================= HEADER ================= -->
 
     <div class="form-header">
 
-            <span class="eyebrow">
-                PRAVIN KITCHENS
+            <span class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">
+                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">
+                Pravin KITCHENS &amp; INTERIORS
             </span>
 
       <h1
@@ -338,3 +342,4 @@
 
 </body>
 </html>
+

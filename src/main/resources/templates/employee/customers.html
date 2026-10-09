@@ -9,7 +9,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Customers | Pravin Kitchens</title>
+    <title>Customers | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/employee-customers.css}">
@@ -27,12 +27,12 @@
         <div class="brand">
 
             <div class="brand-icon">
-                PK
+                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img">
             </div>
 
             <div class="brand-text">
 
-                <h2>Pravin Kitchens</h2>
+                <h2>Pravin KITCHENS & INTERIORS</h2>
 
                 <span>Employee Portal</span>
 
@@ -120,6 +120,14 @@
 
             </div>
 
+            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-right: 15px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                    <span>← Back</span>
+                </button>
+                <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                    <span>⌂ Dashboard</span>
+                </a>
+            </div>
 
             <div class="employee-profile">
 
@@ -339,20 +347,13 @@
 
         <div class="page-actions">
 
-            <a th:href="@{/employee/dashboard}"
-               class="view-all-btn">
-
-                ← Back to Dashboard
-
-            </a>
-
         </div>
 
 
         <footer class="dashboard-footer">
 
             <span>
-                © 2026 Pravin Kitchens & Interiors
+                © 2026 Pravin KITCHENS & INTERIORS
             </span>
 
             <span>

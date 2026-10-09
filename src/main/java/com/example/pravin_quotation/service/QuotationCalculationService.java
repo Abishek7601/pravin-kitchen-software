@@ -624,27 +624,17 @@ public class QuotationCalculationService {
                         .findByBranchIdAndPricingId(
                                 branch.getId(),
                                 pricing.getId())
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "District-specific pricing is not configured "
-                                                + "for this item. Please configure "
-                                                + "the district rate before saving."));
+                        .orElse(null);
 
-        if (!Boolean.TRUE.equals(districtPricing.getActive())) {
-            throw new IllegalArgumentException(
-                    "District-specific pricing is inactive. "
-                            + "Activate the district rate before saving.");
+        if (districtPricing != null
+                && Boolean.TRUE.equals(districtPricing.getActive())
+                && districtPricing.getRate() != null
+                && districtPricing.getRate().compareTo(BigDecimal.ZERO) > 0) {
+
+            return money(districtPricing.getRate());
         }
 
-        if (districtPricing.getRate() == null
-                || districtPricing.getRate()
-                .compareTo(BigDecimal.ZERO) <= 0) {
-
-            throw new IllegalArgumentException(
-                    "The configured district rate must be greater than zero.");
-        }
-
-        return money(districtPricing.getRate());
+        return money(pricing.getRate());
     }
 
 

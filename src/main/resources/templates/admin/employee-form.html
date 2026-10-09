@@ -21,7 +21,7 @@
     <!-- HEADER -->
     <header class="page-header">
         <div>
-            <span class="eyebrow">PRAVIN KITCHENS</span>
+            <span class="eyebrow">Pravin KITCHENS & INTERIORS</span>
 
             <h1 th:text="${employee.id == null ? 'Add Employee' : 'Edit Employee'}">
                 Add Employee
@@ -34,9 +34,12 @@
     </header>
 
     <!-- BACK -->
-    <div class="back-section">
-        <a th:href="@{/admin/employees}">
-            ← Back to Employees
+    <div class="nav-header-actions" style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;">
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <span>← Back</span>
+        </button>
+        <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+            <span>⌂ Dashboard</span>
         </a>
     </div>
 
@@ -285,4 +288,5 @@
 
 </body>
 </html>
+
 

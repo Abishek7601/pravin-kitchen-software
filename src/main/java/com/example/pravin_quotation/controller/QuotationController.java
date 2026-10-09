@@ -103,71 +103,8 @@ public class QuotationController {
     // =========================================================
 
     @GetMapping("/new")
-    public String newQuotation(Model model) {
-
-        Quotation quotation =
-                new Quotation();
-
-        quotation.setQuotationDate(
-                LocalDate.now()
-        );
-
-        quotation.setStatus(
-                QuotationStatus.DRAFT
-        );
-
-        model.addAttribute(
-                "quotation",
-                quotation
-        );
-
-        model.addAttribute(
-                "customers",
-                customerRepository.findByActiveTrue()
-        );
-
-        model.addAttribute(
-                "employees",
-                userRepository.findAll()
-                        .stream()
-                        .filter(user ->
-                                Boolean.TRUE.equals(
-                                        user.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "branches",
-                branchRepository.findAll()
-                        .stream()
-                        .filter(branch ->
-                                Boolean.TRUE.equals(
-                                        branch.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "divisions",
-                divisionRepository.findAll()
-                        .stream()
-                        .filter(division ->
-                                Boolean.TRUE.equals(
-                                        division.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "pricingModes",
-                PricingMode.values()
-        );
-
-        return "admin/quotation-form";
+    public String newQuotation() {
+        return "redirect:/admin/quotations/builder";
     }
 
 

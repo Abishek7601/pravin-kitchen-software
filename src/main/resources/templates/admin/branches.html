@@ -10,7 +10,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Branches / Districts | Pravin Kitchens</title>
+    <title>Branches / Districts | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/branches.css}">
@@ -30,10 +30,10 @@
         <div class="header-content">
 
             <a th:href="@{/admin/dashboard}"
-               class="brand-small">
-
-                PRAVIN KITCHENS
-
+               class="brand-small"
+               style="display: inline-flex; align-items: center; gap: 8px;">
+                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 36px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">
+                Pravin KITCHENS &amp; INTERIORS
             </a>
 
             <h1>
@@ -44,6 +44,13 @@
                 Manage districts, contact details and branch status.
             </p>
 
+        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">
+            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                <span>← Back</span>
+            </button>
+            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                <span>⌂ Dashboard</span>
+            </a>
         </div>
 
         <a th:href="@{/admin/branches/new}"
@@ -56,24 +63,6 @@
         </a>
 
     </header>
-
-
-    <!-- =========================
-         BACK TO DASHBOARD
-    ========================== -->
-
-    <div class="back-section">
-
-        <a th:href="@{/admin/dashboard}"
-           class="back-link">
-
-            <span>←</span>
-
-            Back to Dashboard
-
-        </a>
-
-    </div>
 
 
     <!-- =========================
@@ -375,4 +364,6 @@
 </body>
 
 </html>
+
+
 

@@ -106,21 +106,17 @@ public class AdminQuotationBuilderService {
                                 branchId,
                                 pricing.getId()
                         )
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "District pricing is not configured for this material option and pricing mode."
-                                )
-                        );
+                        .orElse(null);
 
-        if (!Boolean.TRUE.equals(
-                districtPricing.getActive())) {
+        if (districtPricing != null
+                && Boolean.TRUE.equals(districtPricing.getActive())
+                && districtPricing.getRate() != null
+                && districtPricing.getRate().compareTo(BigDecimal.ZERO) > 0) {
 
-            throw new IllegalArgumentException(
-                    "The district pricing is inactive."
-            );
+            return money(districtPricing.getRate());
         }
 
-        return money(districtPricing.getRate());
+        return money(pricing.getRate());
     }
 
     // =========================================================

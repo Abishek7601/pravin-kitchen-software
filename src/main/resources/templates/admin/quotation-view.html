@@ -8,7 +8,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>Quotation Details - Pravin Kitchens</title>
+    <title>Quotation Details - Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/quotation-view.css}">
@@ -29,8 +29,9 @@
 
         <div>
 
-            <p class="eyebrow">
-                PRAVIN KITCHENS
+            <p class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">
+                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">
+                Pravin KITCHENS &amp; INTERIORS
             </p>
 
             <h1>
@@ -46,10 +47,14 @@
 
         <div class="header-actions">
 
-            <a th:href="@{/admin/quotations}"
-               class="btn btn-secondary">
-                ← Back
-            </a>
+            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                    <span>← Back</span>
+                </button>
+                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                    <span>⌂ Dashboard</span>
+                </a>
+            </div>
 
 
             <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
@@ -2187,7 +2192,7 @@
 
             "Thank you,\n" +
 
-            "Pravin Kitchens & Interiors";
+            "Pravin KITCHENS & INTERIORS";
 
 
         const whatsappUrl =
@@ -2236,3 +2241,4 @@
 </body>
 
 </html>
+

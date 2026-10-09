@@ -10,7 +10,7 @@
   <meta name="viewport"
         content="width=device-width, initial-scale=1.0">
 
-  <title>District Pricing | Pravin Kitchens</title>
+  <title>District Pricing | Pravin KITCHENS & INTERIORS</title>
 
   <link rel="stylesheet"
         th:href="@{/css/district-pricing.css}">
@@ -27,15 +27,19 @@
 
     <div class="header-left">
 
-      <a th:href="@{/admin/branches}"
-         class="back-link">
-        ← Districts
-      </a>
+      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/branches'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+              <span>← Back</span>
+          </button>
+          <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+              <span>⌂ Dashboard</span>
+          </a>
+      </div>
 
       <div class="brand-area">
 
                 <span class="brand-name">
-                    PRAVIN KITCHENS
+                    Pravin KITCHENS & INTERIORS
                 </span>
 
         <span class="page-label">
@@ -48,11 +52,6 @@
 
 
     <div class="header-actions">
-
-      <a th:href="@{/admin/dashboard}"
-         class="header-button secondary">
-        Dashboard
-      </a>
 
       <a th:href="@{/admin/district-pricing/new}"
          class="header-button primary">
@@ -781,11 +780,6 @@
 
   <div class="bottom-actions">
 
-    <a th:href="@{/admin/dashboard}"
-       class="bottom-button secondary">
-      ← Back to Dashboard
-    </a>
-
     <a th:href="@{/admin/district-pricing/new}"
        class="bottom-button primary">
       + Add District Pricing
@@ -832,4 +826,5 @@
 
 </body>
 </html>
+
 

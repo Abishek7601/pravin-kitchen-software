@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>60-Day Quotation Value | Pravin Kitchens</title>
+    <title>60-Day Quotation Value | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/quotation-value.css}">
@@ -18,12 +18,17 @@
     <header class="topbar">
         <div class="heading">
             <h1>Quotation Value</h1>
-            <p>Pravin Kitchens · Last 60 days quotation report</p>
+            <p>Pravin KITCHENS & INTERIORS · Last 60 days quotation report</p>
         </div>
 
-        <a th:href="@{/admin/dashboard}" class="back-btn">
-            &larr; Back to Dashboard
-        </a>
+        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                <span>← Back</span>
+            </button>
+            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                <span>⌂ Dashboard</span>
+            </a>
+        </div>
     </header>
 
     <section class="summary-card">
