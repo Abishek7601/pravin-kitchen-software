@@ -78,10 +78,17 @@ public class QuotationItemController {
 
         QuotationRoom room = quotationRoomService.getById(roomId);
 
+        if (room == null) {
+            throw new IllegalArgumentException(
+                    "Quotation room not found: " + roomId
+            );
+        }
+
         List<QuotationItem> items =
                 quotationItemService.getActiveByQuotationRoomId(roomId);
 
-        model.addAttribute("room", room);
+        model.addAttribute("quotationRoom", room);
+        model.addAttribute("quotation", room.getQuotation());
         model.addAttribute("items", items);
 
         return "admin/quotation-items";
@@ -90,21 +97,32 @@ public class QuotationItemController {
     // =========================================================
     // NEW ITEM FORM
     // =========================================================
-
     @GetMapping("/new/{roomId}")
-    public String newItem(
+    public String showItemForm(
             @PathVariable Long roomId,
             Model model) {
 
-        QuotationRoom room = quotationRoomService.getById(roomId);
+        QuotationRoom room =
+                quotationRoomService.getById(roomId);
 
+        if (room == null) {
+            throw new IllegalArgumentException(
+                    "Quotation room not found: " + roomId
+            );
+        }
+
+        // Load categories, divisions, items and materials
         loadFormData(model);
 
+        // Add room and quotation details
+        model.addAttribute("quotationRoom", room);
+        model.addAttribute("quotation", room.getQuotation());
+
+        // Create an empty form object
         QuotationItem quotationItem = new QuotationItem();
         quotationItem.setQuotationRoom(room);
 
         model.addAttribute("quotationItem", quotationItem);
-        model.addAttribute("room", room);
 
         return "admin/quotation-item-form";
     }

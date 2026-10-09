@@ -194,11 +194,11 @@
                             Select item
                         </option>
 
-                        <option th:each="item : ${itemsList}"
+                        <option th:each="item : ${items}"
                                 th:value="${item.id}"
                                 th:text="${item.name}"
                                 th:selected="${quotationItem?.item != null
-                                    and quotationItem.item.id == item.id}">
+            and quotationItem.item.id == item.id}">
                         </option>
 
                     </select>
