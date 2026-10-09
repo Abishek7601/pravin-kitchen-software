@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title th:text="${quotation.quotationNumber + ' | Quotation Builder'}">
+    Quotation Builder
+  </title>
+
+  <link rel="stylesheet"
+        th:href="@{/css/employee-quotation-builder.css}">
+</head>
+
+<body>
+
+<div class="builder-page">
+
+  <header class="builder-header">
+
+    <div class="brand-area">
+      <div class="brand-logo">PK</div>
+
+      <div>
+        <span class="brand-kicker">PRAVIN KITCHENS &amp; INTERIORS</span>
+        <h1>Quotation Builder</h1>
+      </div>
+    </div>
+
+    <div class="header-actions">
+
+      <div class="quote-number">
+        <span>QT NO</span>
+        <strong th:text="${quotation.quotationNumber}">
+          QT-00001
+        </strong>
+      </div>
+
+      <a th:href="@{/employee/quotations}"
+         class="header-btn">
+        ← My Quotations
+      </a>
+
+      <a th:href="@{/employee/dashboard}"
+         class="header-btn">
+        Dashboard
+      </a>
+
+    </div>
+
+  </header>
+
+
+  <main class="builder-main">
+
+    <!-- =====================================================
+         CUSTOMER + QUOTATION SUMMARY
+    ====================================================== -->
+
+    <section class="customer-bar">
+
+      <form th:action="@{/employee/quotations/builder/{id}/customer(id=${quotation.id})}"
+            method="post"
+            class="customer-form">
+
+        <input type="hidden"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}">
+
+        <div class="customer-heading">
+          <span class="section-kicker">CUSTOMER DETAILS</span>
+          <h2>Quotation Information</h2>
+        </div>
+
+        <div class="customer-fields">
+
+          <div class="field">
+            <label for="customerName">Customer Name</label>
+            <input id="customerName"
+                   name="customerName"
+                   type="text"
+                   th:value="${quotation.customer != null ? quotation.customer.name : ''}"
+                   required>
+          </div>
+
+          <div class="field">
+            <label for="phone">Phone</label>
+            <input id="phone"
+                   name="phone"
+                   type="tel"
+                   th:value="${quotation.customer != null ? quotation.customer.phone : ''}"
+                   required>
+          </div>
+
+          <div class="field">
+            <label for="email">Email</label>
+            <input id="email"
+                   name="email"
+                   type="email"
+                   th:value="${quotation.customer != null ? quotation.customer.email : ''}">
+          </div>
+
+          <div class="field">
+            <label for="quotationDate">Date</label>
+            <input id="quotationDate"
+                   name="quotationDate"
+                   type="date"
+                   th:value="${quotation.quotationDate}"
+                   required>
+          </div>
+
+          <div class="field field-wide">
+            <label for="address">Address / Area</label>
+            <input id="address"
+                   name="address"
+                   type="text"
+                   th:value="${quotation.customer != null ? quotation.customer.address : ''}">
+          </div>
+
+          <div class="field branch-field">
+            <label>Branch</label>
+            <div class="readonly-field"
+                 th:text="${quotation.branch != null ? quotation.branch.name : 'Not Assigned'}">
+              Branch
+            </div>
+          </div>
+
+        </div>
+
+        <div class="customer-footer">
+
+          <div class="requirements-inline">
+            <label for="customerRequirements">Requirements</label>
+            <input id="customerRequirements"
+                   name="customerRequirements"
+                   type="text"
+                   th:value="${quotation.customerRequirements}"
+                   placeholder="Customer requirements">
+          </div>
+
+          <div class="requirements-inline">
+            <label for="notes">Notes</label>
+            <input id="notes"
+                   name="notes"
+                   type="text"
+                   th:value="${quotation.notes}"
+                   placeholder="Internal notes">
+          </div>
+
+          <button type="submit" class="small-save-btn">
+            Save Details
+          </button>
+
+        </div>
+
+      </form>
+
+    </section>
+
+
+    <!-- =====================================================
+         PRICING MODE
+    ====================================================== -->
+
+    <section class="pricing-card">
+
+      <div class="pricing-title">
+        <span>PRICING MODE</span>
+        <small>
+          Changing this recalculates existing items without
+          removing their measurements.
+        </small>
+      </div>
+
+      <form th:action="@{/employee/quotations/builder/{id}/pricing-mode(id=${quotation.id})}"
+            method="post"
+            id="pricingModeForm"
+            class="pricing-mode-form">
+
+        <input type="hidden"
+               th:name="${_csrf.parameterName}"
+               th:value="${_csrf.token}">
+
+        <button type="submit"
+                name="pricingMode"
+                value="PREMIUM"
+                class="mode-button premium"
+                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'PREMIUM'} ? ' selected' : ''">
+          <strong>Premium</strong>
+          <span>Premium</span>
+        </button>
+
+        <button type="submit"
+                name="pricingMode"
+                value="MIDDLE"
+                class="mode-button middle"
+                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'MIDDLE'} ? ' selected' : ''">
+          <strong>Middle / Standard</strong>
+          <span>Balanced</span>
+        </button>
+
+        <button type="submit"
+                name="pricingMode"
+                value="ECONOMY"
+                class="mode-button economy"
+                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'ECONOMY'} ? ' selected' : ''">
+          <strong>Economy</strong>
+          <span>Cost effective</span>
+        </button>
+
+      </form>
+
+    </section>
+
+
+    <!-- =====================================================
+         WORK BUILDER
+    ====================================================== -->
+
+    <section class="work-builder">
+
+      <div class="builder-section-heading">
+
+        <div>
+          <span class="section-kicker">WORK LOCATION</span>
+          <h2>Which room are you working on?</h2>
+        </div>
+
+        <div class="location-controls">
+
+          <label>
+            <span>Floor</span>
+            <select id="floor">
+              <option>Ground Floor</option>
+              <option>First Floor</option>
+              <option>Second Floor</option>
+              <option>Third Floor</option>
+              <option>Terrace</option>
+              <option>Other</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Room No.</span>
+            <select id="room">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="4">4</option>
+              <option value="5">5</option>
+              <option value="6">6</option>
+              <option value="7">7</option>
+              <option value="8">8</option>
+              <option value="9">9</option>
+              <option value="10">10</option>
+            </select>
+          </label>
+
+        </div>
+
+      </div>
+
+
+      <div class="category-strip">
+
+        <div id="categoryList" class="category-list">
+
+          <button type="button"
+                  class="category-chip"
+                  th:each="category : ${workCategories}"
+                  th:attr="data-category-id=${category.id}">
+                        <span th:text="${category.icon != null ? category.icon : '◈'}">
+                            ◈
+                        </span>
+            <strong th:text="${category.name}">
+              Foyer
+            </strong>
+          </button>
+
+        </div>
+
+      </div>
+
+
+      <!-- ITEM PANEL -->
+      <div class="item-panel">
+
+        <div class="panel-title">
+          <div>
+            <span class="section-kicker">ITEMS</span>
+            <h3 id="selectedCategoryTitle">
+              Select a room category
+            </h3>
+          </div>
+
+          <span id="itemLoading"
+                class="loading-text"
+                hidden>
+                        Loading...
+                    </span>
+        </div>
+
+        <div id="itemList"
+             class="item-list">
+
+          <div class="empty-panel">
+            Select Foyer / Kitchen / Bedroom / another category
+            above to see the available items.
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- MATERIAL PANEL -->
+      <div id="materialPanel"
+           class="material-panel"
+           hidden>
+
+        <div class="panel-title">
+
+          <div>
+            <span class="section-kicker">MATERIAL</span>
+            <h3 id="selectedItemTitle">
+              Select an item
+            </h3>
+          </div>
+
+          <button type="button"
+                  class="close-panel"
+                  id="closeMaterialPanel">
+            ×
+          </button>
+
+        </div>
+
+        <div class="material-layout">
+
+          <div class="material-column">
+
+            <h4>Choose Material</h4>
+
+            <div id="materialList"
+                 class="material-list">
+            </div>
+
+          </div>
+
+          <div class="option-column">
+
+            <h4>Material Options</h4>
+
+            <div id="optionList"
+                 class="option-list">
+
+              <div class="empty-panel">
+                Select a material to see its options.
+              </div>
+
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+
+
+      <!-- SIZE + ADD ITEM -->
+      <div id="sizePanel"
+           class="size-panel"
+           hidden>
+
+        <div class="panel-title">
+
+          <div>
+            <span class="section-kicker">SIZE &amp; PRICE</span>
+            <h3 id="selectedOptionTitle">
+              Material details
+            </h3>
+          </div>
+
+          <div class="current-rate">
+            <span>Current Rate</span>
+            <strong id="currentRate">₹0.00</strong>
+            <small id="currentUnit">SQFT</small>
+          </div>
+
+        </div>
+
+
+        <div class="material-detail-box">
+
+          <div>
+            <span>Specification</span>
+            <p id="materialSpecification">
+              Select a material option.
+            </p>
+          </div>
+
+          <div>
+            <span>Calculation</span>
+            <strong>(L + W) × H / 144</strong>
+          </div>
+
+        </div>
+
+
+        <form th:action="@{/employee/quotations/builder/{id}/items(id=${quotation.id})}"
+              method="post"
+              id="builderItemForm">
+
+          <input type="hidden"
+                 th:name="${_csrf.parameterName}"
+                 th:value="${_csrf.token}">
+
+          <input type="hidden"
+                 name="floor"
+                 id="formFloor">
+
+          <input type="hidden"
+                 name="room"
+                 id="formRoom">
+
+          <input type="hidden"
+                 name="workCategoryId"
+                 id="formCategoryId">
+
+          <input type="hidden"
+                 name="itemId"
+                 id="formItemId">
+
+          <input type="hidden"
+                 name="materialId"
+                 id="formMaterialId">
+
+          <input type="hidden"
+                 name="materialOptionId"
+                 id="formOptionId">
+
+          <input type="hidden"
+                 name="specification"
+                 id="formSpecification">
+
+
+          <div class="dimension-grid">
+
+            <div class="dimension-field">
+              <label for="lengthInput">Length (IN)</label>
+              <input id="lengthInput"
+                     type="number"
+                     min="0.01"
+                     step="0.01"
+                     placeholder="36">
+            </div>
+
+            <div class="dimension-field">
+              <label for="widthInput">Width (IN)</label>
+              <input id="widthInput"
+                     type="number"
+                     min="0.01"
+                     step="0.01"
+                     placeholder="67">
+            </div>
+
+            <div class="dimension-field">
+              <label for="heightInput">Height (IN)</label>
+              <input id="heightInput"
+                     type="number"
+                     min="0.01"
+                     step="0.01"
+                     placeholder="23">
+            </div>
+
+            <div class="dimension-field">
+              <label for="offerInput">Offer Price</label>
+              <input id="offerInput"
+                     type="number"
+                     min="0"
+                     step="0.01"
+                     placeholder="Optional">
+            </div>
+
+          </div>
+
+
+          <div class="live-calculation">
+
+            <div>
+              <span>SQ.FT</span>
+              <strong id="previewSqft">0.00</strong>
+            </div>
+
+            <div>
+              <span>RATE</span>
+              <strong id="previewRate">₹0.00</strong>
+            </div>
+
+            <div>
+              <span>AMOUNT</span>
+              <strong id="previewAmount">₹0.00</strong>
+            </div>
+
+          </div>
+
+
+          <button type="button"
+                  class="add-size-btn"
+                  id="addSizeBtn">
+            + Add Size
+          </button>
+
+
+          <div id="pendingSizes"
+               class="pending-sizes"
+               hidden>
+
+            <div class="pending-heading">
+              <span>Pending Sizes</span>
+              <small>These will be added to the quotation together.</small>
+            </div>
+
+            <div id="pendingRows"></div>
+
+          </div>
+
+
+          <div class="builder-form-actions">
+
+            <button type="button"
+                    class="secondary-btn"
+                    id="clearSizeBtn">
+              Clear Size
+            </button>
+
+            <button type="submit"
+                    class="primary-btn">
+              Add Item to Quote →
+            </button>
+
+          </div>
+
+        </form>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         QUOTE SUMMARY
+    ====================================================== -->
+
+    <section class="summary-section">
+
+      <div class="summary-heading">
+
+        <div>
+          <span class="section-kicker">QUOTE SUMMARY</span>
+          <h2>Rooms, Materials &amp; Pricing</h2>
+        </div>
+
+        <div class="summary-total">
+          <span>Grand Total</span>
+          <strong>
+            ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                            0.00
+                        </span>
+          </strong>
+        </div>
+
+      </div>
+
+
+      <div th:if="${#lists.isEmpty(rooms)}"
+           class="summary-empty">
+
+        <div class="empty-icon">⌁</div>
+
+        <h3>No quotation items yet</h3>
+
+        <p>
+          Select a room category, item and material above,
+          enter dimensions, then click Add Item to Quote.
+        </p>
+
+      </div>
+
+
+      <div th:each="room : ${rooms}"
+           class="room-summary-card">
+
+        <div class="room-summary-header">
+
+          <div>
+                        <span class="room-floor"
+                              th:text="${room.floor}">
+                            Ground Floor
+                        </span>
+
+            <h3>
+              ROOM
+              <span th:text="${room.room}">
+                                1
+                            </span>
+            </h3>
+          </div>
+
+          <div class="room-total">
+            <span>Room Total</span>
+            <strong>
+              ₹<span th:text="${#numbers.formatDecimal(room.subtotal, 1, 2)}">
+                                0.00
+                            </span>
+            </strong>
+          </div>
+
+        </div>
+
+
+        <div class="room-category-label"
+             th:text="${room.workDescription != null
+                        ? room.workDescription
+                        : 'WORK ITEMS'}">
+          FOYER
+        </div>
+
+
+        <div class="summary-table-wrapper">
+
+          <table class="summary-table">
+
+            <thead>
+            <tr>
+              <th>#</th>
+              <th>Item</th>
+              <th>Material</th>
+              <th>Size</th>
+              <th>SQ.FT</th>
+              <th>Amount</th>
+              <th>Offer Price</th>
+              <th></th>
+            </tr>
+            </thead>
+
+            <tbody>
+
+            <tr th:each="item, stat : ${roomItems[room.id]}">
+
+              <td th:text="${stat.count}">
+                1
+              </td>
+
+              <td>
+                <strong th:text="${item.item != null
+                                    ? item.item.name : 'Item'}">
+                  Shoe Rack Unit
+                </strong>
+
+                <small th:text="${item.workCategory != null
+                                    ? item.workCategory.name : ''}">
+                  Foyer
+                </small>
+              </td>
+
+              <td>
+
+                <strong th:text="${item.material != null
+                                    ? item.material.name : 'Material'}">
+                  Engineering Wood
+                </strong>
+
+                <small th:if="${item.materialOption != null}"
+                       th:text="${'(' + item.materialOption.name + ')'}">
+                  (Box Type)
+                </small>
+
+              </td>
+
+              <td class="size-cell">
+
+                                <span>
+                                    L:
+                                    <b th:text="${item.lengthValue}">36</b>
+                                </span>
+
+                <span>
+                                    W:
+                                    <b th:text="${item.widthValue}">67</b>
+                                </span>
+
+                <span>
+                                    H:
+                                    <b th:text="${item.heightValue}">23</b>
+                                </span>
+
+              </td>
+
+              <td>
+                <strong th:text="${item.calculatedSqft}">
+                  16.45
+                </strong>
+              </td>
+
+              <td>
+                <strong class="amount"
+                        th:text="${'₹' + #numbers.formatDecimal(item.amount, 1, 2)}">
+                  ₹3136.00
+                </strong>
+
+                <small th:text="${'₹' + #numbers.formatDecimal(item.rate, 1, 2) + ' / SQFT'}">
+                  ₹196.00 / SQFT
+                </small>
+              </td>
+
+              <td>
+                <strong class="offer"
+                        th:text="${'₹' + #numbers.formatDecimal(item.offerPrice, 1, 2)}">
+                  ₹3136.00
+                </strong>
+              </td>
+
+              <td>
+
+                <form th:action="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/{itemId}/delete(
+                                            quotationId=${quotation.id},
+                                            roomId=${room.id},
+                                            itemId=${item.id})}"
+                      method="post"
+                      onsubmit="return confirm('Remove this item from the quotation?');">
+
+                  <input type="hidden"
+                         th:name="${_csrf.parameterName}"
+                         th:value="${_csrf.token}">
+
+                  <button type="submit"
+                          class="delete-btn"
+                          title="Remove">
+                    ×
+                  </button>
+
+                </form>
+
+              </td>
+
+            </tr>
+
+            </tbody>
+
+          </table>
+
+        </div>
+
+      </div>
+
+
+      <div class="financial-summary">
+
+        <div>
+          <span>Subtotal</span>
+          <strong>
+            ₹<span th:text="${#numbers.formatDecimal(quotation.subtotal, 1, 2)}">
+                            0.00
+                        </span>
+          </strong>
+        </div>
+
+        <div>
+          <span>Travel Charge</span>
+          <strong>
+            ₹<span th:text="${#numbers.formatDecimal(quotation.travelCharge, 1, 2)}">
+                            0.00
+                        </span>
+          </strong>
+        </div>
+
+        <div>
+          <span>GST</span>
+          <strong>
+            ₹<span th:text="${#numbers.formatDecimal(quotation.gstAmount, 1, 2)}">
+                            0.00
+                        </span>
+          </strong>
+        </div>
+
+        <div class="grand-total-row">
+          <span>Grand Total</span>
+          <strong>
+            ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                            0.00
+                        </span>
+          </strong>
+        </div>
+
+      </div>
+
+    </section>
+
+
+    <!-- =====================================================
+         BOTTOM ACTIONS
+    ====================================================== -->
+
+    <div class="bottom-actions">
+
+      <a th:href="@{/employee/quotations}"
+         class="secondary-btn">
+        ← Back
+      </a>
+
+      <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
+         class="primary-btn">
+        ↓ Download PDF
+      </a>
+
+      <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+         class="secondary-btn">
+        Open Full View
+      </a>
+
+      <button type="button"
+              class="secondary-btn"
+              onclick="window.print()">
+        Print
+      </button>
+
+    </div>
+
+  </main>
+
+</div>
+
+
+<script th:inline="javascript">
+  document.addEventListener("DOMContentLoaded", function () {
+
+      const quotationId = /*[[${quotation.id}]]*/ 0;
+      const csrfName = /*[[${_csrf.parameterName}]]*/ "_csrf";
+      const csrfToken = /*[[${_csrf.token}]]*/ "";
+
+      const categoryButtons =
+          Array.from(document.querySelectorAll(".category-chip"));
+
+      const categoryTitle =
+          document.getElementById("selectedCategoryTitle");
+
+      const itemList =
+          document.getElementById("itemList");
+
+      const itemLoading =
+          document.getElementById("itemLoading");
+
+      const materialPanel =
+          document.getElementById("materialPanel");
+
+      const materialList =
+          document.getElementById("materialList");
+
+      const optionList =
+          document.getElementById("optionList");
+
+      const selectedItemTitle =
+          document.getElementById("selectedItemTitle");
+
+      const selectedOptionTitle =
+          document.getElementById("selectedOptionTitle");
+
+      const sizePanel =
+          document.getElementById("sizePanel");
+
+      const currentRate =
+          document.getElementById("currentRate");
+
+      const currentUnit =
+          document.getElementById("currentUnit");
+
+      const materialSpecification =
+          document.getElementById("materialSpecification");
+
+      const lengthInput =
+          document.getElementById("lengthInput");
+
+      const widthInput =
+          document.getElementById("widthInput");
+
+      const heightInput =
+          document.getElementById("heightInput");
+
+      const offerInput =
+          document.getElementById("offerInput");
+
+      const previewSqft =
+          document.getElementById("previewSqft");
+
+      const previewRate =
+          document.getElementById("previewRate");
+
+      const previewAmount =
+          document.getElementById("previewAmount");
+
+      const pendingSizes =
+          document.getElementById("pendingSizes");
+
+      const pendingRows =
+          document.getElementById("pendingRows");
+
+      const builderItemForm =
+          document.getElementById("builderItemForm");
+
+      let selectedCategoryId = null;
+      let selectedItemId = null;
+      let selectedMaterialId = null;
+      let selectedOptionId = null;
+      let selectedRate = 0;
+      let selectedUnit = "SQFT";
+      let selectedSpecification = "";
+      let pending = [];
+
+
+      function money(value) {
+          return Number(value || 0).toLocaleString("en-IN", {
+              style: "currency",
+              currency: "INR",
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+          });
+      }
+
+
+      function numberValue(input) {
+          const value = Number.parseFloat(input.value);
+          return Number.isFinite(value) ? value : 0;
+      }
+
+
+      function calculatePreview() {
+
+          const length = numberValue(lengthInput);
+          const width = numberValue(widthInput);
+          const height = numberValue(heightInput);
+
+          let sqft = 0;
+
+          if (length > 0 && width > 0 && height > 0) {
+              sqft = ((length + width) * height) / 144;
+          }
+
+          sqft = Math.round(sqft * 100) / 100;
+
+          const amount =
+              Math.round(sqft * selectedRate * 100) / 100;
+
+          previewSqft.textContent = sqft.toFixed(2);
+          previewRate.textContent = money(selectedRate);
+          previewAmount.textContent = money(amount);
+
+          return {
+              length,
+              width,
+              height,
+              sqft,
+              amount
+          };
+      }
+
+
+      function resetSizeInputs() {
+          lengthInput.value = "";
+          widthInput.value = "";
+          heightInput.value = "";
+          offerInput.value = "";
+          calculatePreview();
+      }
+
+
+      function renderPending() {
+
+          pendingRows.innerHTML = "";
+
+          pendingSizes.hidden = pending.length === 0;
+
+          pending.forEach(function (size, index) {
+
+              const row = document.createElement("div");
+              row.className = "pending-row";
+
+              row.innerHTML = `
+                  <span>#${index + 1}</span>
+                  <span>L ${size.length} × W ${size.width} × H ${size.height}</span>
+                  <span>${size.sqft.toFixed(2)} SQ.FT</span>
+                  <span>${money(size.amount)}</span>
+                  <button type="button"
+                          data-index="${index}"
+                          class="remove-pending">
+                      ×
+                  </button>
+              `;
+
+              pendingRows.appendChild(row);
+          });
+
+          pendingRows.querySelectorAll(".remove-pending")
+              .forEach(function (button) {
+
+                  button.addEventListener("click", function () {
+
+                      const index =
+                          Number(this.dataset.index);
+
+                      pending.splice(index, 1);
+
+                      renderPending();
+                  });
+
+              });
+      }
+
+
+      function setActiveCategory(button) {
+
+          categoryButtons.forEach(function (item) {
+              item.classList.remove("selected");
+          });
+
+          button.classList.add("selected");
+      }
+
+
+      async function loadItems(categoryId, categoryName, button) {
+
+          selectedCategoryId = categoryId;
+
+          setActiveCategory(button);
+
+          categoryTitle.textContent = categoryName;
+
+          itemLoading.hidden = false;
+
+          itemList.innerHTML = "";
+
+          materialPanel.hidden = true;
+          sizePanel.hidden = true;
+
+          try {
+
+              const response =
+                  await fetch(
+                      `/employee/quotations/builder/${quotationId}/items-by-category/${categoryId}`
+                  );
+
+              if (!response.ok) {
+                  throw new Error("Unable to load items.");
+              }
+
+              const items = await response.json();
+
+              itemLoading.hidden = true;
+
+              if (!items.length) {
+
+                  itemList.innerHTML = `
+                      <div class="empty-panel">
+                          No active items are configured for this category.
+                      </div>
+                  `;
+
+                  return;
+              }
+
+              items.forEach(function (item) {
+
+                  const card =
+                      document.createElement("div");
+
+                  card.className = "item-card";
+
+                  card.innerHTML = `
+                      <div class="item-card-number">#</div>
+                      <div class="item-card-copy">
+                          <strong>${escapeHtml(item.name)}</strong>
+                          <small>${escapeHtml(item.description || "Configured quotation item")}</small>
+                      </div>
+                      <button type="button"
+                              class="click-me">
+                          Click Me
+                      </button>
+                  `;
+
+                  card.querySelector(".click-me")
+                      .addEventListener("click", function () {
+                          loadMaterials(item);
+                      });
+
+                  itemList.appendChild(card);
+              });
+
+          } catch (error) {
+
+              itemLoading.hidden = true;
+
+              itemList.innerHTML = `
+                  <div class="error-panel">
+                      ${escapeHtml(error.message)}
+                  </div>
+              `;
+          }
+      }
+
+
+      async function loadMaterials(item) {
+
+          selectedItemId = item.id;
+
+          selectedItemTitle.textContent = item.name;
+
+          materialPanel.hidden = false;
+          sizePanel.hidden = true;
+
+          materialList.innerHTML =
+              `<div class="loading-box">Loading materials...</div>`;
+
+          optionList.innerHTML =
+              `<div class="empty-panel">Select a material to see its options.</div>`;
+
+          try {
+
+              const response =
+                  await fetch(
+                      `/employee/quotations/builder/${quotationId}/materials/${item.id}`
+                  );
+
+              if (!response.ok) {
+                  throw new Error("Unable to load materials.");
+              }
+
+              const materials = await response.json();
+
+              materialList.innerHTML = "";
+
+              if (!materials.length) {
+
+                  materialList.innerHTML =
+                      `<div class="empty-panel">No active materials configured for this item.</div>`;
+
+                  return;
+              }
+
+              materials.forEach(function (material) {
+
+                  const button =
+                      document.createElement("button");
+
+                  button.type = "button";
+                  button.className = "material-button";
+
+                  button.innerHTML = `
+                      <strong>${escapeHtml(material.name)}</strong>
+                      <small>${escapeHtml(material.description || "")}</small>
+                  `;
+
+                  button.addEventListener("click", function () {
+
+                      materialList
+                          .querySelectorAll(".material-button")
+                          .forEach(function (b) {
+                              b.classList.remove("selected");
+                          });
+
+                      button.classList.add("selected");
+
+                      loadOptions(material);
+                  });
+
+                  materialList.appendChild(button);
+              });
+
+          } catch (error) {
+
+              materialList.innerHTML =
+                  `<div class="error-panel">${escapeHtml(error.message)}</div>`;
+          }
+      }
+
+
+      async function loadOptions(material) {
+
+          selectedMaterialId = material.id;
+
+          optionList.innerHTML =
+              `<div class="loading-box">Loading material options...</div>`;
+
+          sizePanel.hidden = true;
+
+          try {
+
+              const response =
+                  await fetch(
+                      `/employee/quotations/builder/${quotationId}/options/${material.id}`
+                  );
+
+              if (!response.ok) {
+                  throw new Error("Unable to load material options.");
+              }
+
+              const options = await response.json();
+
+              optionList.innerHTML = "";
+
+              if (!options.length) {
+
+                  optionList.innerHTML =
+                      `<div class="empty-panel">No active options configured for this material.</div>`;
+
+                  return;
+              }
+
+              options.forEach(function (option) {
+
+                  const button =
+                      document.createElement("button");
+
+                  button.type = "button";
+                  button.className = "option-button";
+
+                  button.innerHTML = `
+                      <strong>${escapeHtml(material.name)} (${escapeHtml(option.name)})</strong>
+                      <small>${escapeHtml(option.description || "Select this material option")}</small>
+                  `;
+
+                  button.addEventListener("click", function () {
+
+                      optionList
+                          .querySelectorAll(".option-button")
+                          .forEach(function (b) {
+                              b.classList.remove("selected");
+                          });
+
+                      button.classList.add("selected");
+
+                      loadPrice(material, option);
+                  });
+
+                  optionList.appendChild(button);
+              });
+
+          } catch (error) {
+
+              optionList.innerHTML =
+                  `<div class="error-panel">${escapeHtml(error.message)}</div>`;
+          }
+      }
+
+
+      async function loadPrice(material, option) {
+
+          selectedOptionId = option.id;
+
+          const mode =
+              document.querySelector(
+                  ".mode-button.selected"
+              )?.value || "ECONOMY";
+
+          selectedOptionTitle.textContent =
+              material.name + " (" + option.name + ")";
+
+          materialSpecification.textContent =
+              option.description || "No specification available.";
+
+          currentRate.textContent = "Loading...";
+          currentUnit.textContent = "";
+          sizePanel.hidden = false;
+
+          try {
+
+              const response =
+                  await fetch(
+                      `/employee/quotations/builder/${quotationId}/price?materialOptionId=${option.id}&mode=${mode}`
+                  );
+
+              if (!response.ok) {
+
+                  const text = await response.text();
+
+                  throw new Error(
+                      text || "Pricing is not configured for this material option."
+                  );
+              }
+
+              const data = await response.json();
+
+              selectedRate = Number(data.rate || 0);
+              selectedUnit = data.unit || "SQFT";
+              selectedSpecification =
+                  data.description || option.description || "";
+
+              currentRate.textContent =
+                  money(selectedRate);
+
+              currentUnit.textContent =
+                  selectedUnit;
+
+              materialSpecification.textContent =
+                  selectedSpecification ||
+                  "No specification available.";
+
+              calculatePreview();
+
+          } catch (error) {
+
+              selectedRate = 0;
+
+              currentRate.textContent = "Not configured";
+
+              currentUnit.textContent = "";
+
+              materialSpecification.textContent =
+                  error.message;
+
+              calculatePreview();
+          }
+      }
+
+
+      document
+          .getElementById("addSizeBtn")
+          .addEventListener("click", function () {
+
+              const calculation =
+                  calculatePreview();
+
+              if (calculation.length <= 0
+                  || calculation.width <= 0
+                  || calculation.height <= 0) {
+
+                  alert(
+                      "Please enter valid Length, Width and Height."
+                  );
+
+                  return;
+              }
+
+              if (!selectedOptionId) {
+
+                  alert(
+                      "Please select a material option first."
+                  );
+
+                  return;
+              }
+
+              if (selectedRate <= 0) {
+
+                  alert(
+                      "A valid admin rate is required before adding a size."
+                  );
+
+                  return;
+              }
+
+              const offer =
+                  offerInput.value.trim() === ""
+                      ? calculation.amount
+                      : Number.parseFloat(offerInput.value);
+
+              if (!Number.isFinite(offer) || offer < 0) {
+
+                  alert("Offer Price cannot be negative.");
+
+                  return;
+              }
+
+              pending.push({
+                  length: calculation.length,
+                  width: calculation.width,
+                  height: calculation.height,
+                  sqft: calculation.sqft,
+                  amount: calculation.amount,
+                  offer: offer
+              });
+
+              renderPending();
+              resetSizeInputs();
+
+          });
+
+
+      document
+          .getElementById("clearSizeBtn")
+          .addEventListener("click", function () {
+
+              resetSizeInputs();
+          });
+
+
+      document
+          .getElementById("closeMaterialPanel")
+          .addEventListener("click", function () {
+
+              materialPanel.hidden = true;
+              sizePanel.hidden = true;
+
+              pending = [];
+              renderPending();
+              resetSizeInputs();
+          });
+
+
+      [lengthInput, widthInput, heightInput, offerInput]
+          .forEach(function (input) {
+
+              input.addEventListener(
+                  "input",
+                  calculatePreview
+              );
+
+          });
+
+
+      builderItemForm
+          .addEventListener("submit", function (event) {
+
+              if (!selectedCategoryId
+                  || !selectedItemId
+                  || !selectedMaterialId
+                  || !selectedOptionId) {
+
+                  event.preventDefault();
+
+                  alert(
+                      "Please select room category, item, material and material option."
+                  );
+
+                  return;
+              }
+
+              if (pending.length === 0) {
+
+                  event.preventDefault();
+
+                  alert(
+                      "Please click Add Size at least once."
+                  );
+
+                  return;
+              }
+
+              document.getElementById("formFloor").value =
+                  document.getElementById("floor").value;
+
+              document.getElementById("formRoom").value =
+                  document.getElementById("room").value;
+
+              document.getElementById("formCategoryId").value =
+                  selectedCategoryId;
+
+              document.getElementById("formItemId").value =
+                  selectedItemId;
+
+              document.getElementById("formMaterialId").value =
+                  selectedMaterialId;
+
+              document.getElementById("formOptionId").value =
+                  selectedOptionId;
+
+              document.getElementById("formSpecification").value =
+                  selectedSpecification;
+
+              /*
+               * Create repeated hidden fields for every pending size.
+               */
+              builderItemForm
+                  .querySelectorAll(".generated-size-field")
+                  .forEach(function (element) {
+                      element.remove();
+                  });
+
+              pending.forEach(function (size) {
+
+                  addHidden("lengthValue", size.length);
+                  addHidden("widthValue", size.width);
+                  addHidden("heightValue", size.height);
+                  addHidden("offerPrice", size.offer);
+
+              });
+
+          });
+
+
+      function addHidden(name, value) {
+
+          const input =
+              document.createElement("input");
+
+          input.type = "hidden";
+          input.name = name;
+          input.value = value;
+          input.className = "generated-size-field";
+
+          builderItemForm.appendChild(input);
+      }
+
+
+      function escapeHtml(value) {
+
+          return String(value ?? "")
+              .replaceAll("&", "&amp;")
+              .replaceAll("<", "&lt;")
+              .replaceAll(">", "&gt;")
+              .replaceAll('"', "&quot;")
+              .replaceAll("'", "&#039;");
+      }
+
+      // =====================================================
+// CATEGORY CLICK HANDLER
+// =====================================================
+
+categoryButtons.forEach(function (button) {
+
+    button.addEventListener("click", function () {
+
+        const categoryId =
+            this.dataset.categoryId;
+
+        const categoryName =
+            this.querySelector("strong")?.textContent.trim()
+            || "Selected Category";
+
+        if (!categoryId) {
+            console.error("Category ID is missing.");
+            return;
+        }
+
+        loadItems(
+            categoryId,
+            categoryName,
+            this
+        );
+    });
+
+});
+
+
+      /*
+       * Select the first category automatically so the employee
+       * immediately sees the existing item database.
+       */
+      if (categoryButtons.length > 0) {
+
+          categoryButtons[0].click();
+      }
+
+  });
+</script>
+
+</body>
+</html>

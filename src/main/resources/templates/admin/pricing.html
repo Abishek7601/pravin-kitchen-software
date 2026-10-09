@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en"
       xmlns:th="http://www.thymeleaf.org">
@@ -62,6 +61,43 @@
 
 
   <!-- =====================================================
+       DELETE ERROR MESSAGE
+  ====================================================== -->
+
+  <div th:if="${deleteError}"
+       class="pricing-error-message">
+
+    <div class="pricing-error-icon">
+      ⚠️
+    </div>
+
+    <div class="pricing-error-content">
+
+      <strong>
+        Pricing cannot be deleted
+      </strong>
+
+      <p th:text="${deleteError}">
+        This pricing is currently being used by another
+        record and cannot be deleted.
+      </p>
+
+    </div>
+
+    <button
+            type="button"
+            class="pricing-error-close"
+            onclick="closePricingError()">
+
+      ×
+
+    </button>
+
+  </div>
+
+
+
+  <!-- =====================================================
        SUMMARY CARDS
   ====================================================== -->
 
@@ -84,7 +120,9 @@
 
         <strong
                 th:text="${#lists.size(pricingList)}">
+
           0
+
         </strong>
 
       </div>
@@ -114,7 +152,9 @@
                                 and pricingMode.name() == 'PREMIUM'
                             ]
                         )}">
+
           0
+
         </strong>
 
       </div>
@@ -144,7 +184,9 @@
                                 and pricingMode.name() == 'MIDDLE'
                             ]
                         )}">
+
           0
+
         </strong>
 
       </div>
@@ -174,7 +216,9 @@
                                 and pricingMode.name() == 'ECONOMY'
                             ]
                         )}">
+
           0
+
         </strong>
 
       </div>
@@ -316,7 +360,9 @@
 
           <td
                   th:text="${stat.count}">
+
             1
+
           </td>
 
 
@@ -806,6 +852,7 @@
       /*
        * Show search empty state
        */
+
       if (
           rows.length > 0 &&
           visibleRows === 0 &&
@@ -858,9 +905,32 @@
 
           "Are you sure you want to delete this pricing record?\n\n" +
 
-          "This action will permanently remove the pricing record."
+          "If this pricing is already used in District Pricing, " +
+          "it cannot be deleted and will remain safely stored."
 
       );
+
+  }
+
+
+
+  /* =====================================================
+     CLOSE DELETE ERROR
+  ====================================================== */
+
+  function closePricingError() {
+
+      const errorMessage =
+          document.querySelector(
+              ".pricing-error-message"
+          );
+
+      if (errorMessage) {
+
+          errorMessage.style.display =
+              "none";
+
+      }
 
   }
 
@@ -889,6 +959,7 @@
               /*
                * Live search
                */
+
               searchInput.addEventListener(
                   "input",
                   function() {
@@ -902,6 +973,7 @@
               /*
                * Escape key clears search
                */
+
               searchInput.addEventListener(
                   "keydown",
                   function(event) {
@@ -957,4 +1029,3 @@
 </body>
 
 </html>
-

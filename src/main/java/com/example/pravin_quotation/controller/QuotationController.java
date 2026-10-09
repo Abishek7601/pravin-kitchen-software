@@ -1,21 +1,11 @@
 package com.example.pravin_quotation.controller;
 
-import com.example.pravin_quotation.model.PricingMode;
-import com.example.pravin_quotation.model.Quotation;
-import com.example.pravin_quotation.model.QuotationCommunication;
-import com.example.pravin_quotation.model.QuotationItem;
-import com.example.pravin_quotation.model.QuotationRoom;
-import com.example.pravin_quotation.model.QuotationStatus;
+import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.UserRepository;
-import com.example.pravin_quotation.service.QuotationCommunicationService;
-import com.example.pravin_quotation.service.QuotationEmailService;
-import com.example.pravin_quotation.service.QuotationItemService;
-import com.example.pravin_quotation.service.QuotationRoomService;
-import com.example.pravin_quotation.service.QuotationService;
-import com.example.pravin_quotation.service.QuotationStatusHistoryService;
+import com.example.pravin_quotation.service.*;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +15,7 @@ import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.math.BigDecimal;
 
 @Controller
 @RequestMapping("/admin/quotations")
@@ -38,10 +29,12 @@ public class QuotationController {
 
     private final QuotationRoomService quotationRoomService;
     private final QuotationItemService quotationItemService;
+    private final QuotationItemSizeService quotationItemSizeService;
 
     private final QuotationStatusHistoryService quotationStatusHistoryService;
     private final QuotationEmailService quotationEmailService;
     private final QuotationCommunicationService quotationCommunicationService;
+    private final QuotationCalculationService quotationCalculationService;
 
 
     public QuotationController(
@@ -54,7 +47,10 @@ public class QuotationController {
             QuotationItemService quotationItemService,
             QuotationStatusHistoryService quotationStatusHistoryService,
             QuotationEmailService quotationEmailService,
-            QuotationCommunicationService quotationCommunicationService
+            QuotationItemSizeService quotationItemSizeService,
+            QuotationCommunicationService quotationCommunicationService,
+            QuotationCalculationService quotationCalculationService
+
     ) {
 
         this.quotationService = quotationService;
@@ -72,8 +68,12 @@ public class QuotationController {
         this.quotationEmailService =
                 quotationEmailService;
 
+        this.quotationItemSizeService = quotationItemSizeService;
+
         this.quotationCommunicationService =
                 quotationCommunicationService;
+
+        this.quotationCalculationService = quotationCalculationService;
     }
 
 
@@ -291,11 +291,18 @@ public class QuotationController {
         );
 
 
-        // -----------------------------------------------------
-        // ACTIVE ITEMS BY ROOM
-        // -----------------------------------------------------
+// -----------------------------------------------------
+// ACTIVE ITEMS BY ROOM
+// -----------------------------------------------------
 
         Map<Long, List<QuotationItem>> itemsByRoom =
+                new HashMap<>();
+
+// -----------------------------------------------------
+// ACTIVE SIZES BY ITEM
+// -----------------------------------------------------
+
+        Map<Long, List<QuotationItemSize>> sizesByItem =
                 new HashMap<>();
 
         for (QuotationRoom room : quotationRooms) {
@@ -310,11 +317,34 @@ public class QuotationController {
                     room.getId(),
                     items
             );
+
+            // ---------------------------------------------
+            // Get all sizes for every item
+            // ---------------------------------------------
+
+            for (QuotationItem item : items) {
+
+                List<QuotationItemSize> sizes =
+                        quotationItemSizeService
+                                .getActiveSizes(
+                                        item.getId()
+                                );
+
+                sizesByItem.put(
+                        item.getId(),
+                        sizes
+                );
+            }
         }
 
         model.addAttribute(
                 "itemsByRoom",
                 itemsByRoom
+        );
+
+        model.addAttribute(
+                "sizesByItem",
+                sizesByItem
         );
 
 
@@ -815,5 +845,43 @@ public class QuotationController {
         );
 
         return "admin/quotations";
+    }
+
+    @PostMapping("/charges/{id}")
+    public String updateCharges(
+            @PathVariable Long id,
+            @RequestParam(required = false) BigDecimal accessoriesAmount,
+            @RequestParam(required = false) BigDecimal travelCharge,
+            @RequestParam(required = false) BigDecimal otherCharges,
+            @RequestParam(required = false) BigDecimal discountAmount,
+            @RequestParam(required = false) BigDecimal gstPercentage,
+            RedirectAttributes redirectAttributes) {
+
+        try {
+
+            quotationCalculationService.updateCharges(
+                    id,
+                    accessoriesAmount,
+                    travelCharge,
+                    otherCharges,
+                    discountAmount,
+                    gstPercentage
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Quotation charges updated successfully."
+            );
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to update quotation charges: "
+                            + e.getMessage()
+            );
+        }
+
+        return "redirect:/admin/quotations/view/" + id;
     }
 }

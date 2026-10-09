@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:content="${_csrf.token}">
+  <title>Create Quotation | Pravin Kitchens</title>
+  <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
+</head>
+<body>
+<div class="builder-page">
+  <header class="builder-header">
+    <div>
+      <span class="eyebrow">PRAVIN KITCHENS</span>
+      <h1>Create Quotation</h1>
+      <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
+    </div>
+    <div class="header-actions">
+      <span class="quote-number-preview">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+      <a th:href="@{/admin/quotations}" class="btn btn-light">← Back</a>
+    </div>
+  </header>
+
+  <main>
+    <section class="card customer-card">
+      <div class="section-heading"><span class="step">01</span><div><h2>Customer Details</h2><p>These details will also be saved in the existing Customer module.</p></div></div>
+      <div class="grid two">
+        <label class="field">Customer Name <span>*</span><input id="customerName" type="text" placeholder="Enter customer name"></label>
+        <label class="field">Phone Number <span>*</span><input id="customerPhone" type="tel" inputmode="numeric" placeholder="Enter phone number"></label>
+        <label class="field">Email<input id="customerEmail" type="email" placeholder="customer@email.com"></label>
+        <label class="field">Address / Area<textarea id="customerAddress" rows="2" placeholder="House / area / location"></textarea></label>
+        <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
+        <label class="field">Branch / District <span>*</span>
+          <select id="branchId">
+            <option value="">Select branch / district</option>
+            <option th:each="branch : ${branches}" th:value="${branch.id}" th:text="${branch.name}"></option>
+          </select>
+        </label>
+      </div>
+    </section>
+
+    <section class="card pricing-card">
+      <div class="section-heading"><span class="step">02</span><div><h2>Pricing Mode</h2><p>Changing the mode keeps the sizes and items and recalculates their prices.</p></div></div>
+      <div class="pricing-options" id="pricingModes">
+        <label class="pricing-option premium"><input type="radio" name="pricingMode" value="PREMIUM"><span><b>Premium</b><small>Highest material rate</small></span></label>
+        <label class="pricing-option middle"><input type="radio" name="pricingMode" value="MIDDLE" checked><span><b>Middle / Standard</b><small>Standard material rate</small></span></label>
+        <label class="pricing-option economy"><input type="radio" name="pricingMode" value="ECONOMY"><span><b>Economy</b><small>Economy material rate</small></span></label>
+      </div>
+      <div id="pricingMessage" class="inline-message"></div>
+    </section>
+
+    <section class="card room-setup-card">
+      <div class="section-heading"><span class="step">03</span><div><h2>Floor & Room</h2><p>Select where the work is being done.</p></div></div>
+      <div class="grid two">
+        <label class="field">Floor <span>*</span>
+          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option></select>
+        </label>
+        <label class="field">Room Number <span>*</span>
+          <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+        </label>
+      </div>
+      <label class="field full">Work Description<textarea id="workDescription" rows="2" placeholder="Optional room-level description"></textarea></label>
+    </section>
+
+    <section class="card work-card">
+      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Work categories are loaded from your existing database.</p></div></div>
+      <div id="categoryGrid" class="choice-grid">
+        <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name}">
+          <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
+          <strong th:text="${category.name}">FOYER</strong>
+          <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
+        </button>
+      </div>
+      <div id="divisionArea" class="dynamic-area hidden"></div>
+      <div id="itemArea" class="dynamic-area hidden"></div>
+    </section>
+
+    <section id="itemBuilder" class="card item-builder hidden">
+      <div class="section-heading"><span class="step">05</span><div><h2>Material & Size</h2><p id="selectedItemLabel">Select an item first.</p></div></div>
+      <div class="selection-path" id="selectionPath"></div>
+      <div class="grid two">
+        <label class="field">Material <span>*</span><select id="materialId"><option value="">Select material</option></select></label>
+        <label class="field">Material Option <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
+      </div>
+      <div id="materialDetails" class="material-details hidden"></div>
+      <div class="grid two">
+        <label class="field">Item Description<textarea id="itemDescription" rows="2" placeholder="Optional item description"></textarea></label>
+        <label class="field">Specification<textarea id="specification" rows="2" placeholder="Material/specification details"></textarea></label>
+      </div>
+      <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
+      <div id="sizeRows" class="size-list"></div>
+      <div class="item-calculation">
+        <div><span>Current Rate</span><strong id="currentRate">₹0.00</strong></div>
+        <div><span>Total SQ.FT</span><strong id="currentSqft">0.00</strong></div>
+        <div><span>Total Amount</span><strong id="currentAmount">₹0.00</strong></div>
+      </div>
+      <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
+    </section>
+
+    <section class="card summary-card">
+      <div class="section-heading"><span class="step">06</span><div><h2>Quote Summary</h2><p>Items are grouped by floor and room.</p></div></div>
+      <div id="summaryEmpty" class="summary-empty"><div class="empty-icon">▦</div><h3>No items added yet</h3><p>Select a room, item, material and size to build the quotation.</p></div>
+      <div id="roomsSummary"></div>
+      <div class="grand-summary"><span>Quotation Total</span><strong id="grandTotal">₹0.00</strong></div>
+    </section>
+
+    <section class="card notes-card">
+      <div class="section-heading"><span class="step">07</span><div><h2>Final Details</h2><p>Optional notes for the quotation.</p></div></div>
+      <div class="grid two">
+        <label class="field">Customer Requirements<textarea id="customerRequirements" rows="3"></textarea></label>
+        <label class="field">Notes<textarea id="notes" rows="3"></textarea></label>
+      </div>
+      <div id="saveMessage" class="save-message"></div>
+      <div class="final-actions"><a th:href="@{/admin/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
+    </section>
+  </main>
+</div>
+
+<script th:inline="javascript">
+  const csrfToken = /*[[${_csrf.token}]]*/ '';
+  const API_BASE = /*[[@{/admin/quotations/builder}]]*/ '/admin/quotations/builder';
+  const state = { rooms: [], draft: null, pricingMode: 'MIDDLE' };
+
+  const $ = id => document.getElementById(id);
+  const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const currentRoomKey = () => `${$('floor').value}||${$('roomNumber').value}`;
+  const currentRoom = () => state.rooms.find(r => r.key === currentRoomKey());
+
+  function ensureRoom() {
+      const floor = $('floor').value, room = $('roomNumber').value;
+      if (!floor || !room) return null;
+      let existing = currentRoom();
+      if (!existing) {
+          existing = {key: currentRoomKey(), floor, room, workDescription: $('workDescription').value, items: []};
+          state.rooms.push(existing);
+      } else existing.workDescription = $('workDescription').value;
+      return existing;
+  }
+
+  async function getJson(url) {
+      const response = await fetch(url, {headers: {'Accept':'application/json'}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to load data.');
+      return data;
+  }
+
+  function showArea(id, html) { $(id).classList.remove('hidden'); $(id).innerHTML = html; }
+  function hide(id) { $(id).classList.add('hidden'); }
+
+  async function loadDivisions(categoryId, categoryName) {
+      if (!$('floor').value || !$('roomNumber').value) { alert('Select Floor and Room Number first.'); return; }
+      ensureRoom();
+      const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
+      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Division</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select division')}</small></button>`).join('')}</div>`);
+      hide('itemArea'); hide('itemBuilder');
+      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => loadItems(btn.dataset.id, btn.dataset.name, categoryId, categoryName)));
+  }
+
+  async function loadItems(divisionId, divisionName, categoryId, categoryName) {
+      const data = await getJson(`${API_BASE}/items?divisionId=${divisionId}`);
+      showArea('itemArea', `<div class="dynamic-title">${esc(categoryName)} / ${esc(divisionName)} — Choose Item</div><div class="choice-grid compact">${data.map(i => `<button type="button" class="choice-card item-choice" data-id="${i.id}" data-name="${esc(i.name)}"><strong>${esc(i.name)}</strong><small>${esc(i.description || 'Available item')}</small><span class="click-me">Click Me</span></button>`).join('')}</div>`);
+      document.querySelectorAll('.item-choice').forEach(btn => btn.addEventListener('click', () => openItemBuilder({categoryId, categoryName, divisionId, divisionName, itemId: Number(btn.dataset.id), itemName: btn.dataset.name})));
+  }
+
+  async function openItemBuilder(info) {
+      state.draft = {...info, materialId:null, materialName:'', materialOptionId:null, materialOptionName:'', rate:0, sizes:[]};
+      $('selectedItemLabel').textContent = `${info.categoryName} → ${info.itemName}`;
+      $('selectionPath').textContent = `${info.categoryName} / ${info.divisionName} / ${info.itemName}`;
+      const materials = await getJson(`${API_BASE}/materials?itemId=${info.itemId}`);
+      $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
+      $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
+      $('materialDetails').classList.add('hidden');
+      $('sizeRows').innerHTML = '';
+      addSizeRow();
+      $('itemBuilder').classList.remove('hidden');
+      $('itemBuilder').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  $('materialId').addEventListener('change', async e => {
+      state.draft.materialId = Number(e.target.value) || null;
+      const selected = e.target.selectedOptions[0];
+      state.draft.materialName = selected?.textContent || '';
+      const options = state.draft.materialId ? await getJson(`${API_BASE}/material-options?materialId=${state.draft.materialId}`) : [];
+      $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+      state.draft.materialOptionId = null; state.draft.materialOptionName = ''; state.draft.rate = 0;
+      renderMaterialDetails();
+  });
+
+  $('materialOptionId').addEventListener('change', async e => {
+      state.draft.materialOptionId = Number(e.target.value) || null;
+      const selected = e.target.selectedOptions[0];
+      state.draft.materialOptionName = selected?.textContent || '';
+      await refreshDraftRate();
+      renderMaterialDetails();
+      calculateDraft();
+  });
+
+  async function refreshDraftRate() {
+      if (!state.draft?.materialOptionId || !$('branchId').value) { state.draft.rate = 0; calculateDraft(); return; }
+      try {
+          const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&pricingMode=${state.pricingMode}`);
+          state.draft.rate = Number(data.rate || 0);
+          $('pricingMessage').textContent = '';
+      } catch (e) {
+          state.draft.rate = 0;
+          $('pricingMessage').textContent = e.message;
+      }
+      calculateDraft();
+  }
+
+  function renderMaterialDetails() {
+      if (!state.draft?.materialOptionId) { hide('materialDetails'); return; }
+      const option = $('materialOptionId').selectedOptions[0];
+      const material = $('materialId').selectedOptions[0];
+      showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Pricing Mode</span><strong>${state.pricingMode}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)}</strong></div>`);
+  }
+
+  function addSizeRow(size = {}) {
+      const row = document.createElement('div'); row.className='size-row';
+      row.innerHTML = `<div><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div><label>Offer Price</label><input class="offer" type="number" min="0" step="0.01" value="${size.offerPrice || ''}" placeholder="Optional"></div><div class="size-result"><span>SQ.FT</span><strong class="sqft">0.00</strong><button type="button" class="remove-size">×</button></div>`;
+      $('sizeRows').appendChild(row);
+      row.querySelectorAll('input').forEach(i => i.addEventListener('input', calculateDraft));
+      row.querySelector('.remove-size').addEventListener('click', () => { if ($('sizeRows').children.length > 1) { row.remove(); calculateDraft(); } });
+      calculateDraft();
+  }
+
+  function readSizes() {
+      return [...document.querySelectorAll('.size-row')].map(row => ({
+          length:Number(row.querySelector('.length').value || 0), width:Number(row.querySelector('.width').value || 0), height:Number(row.querySelector('.height').value || 0), offerPrice: row.querySelector('.offer').value === '' ? null : Number(row.querySelector('.offer').value), row
+      }));
+  }
+
+  function calculateDraft() {
+      if (!state.draft) return;
+      let sqft=0, amount=0;
+      readSizes().forEach(s => { const value = s.length>0 && s.width>0 && s.height>0 ? ((s.length+s.width)*s.height)/144 : 0; sqft += value; amount += value * Number(state.draft.rate || 0); s.row.querySelector('.sqft').textContent=value.toFixed(2); });
+      $('currentRate').textContent=money(state.draft.rate); $('currentSqft').textContent=sqft.toFixed(2); $('currentAmount').textContent=money(amount);
+  }
+
+  function addDraftToRoom() {
+      if (!state.draft || !state.draft.materialOptionId) return alert('Select a material option.');
+      const sizes=readSizes();
+      if (sizes.some(s => !(s.length>0 && s.width>0 && s.height>0))) return alert('Enter Length, Width and Height for every size.');
+      const room=ensureRoom(); if (!room) return alert('Select Floor and Room Number first.');
+      state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:s.offerPrice}));
+      room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
+      $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
+      $('itemBuilder').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function renderSummary() {
+      const container=$('roomsSummary'); container.innerHTML=''; let total=0;
+      $('summaryEmpty').classList.toggle('hidden', state.rooms.every(r=>r.items.length===0));
+      state.rooms.forEach((room, ri) => {
+          if (!room.items.length) return;
+          const roomTotal=room.items.reduce((sum,item)=>sum+item.sizes.reduce((s,z)=>s+(((z.length+z.width)*z.height)/144)*Number(item.rate||0),0),0); total+=roomTotal;
+          const block=document.createElement('div'); block.className='summary-room';
+          block.innerHTML=`<div class="summary-room-head"><div><span>${esc(room.floor)} · ROOM ${esc(room.room)}</span><h3>${esc(room.floor)} / Room ${esc(room.room)}</h3></div><strong>${money(roomTotal)}</strong></div>`;
+          const table=document.createElement('div'); table.className='summary-table';
+          room.items.forEach((item,ii)=>{ item.sizes.forEach((z,si)=>{ const sqft=((z.length+z.width)*z.height)/144; const amount=sqft*Number(item.rate||0); const offer=z.offerPrice==null?amount:Number(z.offerPrice); const row=document.createElement('div'); row.className='summary-row'; row.innerHTML=`<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${sqft.toFixed(2)} SQ.FT</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><div>${money(offer)}</div><button type="button" class="summary-delete" data-room="${ri}" data-item="${ii}" data-size="${si}">×</button>`; table.appendChild(row); }); });
+          block.appendChild(table); container.appendChild(block);
+      });
+      $('grandTotal').textContent=money(total);
+      document.querySelectorAll('.summary-delete').forEach(btn=>btn.addEventListener('click',()=>{const r=state.rooms[btn.dataset.room], itemIndex=Number(btn.dataset.item), sizeIndex=Number(btn.dataset.size); r.items[itemIndex].sizes.splice(sizeIndex,1); if(!r.items[itemIndex].sizes.length)r.items.splice(itemIndex,1); renderSummary();}));
+  }
+
+  async function recalculateAll() {
+      state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
+      if (!state.rooms.some(r=>r.items.length)) return;
+      const requests=[];
+      state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{ if(!$('branchId').value)return; const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId}&pricingMode=${state.pricingMode}`); item.rate=Number(data.rate||0); })())));
+      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message;}
+  }
+
+  async function saveQuotation() {
+      const name=$('customerName').value.trim(), phone=$('customerPhone').value.trim(), branchId=Number($('branchId').value||0);
+      if(!name||!phone||!branchId||!$('quotationDate').value)return alert('Customer Name, Phone, Branch and Date are required.');
+      if(!state.rooms.some(r=>r.items.length))return alert('Add at least one item to the quotation.');
+      const payload={customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},branchId,quotationDate:$('quotationDate').value,pricingMode:state.pricingMode,customerRequirements:$('customerRequirements').value.trim(),notes:$('notes').value.trim(),rooms:state.rooms.filter(r=>r.items.length).map(r=>({floor:r.floor,room:r.room,workDescription:r.workDescription,items:r.items.map(i=>({workCategoryId:i.categoryId,divisionId:i.divisionId,itemId:i.itemId,materialId:i.materialId,materialOptionId:i.materialOptionId,itemDescription:i.itemDescription,specification:i.specification,sizes:i.sizes}))}))};
+      const button=$('saveQuotationBtn'); button.disabled=true; button.textContent='Saving Quotation...'; $('saveMessage').textContent='Saving customer, rooms, items and pricing...';
+      try { const response=await fetch(`${API_BASE}/save`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify(payload)}); if(response.redirected){window.location.href=response.url;return;} const text=await response.text(); throw new Error(text||'Unable to save quotation.'); } catch(e){ $('saveMessage').textContent=e.message; button.disabled=false; button.textContent='Save Quotation'; }
+  }
+
+  document.querySelectorAll('.category-choice').forEach(btn=>btn.addEventListener('click',()=>loadDivisions(Number(btn.dataset.id),btn.dataset.name)));
+  $('addSizeBtn').addEventListener('click',()=>addSizeRow()); $('addItemBtn').addEventListener('click',addDraftToRoom); $('cancelItemBtn').addEventListener('click',()=>hide('itemBuilder'));
+  document.querySelectorAll('input[name="pricingMode"]').forEach(r=>r.addEventListener('change',recalculateAll)); $('branchId').addEventListener('change',()=>{if(state.draft)refreshDraftRate();}); $('floor').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();}); $('roomNumber').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();}); $('workDescription').addEventListener('input',()=>{const r=currentRoom();if(r)r.workDescription=$('workDescription').value;}); $('saveQuotationBtn').addEventListener('click',saveQuotation);
+  $('quoteNumberPreview').textContent='AUTO'; addSizeRow();
+</script>
+</body>
+</html>

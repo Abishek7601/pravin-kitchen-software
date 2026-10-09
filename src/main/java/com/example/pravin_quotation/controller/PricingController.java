@@ -24,12 +24,19 @@ public class PricingController {
     }
 
     @GetMapping
-    public String pricing(Model model) {
+    public String pricing(
+            @RequestParam(required = false) String error,
+            Model model
+    ) {
 
         model.addAttribute(
                 "pricingList",
                 pricingService.getAllPricing()
         );
+
+        if (error != null && !error.isBlank()) {
+            model.addAttribute("deleteError", error);
+        }
 
         return "admin/pricing";
     }
@@ -138,8 +145,19 @@ public class PricingController {
             @PathVariable Long id
     ) {
 
-        pricingService.deletePricing(id);
+        try {
 
-        return "redirect:/admin/pricing";
+            pricingService.deletePricing(id);
+
+            return "redirect:/admin/pricing";
+
+        } catch (IllegalStateException e) {
+
+            return "redirect:/admin/pricing?error="
+                    + java.net.URLEncoder.encode(
+                    e.getMessage(),
+                    java.nio.charset.StandardCharsets.UTF_8
+            );
+        }
     }
 }

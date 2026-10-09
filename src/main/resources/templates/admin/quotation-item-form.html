@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
@@ -16,8 +15,12 @@
 <div class="item-form-page"
      th:with="isNew=${quotationItem == null or quotationItem.id == null}">
 
-    <!-- HEADER -->
+    <!-- =========================================================
+         HEADER
+    ========================================================== -->
+
     <div class="page-header">
+
         <div>
 
             <a class="back-link"
@@ -27,55 +30,109 @@
 
             <span class="page-label">QUOTATION ITEM</span>
 
-            <h1 th:if="${isNew}">Add Quotation Item</h1>
-            <h1 th:unless="${isNew}">Edit Quotation Item</h1>
+            <h1 th:if="${isNew}">
+                Add Quotation Item
+            </h1>
+
+            <h1 th:unless="${isNew}">
+                Edit Quotation Item
+            </h1>
 
             <p>
-                <span th:text="${quotationRoom.room}">Kitchen</span>
+
+                <span th:text="${quotationRoom.room}">
+                    Kitchen
+                </span>
+
                 <span class="separator">•</span>
-                <span th:text="${quotationRoom.floor}">Ground Floor</span>
+
+                <span th:text="${quotationRoom.floor}">
+                    Ground Floor
+                </span>
+
                 <span class="separator">•</span>
-                <span th:text="${quotation.quotationNumber}">QT-2026-001</span>
+
+                <span th:text="${quotation.quotationNumber}">
+                    QT-2026-001
+                </span>
+
             </p>
 
         </div>
+
     </div>
 
-    <!-- FORM -->
+
+    <!-- =========================================================
+         FORM
+    ========================================================== -->
+
     <form id="quotationItemForm"
           method="post"
           th:action="${isNew}
                 ? @{/admin/quotation-items/save}
                 : @{/admin/quotation-items/update}">
 
-        <!-- HIDDEN VALUES -->
+
+        <!-- =====================================================
+             HIDDEN VALUES
+        ====================================================== -->
+
         <input type="hidden"
                name="quotationRoomId"
                th:value="${quotationRoom.id}">
+
 
         <input type="hidden"
                name="id"
                th:if="${!isNew}"
                th:value="${quotationItem?.id}">
 
-        <!-- WORK DETAILS -->
+
+        <!-- =====================================================
+             WORK DETAILS
+        ====================================================== -->
+
         <div class="form-card">
 
             <div class="card-heading">
+
                 <div>
-                    <span class="card-label">WORK DETAILS</span>
-                    <h2>Select Work</h2>
+
+                    <span class="card-label">
+                        WORK DETAILS
+                    </span>
+
+                    <h2>
+                        Select Work
+                    </h2>
+
                 </div>
-                <span class="step-number">01</span>
+
+                <span class="step-number">
+                    01
+                </span>
+
             </div>
+
 
             <div class="form-grid">
 
-                <div class="form-group">
-                    <label for="workCategoryId">Work Category</label>
 
-                    <select id="workCategoryId" name="workCategoryId">
-                        <option value="">Select work category</option>
+                <!-- WORK CATEGORY -->
+
+                <div class="form-group">
+
+                    <label for="workCategoryId">
+                        Work Category
+                    </label>
+
+                    <select id="workCategoryId"
+                            name="workCategoryId">
+
+                        <option value="">
+                            Select work category
+                        </option>
 
                         <option th:each="category : ${workCategories}"
                                 th:value="${category.id}"
@@ -85,14 +142,26 @@
                                 th:selected="${quotationItem?.workCategory != null
                                     and quotationItem.workCategory.id == category.id}">
                         </option>
+
                     </select>
+
                 </div>
 
-                <div class="form-group">
-                    <label for="divisionId">Division</label>
 
-                    <select id="divisionId" name="divisionId">
-                        <option value="">Select division</option>
+                <!-- DIVISION -->
+
+                <div class="form-group">
+
+                    <label for="divisionId">
+                        Division
+                    </label>
+
+                    <select id="divisionId"
+                            name="divisionId">
+
+                        <option value="">
+                            Select division
+                        </option>
 
                         <option th:each="division : ${divisions}"
                                 th:value="${division.id}"
@@ -100,24 +169,46 @@
                                 th:selected="${quotationItem?.division != null
                                     and quotationItem.division.id == division.id}">
                         </option>
+
                     </select>
+
                 </div>
 
-                <div class="form-group">
-                    <label for="itemId">Item</label>
 
-                    <select id="itemId" name="itemId">
-                        <option value="">Select item</option>
+                <!-- ITEM -->
+
+                <div class="form-group">
+
+                    <label for="itemId">
+                        Item
+                    </label>
+
+                    <select id="itemId"
+                            name="itemId">
+
+                        <option value="">
+                            Select item
+                        </option>
 
                         <option th:each="item : ${itemsList}"
                                 th:value="${item.id}"
-                                th:text="${item.name}">
+                                th:text="${item.name}"
+                                th:selected="${quotationItem?.item != null
+                                    and quotationItem.item.id == item.id}">
                         </option>
+
                     </select>
+
                 </div>
 
+
+                <!-- DESCRIPTION -->
+
                 <div class="form-group full-width">
-                    <label for="itemDescription">Item Description</label>
+
+                    <label for="itemDescription">
+                        Item Description
+                    </label>
 
                     <input type="text"
                            id="itemDescription"
@@ -125,29 +216,58 @@
                            maxlength="255"
                            placeholder="Example: Base cabinet with soft-close shutters"
                            th:value="${quotationItem?.itemDescription}">
+
                 </div>
 
             </div>
+
         </div>
 
-        <!-- MATERIAL -->
+
+        <!-- =====================================================
+             MATERIAL
+        ====================================================== -->
+
         <div class="form-card">
 
             <div class="card-heading">
+
                 <div>
-                    <span class="card-label">MATERIAL</span>
-                    <h2>Material &amp; Specification</h2>
+
+                    <span class="card-label">
+                        MATERIAL
+                    </span>
+
+                    <h2>
+                        Material &amp; Specification
+                    </h2>
+
                 </div>
-                <span class="step-number">02</span>
+
+                <span class="step-number">
+                    02
+                </span>
+
             </div>
+
 
             <div class="form-grid">
 
-                <div class="form-group">
-                    <label for="materialId">Material</label>
 
-                    <select id="materialId" name="materialId">
-                        <option value="">Select material</option>
+                <!-- MATERIAL -->
+
+                <div class="form-group">
+
+                    <label for="materialId">
+                        Material
+                    </label>
+
+                    <select id="materialId"
+                            name="materialId">
+
+                        <option value="">
+                            Select material
+                        </option>
 
                         <option th:each="material : ${materials}"
                                 th:value="${material.id}"
@@ -155,14 +275,26 @@
                                 th:selected="${quotationItem?.material != null
                                     and quotationItem.material.id == material.id}">
                         </option>
+
                     </select>
+
                 </div>
 
-                <div class="form-group">
-                    <label for="materialOptionId">Material Option</label>
 
-                    <select id="materialOptionId" name="materialOptionId">
-                        <option value="">Select material option</option>
+                <!-- MATERIAL OPTION -->
+
+                <div class="form-group">
+
+                    <label for="materialOptionId">
+                        Material Option
+                    </label>
+
+                    <select id="materialOptionId"
+                            name="materialOptionId">
+
+                        <option value="">
+                            Select material option
+                        </option>
 
                         <option th:each="option : ${materialOptions}"
                                 th:value="${option.id}"
@@ -170,11 +302,19 @@
                                 th:selected="${quotationItem?.materialOption != null
                                     and quotationItem.materialOption.id == option.id}">
                         </option>
+
                     </select>
+
                 </div>
 
+
+                <!-- SPECIFICATION -->
+
                 <div class="form-group full-width">
-                    <label for="specification">Specification</label>
+
+                    <label for="specification">
+                        Specification
+                    </label>
 
                     <textarea id="specification"
                               name="specification"
@@ -182,114 +322,433 @@
                               maxlength="1000"
                               placeholder="Enter material specification..."
                               th:text="${quotationItem?.specification}"></textarea>
+
                 </div>
 
             </div>
+
         </div>
 
-        <!-- DIMENSIONS -->
+
+        <!-- =====================================================
+             MULTIPLE SIZE MEASUREMENT
+        ====================================================== -->
+
         <div class="form-card">
 
             <div class="card-heading">
+
                 <div>
-                    <span class="card-label">MEASUREMENT</span>
-                    <h2>Dimensions</h2>
-                    <p class="helper-text">Enter dimensions in inches.</p>
+
+                    <span class="card-label">
+                        MEASUREMENT
+                    </span>
+
+                    <h2>
+                        Dimensions
+                    </h2>
+
+                    <p class="helper-text">
+                        Enter dimensions in inches. Add multiple sizes for the same item.
+                    </p>
+
                 </div>
-                <span class="step-number">03</span>
+
+                <span class="step-number">
+                    03
+                </span>
+
             </div>
 
-            <div class="dimension-grid">
 
-                <div class="dimension-field">
-                    <label for="lengthValue">Length</label>
+            <!-- SIZE LIST -->
 
-                    <div class="input-with-unit">
-                        <input type="number"
-                               id="lengthValue"
-                               name="lengthValue"
-                               min="0.01"
-                               step="0.01"
-                               placeholder="0.00"
-                               th:value="${quotationItem?.lengthValue}"
-                               required>
-                        <span>in</span>
+            <div id="sizesContainer">
+
+
+                <!-- =================================================
+                     EXISTING SIZES
+                ================================================== -->
+
+                <div class="size-row"
+                     th:if="${quotationItem?.sizes != null and !quotationItem.sizes.isEmpty()}"
+                     th:each="size, sizeStat : ${quotationItem.sizes}"
+                     th:data-size-index="${sizeStat.index}">
+
+                    <div class="size-row-header">
+
+                        <div>
+
+                            <strong>
+                                Size
+                                <span class="size-number">
+                                    <span th:text="${sizeStat.index + 1}">
+                                        1
+                                    </span>
+                                </span>
+                            </strong>
+
+                        </div>
+
+                        <button type="button"
+                                class="remove-size-btn"
+                                th:if="${sizeStat.index > 0}">
+                            Remove
+                        </button>
+
                     </div>
+
+
+                    <div class="dimension-grid">
+
+
+                        <!-- LENGTH -->
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Length
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="length-input"
+                                       name="lengthValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${size.lengthValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- WIDTH -->
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Width
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="width-input"
+                                       name="widthValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${size.widthValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- HEIGHT -->
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Height
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="height-input"
+                                       name="heightValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${size.heightValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- SQFT -->
+
+                        <div class="calculated-field">
+
+                            <label>
+                                Calculated Sq.Ft
+                            </label>
+
+                            <div class="calculated-value">
+
+                                <strong class="size-sqft">
+                                    0.00
+                                </strong>
+
+                                <span>
+                                    sq.ft
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
-                <div class="dimension-field">
-                    <label for="widthValue">Width</label>
 
-                    <div class="input-with-unit">
-                        <input type="number"
-                               id="widthValue"
-                               name="widthValue"
-                               min="0.01"
-                               step="0.01"
-                               placeholder="0.00"
-                               th:value="${quotationItem?.widthValue}"
-                               required>
-                        <span>in</span>
-                    </div>
-                </div>
+                <!-- =================================================
+                     NEW ITEM - FIRST SIZE
+                ================================================== -->
 
-                <div class="dimension-field">
-                    <label for="heightValue">Height</label>
+                <div class="size-row"
+                     th:if="${quotationItem?.sizes == null or quotationItem.sizes.isEmpty()}"
+                     data-size-index="0">
 
-                    <div class="input-with-unit">
-                        <input type="number"
-                               id="heightValue"
-                               name="heightValue"
-                               min="0.01"
-                               step="0.01"
-                               placeholder="0.00"
-                               th:value="${quotationItem?.heightValue}"
-                               required>
-                        <span>in</span>
-                    </div>
-                </div>
+                    <div class="size-row-header">
 
-                <div class="calculated-field">
-                    <label>Calculated Sq.Ft</label>
+                        <div>
 
-                    <div class="calculated-value">
-                        <strong id="calculatedSqftDisplay">0.00</strong>
-                        <span>sq.ft</span>
+                            <strong>
+                                Size
+                                <span class="size-number">
+                                    1
+                                </span>
+                            </strong>
+
+                        </div>
+
                     </div>
 
-                    <input type="hidden"
-                           id="calculatedSqft"
-                           name="calculatedSqft"
-                           th:value="${quotationItem?.calculatedSqft}">
+
+                    <div class="dimension-grid">
+
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Length
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="length-input"
+                                       name="lengthValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${quotationItem?.lengthValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Width
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="width-input"
+                                       name="widthValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${quotationItem?.widthValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="dimension-field">
+
+                            <label>
+                                Height
+                            </label>
+
+                            <div class="input-with-unit">
+
+                                <input type="number"
+                                       class="height-input"
+                                       name="heightValues"
+                                       min="0.01"
+                                       step="0.01"
+                                       placeholder="0.00"
+                                       th:value="${quotationItem?.heightValue}"
+                                       required>
+
+                                <span>
+                                    in
+                                </span>
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="calculated-field">
+
+                            <label>
+                                Calculated Sq.Ft
+                            </label>
+
+                            <div class="calculated-value">
+
+                                <strong class="size-sqft">
+                                    0.00
+                                </strong>
+
+                                <span>
+                                    sq.ft
+                                </span>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
                 </div>
 
             </div>
+
+
+            <!-- ADD SIZE -->
+
+            <div class="size-actions">
+
+                <button type="button"
+                        id="addSizeBtn"
+                        class="add-size-btn">
+
+                    + Add Size
+
+                </button>
+
+            </div>
+
+
+            <!-- TOTAL -->
+
+            <div class="total-size-box">
+
+                <div>
+
+                    <span>
+                        TOTAL CALCULATED SQ.FT
+                    </span>
+
+                    <strong id="totalSqftDisplay">
+                        0.00
+                    </strong>
+
+                </div>
+
+                <span>
+                    sq.ft
+                </span>
+
+            </div>
+
+
+            <!-- HIDDEN TOTAL -->
+
+            <input type="hidden"
+                   id="calculatedSqft"
+                   name="calculatedSqft"
+                   th:value="${quotationItem?.calculatedSqft}">
+
 
             <div class="formula-box">
-                <span>Calculation Formula</span>
-                <strong>(Length + Width) × Height ÷ 144</strong>
+
+                <span>
+                    Calculation Formula
+                </span>
+
+                <strong>
+                    (Length + Width) × Height ÷ 144
+                </strong>
+
             </div>
 
         </div>
 
-        <!-- PRICING -->
+
+        <!-- =====================================================
+             PRICING
+        ====================================================== -->
+
         <div class="form-card">
 
             <div class="card-heading">
+
                 <div>
-                    <span class="card-label">PRICING</span>
-                    <h2>Rate &amp; Amount</h2>
+
+                    <span class="card-label">
+                        PRICING
+                    </span>
+
+                    <h2>
+                        Rate &amp; Amount
+                    </h2>
+
                 </div>
-                <span class="step-number">04</span>
+
+                <span class="step-number">
+                    04
+                </span>
+
             </div>
+
 
             <div class="price-grid">
 
+
+                <!-- RATE -->
+
                 <div class="form-group">
-                    <label for="rate">Rate / Sq.Ft</label>
+
+                    <label for="rate">
+                        Rate / Sq.Ft
+                    </label>
 
                     <div class="currency-input">
-                        <span>₹</span>
+
+                        <span>
+                            ₹
+                        </span>
 
                         <input type="number"
                                id="rate"
@@ -298,29 +757,49 @@
                                step="0.01"
                                placeholder="0.00"
                                th:value="${quotationItem?.rate}">
+
                     </div>
 
                     <small>
                         The final rate is validated by the server.
                     </small>
+
                 </div>
 
-                <div class="calculated-price">
-                    <span>Calculated Amount</span>
 
-                    <strong id="amountDisplay">₹ 0.00</strong>
+                <!-- AMOUNT -->
+
+                <div class="calculated-price">
+
+                    <span>
+                        Calculated Amount
+                    </span>
+
+                    <strong id="amountDisplay">
+                        ₹ 0.00
+                    </strong>
 
                     <input type="hidden"
                            id="amount"
                            name="amount"
                            th:value="${quotationItem?.amount}">
+
                 </div>
 
+
+                <!-- OFFER PRICE -->
+
                 <div class="form-group">
-                    <label for="offerPrice">Offer Price</label>
+
+                    <label for="offerPrice">
+                        Offer Price
+                    </label>
 
                     <div class="currency-input">
-                        <span>₹</span>
+
+                        <span>
+                            ₹
+                        </span>
 
                         <input type="number"
                                id="offerPrice"
@@ -329,30 +808,54 @@
                                step="0.01"
                                placeholder="Use calculated amount"
                                th:value="${quotationItem?.offerPrice}">
+
                     </div>
 
                     <small>
                         Leave empty to use the calculated amount.
                     </small>
+
                 </div>
 
             </div>
+
         </div>
 
-        <!-- FORMULA AND NOTES -->
+
+        <!-- =====================================================
+             FORMULA / NOTES
+        ====================================================== -->
+
         <div class="form-card">
 
             <div class="card-heading">
+
                 <div>
-                    <span class="card-label">ADVANCED</span>
-                    <h2>Formula &amp; Notes</h2>
+
+                    <span class="card-label">
+                        ADVANCED
+                    </span>
+
+                    <h2>
+                        Formula &amp; Notes
+                    </h2>
+
                 </div>
-                <span class="step-number">05</span>
+
+                <span class="step-number">
+                    05
+                </span>
+
             </div>
 
+
             <div class="form-grid">
+
                 <div class="form-group full-width">
-                    <label for="formula">Formula</label>
+
+                    <label for="formula">
+                        Formula
+                    </label>
 
                     <input type="text"
                            id="formula"
@@ -360,12 +863,18 @@
                            maxlength="500"
                            placeholder="Example: (L + W) × H / 144"
                            th:value="${quotationItem?.formula}">
+
                 </div>
+
             </div>
 
         </div>
 
-        <!-- ACTIONS -->
+
+        <!-- =====================================================
+             ACTIONS
+        ====================================================== -->
+
         <div class="form-actions">
 
             <a class="btn btn-secondary"
@@ -373,96 +882,618 @@
                 Cancel
             </a>
 
-            <button type="submit" class="btn btn-primary">
-                <span th:if="${isNew}">Save Item</span>
-                <span th:unless="${isNew}">Update Item</span>
+            <button type="submit"
+                    class="btn btn-primary">
+
+                <span th:if="${isNew}">
+                    Save Item
+                </span>
+
+                <span th:unless="${isNew}">
+                    Update Item
+                </span>
+
             </button>
 
         </div>
 
     </form>
+
 </div>
 
-<!-- CALCULATION SCRIPT -->
+
+<!-- =============================================================
+     JAVASCRIPT
+============================================================= -->
+
 <script>
+
     document.addEventListener("DOMContentLoaded", function () {
 
-        const lengthInput = document.getElementById("lengthValue");
-        const widthInput = document.getElementById("widthValue");
-        const heightInput = document.getElementById("heightValue");
+        const sizesContainer =
+            document.getElementById("sizesContainer");
 
-        const sqftInput = document.getElementById("calculatedSqft");
-        const sqftDisplay = document.getElementById("calculatedSqftDisplay");
+        const addSizeBtn =
+            document.getElementById("addSizeBtn");
 
-        const rateInput = document.getElementById("rate");
-        const amountInput = document.getElementById("amount");
-        const amountDisplay = document.getElementById("amountDisplay");
+        const totalSqftDisplay =
+            document.getElementById("totalSqftDisplay");
 
-        const offerPriceInput = document.getElementById("offerPrice");
+        const calculatedSqftInput =
+            document.getElementById("calculatedSqft");
+
+        const rateInput =
+            document.getElementById("rate");
+
+        const amountInput =
+            document.getElementById("amount");
+
+        const amountDisplay =
+            document.getElementById("amountDisplay");
+
+        const offerPriceInput =
+            document.getElementById("offerPrice");
+
+        const form =
+            document.getElementById("quotationItemForm");
+
+
+        /* =========================================================
+           NUMBER HELPER
+        ========================================================== */
 
         function numberValue(input) {
-            const value = parseFloat(input.value);
-            return Number.isFinite(value) ? value : 0;
+
+            if (!input) {
+                return 0;
+            }
+
+            const value =
+                parseFloat(input.value);
+
+            return Number.isFinite(value)
+                ? value
+                : 0;
         }
 
-        function calculate() {
 
-            const length = numberValue(lengthInput);
-            const width = numberValue(widthInput);
-            const height = numberValue(heightInput);
-            const rate = numberValue(rateInput);
+        /* =========================================================
+           CALCULATE SINGLE SIZE
+        ========================================================== */
+
+        function calculateSize(row) {
+
+            const lengthInput =
+                row.querySelector(".length-input");
+
+            const widthInput =
+                row.querySelector(".width-input");
+
+            const heightInput =
+                row.querySelector(".height-input");
+
+            const sqftDisplay =
+                row.querySelector(".size-sqft");
+
+
+            const length =
+                numberValue(lengthInput);
+
+            const width =
+                numberValue(widthInput);
+
+            const height =
+                numberValue(heightInput);
+
 
             let sqft = 0;
 
-            if (length > 0 && width > 0 && height > 0) {
-                sqft = ((length + width) * height) / 144;
+
+            if (
+                length > 0 &&
+                width > 0 &&
+                height > 0
+            ) {
+
+                sqft =
+                    ((length + width) * height) / 144;
+
             }
 
-            sqft = Math.round(sqft * 100) / 100;
 
-            const amount = Math.round(sqft * rate * 100) / 100;
+            sqft =
+                Math.round(sqft * 100) / 100;
 
-            sqftDisplay.textContent = sqft.toFixed(2);
-            sqftInput.value = sqft.toFixed(2);
 
-            amountDisplay.textContent = "₹ " + amount.toFixed(2);
-            amountInput.value = amount.toFixed(2);
+            sqftDisplay.textContent =
+                sqft.toFixed(2);
 
-            if (!offerPriceInput.value.trim()) {
-                offerPriceInput.placeholder =
-                    "Calculated: ₹ " + amount.toFixed(2);
-            }
+
+            return sqft;
         }
 
-        [lengthInput, widthInput, heightInput, rateInput]
-            .forEach(function (input) {
-                input.addEventListener("input", calculate);
+
+        /* =========================================================
+           CALCULATE ALL SIZES
+        ========================================================== */
+
+        function calculateAll() {
+
+            const rows =
+                sizesContainer.querySelectorAll(".size-row");
+
+
+            let totalSqft = 0;
+
+
+            rows.forEach(function (row) {
+
+                totalSqft +=
+                    calculateSize(row);
+
             });
 
-        calculate();
 
-        document.getElementById("quotationItemForm")
-            .addEventListener("submit", function (event) {
+            totalSqft =
+                Math.round(totalSqft * 100) / 100;
 
-                const length = numberValue(lengthInput);
-                const width = numberValue(widthInput);
-                const height = numberValue(heightInput);
 
-                if (length <= 0 || width <= 0 || height <= 0) {
-                    event.preventDefault();
-                    alert("Please enter valid Length, Width and Height values.");
-                    return;
+            const rate =
+                numberValue(rateInput);
+
+
+            const amount =
+                Math.round(
+                    totalSqft * rate * 100
+                ) / 100;
+
+
+            totalSqftDisplay.textContent =
+                totalSqft.toFixed(2);
+
+
+            calculatedSqftInput.value =
+                totalSqft.toFixed(2);
+
+
+            amountDisplay.textContent =
+                "₹ " + amount.toFixed(2);
+
+
+            amountInput.value =
+                amount.toFixed(2);
+
+
+            if (!offerPriceInput.value.trim()) {
+
+                offerPriceInput.placeholder =
+                    "Calculated: ₹ " +
+                    amount.toFixed(2);
+
+            }
+
+        }
+
+
+        /* =========================================================
+           UPDATE SIZE NUMBERS
+        ========================================================== */
+
+        function updateSizeNumbers() {
+
+            const rows =
+                sizesContainer.querySelectorAll(".size-row");
+
+
+            rows.forEach(function (row, index) {
+
+                row.dataset.sizeIndex =
+                    index;
+
+
+                const numberElement =
+                    row.querySelector(".size-number");
+
+
+                if (numberElement) {
+
+                    numberElement.textContent =
+                        index + 1;
+
                 }
+
+
+                const removeButton =
+                    row.querySelector(".remove-size-btn");
+
+
+                if (removeButton) {
+
+                    if (index === 0) {
+
+                        removeButton.style.display =
+                            "none";
+
+                    } else {
+
+                        removeButton.style.display =
+                            "inline-flex";
+
+                    }
+
+                }
+
+            });
+
+        }
+
+
+        /* =========================================================
+           CREATE NEW SIZE ROW
+        ========================================================== */
+
+        function createSizeRow() {
+
+            const row =
+                document.createElement("div");
+
+
+            row.className =
+                "size-row";
+
+
+            row.innerHTML = `
+
+                <div class="size-row-header">
+
+                    <div>
+
+                        <strong>
+
+                            Size
+
+                            <span class="size-number">
+                                1
+                            </span>
+
+                        </strong>
+
+                    </div>
+
+                    <button
+                        type="button"
+                        class="remove-size-btn">
+
+                        Remove
+
+                    </button>
+
+                </div>
+
+
+                <div class="dimension-grid">
+
+
+                    <div class="dimension-field">
+
+                        <label>
+                            Length
+                        </label>
+
+                        <div class="input-with-unit">
+
+                            <input
+                                type="number"
+                                class="length-input"
+                                name="lengthValues"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required>
+
+                            <span>
+                                in
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="dimension-field">
+
+                        <label>
+                            Width
+                        </label>
+
+                        <div class="input-with-unit">
+
+                            <input
+                                type="number"
+                                class="width-input"
+                                name="widthValues"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required>
+
+                            <span>
+                                in
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="dimension-field">
+
+                        <label>
+                            Height
+                        </label>
+
+                        <div class="input-with-unit">
+
+                            <input
+                                type="number"
+                                class="height-input"
+                                name="heightValues"
+                                min="0.01"
+                                step="0.01"
+                                placeholder="0.00"
+                                required>
+
+                            <span>
+                                in
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="calculated-field">
+
+                        <label>
+                            Calculated Sq.Ft
+                        </label>
+
+                        <div class="calculated-value">
+
+                            <strong class="size-sqft">
+                                0.00
+                            </strong>
+
+                            <span>
+                                sq.ft
+                            </span>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            `;
+
+
+            sizesContainer.appendChild(row);
+
+
+            const removeButton =
+                row.querySelector(".remove-size-btn");
+
+
+            removeButton.addEventListener(
+                "click",
+                function () {
+
+                    row.remove();
+
+                    updateSizeNumbers();
+
+                    calculateAll();
+
+                }
+            );
+
+
+            attachSizeListeners(row);
+
+            updateSizeNumbers();
+
+            calculateAll();
+
+        }
+
+
+        /* =========================================================
+           ATTACH INPUT LISTENERS
+        ========================================================== */
+
+        function attachSizeListeners(row) {
+
+            const inputs =
+                row.querySelectorAll(
+                    ".length-input, .width-input, .height-input"
+                );
+
+
+            inputs.forEach(function (input) {
+
+                input.addEventListener(
+                    "input",
+                    calculateAll
+                );
+
+            });
+
+
+            const removeButton =
+                row.querySelector(".remove-size-btn");
+
+
+            if (removeButton) {
+
+                removeButton.addEventListener(
+                    "click",
+                    function () {
+
+                        row.remove();
+
+                        updateSizeNumbers();
+
+                        calculateAll();
+
+                    }
+                );
+
+            }
+
+        }
+
+
+        /* =========================================================
+           EXISTING ROWS
+        ========================================================== */
+
+        const initialRows =
+            sizesContainer.querySelectorAll(".size-row");
+
+
+        initialRows.forEach(function (row) {
+
+            attachSizeListeners(row);
+
+        });
+
+
+        /* =========================================================
+           ADD SIZE BUTTON
+        ========================================================== */
+
+        addSizeBtn.addEventListener(
+            "click",
+            function () {
+
+                createSizeRow();
+
+            }
+        );
+
+
+        /* =========================================================
+           RATE CHANGE
+        ========================================================== */
+
+        rateInput.addEventListener(
+            "input",
+            calculateAll
+        );
+
+
+        /* =========================================================
+           INITIAL CALCULATION
+        ========================================================== */
+
+        updateSizeNumbers();
+
+        calculateAll();
+
+
+        /* =========================================================
+           FORM VALIDATION
+        ========================================================== */
+
+        form.addEventListener(
+            "submit",
+            function (event) {
+
+                const rows =
+                    sizesContainer.querySelectorAll(".size-row");
+
+
+                if (rows.length === 0) {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Please add at least one size."
+                    );
+
+                    return;
+
+                }
+
+
+                let invalid = false;
+
+
+                rows.forEach(function (row) {
+
+                    const length =
+                        numberValue(
+                            row.querySelector(".length-input")
+                        );
+
+                    const width =
+                        numberValue(
+                            row.querySelector(".width-input")
+                        );
+
+                    const height =
+                        numberValue(
+                            row.querySelector(".height-input")
+                        );
+
+
+                    if (
+                        length <= 0 ||
+                        width <= 0 ||
+                        height <= 0
+                    ) {
+
+                        invalid = true;
+
+                    }
+
+                });
+
+
+                if (invalid) {
+
+                    event.preventDefault();
+
+                    alert(
+                        "Please enter valid Length, Width and Height for every size."
+                    );
+
+                    return;
+
+                }
+
 
                 const materialOption =
-                    document.getElementById("materialOptionId");
+                    document.getElementById(
+                        "materialOptionId"
+                    );
+
 
                 if (!materialOption.value) {
+
                     event.preventDefault();
-                    alert("Please select a Material Option.");
+
+                    alert(
+                        "Please select a Material Option."
+                    );
+
                 }
-            });
+
+            }
+        );
+
     });
+
 </script>
 
 </body>

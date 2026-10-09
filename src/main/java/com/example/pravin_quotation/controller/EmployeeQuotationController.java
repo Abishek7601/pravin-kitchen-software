@@ -8,15 +8,23 @@ import com.example.pravin_quotation.model.MaterialOption;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationItem;
+import com.example.pravin_quotation.model.QuotationItemSize;
 import com.example.pravin_quotation.model.QuotationRoom;
+import com.example.pravin_quotation.model.QuotationStatus;
+import com.example.pravin_quotation.model.QuotationStatusHistory;
 import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.model.WorkCategory;
+
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.DivisionRepository;
+import com.example.pravin_quotation.repository.DistrictPricingRepository;
+import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
+
 import com.example.pravin_quotation.service.*;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -24,12 +32,14 @@ import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -42,10 +52,14 @@ public class EmployeeQuotationController {
     private final CustomerRepository customerRepository;
     private final BranchRepository branchRepository;
     private final DivisionRepository divisionRepository;
+    private final PricingRepository pricingRepository;
+    private final DistrictPricingRepository districtPricingRepository;
+    private final CustomerService customerService;
 
     private final QuotationService quotationService;
     private final QuotationRoomService quotationRoomService;
     private final QuotationItemService quotationItemService;
+    private final QuotationItemSizeService quotationItemSizeService;
     private final QuotationCalculationService quotationCalculationService;
 
     private final WorkCategoryService workCategoryService;
@@ -53,49 +67,130 @@ public class EmployeeQuotationController {
     private final ItemService itemService;
     private final MaterialService materialService;
     private final MaterialOptionService materialOptionService;
+
     private final QuotationPdfService quotationPdfService;
     private final QuotationEmailService quotationEmailService;
     private final QuotationCommunicationService quotationCommunicationService;
 
+    private final QuotationStatusHistoryService quotationStatusHistoryService;
+
+
+    // ============================================================
+    // CONSTRUCTOR
+    // ============================================================
+
     public EmployeeQuotationController(
+
             QuotationRepository quotationRepository,
+
             UserRepository userRepository,
+
             CustomerRepository customerRepository,
+
             BranchRepository branchRepository,
+
             DivisionRepository divisionRepository,
+
+            PricingRepository pricingRepository,
+
+            DistrictPricingRepository districtPricingRepository,
+
+            CustomerService customerService,
+
             QuotationService quotationService,
+
             QuotationRoomService quotationRoomService,
+
             QuotationItemService quotationItemService,
+
+            QuotationItemSizeService quotationItemSizeService,
+
             QuotationCalculationService quotationCalculationService,
+
             WorkCategoryService workCategoryService,
+
             DivisionService divisionService,
+
             ItemService itemService,
+
             MaterialService materialService,
+
             MaterialOptionService materialOptionService,
+
             QuotationPdfService quotationPdfService,
+
             QuotationEmailService quotationEmailService,
-            QuotationCommunicationService quotationCommunicationService
+
+            QuotationCommunicationService quotationCommunicationService,
+
+            QuotationStatusHistoryService quotationStatusHistoryService
     ) {
 
-        this.quotationRepository = quotationRepository;
-        this.userRepository = userRepository;
-        this.customerRepository = customerRepository;
-        this.branchRepository = branchRepository;
-        this.divisionRepository = divisionRepository;
+        this.quotationRepository =
+                quotationRepository;
 
-        this.quotationService = quotationService;
-        this.quotationRoomService = quotationRoomService;
-        this.quotationItemService = quotationItemService;
-        this.quotationCalculationService = quotationCalculationService;
+        this.userRepository =
+                userRepository;
 
-        this.workCategoryService = workCategoryService;
-        this.divisionService = divisionService;
-        this.itemService = itemService;
-        this.materialService = materialService;
-        this.materialOptionService = materialOptionService;
-        this.quotationPdfService = quotationPdfService;
-        this.quotationEmailService = quotationEmailService;
-        this.quotationCommunicationService = quotationCommunicationService;
+        this.customerRepository =
+                customerRepository;
+
+        this.branchRepository =
+                branchRepository;
+
+        this.divisionRepository =
+                divisionRepository;
+
+        this.pricingRepository =
+                pricingRepository;
+
+        this.districtPricingRepository =
+                districtPricingRepository;
+
+        this.customerService =
+                customerService;
+
+        this.quotationService =
+                quotationService;
+
+        this.quotationRoomService =
+                quotationRoomService;
+
+        this.quotationItemService =
+                quotationItemService;
+
+        this.quotationItemSizeService =
+                quotationItemSizeService;
+
+        this.quotationCalculationService =
+                quotationCalculationService;
+
+        this.workCategoryService =
+                workCategoryService;
+
+        this.divisionService =
+                divisionService;
+
+        this.itemService =
+                itemService;
+
+        this.materialService =
+                materialService;
+
+        this.materialOptionService =
+                materialOptionService;
+
+        this.quotationPdfService =
+                quotationPdfService;
+
+        this.quotationEmailService =
+                quotationEmailService;
+
+        this.quotationCommunicationService =
+                quotationCommunicationService;
+
+        this.quotationStatusHistoryService =
+                quotationStatusHistoryService;
     }
 
 
@@ -152,52 +247,9 @@ public class EmployeeQuotationController {
             );
         }
 
-        Long branchId =
-                employee.getBranch().getId();
-
-        List<Customer> customers =
-                customerRepository.findByBranchId(
-                        branchId
-                );
-
-        var branches =
-                branchRepository.findAll()
-                        .stream()
-                        .filter(branch ->
-                                Boolean.TRUE.equals(
-                                        branch.getActive()
-                                )
-                        )
-                        .toList();
-
-        List<Division> divisions =
-                divisionRepository.findAll()
-                        .stream()
-                        .filter(division ->
-                                Boolean.TRUE.equals(
-                                        division.getActive()
-                                )
-                        )
-                        .toList();
-
         model.addAttribute(
                 "employee",
                 employee
-        );
-
-        model.addAttribute(
-                "customers",
-                customers
-        );
-
-        model.addAttribute(
-                "branches",
-                branches
-        );
-
-        model.addAttribute(
-                "divisions",
-                divisions
         );
 
         model.addAttribute(
@@ -208,6 +260,11 @@ public class EmployeeQuotationController {
         model.addAttribute(
                 "quotationDate",
                 LocalDate.now()
+        );
+
+        model.addAttribute(
+                "nextQuotationNumber",
+                previewQuotationNumber()
         );
 
         return "employee/quotation-new";
@@ -221,15 +278,22 @@ public class EmployeeQuotationController {
     @PostMapping("/save")
     public String saveQuotation(
 
-            @RequestParam Long customerId,
+            @RequestParam String customerName,
 
-            @RequestParam Long branchId,
+            @RequestParam String phone,
 
-            @RequestParam Long divisionId,
+            @RequestParam(required = false)
+            String email,
+
+            @RequestParam(required = false)
+            String address,
 
             @RequestParam String quotationDate,
 
             @RequestParam PricingMode pricingMode,
+
+            @RequestParam(required = false)
+            Long divisionId,
 
             @RequestParam(required = false)
             String customerRequirements,
@@ -256,38 +320,874 @@ public class EmployeeQuotationController {
                         DateTimeFormatter.ISO_LOCAL_DATE
                 );
 
+        Customer customer =
+                customerService.createOrUpdateForQuotation(
+                        customerName,
+                        email,
+                        phone,
+                        address,
+                        employee.getBranch().getId()
+                );
+
         String quotationNumber =
                 generateQuotationNumber();
 
         Quotation quotation =
                 quotationService.create(
                         quotationNumber,
-                        customerId,
+                        customer.getId(),
                         employee.getId(),
-                        branchId,
+                        employee.getBranch().getId(),
                         date,
                         pricingMode,
                         customerRequirements,
                         notes
                 );
 
-        quotation.setDivision(
-                divisionRepository.findById(
-                        divisionId
-                ).orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Division not found"
-                        )
+        if (divisionId != null) {
+
+            divisionRepository.findById(divisionId)
+                    .ifPresent(
+                            quotation::setDivision
+                    );
+
+            quotationRepository.save(
+                    quotation
+            );
+        }
+
+        quotationCalculationService
+                .initializeTravelCharge(
+                        quotation.getId()
+                );
+
+        return "redirect:/employee/quotations/builder/"
+                + quotation.getId();
+    }
+
+
+    // ============================================================
+    // QUOTATION BUILDER
+    // ============================================================
+
+    @GetMapping("/builder/{id}")
+    public String quotationBuilder(
+            @PathVariable Long id,
+            Authentication authentication,
+            Model model
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        quotationCalculationService
+                .calculateQuotation(id);
+
+        quotation =
+                quotationRepository.findById(id)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Quotation not found"
+                                )
+                        );
+
+        List<QuotationRoom> rooms =
+                quotationRoomService
+                        .getActiveByQuotationId(id);
+
+        Map<Long, List<QuotationItem>> roomItems =
+                new HashMap<>();
+
+        for (QuotationRoom room : rooms) {
+
+            roomItems.put(
+                    room.getId(),
+                    quotationItemService
+                            .getActiveByQuotationRoomId(
+                                    room.getId()
+                            )
+            );
+        }
+
+        model.addAttribute(
+                "employee",
+                employee
+        );
+
+        model.addAttribute(
+                "quotation",
+                quotation
+        );
+
+        model.addAttribute(
+                "rooms",
+                rooms
+        );
+
+        model.addAttribute(
+                "roomItems",
+                roomItems
+        );
+
+        model.addAttribute(
+                "workCategories",
+                workCategoryService
+                        .getActiveCategories()
+        );
+
+        model.addAttribute(
+                "pricingModes",
+                PricingMode.values()
+        );
+
+        return "employee/quotation-builder";
+    }
+
+
+    // ============================================================
+    // UPDATE CUSTOMER DETAILS FROM BUILDER
+    // ============================================================
+
+    @PostMapping("/builder/{id}/customer")
+    public String updateBuilderCustomer(
+
+            @PathVariable Long id,
+
+            @RequestParam String customerName,
+
+            @RequestParam String phone,
+
+            @RequestParam(required = false)
+            String email,
+
+            @RequestParam(required = false)
+            String address,
+
+            @RequestParam String quotationDate,
+
+            @RequestParam(required = false)
+            String customerRequirements,
+
+            @RequestParam(required = false)
+            String notes,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        Customer customer =
+                customerService.createOrUpdateForQuotation(
+                        customerName,
+                        email,
+                        phone,
+                        address,
+                        employee.getBranch().getId()
+                );
+
+        quotation.setCustomer(customer);
+
+        quotation.setQuotationDate(
+                LocalDate.parse(
+                        quotationDate,
+                        DateTimeFormatter.ISO_LOCAL_DATE
                 )
         );
 
-        quotationRepository.save(quotation);
+        quotation.setCustomerRequirements(
+                customerRequirements
+        );
 
-        quotationCalculationService.initializeTravelCharge(
-                quotation.getId());
+        quotation.setNotes(notes);
 
-        return "redirect:/employee/quotations/view/"
-                + quotation.getId();
+        quotationRepository.save(
+                quotation
+        );
+
+        return "redirect:/employee/quotations/builder/"
+                + id
+                + "?saved=customer";
+    }
+
+
+    // ============================================================
+    // CHANGE PRICING MODE
+    // ============================================================
+
+    @PostMapping("/builder/{id}/pricing-mode")
+    public String changeBuilderPricingMode(
+
+            @PathVariable Long id,
+
+            @RequestParam PricingMode pricingMode,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        quotationCalculationService
+                .changePricingMode(
+                        quotation.getId(),
+                        pricingMode
+                );
+
+        return "redirect:/employee/quotations/builder/"
+                + id
+                + "?saved=pricing";
+    }
+
+
+    // ============================================================
+    // ADD ITEMS DIRECTLY FROM BUILDER
+    // ============================================================
+
+    @PostMapping("/builder/{id}/items")
+    public String addBuilderItems(
+
+            @PathVariable Long id,
+
+            @RequestParam String floor,
+
+            @RequestParam String room,
+
+            @RequestParam Long workCategoryId,
+
+            @RequestParam Long itemId,
+
+            @RequestParam Long materialId,
+
+            @RequestParam Long materialOptionId,
+
+            @RequestParam List<BigDecimal> lengthValue,
+
+            @RequestParam List<BigDecimal> widthValue,
+
+            @RequestParam List<BigDecimal> heightValue,
+
+            @RequestParam(required = false)
+            List<String> offerPrice,
+
+            @RequestParam(required = false)
+            String specification,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        validateSizeLists(
+                lengthValue,
+                widthValue,
+                heightValue
+        );
+
+        WorkCategory workCategory =
+                workCategoryService
+                        .getCategoryById(
+                                workCategoryId
+                        );
+
+        Item item =
+                itemService.getItemById(
+                        itemId
+                );
+
+        Division division =
+                item.getDivision();
+
+        validateItemRelationship(
+                workCategory,
+                division,
+                item
+        );
+
+        Material material =
+                materialService.getMaterialById(
+                        materialId
+                );
+
+        validateMaterialRelationship(
+                item,
+                material
+        );
+
+        MaterialOption materialOption =
+                materialOptionService
+                        .getOptionById(
+                                materialOptionId
+                        );
+
+        validateMaterialOptionRelationship(
+                material,
+                materialOption
+        );
+
+        QuotationRoom quotationRoom =
+                quotationRoomService
+                        .getActiveByQuotationId(id)
+                        .stream()
+                        .filter(existing ->
+                                existing.getFloor() != null
+                                        && existing.getRoom() != null
+                                        && existing.getFloor()
+                                        .equalsIgnoreCase(
+                                                floor.trim()
+                                        )
+                                        && existing.getRoom()
+                                        .equalsIgnoreCase(
+                                                room.trim()
+                                        )
+                        )
+                        .findFirst()
+                        .orElseGet(() ->
+                                quotationRoomService.create(
+                                        quotation,
+                                        floor.trim(),
+                                        room.trim(),
+                                        workCategory.getName()
+                                )
+                        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Do NOT trust the rate coming from the browser.
+         *
+         * Rate is resolved from:
+         *
+         * Quotation Branch
+         *       +
+         * Material Option
+         *       +
+         * Quotation Pricing Mode
+         *       ↓
+         * District Pricing
+         */
+
+        BigDecimal rate =
+                quotationCalculationService
+                        .resolveItemRate(
+                                id,
+                                materialOptionId
+                        );
+
+        validateRate(rate);
+
+        String formula =
+                "(L + W) × H / 144";
+
+        BigDecimal totalSqft =
+                BigDecimal.ZERO;
+
+        BigDecimal totalAmount =
+                BigDecimal.ZERO;
+
+        BigDecimal totalOfferPrice =
+                BigDecimal.ZERO;
+
+        BigDecimal firstLength =
+                lengthValue.get(0);
+
+        BigDecimal firstWidth =
+                widthValue.get(0);
+
+        BigDecimal firstHeight =
+                heightValue.get(0);
+
+        validateDimensions(
+                firstLength,
+                firstWidth,
+                firstHeight
+        );
+
+        BigDecimal firstSqft =
+                quotationItemService.calculateSqft(
+                        firstLength,
+                        firstWidth,
+                        firstHeight
+                );
+
+        BigDecimal firstAmount =
+                quotationItemService.calculateAmount(
+                        firstSqft,
+                        rate
+                );
+
+        BigDecimal firstRequestedOffer =
+                parseOfferPrice(
+                        offerPrice,
+                        0
+                );
+
+        BigDecimal firstOfferPrice =
+                quotationItemService.calculateOfferPrice(
+                        firstAmount,
+                        firstRequestedOffer
+                );
+
+        totalSqft =
+                totalSqft.add(firstSqft);
+
+        totalAmount =
+                totalAmount.add(firstAmount);
+
+        totalOfferPrice =
+                totalOfferPrice.add(firstOfferPrice);
+
+        String finalSpecification =
+                specification != null
+                        && !specification.isBlank()
+                        ? specification.trim()
+                        : materialOption.getDescription();
+
+        QuotationItem quotationItem =
+                quotationItemService.create(
+                        quotationRoom,
+                        workCategory,
+                        division,
+                        item,
+                        material,
+                        materialOption,
+                        item.getDescription(),
+                        firstLength,
+                        firstWidth,
+                        firstHeight,
+                        firstSqft,
+                        rate,
+                        firstAmount,
+                        firstOfferPrice,
+                        formula,
+                        finalSpecification
+                );
+
+        QuotationItemSize firstSize =
+                quotationItemSizeService.create(
+                        quotationItem,
+                        firstLength,
+                        firstWidth,
+                        firstHeight,
+                        firstOfferPrice,
+                        1
+                );
+
+        quotationItem.addSize(
+                firstSize
+        );
+
+        for (int i = 1;
+             i < lengthValue.size();
+             i++) {
+
+            BigDecimal length =
+                    lengthValue.get(i);
+
+            BigDecimal width =
+                    widthValue.get(i);
+
+            BigDecimal height =
+                    heightValue.get(i);
+
+            validateDimensions(
+                    length,
+                    width,
+                    height
+            );
+
+            BigDecimal sqft =
+                    quotationItemService.calculateSqft(
+                            length,
+                            width,
+                            height
+                    );
+
+            BigDecimal amount =
+                    quotationItemService.calculateAmount(
+                            sqft,
+                            rate
+                    );
+
+            BigDecimal requestedOffer =
+                    parseOfferPrice(
+                            offerPrice,
+                            i
+                    );
+
+            BigDecimal finalOffer =
+                    quotationItemService.calculateOfferPrice(
+                            amount,
+                            requestedOffer
+                    );
+
+            totalSqft =
+                    totalSqft.add(sqft);
+
+            totalAmount =
+                    totalAmount.add(amount);
+
+            totalOfferPrice =
+                    totalOfferPrice.add(finalOffer);
+
+            QuotationItemSize quotationItemSize =
+                    quotationItemSizeService.create(
+                            quotationItem,
+                            length,
+                            width,
+                            height,
+                            finalOffer,
+                            i + 1
+                    );
+
+            quotationItem.addSize(
+                    quotationItemSize
+            );
+        }
+
+        quotationItem.setCalculatedSqft(
+                totalSqft
+        );
+
+        quotationItem.setAmount(
+                totalAmount
+        );
+
+        quotationItem.setOfferPrice(
+                totalOfferPrice
+        );
+
+        quotationItem.setRate(
+                rate
+        );
+
+        quotationItem.setLengthValue(
+                firstLength
+        );
+
+        quotationItem.setWidthValue(
+                firstWidth
+        );
+
+        quotationItem.setHeightValue(
+                firstHeight
+        );
+
+        quotationCalculationService
+                .calculateQuotation(
+                        quotation.getId()
+                );
+
+        return "redirect:/employee/quotations/builder/"
+                + quotation.getId()
+                + "?saved=item";
+    }
+
+
+    // ============================================================
+    // BUILDER API - ITEMS BY CATEGORY
+    // ============================================================
+
+    @GetMapping(
+            "/builder/{id}/items-by-category/{categoryId}"
+    )
+    @ResponseBody
+    public List<Map<String, Object>> builderItemsByCategory(
+
+            @PathVariable Long id,
+
+            @PathVariable Long categoryId,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        getQuotationAndCheckOwnership(
+                id,
+                employee
+        );
+
+        List<Division> divisions =
+                divisionService
+                        .getActiveDivisionsByCategory(
+                                categoryId
+                        );
+
+        List<Map<String, Object>> result =
+                new ArrayList<>();
+
+        for (Division division : divisions) {
+
+            List<Item> items =
+                    itemService
+                            .getActiveItemsByDivision(
+                                    division.getId()
+                            );
+
+            for (Item item : items) {
+
+                Map<String, Object> row =
+                        new LinkedHashMap<>();
+
+                row.put(
+                        "id",
+                        item.getId()
+                );
+
+                row.put(
+                        "name",
+                        item.getName()
+                );
+
+                row.put(
+                        "description",
+                        item.getDescription()
+                );
+
+                row.put(
+                        "divisionId",
+                        division.getId()
+                );
+
+                result.add(row);
+            }
+        }
+
+        return result;
+    }
+
+
+    // ============================================================
+    // BUILDER API - MATERIALS BY ITEM
+    // ============================================================
+
+    @GetMapping(
+            "/builder/{id}/materials/{itemId}"
+    )
+    @ResponseBody
+    public List<Map<String, Object>> builderMaterials(
+
+            @PathVariable Long id,
+
+            @PathVariable Long itemId,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        getQuotationAndCheckOwnership(
+                id,
+                employee
+        );
+
+        List<Material> materials =
+                materialService
+                        .getActiveMaterialsByItem(
+                                itemId
+                        );
+
+        List<Map<String, Object>> result =
+                new ArrayList<>();
+
+        for (Material material : materials) {
+
+            Map<String, Object> row =
+                    new LinkedHashMap<>();
+
+            row.put(
+                    "id",
+                    material.getId()
+            );
+
+            row.put(
+                    "name",
+                    material.getName()
+            );
+
+            row.put(
+                    "description",
+                    material.getDescription()
+            );
+
+            result.add(row);
+        }
+
+        return result;
+    }
+
+
+    // ============================================================
+    // BUILDER API - OPTIONS BY MATERIAL
+    // ============================================================
+
+    @GetMapping(
+            "/builder/{id}/options/{materialId}"
+    )
+    @ResponseBody
+    public List<Map<String, Object>> builderMaterialOptions(
+
+            @PathVariable Long id,
+
+            @PathVariable Long materialId,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        getQuotationAndCheckOwnership(
+                id,
+                employee
+        );
+
+        List<MaterialOption> options =
+                materialOptionService
+                        .getActiveOptionsByMaterial(
+                                materialId
+                        );
+
+        List<Map<String, Object>> result =
+                new ArrayList<>();
+
+        for (MaterialOption option : options) {
+
+            Map<String, Object> row =
+                    new LinkedHashMap<>();
+
+            row.put(
+                    "id",
+                    option.getId()
+            );
+
+            row.put(
+                    "name",
+                    option.getName()
+            );
+
+            row.put(
+                    "description",
+                    option.getDescription()
+            );
+
+            result.add(row);
+        }
+
+        return result;
+    }
+
+
+    // ============================================================
+    // BUILDER API - CURRENT MODE RATE
+    // ============================================================
+
+    @GetMapping("/builder/{id}/price")
+    @ResponseBody
+    public Map<String, Object> builderPrice(
+
+            @PathVariable Long id,
+
+            @RequestParam Long materialOptionId,
+
+            @RequestParam PricingMode mode,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(authentication);
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        if (quotation.getBranch() == null) {
+
+            throw new IllegalStateException(
+                    "Quotation branch is not assigned."
+            );
+        }
+
+        BigDecimal rate =
+                quotationCalculationService
+                        .resolveItemRate(
+                                id,
+                                materialOptionId,
+                                mode
+                        );
+
+        var pricing =
+                pricingRepository
+                        .findByMaterialOptionIdAndPricingMode(
+                                materialOptionId,
+                                mode
+                        )
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Pricing not found."
+                                )
+                        );
+
+        Map<String, Object> result =
+                new LinkedHashMap<>();
+
+        result.put(
+                "rate",
+                rate
+        );
+
+        result.put(
+                "unit",
+                pricing.getUnit()
+        );
+
+        result.put(
+                "description",
+                pricing.getDescription()
+        );
+
+        result.put(
+                "mode",
+                mode.name()
+        );
+
+        result.put(
+                "quotationBranch",
+                quotation.getBranch().getName()
+        );
+
+        return result;
     }
 
 
@@ -309,19 +1209,11 @@ public class EmployeeQuotationController {
                 getLoggedInEmployee(authentication);
 
         Quotation quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
 
-        checkOwnership(
-                quotation,
-                employee
-        );
-
-        // Recalculate before displaying
         quotationCalculationService
                 .calculateQuotation(id);
 
@@ -374,7 +1266,120 @@ public class EmployeeQuotationController {
                 roomItems
         );
 
+        // ========================================================
+        // STATUS HISTORY
+        // ========================================================
+
+        List<QuotationStatusHistory> statusHistory =
+                quotationStatusHistoryService
+                        .getByQuotationId(id);
+
+        model.addAttribute(
+                "statusHistory",
+                statusHistory
+        );
+
+        // ========================================================
+        // AVAILABLE STATUSES
+        // ========================================================
+
+        model.addAttribute(
+                "quotationStatuses",
+                QuotationStatus.values()
+        );
+
         return "employee/quotation-workspace";
+    }
+
+
+    // ============================================================
+    // CHANGE QUOTATION STATUS
+    // ============================================================
+
+    @PostMapping("/status/{id}")
+    public String changeStatus(
+
+            @PathVariable Long id,
+
+            @RequestParam QuotationStatus status,
+
+            Authentication authentication,
+
+            RedirectAttributes redirectAttributes
+    ) {
+
+        try {
+
+            User employee =
+                    getLoggedInEmployee(
+                            authentication
+                    );
+
+            Quotation quotation =
+                    getQuotationAndCheckOwnership(
+                            id,
+                            employee
+                    );
+
+            if (status == null) {
+
+                throw new IllegalArgumentException(
+                        "Quotation status is required."
+                );
+            }
+
+            QuotationStatus oldStatus =
+                    quotation.getStatus();
+
+            /*
+             * Current supported statuses:
+             *
+             * DRAFT
+             * PENDING
+             * SENT
+             * APPROVED
+             * CANCELLED
+             * COMPLETED
+             *
+             * REJECTED and EXPIRED are no longer part
+             * of the QuotationStatus enum.
+             */
+
+            quotationService.changeStatus(
+                    id,
+                    status
+            );
+
+            Quotation updatedQuotation =
+                    quotationService.getById(id);
+
+            /*
+             * Save status history.
+             */
+            quotationStatusHistoryService.create(
+                    updatedQuotation,
+                    oldStatus,
+                    status,
+                    employee,
+                    null
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Quotation status updated successfully."
+            );
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to update quotation status: "
+                            + e.getMessage()
+            );
+        }
+
+        return "redirect:/employee/quotations/view/"
+                + id;
     }
 
 
@@ -396,17 +1401,10 @@ public class EmployeeQuotationController {
                 getLoggedInEmployee(authentication);
 
         Quotation quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
-
-        checkOwnership(
-                quotation,
-                employee
-        );
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
 
         model.addAttribute(
                 "employee",
@@ -445,22 +1443,25 @@ public class EmployeeQuotationController {
                 getLoggedInEmployee(authentication);
 
         Quotation quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
 
-        checkOwnership(
-                quotation,
-                employee
-        );
+        if (floor == null
+                || floor.isBlank()
+                || room == null
+                || room.isBlank()) {
+
+            throw new IllegalArgumentException(
+                    "Floor and room are required."
+            );
+        }
 
         quotationRoomService.create(
                 quotation,
-                floor,
-                room,
+                floor.trim(),
+                room.trim(),
                 workDescription
         );
 
@@ -473,7 +1474,9 @@ public class EmployeeQuotationController {
     // NEW ITEM PAGE
     // ============================================================
 
-    @GetMapping("/view/{id}/room/{roomId}/item/new")
+    @GetMapping(
+            "/view/{id}/room/{roomId}/item/new"
+    )
     public String newItem(
 
             @PathVariable Long id,
@@ -485,41 +1488,28 @@ public class EmployeeQuotationController {
             Model model
     ) {
 
-        // Get the logged-in employee
         User employee =
                 getLoggedInEmployee(authentication);
 
-        // Get quotation and verify ownership
         Quotation quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
 
-        checkOwnership(
-                quotation,
-                employee
-        );
-
-        // Get the room and verify it belongs to this quotation
         QuotationRoom quotationRoom =
                 getQuotationRoomForQuotation(
                         roomId,
                         quotation
                 );
 
-        // IMPORTANT: Create a new item for the form
         QuotationItem quotationItem =
                 new QuotationItem();
 
-        // Connect the new item to the selected room
         quotationItem.setQuotationRoom(
                 quotationRoom
         );
 
-        // Load employee, quotation, room and dropdown data
         addItemFormMasterData(
                 model,
                 employee,
@@ -527,13 +1517,11 @@ public class EmployeeQuotationController {
                 quotationRoom
         );
 
-        // IMPORTANT: Add quotationItem to the model
         model.addAttribute(
                 "quotationItem",
                 quotationItem
         );
 
-        // Mark this as the new-item form
         model.addAttribute(
                 "editMode",
                 false
@@ -547,7 +1535,9 @@ public class EmployeeQuotationController {
     // SAVE NEW ITEM
     // ============================================================
 
-    @PostMapping("/view/{id}/room/{roomId}/item/save")
+    @PostMapping(
+            "/view/{id}/room/{roomId}/item/save"
+    )
     public String saveItem(
 
             @PathVariable Long id,
@@ -573,7 +1563,17 @@ public class EmployeeQuotationController {
 
             @RequestParam BigDecimal heightValue,
 
-            @RequestParam BigDecimal rate,
+            /*
+             * This is kept so the existing HTML form
+             * can continue submitting rate.
+             *
+             * IMPORTANT:
+             * This value is intentionally NOT used.
+             *
+             * Server-side district pricing is always used.
+             */
+            @RequestParam(required = false)
+            BigDecimal rate,
 
             @RequestParam(required = false)
             BigDecimal offerPrice,
@@ -598,6 +1598,12 @@ public class EmployeeQuotationController {
                         roomId,
                         quotation
                 );
+
+        validateDimensions(
+                lengthValue,
+                widthValue,
+                heightValue
+        );
 
         WorkCategory workCategory =
                 workCategoryService
@@ -629,6 +1635,45 @@ public class EmployeeQuotationController {
                                 materialOptionId
                         );
 
+        /*
+         * Validate master-data relationships.
+         */
+
+        validateItemRelationship(
+                workCategory,
+                division,
+                item
+        );
+
+        validateMaterialRelationship(
+                item,
+                material
+        );
+
+        validateMaterialOptionRelationship(
+                material,
+                materialOption
+        );
+
+        /*
+         * IMPORTANT:
+         *
+         * Rate comes from Admin/District Pricing.
+         *
+         * Browser rate is ignored.
+         */
+
+        BigDecimal resolvedRate =
+                quotationCalculationService
+                        .resolveItemRate(
+                                quotation.getId(),
+                                materialOptionId
+                        );
+
+        validateRate(
+                resolvedRate
+        );
+
         BigDecimal calculatedSqft =
                 quotationItemService.calculateSqft(
                         lengthValue,
@@ -636,15 +1681,11 @@ public class EmployeeQuotationController {
                         heightValue
                 );
 
-        BigDecimal resolvedRate =
-                quotationCalculationService.resolveItemRate(
-                        quotation.getId(),
-                        materialOptionId);
-
         BigDecimal amount =
                 quotationItemService.calculateAmount(
                         calculatedSqft,
-                        resolvedRate);
+                        resolvedRate
+                );
 
         BigDecimal finalOfferPrice =
                 quotationItemService.calculateOfferPrice(
@@ -655,24 +1696,53 @@ public class EmployeeQuotationController {
         String formula =
                 "(L + W) × H / 144";
 
-        quotationItemService.create(
-                quotationRoom,
-                workCategory,
-                division,
-                item,
-                material,
-                materialOption,
-                itemDescription,
-                lengthValue,
-                widthValue,
-                heightValue,
-                calculatedSqft,
-                resolvedRate, // Use the database rate
-                amount,
-                finalOfferPrice,
-                formula,
-                specification
+        String finalSpecification =
+                specification != null
+                        && !specification.isBlank()
+                        ? specification.trim()
+                        : materialOption.getDescription();
+
+        QuotationItem quotationItem =
+                quotationItemService.create(
+                        quotationRoom,
+                        workCategory,
+                        division,
+                        item,
+                        material,
+                        materialOption,
+                        itemDescription,
+                        lengthValue,
+                        widthValue,
+                        heightValue,
+                        calculatedSqft,
+                        resolvedRate,
+                        amount,
+                        finalOfferPrice,
+                        formula,
+                        finalSpecification
+                );
+
+        /*
+         * Create size row for the item.
+         */
+
+        QuotationItemSize quotationItemSize =
+                quotationItemSizeService.create(
+                        quotationItem,
+                        lengthValue,
+                        widthValue,
+                        heightValue,
+                        finalOfferPrice,
+                        1
+                );
+
+        quotationItem.addSize(
+                quotationItemSize
         );
+
+        /*
+         * Recalculate entire quotation.
+         */
 
         quotationCalculationService
                 .calculateQuotation(
@@ -688,7 +1758,9 @@ public class EmployeeQuotationController {
     // EDIT ITEM PAGE
     // ============================================================
 
-    @GetMapping("/view/{quotationId}/room/{roomId}/item/{itemId}/edit")
+    @GetMapping(
+            "/view/{quotationId}/room/{roomId}/item/{itemId}/edit"
+    )
     public String editItem(
 
             @PathVariable Long quotationId,
@@ -722,28 +1794,17 @@ public class EmployeeQuotationController {
                         itemId
                 );
 
-        // Make sure item belongs to this room
-        if (quotationItem.getQuotationRoom() == null
-                || quotationItem
-                .getQuotationRoom()
-                .getId() == null
-                || !quotationItem
-                .getQuotationRoom()
-                .getId()
-                .equals(roomId)) {
+        validateQuotationItemBelongsToRoom(
+                quotationItem,
+                quotationRoom
+        );
 
-            throw new IllegalStateException(
-                    "Item does not belong to this room"
-            );
-        }
-
-        // Make sure item is active
         if (!Boolean.TRUE.equals(
                 quotationItem.getActive()
         )) {
 
             throw new IllegalStateException(
-                    "This item is no longer active"
+                    "This item is no longer active."
             );
         }
 
@@ -764,7 +1825,14 @@ public class EmployeeQuotationController {
                 true
         );
 
-        return "employee/quotation-item-edit";
+        /*
+         * IMPORTANT:
+         *
+         * Use the same employee quotation-item-form.html
+         * for both NEW and EDIT.
+         */
+
+        return "employee/quotation-item-form";
     }
 
 
@@ -802,7 +1870,12 @@ public class EmployeeQuotationController {
 
             @RequestParam BigDecimal heightValue,
 
-            @RequestParam BigDecimal rate,
+            /*
+             * Kept for compatibility with current HTML.
+             * Never trusted for calculation.
+             */
+            @RequestParam(required = false)
+            BigDecimal rate,
 
             @RequestParam(required = false)
             BigDecimal offerPrice,
@@ -833,29 +1906,25 @@ public class EmployeeQuotationController {
                         itemId
                 );
 
+        validateQuotationItemBelongsToRoom(
+                quotationItem,
+                quotationRoom
+        );
 
-
-        // --------------------------------------------------------
-        // ITEM OWNERSHIP CHECK
-        // --------------------------------------------------------
-
-        if (quotationItem.getQuotationRoom() == null
-                || quotationItem
-                .getQuotationRoom()
-                .getId() == null
-                || !quotationItem
-                .getQuotationRoom()
-                .getId()
-                .equals(quotationRoom.getId())) {
+        if (!Boolean.TRUE.equals(
+                quotationItem.getActive()
+        )) {
 
             throw new IllegalStateException(
-                    "Item does not belong to this room"
+                    "This item is no longer active."
             );
         }
 
-        // --------------------------------------------------------
-        // LOAD MASTER DATA
-        // --------------------------------------------------------
+        validateDimensions(
+                lengthValue,
+                widthValue,
+                heightValue
+        );
 
         WorkCategory workCategory =
                 workCategoryService
@@ -887,9 +1956,40 @@ public class EmployeeQuotationController {
                                 materialOptionId
                         );
 
-        // --------------------------------------------------------
-        // CALCULATE SQ.FT
-        // --------------------------------------------------------
+        /*
+         * Validate master-data relationships.
+         */
+
+        validateItemRelationship(
+                workCategory,
+                division,
+                item
+        );
+
+        validateMaterialRelationship(
+                item,
+                material
+        );
+
+        validateMaterialOptionRelationship(
+                material,
+                materialOption
+        );
+
+        /*
+         * Always resolve the correct Admin/District rate.
+         */
+
+        BigDecimal resolvedRate =
+                quotationCalculationService
+                        .resolveItemRate(
+                                quotation.getId(),
+                                materialOptionId
+                        );
+
+        validateRate(
+                resolvedRate
+        );
 
         BigDecimal calculatedSqft =
                 quotationItemService.calculateSqft(
@@ -898,24 +1998,11 @@ public class EmployeeQuotationController {
                         heightValue
                 );
 
-        // --------------------------------------------------------
-        // CALCULATE AMOUNT
-        // --------------------------------------------------------
-        BigDecimal resolvedRate =
-                quotationCalculationService.resolveItemRate(
-                        quotation.getId(),
-                        materialOptionId
-                );
-
         BigDecimal amount =
                 quotationItemService.calculateAmount(
                         calculatedSqft,
                         resolvedRate
                 );
-
-        // --------------------------------------------------------
-        // CALCULATE OFFER PRICE
-        // --------------------------------------------------------
 
         BigDecimal finalOfferPrice =
                 quotationItemService.calculateOfferPrice(
@@ -923,16 +2010,14 @@ public class EmployeeQuotationController {
                         offerPrice
                 );
 
-        // --------------------------------------------------------
-        // FORMULA
-        // --------------------------------------------------------
-
         String formula =
                 "(L + W) × H / 144";
 
-        // --------------------------------------------------------
-        // UPDATE ITEM
-        // --------------------------------------------------------
+        String finalSpecification =
+                specification != null
+                        && !specification.isBlank()
+                        ? specification.trim()
+                        : materialOption.getDescription();
 
         quotationItemService.update(
                 itemId,
@@ -946,16 +2031,12 @@ public class EmployeeQuotationController {
                 widthValue,
                 heightValue,
                 calculatedSqft,
-                resolvedRate, // Use resolved database rate
+                resolvedRate,
                 amount,
                 finalOfferPrice,
                 formula,
-                specification
+                finalSpecification
         );
-
-        // --------------------------------------------------------
-        // RECALCULATE QUOTATION
-        // --------------------------------------------------------
 
         quotationCalculationService
                 .calculateQuotation(
@@ -1005,35 +2086,23 @@ public class EmployeeQuotationController {
                         itemId
                 );
 
-        // --------------------------------------------------------
-        // ITEM OWNERSHIP CHECK
-        // --------------------------------------------------------
+        validateQuotationItemBelongsToRoom(
+                quotationItem,
+                quotationRoom
+        );
 
-        if (quotationItem.getQuotationRoom() == null
-                || quotationItem
-                .getQuotationRoom()
-                .getId() == null
-                || !quotationItem
-                .getQuotationRoom()
-                .getId()
-                .equals(quotationRoom.getId())) {
+        if (!Boolean.TRUE.equals(
+                quotationItem.getActive()
+        )) {
 
             throw new IllegalStateException(
-                    "Item does not belong to this room"
+                    "This item is already inactive."
             );
         }
-
-        // --------------------------------------------------------
-        // SOFT DELETE
-        // --------------------------------------------------------
 
         quotationItemService.delete(
                 itemId
         );
-
-        // --------------------------------------------------------
-        // RECALCULATE QUOTATION
-        // --------------------------------------------------------
 
         quotationCalculationService
                 .calculateQuotation(
@@ -1046,6 +2115,298 @@ public class EmployeeQuotationController {
 
 
     // ============================================================
+    // DOWNLOAD QUOTATION PDF
+    // ============================================================
+
+    @GetMapping("/pdf/{id}")
+    public ResponseEntity<byte[]> downloadQuotationPdf(
+
+            @PathVariable Long id,
+
+            Authentication authentication
+    ) {
+
+        User employee =
+                getLoggedInEmployee(
+                        authentication
+                );
+
+        Quotation quotation =
+                getQuotationAndCheckOwnership(
+                        id,
+                        employee
+                );
+
+        byte[] pdf =
+                quotationPdfService
+                        .generateQuotationPdf(id);
+
+        return ResponseEntity.ok()
+                .header(
+                        HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=quotation-"
+                                + quotation.getId()
+                                + ".pdf"
+                )
+                .contentType(
+                        MediaType.APPLICATION_PDF
+                )
+                .body(pdf);
+    }
+
+
+    // ============================================================
+    // SEND QUOTATION EMAIL
+    // ============================================================
+
+    @PostMapping("/email/{id}")
+    public String sendQuotationEmail(
+
+            @PathVariable Long id,
+
+            Authentication authentication,
+
+            RedirectAttributes redirectAttributes
+    ) {
+
+        try {
+
+            User employee =
+                    getLoggedInEmployee(
+                            authentication
+                    );
+
+            Quotation quotation =
+                    getQuotationAndCheckOwnership(
+                            id,
+                            employee
+                    );
+
+            quotationEmailService
+                    .sendQuotationEmail(
+                            quotation
+                    );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Quotation PDF emailed successfully."
+            );
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Failed to send quotation email: "
+                            + e.getMessage()
+            );
+        }
+
+        return "redirect:/employee/quotations/view/"
+                + id;
+    }
+
+
+    // ============================================================
+    // WHATSAPP COMMUNICATION
+    // ============================================================
+
+    @GetMapping("/whatsapp/{id}")
+    public String trackWhatsApp(
+
+            @PathVariable Long id,
+
+            Authentication authentication,
+
+            RedirectAttributes redirectAttributes
+    ) {
+
+        try {
+
+            User employee =
+                    getLoggedInEmployee(
+                            authentication
+                    );
+
+            Quotation quotation =
+                    getQuotationAndCheckOwnership(
+                            id,
+                            employee
+                    );
+
+            if (quotation.getCustomer() == null) {
+
+                throw new IllegalArgumentException(
+                        "Customer not found."
+                );
+            }
+
+            String phone =
+                    quotation
+                            .getCustomer()
+                            .getPhone();
+
+            if (phone == null
+                    || phone.isBlank()) {
+
+                throw new IllegalArgumentException(
+                        "Customer phone number is not available."
+                );
+            }
+
+            phone =
+                    phone.replaceAll(
+                            "[^0-9]",
+                            ""
+                    );
+
+            if (phone.startsWith("0")
+                    && phone.length() == 11) {
+
+                phone =
+                        phone.substring(1);
+            }
+
+            if (phone.length() == 10) {
+
+                phone =
+                        "91" + phone;
+            }
+
+            if (!phone.matches(
+                    "[1-9][0-9]{7,14}"
+            )) {
+
+                throw new IllegalArgumentException(
+                        "Customer phone number format is invalid."
+                );
+            }
+
+            String quotationNumber =
+                    quotation.getQuotationNumber();
+
+            String message =
+                    "Hello "
+                            + quotation
+                            .getCustomer()
+                            .getName()
+                            + ",\n\n"
+                            + "Your quotation has been prepared.\n\n"
+                            + "Quotation No: "
+                            + quotationNumber
+                            + "\n"
+                            + "Quotation Amount: ₹"
+                            + quotation.getGrandTotal()
+                            + "\n\n"
+                            + "Thank you,\n"
+                            + "Pravin Kitchens & Interiors";
+
+            String encodedMessage =
+                    java.net.URLEncoder.encode(
+                            message,
+                            java.nio.charset.StandardCharsets.UTF_8
+                    );
+
+            String whatsappUrl =
+                    "https://wa.me/"
+                            + phone
+                            + "?text="
+                            + encodedMessage;
+
+            return "redirect:" + whatsappUrl;
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to open WhatsApp: "
+                            + e.getMessage()
+            );
+
+            return "redirect:/employee/quotations/view/"
+                    + id;
+        }
+    }
+
+
+    // ============================================================
+    // UPDATE CHARGES
+    // ============================================================
+
+    @PostMapping("/charges/{id}")
+    public String updateCharges(
+
+            @PathVariable Long id,
+
+            @RequestParam(required = false)
+            BigDecimal accessoriesAmount,
+
+            @RequestParam(required = false)
+            BigDecimal travelCharge,
+
+            @RequestParam(required = false)
+            BigDecimal otherCharges,
+
+            @RequestParam(required = false)
+            BigDecimal discountAmount,
+
+            @RequestParam(required = false)
+            BigDecimal gstPercentage,
+
+            Authentication authentication,
+
+            RedirectAttributes redirectAttributes
+    ) {
+
+        try {
+
+            User employee =
+                    getLoggedInEmployee(
+                            authentication
+                    );
+
+            /*
+             * IMPORTANT:
+             *
+             * Before changing quotation charges,
+             * verify that this quotation belongs
+             * to the logged-in employee.
+             */
+
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
+
+            quotationCalculationService
+                    .updateCharges(
+                            id,
+                            accessoriesAmount,
+                            travelCharge,
+                            otherCharges,
+                            discountAmount,
+                            gstPercentage
+                    );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Quotation charges updated successfully."
+            );
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to update quotation charges: "
+                            + e.getMessage()
+            );
+        }
+
+        return "redirect:/employee/quotations/view/"
+                + id;
+    }
+
+
+    // ============================================================
     // LOGGED-IN EMPLOYEE
     // ============================================================
 
@@ -1054,7 +2415,8 @@ public class EmployeeQuotationController {
     ) {
 
         if (authentication == null
-                || authentication.getName() == null) {
+                || authentication.getName() == null
+                || authentication.getName().isBlank()) {
 
             throw new IllegalStateException(
                     "Employee authentication not found"
@@ -1074,13 +2436,30 @@ public class EmployeeQuotationController {
 
 
     // ============================================================
-    // LOAD QUOTATION + OWNERSHIP CHECK
+    // GET QUOTATION + OWNERSHIP CHECK
     // ============================================================
 
     private Quotation getQuotationAndCheckOwnership(
+
             Long quotationId,
+
             User employee
     ) {
+
+        if (quotationId == null) {
+
+            throw new IllegalArgumentException(
+                    "Quotation ID is required."
+            );
+        }
+
+        if (employee == null
+                || employee.getId() == null) {
+
+            throw new IllegalStateException(
+                    "Employee information is not available."
+            );
+        }
 
         Quotation quotation =
                 quotationRepository.findById(
@@ -1102,13 +2481,30 @@ public class EmployeeQuotationController {
 
 
     // ============================================================
-    // GET ROOM AND VERIFY QUOTATION
+    // GET ROOM + VERIFY QUOTATION
     // ============================================================
 
     private QuotationRoom getQuotationRoomForQuotation(
+
             Long roomId,
+
             Quotation quotation
     ) {
+
+        if (roomId == null) {
+
+            throw new IllegalArgumentException(
+                    "Room ID is required."
+            );
+        }
+
+        if (quotation == null
+                || quotation.getId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Quotation is required."
+            );
+        }
 
         QuotationRoom quotationRoom =
                 quotationRoomService.getById(
@@ -1138,9 +2534,13 @@ public class EmployeeQuotationController {
     // ============================================================
 
     private void addItemFormMasterData(
+
             Model model,
+
             User employee,
+
             Quotation quotation,
+
             QuotationRoom quotationRoom
     ) {
 
@@ -1189,6 +2589,13 @@ public class EmployeeQuotationController {
                 divisions
         );
 
+        /*
+         * IMPORTANT:
+         *
+         * Employee quotation-item-form.html
+         * expects ${itemsList}.
+         */
+
         model.addAttribute(
                 "itemsList",
                 items
@@ -1203,6 +2610,21 @@ public class EmployeeQuotationController {
                 "materialOptions",
                 materialOptions
         );
+
+        /*
+         * Send current quotation pricing mode
+         * to the employee form.
+         */
+
+        model.addAttribute(
+                "pricingMode",
+                quotation.getPricingMode()
+        );
+
+        model.addAttribute(
+                "pricingModes",
+                PricingMode.values()
+        );
     }
 
 
@@ -1211,9 +2633,26 @@ public class EmployeeQuotationController {
     // ============================================================
 
     private void checkOwnership(
+
             Quotation quotation,
+
             User employee
     ) {
+
+        if (quotation == null) {
+
+            throw new IllegalArgumentException(
+                    "Quotation is required."
+            );
+        }
+
+        if (employee == null
+                || employee.getId() == null) {
+
+            throw new IllegalStateException(
+                    "Employee is not available."
+            );
+        }
 
         if (quotation.getEmployee() == null
                 || quotation
@@ -1232,158 +2671,403 @@ public class EmployeeQuotationController {
 
 
     // ============================================================
+    // VALIDATE QUOTATION ITEM
+    // ============================================================
+
+    private void validateQuotationItemBelongsToRoom(
+
+            QuotationItem quotationItem,
+
+            QuotationRoom quotationRoom
+    ) {
+
+        if (quotationItem == null) {
+
+            throw new IllegalArgumentException(
+                    "Quotation item not found."
+            );
+        }
+
+        if (quotationRoom == null
+                || quotationRoom.getId() == null) {
+
+            throw new IllegalArgumentException(
+                    "Quotation room not found."
+            );
+        }
+
+        if (quotationItem.getQuotationRoom() == null
+                || quotationItem
+                .getQuotationRoom()
+                .getId() == null
+                || !quotationItem
+                .getQuotationRoom()
+                .getId()
+                .equals(quotationRoom.getId())) {
+
+            throw new IllegalStateException(
+                    "Item does not belong to this room"
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE WORK CATEGORY → DIVISION → ITEM
+    // ============================================================
+
+    private void validateItemRelationship(
+
+            WorkCategory workCategory,
+
+            Division division,
+
+            Item item
+    ) {
+
+        if (workCategory == null) {
+
+            throw new IllegalArgumentException(
+                    "Work category not found."
+            );
+        }
+
+        if (division == null) {
+
+            throw new IllegalArgumentException(
+                    "Division not found."
+            );
+        }
+
+        if (item == null) {
+
+            throw new IllegalArgumentException(
+                    "Item not found."
+            );
+        }
+
+        if (division.getWorkCategory() == null
+                || division
+                .getWorkCategory()
+                .getId() == null
+                || !division
+                .getWorkCategory()
+                .getId()
+                .equals(workCategory.getId())) {
+
+            throw new IllegalArgumentException(
+                    "Selected division does not belong to the selected work category."
+            );
+        }
+
+        if (item.getDivision() == null
+                || item
+                .getDivision()
+                .getId() == null
+                || !item
+                .getDivision()
+                .getId()
+                .equals(division.getId())) {
+
+            throw new IllegalArgumentException(
+                    "Selected item does not belong to the selected division."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE ITEM → MATERIAL
+    // ============================================================
+
+    private void validateMaterialRelationship(
+
+            Item item,
+
+            Material material
+    ) {
+
+        if (item == null) {
+
+            throw new IllegalArgumentException(
+                    "Item is required."
+            );
+        }
+
+        if (material == null) {
+
+            throw new IllegalArgumentException(
+                    "Material not found."
+            );
+        }
+
+        /*
+         * Material must belong to selected item.
+         */
+
+        if (material.getItem() == null
+                || material
+                .getItem()
+                .getId() == null
+                || !material
+                .getItem()
+                .getId()
+                .equals(item.getId())) {
+
+            throw new IllegalArgumentException(
+                    "Selected material does not belong to the selected item."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE MATERIAL → MATERIAL OPTION
+    // ============================================================
+
+    private void validateMaterialOptionRelationship(
+
+            Material material,
+
+            MaterialOption materialOption
+    ) {
+
+        if (material == null) {
+
+            throw new IllegalArgumentException(
+                    "Material is required."
+            );
+        }
+
+        if (materialOption == null) {
+
+            throw new IllegalArgumentException(
+                    "Material option not found."
+            );
+        }
+
+        if (materialOption.getMaterial() == null
+                || materialOption
+                .getMaterial()
+                .getId() == null
+                || !materialOption
+                .getMaterial()
+                .getId()
+                .equals(material.getId())) {
+
+            throw new IllegalArgumentException(
+                    "Selected material option does not belong to the selected material."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE DIMENSIONS
+    // ============================================================
+
+    private void validateDimensions(
+
+            BigDecimal length,
+
+            BigDecimal width,
+
+            BigDecimal height
+    ) {
+
+        if (length == null
+                || width == null
+                || height == null) {
+
+            throw new IllegalArgumentException(
+                    "Length, Width and Height are required."
+            );
+        }
+
+        if (length.compareTo(
+                BigDecimal.ZERO
+        ) <= 0
+                || width.compareTo(
+                BigDecimal.ZERO
+        ) <= 0
+                || height.compareTo(
+                BigDecimal.ZERO
+        ) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Length, Width and Height must be greater than zero."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE SIZE LISTS
+    // ============================================================
+
+    private void validateSizeLists(
+
+            List<BigDecimal> lengthValue,
+
+            List<BigDecimal> widthValue,
+
+            List<BigDecimal> heightValue
+    ) {
+
+        if (lengthValue == null
+                || widthValue == null
+                || heightValue == null
+                || lengthValue.isEmpty()
+                || widthValue.isEmpty()
+                || heightValue.isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Please add at least one size."
+            );
+        }
+
+        if (lengthValue.size()
+                != widthValue.size()
+                || lengthValue.size()
+                != heightValue.size()) {
+
+            throw new IllegalArgumentException(
+                    "Invalid size information."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // VALIDATE RATE
+    // ============================================================
+
+    private void validateRate(
+            BigDecimal rate
+    ) {
+
+        if (rate == null
+                || rate.compareTo(
+                BigDecimal.ZERO
+        ) <= 0) {
+
+            throw new IllegalArgumentException(
+                    "A valid admin district rate is required for the selected material option."
+            );
+        }
+    }
+
+
+    // ============================================================
+    // PARSE OFFER PRICE
+    // ============================================================
+
+    private BigDecimal parseOfferPrice(
+
+            List<String> offerPrice,
+
+            int index
+    ) {
+
+        if (offerPrice == null
+                || index < 0
+                || index >= offerPrice.size()) {
+
+            return null;
+        }
+
+        String value =
+                offerPrice.get(index);
+
+        if (value == null
+                || value.isBlank()) {
+
+            return null;
+        }
+
+        try {
+
+            BigDecimal parsed =
+                    new BigDecimal(
+                            value.trim()
+                    );
+
+            if (parsed.compareTo(
+                    BigDecimal.ZERO
+            ) < 0) {
+
+                throw new IllegalArgumentException(
+                        "Offer price cannot be negative."
+                );
+            }
+
+            return parsed;
+
+        } catch (NumberFormatException e) {
+
+            throw new IllegalArgumentException(
+                    "Invalid offer price."
+            );
+        }
+    }
+
+
+    // ============================================================
     // QUOTATION NUMBER
     // ============================================================
 
     private String generateQuotationNumber() {
 
-        String date =
-                LocalDate.now()
-                        .format(
-                                DateTimeFormatter
-                                        .ofPattern("yyyyMMdd")
-                        );
+        long next =
+                quotationRepository.count() + 1;
 
-        long count =
-                quotationRepository.count();
+        String candidate;
 
-        return String.format(
-                "QT-%s-%04d",
-                date,
-                count + 1
+        do {
+
+            candidate =
+                    String.format(
+                            "QT-%05d",
+                            next
+                    );
+
+            next++;
+
+        } while (
+                quotationRepository
+                        .existsByQuotationNumber(
+                                candidate
+                        )
         );
-    }
 
-    @GetMapping("/pdf/{id}")
-    public ResponseEntity<byte[]> downloadQuotationPdf(
-            @PathVariable Long id,
-            Authentication authentication) {
-
-        // Get the logged-in employee
-        User employee = getLoggedInEmployee(authentication);
-
-        // Load quotation and verify ownership
-        Quotation quotation = quotationService.getById(id);
-        checkOwnership(quotation, employee);
-
-        // Generate PDF only after ownership verification
-        byte[] pdf = quotationPdfService.generateQuotationPdf(id);
-
-        return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=quotation-" + id + ".pdf"
-                )
-                .contentType(MediaType.APPLICATION_PDF)
-                .body(pdf);
+        return candidate;
     }
 
 
-    // ============================================================
-    // SEND QUOTATION EMAIL
-    // ============================================================
+    private String previewQuotationNumber() {
 
-    @PostMapping("/email/{id}")
-    public String sendQuotationEmail(
-            @PathVariable Long id,
-            Authentication authentication,
-            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+        long next =
+                quotationRepository.count() + 1;
 
-        try {
-            User employee = getLoggedInEmployee(authentication);
+        String candidate;
 
-            Quotation quotation =
-                    getQuotationAndCheckOwnership(id, employee);
+        do {
 
-            quotationEmailService.sendQuotationEmail(quotation);
+            candidate =
+                    String.format(
+                            "QT-%05d",
+                            next
+                    );
 
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    "Quotation PDF emailed successfully."
-            );
+            next++;
 
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Failed to send quotation email: " + e.getMessage()
-            );
-        }
+        } while (
+                quotationRepository
+                        .existsByQuotationNumber(
+                                candidate
+                        )
+        );
 
-        return "redirect:/employee/quotations/view/" + id;
+        return candidate;
     }
-
-
-    // ============================================================
-    // WHATSAPP COMMUNICATION TRACKING
-    // ============================================================
-
-
-    @GetMapping("/whatsapp/{id}")
-    public String trackWhatsApp(
-            @PathVariable Long id,
-            Authentication authentication,
-            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
-
-        try {
-            User employee = getLoggedInEmployee(authentication);
-            Quotation quotation = getQuotationAndCheckOwnership(id, employee);
-
-            if (quotation.getCustomer() == null) {
-                throw new IllegalArgumentException("Customer not found.");
-            }
-
-            String phone = quotation.getCustomer().getPhone();
-
-            if (phone == null || phone.isBlank()) {
-                throw new IllegalArgumentException(
-                        "Customer phone number is not available.");
-            }
-
-            // Normalize Indian phone number
-            phone = phone.replaceAll("[^0-9]", "");
-
-            if (phone.startsWith("0") && phone.length() == 11) {
-                phone = phone.substring(1);
-            }
-
-            if (phone.length() == 10) {
-                phone = "91" + phone;
-            }
-
-            if (!phone.matches("[1-9][0-9]{7,14}")) {
-                throw new IllegalArgumentException(
-                        "Customer phone number format is invalid.");
-            }
-
-            String quotationNumber = quotation.getQuotationNumber();
-
-            String message = "Hello "
-                    + quotation.getCustomer().getName()
-                    + ", your quotation "
-                    + quotationNumber
-                    + " from Pravin Kitchens & Interiors is ready. "
-                    + "Please find your quotation details attached via email. "
-                    + "Thank you.";
-
-            String encodedMessage = java.net.URLEncoder.encode(
-                    message,
-                    java.nio.charset.StandardCharsets.UTF_8);
-
-            String whatsappUrl = "https://wa.me/"
-                    + phone
-                    + "?text="
-                    + encodedMessage;
-
-            return "redirect:" + whatsappUrl;
-
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Unable to open WhatsApp: " + e.getMessage());
-
-            return "redirect:/employee/quotations/view/" + id;
-        }
-    }
-
-
 }

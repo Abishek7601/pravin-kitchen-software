@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "quotation_items")
@@ -36,6 +38,14 @@ public class QuotationItem {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_option_id")
     private MaterialOption materialOption;
+
+    @OneToMany(
+            mappedBy = "quotationItem",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("displayOrder ASC")
+    private List<QuotationItemSize> sizes = new ArrayList<>();
 
     @Column(name = "item_description", columnDefinition = "TEXT")
     private String itemDescription;
@@ -182,6 +192,34 @@ public class QuotationItem {
         this.materialOption = materialOption;
     }
 
+    public void addSize(QuotationItemSize size) {
+
+        if (size == null) {
+            return;
+        }
+
+        sizes.add(size);
+        size.setQuotationItem(this);
+    }
+
+
+    public void removeSize(QuotationItemSize size) {
+
+        if (size == null) {
+            return;
+        }
+
+        sizes.remove(size);
+        size.setQuotationItem(null);
+    }
+
+    public List<QuotationItemSize> getSizes() {
+        return sizes;
+    }
+
+    public void setSizes(List<QuotationItemSize> sizes) {
+        this.sizes = sizes;
+    }
 
     public String getItemDescription() {
         return itemDescription;

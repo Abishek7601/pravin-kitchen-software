@@ -236,24 +236,6 @@
 
 
 
-            <!-- REJECTED -->
-
-            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       name="status"
-                       value="REJECTED">
-
-                <button type="submit"
-                        class="status-action rejected"
-                        th:disabled="${quotation.status.name() == 'REJECTED'}">
-
-                    Rejected
-
-                </button>
-
-            </form>
 
 
 
@@ -285,13 +267,13 @@
 
                 <input type="hidden"
                        name="status"
-                       value="EXPIRED">
+                       value="COMPLETED">
 
                 <button type="submit"
-                        class="status-action expired"
+                        class="status-action completed"
                         th:disabled="${quotation.status.name() == 'EXPIRED'}">
 
-                    Expired
+                    Completed
 
                 </button>
 
@@ -827,79 +809,242 @@
 
 
                         <!-- DIMENSIONS -->
+                        <!-- =================================================
+                             ITEM DIMENSIONS
+                        ================================================== -->
 
-                        <div class="item-dimensions">
+                        <div class="item-dimensions-section">
+
+                            <!-- SINGLE / PARENT DIMENSION -->
+
+                            <div class="item-dimensions">
+
+                                <div class="dimension-box">
+
+            <span>
+                Length
+            </span>
+
+                                    <strong
+                                            th:text="${item.lengthValue != null
+                    ? #numbers.formatDecimal(
+                    item.lengthValue, 1, 2)
+                    : '0.00'}">
+
+                                        0.00
+
+                                    </strong>
+
+                                </div>
 
 
-                            <div class="dimension-box">
+                                <div class="dimension-symbol">
+                                    ×
+                                </div>
 
-                                <span>
-                                    Length
-                                </span>
 
-                                <strong
-                                        th:text="${item.lengthValue != null
-                                        ? #numbers.formatDecimal(
-                                        item.lengthValue, 1, 2)
-                                        : '0.00'}">
+                                <div class="dimension-box">
 
-                                    0.00
+            <span>
+                Width
+            </span>
 
-                                </strong>
+                                    <strong
+                                            th:text="${item.widthValue != null
+                    ? #numbers.formatDecimal(
+                    item.widthValue, 1, 2)
+                    : '0.00'}">
+
+                                        0.00
+
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="dimension-symbol">
+                                    ×
+                                </div>
+
+
+                                <div class="dimension-box">
+
+            <span>
+                Height
+            </span>
+
+                                    <strong
+                                            th:text="${item.heightValue != null
+                    ? #numbers.formatDecimal(
+                    item.heightValue, 1, 2)
+                    : '0.00'}">
+
+                                        0.00
+
+                                    </strong>
+
+                                </div>
+
+
+                                <div class="dimension-unit">
+                                    inches
+                                </div>
 
                             </div>
 
 
-                            <div class="dimension-symbol">
-                                ×
-                            </div>
+                            <!-- =================================================
+                                 MULTIPLE SIZE DETAILS
+                            ================================================== -->
+
+                            <div class="multiple-sizes-section"
+                                 th:if="${item.sizes != null && !#lists.isEmpty(item.sizes)}">
 
 
-                            <div class="dimension-box">
+                                <div class="multiple-sizes-header">
 
-                                <span>
-                                    Width
-                                </span>
+                                    <div>
 
-                                <strong
-                                        th:text="${item.widthValue != null
-                                        ? #numbers.formatDecimal(
-                                        item.widthValue, 1, 2)
-                                        : '0.00'}">
+                <span class="multiple-sizes-label">
+                    SIZE DETAILS
+                </span>
 
-                                    0.00
+                                        <h5>
+                                            Measurements
+                                        </h5>
 
-                                </strong>
+                                    </div>
 
-                            </div>
+                                    <span class="size-count"
+                                          th:text="${#lists.size(item.sizes)} + ' Sizes'">
 
+                0 Sizes
 
-                            <div class="dimension-symbol">
-                                ×
-                            </div>
+            </span>
 
-
-                            <div class="dimension-box">
-
-                                <span>
-                                    Height
-                                </span>
-
-                                <strong
-                                        th:text="${item.heightValue != null
-                                        ? #numbers.formatDecimal(
-                                        item.heightValue, 1, 2)
-                                        : '0.00'}">
-
-                                    0.00
-
-                                </strong>
-
-                            </div>
+                                </div>
 
 
-                            <div class="dimension-unit">
-                                inches
+                                <div class="sizes-table-wrapper">
+
+                                    <table class="sizes-table">
+
+                                        <thead>
+
+                                        <tr>
+
+                                            <th>
+                                                #
+                                            </th>
+
+                                            <th>
+                                                Length
+                                            </th>
+
+                                            <th>
+                                                Width
+                                            </th>
+
+                                            <th>
+                                                Height
+                                            </th>
+
+                                            <th>
+                                                Sq.Ft
+                                            </th>
+
+                                            <th>
+                                                Offer Price
+                                            </th>
+
+                                        </tr>
+
+                                        </thead>
+
+
+                                        <tbody>
+
+                                        <tr th:each="size, sizeStat : ${item.sizes}"
+                                            th:if="${size.active == null || size.active}">
+
+                                            <td
+                                                    th:text="${sizeStat.count}">
+                                                1
+                                            </td>
+
+
+                                            <td
+                                                    th:text="${size.lengthValue != null
+                            ? #numbers.formatDecimal(
+                            size.lengthValue, 1, 2)
+                            : '0.00'}">
+
+                                                0.00
+
+                                            </td>
+
+
+                                            <td
+                                                    th:text="${size.widthValue != null
+                            ? #numbers.formatDecimal(
+                            size.widthValue, 1, 2)
+                            : '0.00'}">
+
+                                                0.00
+
+                                            </td>
+
+
+                                            <td
+                                                    th:text="${size.heightValue != null
+                            ? #numbers.formatDecimal(
+                            size.heightValue, 1, 2)
+                            : '0.00'}">
+
+                                                0.00
+
+                                            </td>
+
+
+                                            <td>
+
+                                                <strong
+                                                        th:text="${size.calculatedSqft != null
+                                ? #numbers.formatDecimal(
+                                size.calculatedSqft, 1, 2)
+                                : '0.00'}">
+
+                                                    0.00
+
+                                                </strong>
+
+                                            </td>
+
+
+                                            <td>
+
+                                                <strong
+                                                        th:text="${'₹ ' +
+                                #numbers.formatDecimal(
+                                size.offerPrice != null
+                                ? size.offerPrice
+                                : 0,
+                                1, 2)}">
+
+                                                    ₹ 0.00
+
+                                                </strong>
+
+                                            </td>
+
+                                        </tr>
+
+                                        </tbody>
+
+                                    </table>
+
+                                </div>
+
                             </div>
 
                         </div>
@@ -1116,124 +1261,319 @@
     </section>
 
 
-
     <!-- =====================================================
          FINANCIAL SUMMARY
     ====================================================== -->
 
     <section class="detail-card financial-card">
 
-        <h3>
-            Quotation Amount Summary
-        </h3>
+        <div class="financial-header">
+
+            <div>
+
+                <p class="eyebrow">
+                    QUOTATION FINANCIALS
+                </p>
+
+                <h3>
+                    Quotation Amount Summary
+                </h3>
+
+                <p class="financial-description">
+                    Update accessories, travel charges, other charges,
+                    discount and GST for this quotation.
+                </p>
+
+            </div>
+
+        </div>
 
 
-        <div class="amount-row">
+        <!-- =================================================
+             UPDATE CHARGES FORM
+        ================================================== -->
+
+        <form th:action="@{/admin/quotations/charges/{id}(id=${quotation.id})}"
+              method="post"
+              class="charges-form">
+
+
+            <!-- ACCESSORIES -->
+
+            <div class="charge-input-group">
+
+                <label for="accessoriesAmount">
+                    Accessories
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                            type="number"
+                            id="accessoriesAmount"
+                            name="accessoriesAmount"
+                            min="0"
+                            step="0.01"
+                            th:value="${quotation.accessoriesAmount != null
+                        ? quotation.accessoriesAmount
+                        : 0}">
+
+                </div>
+
+            </div>
+
+
+            <!-- TRAVEL CHARGE -->
+
+            <div class="charge-input-group">
+
+                <label for="travelCharge">
+                    Travel Charges
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                            type="number"
+                            id="travelCharge"
+                            name="travelCharge"
+                            min="0"
+                            step="0.01"
+                            th:value="${quotation.travelCharge != null
+                        ? quotation.travelCharge
+                        : 0}">
+
+                </div>
+
+            </div>
+
+
+            <!-- OTHER CHARGES -->
+
+            <div class="charge-input-group">
+
+                <label for="otherCharges">
+                    Other Charges
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                            type="number"
+                            id="otherCharges"
+                            name="otherCharges"
+                            min="0"
+                            step="0.01"
+                            th:value="${quotation.otherCharges != null
+                        ? quotation.otherCharges
+                        : 0}">
+
+                </div>
+
+            </div>
+
+
+            <!-- DISCOUNT -->
+
+            <div class="charge-input-group">
+
+                <label for="discountAmount">
+                    Discount
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <span>₹</span>
+
+                    <input
+                            type="number"
+                            id="discountAmount"
+                            name="discountAmount"
+                            min="0"
+                            step="0.01"
+                            th:value="${quotation.discountAmount != null
+                        ? quotation.discountAmount
+                        : 0}">
+
+                </div>
+
+            </div>
+
+
+            <!-- GST -->
+
+            <div class="charge-input-group">
+
+                <label for="gstPercentage">
+                    GST Percentage
+                </label>
+
+                <div class="input-with-prefix">
+
+                    <input
+                            type="number"
+                            id="gstPercentage"
+                            name="gstPercentage"
+                            min="0"
+                            step="0.01"
+                            th:value="${quotation.gstPercentage != null
+                        ? quotation.gstPercentage
+                        : 0}">
+
+                    <span>%</span>
+
+                </div>
+
+            </div>
+
+
+            <!-- UPDATE BUTTON -->
+
+            <div class="charges-form-actions">
+
+                <button type="submit"
+                        class="btn btn-primary">
+
+                    💾 Update Charges
+
+                </button>
+
+            </div>
+
+        </form>
+
+
+        <!-- =================================================
+             CURRENT CALCULATED SUMMARY
+        ================================================== -->
+
+        <div class="financial-summary">
+
+
+            <!-- SUBTOTAL -->
+
+            <div class="amount-row">
 
             <span>
                 Subtotal
             </span>
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.subtotal != null
                     ? quotation.subtotal
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row">
+            <!-- ACCESSORIES -->
+
+            <div class="amount-row">
 
             <span>
                 Accessories
             </span>
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.accessoriesAmount != null
                     ? quotation.accessoriesAmount
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row">
+            <!-- TRAVEL -->
+
+            <div class="amount-row">
 
             <span>
                 Travel Charges
             </span>
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.travelCharge != null
                     ? quotation.travelCharge
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row">
+            <!-- OTHER -->
+
+            <div class="amount-row">
 
             <span>
                 Other Charges
             </span>
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.otherCharges != null
                     ? quotation.otherCharges
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row discount-row">
+            <!-- DISCOUNT -->
+
+            <div class="amount-row discount-row">
 
             <span>
                 Discount
             </span>
 
-            <strong
-                    th:text="${'- ₹ ' +
+                <strong
+                        th:text="${'- ₹ ' +
                     #numbers.formatDecimal(
                     quotation.discountAmount != null
                     ? quotation.discountAmount
                     : 0,
                     1, 2)}">
 
-                - ₹ 0.00
+                    - ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row">
+            <!-- GST -->
+
+            <div class="amount-row">
 
             <span>
 
@@ -1241,10 +1581,10 @@
 
                 (<span
                     th:text="${#numbers.formatDecimal(
-                    quotation.gstPercentage != null
-                    ? quotation.gstPercentage
-                    : 0,
-                    1, 2)}">
+                        quotation.gstPercentage != null
+                        ? quotation.gstPercentage
+                        : 0,
+                        1, 2)}">
 
                     0.00
 
@@ -1253,38 +1593,42 @@
             </span>
 
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.gstAmount != null
                     ? quotation.gstAmount
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
 
-        </div>
+            </div>
 
 
-        <div class="amount-row grand-total">
+            <!-- GRAND TOTAL -->
+
+            <div class="amount-row grand-total">
 
             <span>
                 Grand Total
             </span>
 
-            <strong
-                    th:text="${'₹ ' +
+                <strong
+                        th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.grandTotal != null
                     ? quotation.grandTotal
                     : 0,
                     1, 2)}">
 
-                ₹ 0.00
+                    ₹ 0.00
 
-            </strong>
+                </strong>
+
+            </div>
 
         </div>
 

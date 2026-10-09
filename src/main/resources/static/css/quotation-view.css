@@ -2580,3 +2580,157 @@ a:focus-visible {
         animation: none !important;
     }
 }
+
+/* =========================================================
+   MULTIPLE SIZE DETAILS
+========================================================= */
+
+.item-dimensions-section {
+    margin-top: 18px;
+}
+
+
+.multiple-sizes-section {
+    margin-top: 18px;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    background: #fafafa;
+    overflow: hidden;
+}
+
+
+.multiple-sizes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+    padding: 15px 18px;
+    background: #f7f8fa;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+
+.multiple-sizes-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    color: #0f766e;
+    margin-bottom: 3px;
+}
+
+
+.multiple-sizes-header h5 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    color: #172033;
+}
+
+
+.size-count {
+    padding: 6px 11px;
+    border-radius: 20px;
+    background: #e6fffa;
+    color: #0f766e;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+
+.sizes-table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+}
+
+
+.sizes-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 620px;
+}
+
+
+.sizes-table th {
+    padding: 12px 14px;
+    background: #ffffff;
+    border-bottom: 1px solid #e5e7eb;
+    color: #64748b;
+    font-size: 12px;
+    font-weight: 700;
+    text-align: left;
+    white-space: nowrap;
+}
+
+
+.sizes-table td {
+    padding: 13px 14px;
+    border-bottom: 1px solid #edf0f2;
+    color: #334155;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+
+.sizes-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+
+.sizes-table tbody tr:hover {
+    background: #f8fafc;
+}
+
+
+.sizes-table td:first-child {
+    width: 45px;
+    color: #64748b;
+    font-weight: 700;
+}
+
+
+.sizes-table td strong {
+    color: #172033;
+    font-weight: 700;
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 768px) {
+
+    .multiple-sizes-header {
+        padding: 13px 14px;
+    }
+
+
+    .multiple-sizes-header h5 {
+        font-size: 14px;
+    }
+
+
+    .sizes-table th,
+    .sizes-table td {
+        padding: 11px 12px;
+        font-size: 12px;
+    }
+
+}
+
+
+@media (max-width: 480px) {
+
+    .multiple-sizes-header {
+        align-items: flex-start;
+    }
+
+
+    .size-count {
+        font-size: 11px;
+        padding: 5px 9px;
+    }
+
+}

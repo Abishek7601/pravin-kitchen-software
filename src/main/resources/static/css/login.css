@@ -92,6 +92,13 @@ body::after {
     z-index: 1;
 }
 
+.company-logo {
+    width: 150px;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
 /* Login Card */
 
 .login-card {
@@ -344,6 +351,12 @@ button:focus-visible {
 
     button {
         min-height: 48px;
+    }
+}
+
+@media (max-width: 768px) {
+    .company-logo {
+        width: 120px;
     }
 }
 

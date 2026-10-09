@@ -18,6 +18,7 @@ public class QuotationCalculationService {
     private final DistrictPricingRepository districtPricingRepository;
     private final PricingRepository pricingRepository;
     private final TravelChargeRepository travelChargeRepository;
+    private final QuotationItemSizeService quotationItemSizeService;
 
     public QuotationCalculationService(
             QuotationRepository quotationRepository,
@@ -25,7 +26,8 @@ public class QuotationCalculationService {
             QuotationItemRepository quotationItemRepository,
             DistrictPricingRepository districtPricingRepository,
             PricingRepository pricingRepository,
-            TravelChargeRepository travelChargeRepository) {
+            TravelChargeRepository travelChargeRepository,
+            QuotationItemSizeService quotationItemSizeService) {
 
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
@@ -33,6 +35,7 @@ public class QuotationCalculationService {
         this.districtPricingRepository = districtPricingRepository;
         this.pricingRepository = pricingRepository;
         this.travelChargeRepository = travelChargeRepository;
+        this.quotationItemSizeService = quotationItemSizeService;
     }
 
 
@@ -184,7 +187,7 @@ public class QuotationCalculationService {
                     item.getOfferPrice();
 
             if (itemOfferPrice == null
-                   || itemOfferPrice.compareTo(BigDecimal.ZERO)<=0){
+                    || itemOfferPrice.compareTo(BigDecimal.ZERO)<=0){
 
                 itemOfferPrice = zeroIfNull(item.getAmount());
             }
@@ -556,6 +559,31 @@ public class QuotationCalculationService {
             Long quotationId,
             Long materialOptionId) {
 
+        Quotation quotation = quotationRepository.findById(quotationId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("Quotation not found."));
+
+        return resolveItemRate(
+                quotationId,
+                materialOptionId,
+                quotation.getPricingMode()
+        );
+    }
+
+
+    /**
+     * Resolves the district-specific rate for a material option and
+     * an explicitly supplied pricing mode.
+     *
+     * This overload is used when an employee changes:
+     * ECONOMY -> MIDDLE -> PREMIUM.
+     */
+    @Transactional(readOnly = true)
+    public BigDecimal resolveItemRate(
+            Long quotationId,
+            Long materialOptionId,
+            PricingMode pricingMode) {
+
         if (quotationId == null || materialOptionId == null) {
             throw new IllegalArgumentException(
                     "Quotation and material option are required.");
@@ -563,8 +591,7 @@ public class QuotationCalculationService {
 
         Quotation quotation = quotationRepository.findById(quotationId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Quotation not found."));
+                        new IllegalArgumentException("Quotation not found."));
 
         Branch branch = quotation.getBranch();
 
@@ -572,8 +599,6 @@ public class QuotationCalculationService {
             throw new IllegalArgumentException(
                     "Please assign a district to this quotation.");
         }
-
-        PricingMode pricingMode = quotation.getPricingMode();
 
         if (pricingMode == null) {
             throw new IllegalArgumentException(
@@ -621,6 +646,194 @@ public class QuotationCalculationService {
 
         return money(districtPricing.getRate());
     }
+
+
+    /**
+     * Changes the quotation pricing mode and recalculates every active
+     * quotation item using the new mode. Dimensions, materials and items
+     * are preserved.
+     */
+    @Transactional
+    public Quotation changePricingMode(
+            Long quotationId,
+            PricingMode newMode) {
+
+        if (quotationId == null) {
+            throw new IllegalArgumentException(
+                    "Quotation ID is required.");
+        }
+
+        if (newMode == null) {
+            throw new IllegalArgumentException(
+                    "Pricing mode is required.");
+        }
+
+        Quotation quotation =
+                quotationRepository.findById(quotationId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Quotation not found."));
+
+        PricingMode oldMode =
+                quotation.getPricingMode();
+
+        quotation.setPricingMode(newMode);
+
+        quotationRepository.save(quotation);
+
+        List<QuotationRoom> rooms =
+                quotationRoomRepository
+                        .findByQuotationIdAndActiveTrueOrderByIdAsc(
+                                quotationId);
+
+        for (QuotationRoom room : rooms) {
+
+            List<QuotationItem> items =
+                    quotationItemRepository
+                            .findByQuotationRoomIdAndActiveTrueOrderByIdAsc(
+                                    room.getId());
+
+            for (QuotationItem item : items) {
+
+                if (item.getMaterialOption() == null
+                        || item.getMaterialOption().getId() == null) {
+
+                    throw new IllegalArgumentException(
+                            "Material option is missing for quotation item "
+                                    + item.getId() + ".");
+                }
+
+                // Save old rate BEFORE changing it.
+                BigDecimal oldRate =
+                        zeroIfNull(item.getRate());
+
+                // -------------------------------------------------
+                // Get new rate
+                // -------------------------------------------------
+
+                BigDecimal newRate =
+                        resolveItemRate(
+                                quotationId,
+                                item.getMaterialOption().getId(),
+                                newMode
+                        );
+
+                // -------------------------------------------------
+                // Total SQ.FT from all child sizes
+                // -------------------------------------------------
+
+                BigDecimal totalSqft =
+                        quotationItemSizeService
+                                .calculateTotalSqft(
+                                        item.getId()
+                                );
+
+                totalSqft =
+                        money(totalSqft);
+
+                // -------------------------------------------------
+                // New total amount
+                // -------------------------------------------------
+
+                BigDecimal newAmount =
+                        money(
+                                totalSqft.multiply(newRate)
+                        );
+
+                // -------------------------------------------------
+                // Child sizes
+                // -------------------------------------------------
+
+                List<QuotationItemSize> sizes =
+                        quotationItemSizeService
+                                .getActiveSizes(
+                                        item.getId()
+                                );
+
+                BigDecimal totalOfferPrice =
+                        BigDecimal.ZERO;
+
+                for (QuotationItemSize size : sizes) {
+
+                    BigDecimal sizeSqft =
+                            zeroIfNull(
+                                    size.getCalculatedSqft()
+                            );
+
+                    BigDecimal oldSizeAmount =
+                            money(
+                                    sizeSqft.multiply(oldRate)
+                            );
+
+                    BigDecimal newSizeAmount =
+                            money(
+                                    sizeSqft.multiply(newRate)
+                            );
+
+                    BigDecimal offerPrice =
+                            size.getOfferPrice();
+
+                    // -------------------------------------------------
+                    // Normal price → update to new pricing mode
+                    // -------------------------------------------------
+
+                    if (offerPrice == null
+                            || offerPrice.compareTo(
+                            BigDecimal.ZERO) <= 0
+                            || offerPrice.compareTo(
+                            oldSizeAmount) == 0) {
+
+                        offerPrice =
+                                newSizeAmount;
+                    }
+
+                    // -------------------------------------------------
+                    // Manual discounted price → preserve it
+                    // -------------------------------------------------
+
+                    size.setOfferPrice(
+                            money(offerPrice)
+                    );
+
+                    totalOfferPrice =
+                            totalOfferPrice.add(
+                                    offerPrice
+                            );
+                }
+
+                // -------------------------------------------------
+                // Update parent quotation item
+                // -------------------------------------------------
+
+                item.setCalculatedSqft(
+                        totalSqft
+                );
+
+                item.setRate(
+                        newRate
+                );
+
+                item.setAmount(
+                        newAmount
+                );
+
+                item.setOfferPrice(
+                        money(totalOfferPrice)
+                );
+
+                quotationItemRepository.save(item);
+            }
+        }
+
+        // ---------------------------------------------------------
+        // Recalculate subtotal + GST + final total
+        // ---------------------------------------------------------
+
+        return calculateQuotation(
+                quotationId
+        );
+    }
+
 
     /**
      * Applies the configured travel charge when a new quotation is created.

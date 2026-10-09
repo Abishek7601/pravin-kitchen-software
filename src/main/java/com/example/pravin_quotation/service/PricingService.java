@@ -3,8 +3,10 @@ package com.example.pravin_quotation.service;
 import com.example.pravin_quotation.model.MaterialOption;
 import com.example.pravin_quotation.model.Pricing;
 import com.example.pravin_quotation.model.PricingMode;
+import com.example.pravin_quotation.repository.DistrictPricingRepository;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.PricingRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -15,24 +17,30 @@ public class PricingService {
 
     private final PricingRepository pricingRepository;
     private final MaterialOptionRepository materialOptionRepository;
+    private final DistrictPricingRepository districtPricingRepository;
 
     public PricingService(
             PricingRepository pricingRepository,
-            MaterialOptionRepository materialOptionRepository
+            MaterialOptionRepository materialOptionRepository,
+            DistrictPricingRepository districtPricingRepository
     ) {
         this.pricingRepository = pricingRepository;
         this.materialOptionRepository = materialOptionRepository;
+        this.districtPricingRepository = districtPricingRepository;
     }
 
     public List<Pricing> getAllPricing() {
+
         return pricingRepository.findAllByOrderByCreatedAtDesc();
     }
 
     public List<Pricing> getActivePricing() {
+
         return pricingRepository.findByActiveTrueOrderByCreatedAtDesc();
     }
 
     public Pricing getPricingById(Long id) {
+
         return pricingRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Pricing record not found"
@@ -40,6 +48,7 @@ public class PricingService {
     }
 
     public List<Pricing> getPricingByMaterialOption(Long materialOptionId) {
+
         return pricingRepository
                 .findByMaterialOptionIdOrderByPricingModeAsc(
                         materialOptionId
@@ -50,6 +59,7 @@ public class PricingService {
             Long materialOptionId,
             PricingMode pricingMode
     ) {
+
         return pricingRepository
                 .findByMaterialOptionIdAndPricingMode(
                         materialOptionId,
@@ -160,12 +170,45 @@ public class PricingService {
 
         Pricing pricing = getPricingById(id);
 
-        pricingRepository.delete(pricing);
+        /*
+         * IMPORTANT:
+         * A pricing record may already be used by District Pricing.
+         *
+         * We must not delete the parent Pricing record while
+         * District Pricing records are still pointing to it.
+         */
+
+        if (districtPricingRepository.existsByPricingId(id)) {
+
+            throw new IllegalStateException(
+                    "This pricing cannot be deleted because it is already used in District Pricing. "
+                            + "Deactivate it instead or remove its District Pricing records first."
+            );
+        }
+
+        try {
+
+            pricingRepository.delete(pricing);
+
+        } catch (DataIntegrityViolationException e) {
+
+            /*
+             * Safety fallback in case another foreign-key relationship
+             * is using this Pricing record.
+             */
+
+            throw new IllegalStateException(
+                    "This pricing cannot be deleted because it is being used by another record. "
+                            + "Please deactivate it instead.",
+                    e
+            );
+        }
     }
 
     private void validateMaterialOption(Long materialOptionId) {
 
         if (materialOptionId == null) {
+
             throw new IllegalArgumentException(
                     "Material option is required"
             );
@@ -175,6 +218,7 @@ public class PricingService {
     private void validatePricingMode(PricingMode pricingMode) {
 
         if (pricingMode == null) {
+
             throw new IllegalArgumentException(
                     "Pricing mode is required"
             );
@@ -184,12 +228,14 @@ public class PricingService {
     private void validateRate(BigDecimal rate) {
 
         if (rate == null) {
+
             throw new IllegalArgumentException(
                     "Rate is required"
             );
         }
 
         if (rate.compareTo(BigDecimal.ZERO) < 0) {
+
             throw new IllegalArgumentException(
                     "Rate cannot be negative"
             );
@@ -199,6 +245,7 @@ public class PricingService {
     private void validateUnit(String unit) {
 
         if (unit == null || unit.trim().isEmpty()) {
+
             throw new IllegalArgumentException(
                     "Unit is required"
             );
@@ -208,6 +255,7 @@ public class PricingService {
     private String cleanValue(String value) {
 
         if (value == null) {
+
             return null;
         }
 

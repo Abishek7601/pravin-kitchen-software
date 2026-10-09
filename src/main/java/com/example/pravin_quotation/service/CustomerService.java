@@ -175,6 +175,60 @@ public class CustomerService {
 
 
     // ==========================================
+    // CREATE OR UPDATE CUSTOMER FROM QUOTATION
+    // ==========================================
+
+    public Customer createOrUpdateForQuotation(
+            String name,
+            String email,
+            String phone,
+            String address,
+            Long branchId) {
+
+        validateCustomer(name, phone, branchId);
+
+        String customerName = name.trim();
+        String customerPhone = phone.trim();
+        String customerEmail = email == null ? null : email.trim().toLowerCase();
+        String customerAddress = address == null ? null : address.trim();
+
+        Branch branch = branchRepository.findById(branchId)
+                .orElseThrow(() -> new IllegalArgumentException("District not found"));
+
+        Customer customer = customerRepository.findByPhone(customerPhone).orElse(null);
+
+        if (customer == null) {
+            if (customerEmail != null && !customerEmail.isEmpty()
+                    && customerRepository.existsByEmail(customerEmail)) {
+                throw new IllegalArgumentException("Email address already exists");
+            }
+
+            customer = new Customer();
+            customer.setActive(true);
+        } else if (customerEmail != null && !customerEmail.isEmpty()) {
+            Customer emailOwner = customerRepository.findAll().stream()
+                    .filter(existing -> existing.getEmail() != null
+                            && existing.getEmail().equalsIgnoreCase(customerEmail))
+                    .findFirst()
+                    .orElse(null);
+
+            if (emailOwner != null && !emailOwner.getId().equals(customer.getId())) {
+                throw new IllegalArgumentException("Email address already belongs to another customer");
+            }
+        }
+
+        customer.setName(customerName);
+        customer.setPhone(customerPhone);
+        customer.setEmail(customerEmail == null || customerEmail.isEmpty() ? null : customerEmail);
+        customer.setAddress(customerAddress == null || customerAddress.isEmpty() ? null : customerAddress);
+        customer.setBranch(branch);
+        customer.setActive(true);
+
+        return customerRepository.save(customer);
+    }
+
+
+    // ==========================================
     // UPDATE CUSTOMER
     // ==========================================
 

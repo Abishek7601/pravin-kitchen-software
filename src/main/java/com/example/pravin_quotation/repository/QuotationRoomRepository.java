@@ -16,4 +16,10 @@ public interface QuotationRoomRepository extends JpaRepository<QuotationRoom, Lo
     long countByQuotationId(Long quotationId);
 
     long countByQuotationIdAndActiveTrue(Long quotationId);
+
+    java.util.Optional<QuotationRoom> findByQuotationIdAndFloorAndRoomAndActiveTrue(
+            Long quotationId,
+            String floor,
+            String room
+    );
 }
