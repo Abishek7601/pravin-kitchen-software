@@ -5,7 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title th:text="${quotation.quotationNumber + ' | Quotation Builder'}">
+  <title th:text="${quotation != null and quotation.quotationNumber != null ? quotation.quotationNumber + ' | Quotation Builder' : 'Create Quotation | Quotation Builder'}">
     Quotation Builder
   </title>
 
@@ -21,7 +21,7 @@
 
     <div class="brand-area">
       <div class="brand-logo">
-        <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: 8px;">
+        <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: 8px;">
       </div>
 
       <div>
@@ -34,16 +34,16 @@
 
       <div class="quote-number">
         <span>QT NO</span>
-        <strong th:text="${quotation.quotationNumber}">
+        <strong th:text="${quotation != null and quotation.quotationNumber != null ? quotation.quotationNumber : 'QT-AUTO'}">
           QT-00001
         </strong>
       </div>
 
-      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+      <div class="nav-header-actions">
+          <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }">
               <span>← Back</span>
           </button>
-          <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+          <a th:href="@{/employee/dashboard}" class="nav-dashboard-btn">
               <span>⌂ Dashboard</span>
           </a>
       </div>
@@ -61,7 +61,7 @@
 
     <section class="customer-bar">
 
-      <form th:action="@{/employee/quotations/builder/{id}/customer(id=${quotation.id})}"
+      <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/customer' : '/employee/quotations/save'}"
             method="post"
             class="customer-form">
 
@@ -81,7 +81,7 @@
             <input id="customerName"
                    name="customerName"
                    type="text"
-                   th:value="${quotation.customer != null ? quotation.customer.name : ''}"
+                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.name : ''}"
                    required>
           </div>
 
@@ -90,7 +90,7 @@
             <input id="phone"
                    name="phone"
                    type="tel"
-                   th:value="${quotation.customer != null ? quotation.customer.phone : ''}"
+                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.phone : ''}"
                    required>
           </div>
 
@@ -99,7 +99,7 @@
             <input id="email"
                    name="email"
                    type="email"
-                   th:value="${quotation.customer != null ? quotation.customer.email : ''}">
+                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.email : ''}">
           </div>
 
           <div class="field">
@@ -107,7 +107,7 @@
             <input id="quotationDate"
                    name="quotationDate"
                    type="date"
-                   th:value="${quotation.quotationDate}"
+                   th:value="${quotation != null and quotation.quotationDate != null ? quotation.quotationDate : today}"
                    required>
           </div>
 
@@ -116,13 +116,13 @@
             <input id="address"
                    name="address"
                    type="text"
-                   th:value="${quotation.customer != null ? quotation.customer.address : ''}">
+                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.address : ''}">
           </div>
 
           <div class="field branch-field">
             <label>Branch</label>
             <div class="readonly-field"
-                 th:text="${quotation.branch != null ? quotation.branch.name : 'Not Assigned'}">
+                 th:text="${quotation != null and quotation.branch != null ? quotation.branch.name : (employee != null and employee.branch != null ? employee.branch.name : 'Not Assigned')}">
               Branch
             </div>
           </div>
@@ -136,7 +136,7 @@
             <input id="customerRequirements"
                    name="customerRequirements"
                    type="text"
-                   th:value="${quotation.customerRequirements}"
+                   th:value="${quotation != null ? quotation.customerRequirements : ''}"
                    placeholder="Customer requirements">
           </div>
 
@@ -145,7 +145,7 @@
             <input id="notes"
                    name="notes"
                    type="text"
-                   th:value="${quotation.notes}"
+                   th:value="${quotation != null ? quotation.notes : ''}"
                    placeholder="Internal notes">
           </div>
 
@@ -174,7 +174,7 @@
         </small>
       </div>
 
-      <form th:action="@{/employee/quotations/builder/{id}/pricing-mode(id=${quotation.id})}"
+      <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/pricing-mode' : '/employee/quotations/save'}"
             method="post"
             id="pricingModeForm"
             class="pricing-mode-form">
@@ -187,7 +187,7 @@
                 name="pricingMode"
                 value="PREMIUM"
                 class="mode-button premium"
-                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'PREMIUM'} ? ' selected' : ''">
+                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'PREMIUM'} ? ' selected' : ''">
           <strong>Premium</strong>
           <span>Premium</span>
         </button>
@@ -196,7 +196,7 @@
                 name="pricingMode"
                 value="MIDDLE"
                 class="mode-button middle"
-                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'MIDDLE'} ? ' selected' : ''">
+                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'MIDDLE'} ? ' selected' : ''">
           <strong>Middle / Standard</strong>
           <span>Balanced</span>
         </button>
@@ -205,7 +205,7 @@
                 name="pricingMode"
                 value="ECONOMY"
                 class="mode-button economy"
-                th:classappend="${quotation.pricingMode != null and quotation.pricingMode.name() == 'ECONOMY'} ? ' selected' : ''">
+                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'ECONOMY'} ? ' selected' : ''">
           <strong>Economy</strong>
           <span>Cost effective</span>
         </button>
@@ -409,7 +409,7 @@
         </div>
 
 
-        <form th:action="@{/employee/quotations/builder/{id}/items(id=${quotation.id})}"
+        <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/items' : '/employee/quotations/save'}"
               method="post"
               id="builderItemForm">
 
@@ -762,7 +762,7 @@
         <div>
           <span>Subtotal</span>
           <strong>
-            ₹<span th:text="${#numbers.formatDecimal(quotation.subtotal, 1, 2)}">
+            ₹<span th:text="${quotation != null and quotation.subtotal != null ? #numbers.formatDecimal(quotation.subtotal, 1, 2) : '0.00'}">
                             0.00
                         </span>
           </strong>
@@ -771,7 +771,7 @@
         <div>
           <span>Travel Charge</span>
           <strong>
-            ₹<span th:text="${#numbers.formatDecimal(quotation.travelCharge, 1, 2)}">
+            ₹<span th:text="${quotation != null and quotation.travelCharge != null ? #numbers.formatDecimal(quotation.travelCharge, 1, 2) : '0.00'}">
                             0.00
                         </span>
           </strong>
@@ -780,7 +780,7 @@
         <div>
           <span>GST</span>
           <strong>
-            ₹<span th:text="${#numbers.formatDecimal(quotation.gstAmount, 1, 2)}">
+            ₹<span th:text="${quotation != null and quotation.gstAmount != null ? #numbers.formatDecimal(quotation.gstAmount, 1, 2) : '0.00'}">
                             0.00
                         </span>
           </strong>
@@ -789,7 +789,7 @@
         <div class="grand-total-row">
           <span>Grand Total</span>
           <strong>
-            ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+            ₹<span th:text="${quotation != null and quotation.grandTotal != null ? #numbers.formatDecimal(quotation.grandTotal, 1, 2) : '0.00'}">
                             0.00
                         </span>
           </strong>
@@ -806,12 +806,14 @@
 
     <div class="bottom-actions">
 
-      <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
+      <a th:if="${quotation != null and quotation.id != null}"
+         th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
          class="primary-btn">
         ↓ Download PDF
       </a>
 
-      <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+      <a th:if="${quotation != null and quotation.id != null}"
+         th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
          class="secondary-btn">
         Open Full View
       </a>
@@ -832,9 +834,43 @@
 <script th:inline="javascript">
   document.addEventListener("DOMContentLoaded", function () {
 
-      const quotationId = /*[[${quotation.id}]]*/ 0;
+      const quotationId = /*[[${quotation != null and quotation.id != null ? quotation.id : 0}]]*/ 0;
       const csrfName = /*[[${_csrf.parameterName}]]*/ "_csrf";
       const csrfToken = /*[[${_csrf.token}]]*/ "";
+
+      const pricingModeForm = document.getElementById("pricingModeForm");
+      if (pricingModeForm && quotationId === 0) {
+          pricingModeForm.addEventListener("submit", function (e) {
+              const custName = document.getElementById("customerName")?.value || "";
+              const custPhone = document.getElementById("phone")?.value || "";
+              const custEmail = document.getElementById("email")?.value || "";
+              const custDate = document.getElementById("quotationDate")?.value || "";
+              const custAddress = document.getElementById("address")?.value || "";
+              const custReq = document.getElementById("customerRequirements")?.value || "";
+              const custNotes = document.getElementById("notes")?.value || "";
+
+              const fields = [
+                  { name: "customerName", value: custName },
+                  { name: "phone", value: custPhone },
+                  { name: "email", value: custEmail },
+                  { name: "quotationDate", value: custDate },
+                  { name: "address", value: custAddress },
+                  { name: "customerRequirements", value: custReq },
+                  { name: "notes", value: custNotes }
+              ];
+
+              fields.forEach(function (f) {
+                  let input = pricingModeForm.querySelector(`input[name="${f.name}"]`);
+                  if (!input) {
+                      input = document.createElement("input");
+                      input.type = "hidden";
+                      input.name = f.name;
+                      pricingModeForm.appendChild(input);
+                  }
+                  input.value = f.value;
+              });
+          });
+      }
 
       const categoryButtons =
           Array.from(document.querySelectorAll(".category-chip"));

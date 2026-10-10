@@ -29,6 +29,7 @@ import com.example.pravin_quotation.repository.WorkCategoryRepository;
 
 import com.example.pravin_quotation.service.*;
 
+import java.util.Collections;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -274,35 +275,26 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        model.addAttribute(
-                "employee",
-                employee
-        );
+        Quotation quotation = new Quotation();
+        quotation.setQuotationNumber(previewQuotationNumber());
+        quotation.setQuotationDate(LocalDate.now());
+        quotation.setPricingMode(PricingMode.ECONOMY);
+        quotation.setBranch(employee.getBranch());
+        quotation.setSubtotal(BigDecimal.ZERO);
+        quotation.setGstAmount(BigDecimal.ZERO);
+        quotation.setTravelCharge(BigDecimal.ZERO);
+        quotation.setGrandTotal(BigDecimal.ZERO);
 
-        model.addAttribute(
-                "branches",
-                branchRepository.findByActiveTrueOrderByNameAsc()
-        );
-
-        model.addAttribute(
-                "workCategories",
-                workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc()
-        );
-
-        model.addAttribute(
-                "pricingModes",
-                PricingMode.values()
-        );
-
-        model.addAttribute(
-                "today",
-                LocalDate.now()
-        );
-
-        model.addAttribute(
-                "employeeBranchId",
-                employee.getBranch() != null ? employee.getBranch().getId() : null
-        );
+        model.addAttribute("employee", employee);
+        model.addAttribute("quotation", quotation);
+        model.addAttribute("nextQuotationNumber", quotation.getQuotationNumber());
+        model.addAttribute("rooms", Collections.emptyList());
+        model.addAttribute("roomItems", Collections.emptyMap());
+        model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
+        model.addAttribute("workCategories", workCategoryService.getActiveCategories());
+        model.addAttribute("pricingModes", PricingMode.values());
+        model.addAttribute("today", LocalDate.now());
+        model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : null);
 
         return "employee/quotation-builder";
     }
@@ -377,17 +369,43 @@ public class EmployeeQuotationController {
         return result;
     }
 
+    // ============================================================
+    // AJAX - RESOLVE CONFIGURED RATE FOR ITEM FORM
+    // ============================================================
+
+    @GetMapping("/resolve-rate")
+    @ResponseBody
+    public ResponseEntity<?> resolveItemRate(
+            @RequestParam Long quotationId,
+            @RequestParam Long materialOptionId) {
+
+        try {
+            BigDecimal rate = quotationCalculationService.resolveItemRate(
+                    quotationId,
+                    materialOptionId
+            );
+
+            return ResponseEntity.ok(
+                    mapData("success", true, "rate", rate)
+            );
+
+        } catch (Exception e) {
+            return ResponseEntity.ok(
+                    mapData("success", false, "message", e.getMessage())
+            );
+        }
+    }
+
 
     // ============================================================
-    // SAVE NEW QUOTATION
-    // ============================================================
-
     @PostMapping("/save")
     public String saveQuotation(
 
-            @RequestParam String customerName,
+            @RequestParam(required = false)
+            String customerName,
 
-            @RequestParam String phone,
+            @RequestParam(required = false)
+            String phone,
 
             @RequestParam(required = false)
             String email,
@@ -395,9 +413,11 @@ public class EmployeeQuotationController {
             @RequestParam(required = false)
             String address,
 
-            @RequestParam String quotationDate,
+            @RequestParam(required = false)
+            String quotationDate,
 
-            @RequestParam PricingMode pricingMode,
+            @RequestParam(required = false)
+            PricingMode pricingMode,
 
             @RequestParam(required = false)
             Long divisionId,
@@ -421,17 +441,18 @@ public class EmployeeQuotationController {
             );
         }
 
-        LocalDate date =
-                LocalDate.parse(
-                        quotationDate,
-                        DateTimeFormatter.ISO_LOCAL_DATE
-                );
+        String finalCustomerName = (customerName == null || customerName.isBlank()) ? "Draft Customer" : customerName.trim();
+        String finalPhone = (phone == null || phone.isBlank()) ? "0000000000" : phone.trim();
+        LocalDate date = (quotationDate == null || quotationDate.isBlank())
+                ? LocalDate.now()
+                : LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE);
+        PricingMode mode = (pricingMode == null) ? PricingMode.ECONOMY : pricingMode;
 
         Customer customer =
                 customerService.createOrUpdateForQuotation(
-                        customerName,
+                        finalCustomerName,
                         email,
-                        phone,
+                        finalPhone,
                         address,
                         employee.getBranch().getId()
                 );
@@ -446,7 +467,7 @@ public class EmployeeQuotationController {
                         employee.getId(),
                         employee.getBranch().getId(),
                         date,
-                        pricingMode,
+                        mode,
                         customerRequirements,
                         notes
                 );
@@ -522,36 +543,16 @@ public class EmployeeQuotationController {
             );
         }
 
-        model.addAttribute(
-                "employee",
-                employee
-        );
-
-        model.addAttribute(
-                "quotation",
-                quotation
-        );
-
-        model.addAttribute(
-                "rooms",
-                rooms
-        );
-
-        model.addAttribute(
-                "roomItems",
-                roomItems
-        );
-
-        model.addAttribute(
-                "workCategories",
-                workCategoryService
-                        .getActiveCategories()
-        );
-
-        model.addAttribute(
-                "pricingModes",
-                PricingMode.values()
-        );
+        model.addAttribute("employee", employee);
+        model.addAttribute("quotation", quotation);
+        model.addAttribute("nextQuotationNumber", quotation.getQuotationNumber());
+        model.addAttribute("rooms", rooms);
+        model.addAttribute("roomItems", roomItems);
+        model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
+        model.addAttribute("workCategories", workCategoryService.getActiveCategories());
+        model.addAttribute("pricingModes", PricingMode.values());
+        model.addAttribute("today", LocalDate.now());
+        model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : null);
 
         return "employee/quotation-builder";
     }
@@ -1036,10 +1037,12 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        getQuotationAndCheckOwnership(
-                id,
-                employee
-        );
+        if (id != null && id > 0) {
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
+        }
 
         List<Division> divisions =
                 divisionService
@@ -1111,10 +1114,12 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        getQuotationAndCheckOwnership(
-                id,
-                employee
-        );
+        if (id != null && id > 0) {
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
+        }
 
         List<Material> materials =
                 materialService
@@ -1172,10 +1177,12 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        getQuotationAndCheckOwnership(
-                id,
-                employee
-        );
+        if (id != null && id > 0) {
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
+        }
 
         List<MaterialOption> options =
                 materialOptionService
@@ -1233,26 +1240,31 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        Quotation quotation =
-                getQuotationAndCheckOwnership(
-                        id,
-                        employee
+        BigDecimal rate;
+        String unit = "SQFT";
+        String description = "";
+
+        if (id != null && id > 0) {
+            Quotation quotation =
+                    getQuotationAndCheckOwnership(
+                            id,
+                            employee
+                    );
+
+            if (quotation.getBranch() == null) {
+                throw new IllegalStateException(
+                        "Quotation branch is not assigned."
                 );
+            }
 
-        if (quotation.getBranch() == null) {
-
-            throw new IllegalStateException(
-                    "Quotation branch is not assigned."
-            );
+            rate = quotationCalculationService.resolveItemRate(id, materialOptionId, mode);
+        } else {
+            Long branchId = employee.getBranch() != null ? employee.getBranch().getId() : null;
+            if (branchId == null) {
+                throw new IllegalStateException("Employee is not assigned to a branch.");
+            }
+            rate = builderService.resolveRate(branchId, materialOptionId, mode);
         }
-
-        BigDecimal rate =
-                quotationCalculationService
-                        .resolveItemRate(
-                                id,
-                                materialOptionId,
-                                mode
-                        );
 
         var pricing =
                 pricingRepository
@@ -1260,11 +1272,16 @@ public class EmployeeQuotationController {
                                 materialOptionId,
                                 mode
                         )
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Pricing not found."
-                                )
-                        );
+                        .orElse(null);
+
+        if (pricing != null) {
+            if (pricing.getUnit() != null) {
+                unit = pricing.getUnit();
+            }
+            if (pricing.getDescription() != null) {
+                description = pricing.getDescription();
+            }
+        }
 
         Map<String, Object> result =
                 new LinkedHashMap<>();
@@ -1276,12 +1293,12 @@ public class EmployeeQuotationController {
 
         result.put(
                 "unit",
-                pricing.getUnit()
+                unit
         );
 
         result.put(
                 "description",
-                pricing.getDescription()
+                description
         );
 
         result.put(
@@ -1291,7 +1308,7 @@ public class EmployeeQuotationController {
 
         result.put(
                 "quotationBranch",
-                quotation.getBranch().getName()
+                employee.getBranch() != null ? employee.getBranch().getName() : "Not Assigned"
         );
 
         return result;
@@ -2405,7 +2422,7 @@ public class EmployeeQuotationController {
                             + quotation.getGrandTotal()
                             + "\n\n"
                             + "Thank you,\n"
-                            + "Pravin Kitchens & Interiors";
+                            + "Pravin KITCHENS & INTERIORSS & INTERIORS";
 
             String encodedMessage =
                     java.net.URLEncoder.encode(

@@ -194,53 +194,97 @@ button:focus-visible {
 .header-actions {
     position: relative;
     z-index: 2;
-    display: flex;
+    display: inline-flex;
     flex-shrink: 0;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px;
 }
 
+.nav-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-back-btn,
+.nav-dashboard-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1;
+    border-radius: 10px;
+    text-decoration: none;
+    box-sizing: border-box;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.nav-back-btn {
+    background: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    color: #006b63;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.nav-back-btn:hover {
+    background: #f0faf7;
+    color: #063f3b;
+    border-color: #ffffff;
+}
+
+.nav-dashboard-btn {
+    background: #006b63;
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.nav-dashboard-btn:hover {
+    background: #063f3b;
+    border-color: rgba(255, 255, 255, 0.6);
+}
+
 .edit-district-button,
 .back-button {
     display: inline-flex;
-    min-height: 43px;
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
     justify-content: center;
     align-items: center;
-    padding: 10px 17px;
-    border-radius: 9px;
+    padding: 0 18px;
+    border-radius: 10px;
     font-size: 13px;
     font-weight: 700;
+    line-height: 1;
     white-space: nowrap;
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease,
-        box-shadow 0.2s ease;
+    box-sizing: border-box;
+    text-decoration: none;
+    transition: all 0.2s ease;
 }
 
 .edit-district-button {
-    color: var(--peacock-dark);
+    color: #063f3b;
     background: linear-gradient(
         135deg,
-        var(--gold-light),
-        var(--gold)
+        #fceaa6,
+        #c6a45c
     );
-    box-shadow: 0 5px 14px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
 }
 
 .edit-district-button:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.18);
-}
-
-.back-button {
-    color: var(--white);
-    background: rgba(255, 255, 255, 0.10);
-    border: 1px solid rgba(255, 255, 255, 0.25);
-}
-
-.back-button:hover {
-    background: rgba(255, 255, 255, 0.18);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
 /* =========================================================

@@ -779,6 +779,40 @@ public class QuotationItemController {
     }
 
     // =========================================================
+    // AJAX - RESOLVE CONFIGURED RATE
+    // =========================================================
+
+    @GetMapping("/resolve-rate")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> resolveRate(
+            @RequestParam Long quotationRoomId,
+            @RequestParam Long materialOptionId) {
+
+        try {
+            QuotationRoom room = quotationRoomService.getById(quotationRoomId);
+
+            if (room == null || room.getQuotation() == null) {
+                return org.springframework.http.ResponseEntity.badRequest()
+                        .body(java.util.Map.of("success", false, "message", "Quotation room not found."));
+            }
+
+            BigDecimal rate = quotationCalculationService.resolveItemRate(
+                    room.getQuotation().getId(),
+                    materialOptionId
+            );
+
+            return org.springframework.http.ResponseEntity.ok(
+                    java.util.Map.of("success", true, "rate", rate)
+            );
+
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.ok(
+                    java.util.Map.of("success", false, "message", e.getMessage())
+            );
+        }
+    }
+
+    // =========================================================
     // LOAD FORM DATA
     // =========================================================
 

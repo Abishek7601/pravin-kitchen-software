@@ -1377,3 +1377,57 @@ button {
         animation: none !important;
     }
 }
+
+/* =========================================================
+   NAV HEADER ACTIONS
+   ========================================================= */
+
+.nav-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-back-btn,
+.nav-dashboard-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 40px;
+    min-height: 40px;
+    padding: 0 16px;
+    font-size: 13px;
+    font-weight: 650;
+    line-height: 1;
+    border-radius: 9px;
+    text-decoration: none;
+    box-sizing: border-box;
+    white-space: nowrap;
+    transition: all 0.2s ease;
+}
+
+.nav-back-btn {
+    background: #ffffff;
+    border: 1px solid rgba(8, 127, 105, 0.25);
+    color: var(--peacock-green, #087f69);
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.nav-back-btn:hover {
+    background: #f0faf5;
+    color: var(--peacock-dark, #063b35);
+    border-color: var(--peacock-green, #087f69);
+}
+
+.nav-dashboard-btn {
+    background: var(--peacock-green, #087f69);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 2px 8px rgba(8, 127, 105, 0.2);
+}
+
+.nav-dashboard-btn:hover {
+    background: var(--peacock-dark, #063b35);
+}

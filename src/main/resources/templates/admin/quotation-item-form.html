@@ -309,6 +309,8 @@
 
                     </select>
 
+                    <div id="rateWarningMessage" style="color: #dc2626; font-size: 13px; font-weight: 500; margin-top: 6px; display: none;"></div>
+
                 </div>
 
 
@@ -1387,8 +1389,52 @@
 
 
         /* =========================================================
-           RATE CHANGE
+           RATE CHANGE & DYNAMIC FETCHING
         ========================================================== */
+
+        const materialOptionSelect =
+            document.getElementById("materialOptionId");
+
+        const rateWarningMessage =
+            document.getElementById("rateWarningMessage");
+
+        async function fetchConfiguredRate() {
+            const optionId = materialOptionSelect ? materialOptionSelect.value : "";
+            const quotationRoomIdInput = document.querySelector('input[name="quotationRoomId"]');
+            const quotationRoomId = quotationRoomIdInput ? quotationRoomIdInput.value : "";
+
+            if (!optionId || !quotationRoomId) {
+                if (rateWarningMessage) rateWarningMessage.style.display = "none";
+                return;
+            }
+
+            try {
+                const response = await fetch('/admin/quotation-items/resolve-rate?quotationRoomId=' + quotationRoomId + '&materialOptionId=' + optionId);
+                const data = await response.json();
+
+                if (data.success && data.rate !== undefined) {
+                    rateInput.value = data.rate;
+                    if (rateWarningMessage) {
+                        rateWarningMessage.style.display = "none";
+                        rateWarningMessage.textContent = "";
+                    }
+                } else {
+                    rateInput.value = "";
+                    if (rateWarningMessage) {
+                        rateWarningMessage.textContent = "Warning: " + (data.message || "No configured rate found for selected material option.");
+                        rateWarningMessage.style.display = "block";
+                    }
+                }
+            } catch (err) {
+                console.error("Error fetching configured rate:", err);
+            }
+
+            calculateAll();
+        }
+
+        if (materialOptionSelect) {
+            materialOptionSelect.addEventListener("change", fetchConfiguredRate);
+        }
 
         rateInput.addEventListener(
             "input",
@@ -1402,7 +1448,11 @@
 
         updateSizeNumbers();
 
-        calculateAll();
+        if (materialOptionSelect && materialOptionSelect.value) {
+            fetchConfiguredRate();
+        } else {
+            calculateAll();
+        }
 
 
         /* =========================================================

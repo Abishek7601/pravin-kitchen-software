@@ -423,8 +423,8 @@ body {
         linear-gradient(135deg, #087f69 50%, transparent 50%);
 
     background-position:
-        calc(100% - 20px) 21px,
-        calc(100% - 14px) 21px;
+        calc(100% - 20px) calc(50% - 1px),
+        calc(100% - 14px) calc(50% - 1px);
 
     background-size:
         6px 6px,

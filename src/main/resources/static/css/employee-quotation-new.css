@@ -74,6 +74,19 @@ a {
     font-weight: 900;
 }
 
+.brand-logo-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: inherit;
+    padding: 3px;
+    background: #ffffff;
+}
+
+.brand-text {
+    min-width: 0;
+}
+
 .brand-text h2 {
     margin: 0;
     font-size: 17px;

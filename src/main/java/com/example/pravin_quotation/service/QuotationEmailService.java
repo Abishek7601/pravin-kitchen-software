@@ -73,7 +73,7 @@ public class QuotationEmailService {
             helper.setSubject(
                     "Quotation " +
                             quotationNumber +
-                            " - Pravin Kitchens & Interiors"
+                            " - Pravin KITCHENS & INTERIORSS & INTERIORS"
             );
 
             String emailBody =
@@ -81,7 +81,7 @@ public class QuotationEmailService {
 
                             "Please find attached your quotation " +
                             quotationNumber +
-                            " from Pravin KITCHENS & INTERIORS.\n\n" +
+                            " from Pravin KITCHENS & INTERIORSS & INTERIORS.\n\n" +
 
                             "Quotation Amount: ₹" +
                             quotation.getGrandTotal() +
@@ -92,7 +92,7 @@ public class QuotationEmailService {
                             "any questions.\n\n" +
 
                             "Thank you,\n" +
-                            "Pravin KITCHENS & INTERIORS\n" +
+                            "Pravin KITCHENS & INTERIORSS & INTERIORS\n" +
                             "+91 9787769970";
 
             helper.setText(emailBody);

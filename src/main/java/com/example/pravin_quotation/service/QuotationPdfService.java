@@ -136,7 +136,7 @@ public class QuotationPdfService {
             nameCell.setPaddingLeft(6f);
             nameCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-            Paragraph companyName = new Paragraph("Pravin Kitchen & Interiors", new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_GOLD));
+            Paragraph companyName = new Paragraph("Pravin KITCHENS & INTERIORSS & INTERIORS", new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_GOLD));
             nameCell.addElement(companyName);
 
             brandTable.addCell(logoCell);
@@ -146,7 +146,7 @@ public class QuotationPdfService {
             Paragraph addressPar = new Paragraph();
             addressPar.setSpacingBefore(5f);
             addressPar.setFont(new Font(Font.HELVETICA, 7.8f, Font.NORMAL, COLOR_TEXT_MUTED));
-            addressPar.add("Address: Pravin Modular Kitchen,\n");
+            addressPar.add("Address: Pravin KITCHENS & INTERIORS,\n");
             addressPar.add("Tvm Main Road, Azhagiamandapam,\n");
             addressPar.add("Mulagumoodu Post - 629167, T.N.\n");
             addressPar.add("Mobile: +91 9787769970");
@@ -445,7 +445,7 @@ public class QuotationPdfService {
             sig1.setBorder(Rectangle.NO_BORDER);
             sig1.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-            PdfPCell sig2 = new PdfPCell(new Paragraph("\n\n________________________\nFor Pravin KITCHENS & INTERIORS", sigFont));
+            PdfPCell sig2 = new PdfPCell(new Paragraph("\n\n________________________\nFor Pravin KITCHENS & INTERIORSS & INTERIORS", sigFont));
             sig2.setBorder(Rectangle.NO_BORDER);
             sig2.setHorizontalAlignment(Element.ALIGN_CENTER);
 

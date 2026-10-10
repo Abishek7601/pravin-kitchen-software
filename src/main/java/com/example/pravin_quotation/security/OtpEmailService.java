@@ -27,14 +27,14 @@ public class OtpEmailService {
         message.setTo(adminEmail);
 
         message.setSubject(
-                "Pravin Kitchens - Employee Login OTP"
+                "Pravin KITCHENS & INTERIORS - Employee Login OTP"
         );
 
         message.setText(
                 "Hello Admin,\n\n"
 
                         + "An employee is trying to log in to the "
-                        + "Pravin Kitchens & Interiors "
+                        + "Pravin KITCHENS & INTERIORSS & INTERIORS "
                         + "Quotation Management System.\n\n"
 
                         + "Employee: "
@@ -53,7 +53,7 @@ public class OtpEmailService {
                         + "please ignore this email.\n\n"
 
                         + "Regards,\n"
-                        + "Pravin Kitchens & Interiors\n"
+                        + "Pravin KITCHENS & INTERIORSS & INTERIORS\n"
                         + "Quotation Management System"
         );
 
