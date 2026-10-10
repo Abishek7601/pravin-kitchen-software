@@ -64,6 +64,7 @@ a {
 }
 
 .brand-icon {
+    overflow: hidden;
     width: 42px;
     height: 42px;
     display: grid;
