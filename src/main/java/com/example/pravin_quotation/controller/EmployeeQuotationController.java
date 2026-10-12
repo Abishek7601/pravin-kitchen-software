@@ -5,6 +5,7 @@ import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.model.Item;
 import com.example.pravin_quotation.model.Material;
 import com.example.pravin_quotation.model.MaterialOption;
+import com.example.pravin_quotation.model.Pricing;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationCommunication;
@@ -381,13 +382,22 @@ public class EmployeeQuotationController {
             @RequestParam Long materialOptionId) {
 
         try {
+            Quotation quotation = quotationRepository.findById(quotationId).orElse(null);
             BigDecimal rate = quotationCalculationService.resolveItemRate(
                     quotationId,
                     materialOptionId
             );
 
+            String formula = resolveFormula(quotation, materialOptionId, null);
+
             return ResponseEntity.ok(
-                    mapData("success", true, "rate", rate)
+                    mapData(
+                            "success", true,
+                            "rate", rate,
+                            "formula", formula,
+                            "pricingMode", (quotation != null && quotation.getPricingMode() != null)
+                                    ? quotation.getPricingMode().name() : ""
+                    )
             );
 
         } catch (Exception e) {
@@ -395,6 +405,29 @@ public class EmployeeQuotationController {
                     mapData("success", false, "message", e.getMessage())
             );
         }
+    }
+
+    private String resolveFormula(Quotation quotation, Long materialOptionId, String requestedFormula) {
+        if (requestedFormula != null && !requestedFormula.isBlank()) {
+            return com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(requestedFormula);
+        }
+        if (quotation != null && materialOptionId != null && quotation.getPricingMode() != null) {
+            Pricing pricing = pricingRepository
+                    .findByMaterialOptionIdAndPricingMode(
+                            materialOptionId,
+                            quotation.getPricingMode()
+                    ).orElse(null);
+            if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank()) {
+                return com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(pricing.getFormula());
+            }
+        }
+        if (materialOptionId != null) {
+            MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
+            if (mo != null && mo.getFormula() != null && !mo.getFormula().isBlank()) {
+                return com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(mo.getFormula());
+            }
+        }
+        return com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W;
     }
 
 
@@ -753,6 +786,12 @@ public class EmployeeQuotationController {
             @RequestParam(required = false)
             String specification,
 
+            @RequestParam(required = false)
+            String formula,
+
+            @RequestParam(required = false, defaultValue = "ft")
+            String dimensionUnit,
+
             Authentication authentication
     ) {
 
@@ -765,7 +804,26 @@ public class EmployeeQuotationController {
                         employee
                 );
 
+        String resolvedFormula =
+                resolveFormula(quotation, materialOptionId, formula);
+
+        // Pad width and height lists if needed
+        int sizeCount = lengthValue != null ? lengthValue.size() : 0;
+        if (widthValue == null) {
+            widthValue = new ArrayList<>();
+        }
+        while (widthValue.size() < sizeCount) {
+            widthValue.add(BigDecimal.ZERO);
+        }
+        if (heightValue == null) {
+            heightValue = new ArrayList<>();
+        }
+        while (heightValue.size() < sizeCount) {
+            heightValue.add(BigDecimal.ZERO);
+        }
+
         validateSizeLists(
+                resolvedFormula,
                 lengthValue,
                 widthValue,
                 heightValue
@@ -863,9 +921,6 @@ public class EmployeeQuotationController {
 
         validateRate(rate);
 
-        String formula =
-                "(L + W) × H / 144";
-
         BigDecimal totalSqft =
                 BigDecimal.ZERO;
 
@@ -884,17 +939,13 @@ public class EmployeeQuotationController {
         BigDecimal firstHeight =
                 heightValue.get(0);
 
-        validateDimensions(
-                firstLength,
-                firstWidth,
-                firstHeight
-        );
-
         BigDecimal firstSqft =
                 quotationItemService.calculateSqft(
+                        resolvedFormula,
                         firstLength,
                         firstWidth,
-                        firstHeight
+                        firstHeight,
+                        dimensionUnit
                 );
 
         BigDecimal firstAmount =
@@ -946,7 +997,7 @@ public class EmployeeQuotationController {
                         rate,
                         firstAmount,
                         firstOfferPrice,
-                        formula,
+                        resolvedFormula,
                         finalSpecification
                 );
 
@@ -957,7 +1008,8 @@ public class EmployeeQuotationController {
                         firstWidth,
                         firstHeight,
                         firstOfferPrice,
-                        1
+                        1,
+                        dimensionUnit
                 );
 
         quotationItem.addSize(
@@ -977,17 +1029,13 @@ public class EmployeeQuotationController {
             BigDecimal height =
                     heightValue.get(i);
 
-            validateDimensions(
-                    length,
-                    width,
-                    height
-            );
-
             BigDecimal sqft =
                     quotationItemService.calculateSqft(
+                            resolvedFormula,
                             length,
                             width,
-                            height
+                            height,
+                            dimensionUnit
                     );
 
             BigDecimal amount =
@@ -1024,7 +1072,8 @@ public class EmployeeQuotationController {
                             width,
                             height,
                             finalOffer,
-                            i + 1
+                            i + 1,
+                            dimensionUnit
                     );
 
             quotationItem.addSize(
@@ -1364,6 +1413,17 @@ public class EmployeeQuotationController {
                 "quotationBranch",
                 employee.getBranch() != null ? employee.getBranch().getName() : "Not Assigned"
         );
+
+        String formula = "L × W";
+        if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank()) {
+            formula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(pricing.getFormula());
+        } else {
+            MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
+            if (mo != null && mo.getFormula() != null && !mo.getFormula().isBlank()) {
+                formula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(mo.getFormula());
+            }
+        }
+        result.put("formula", formula);
 
         return result;
     }
@@ -1759,6 +1819,12 @@ public class EmployeeQuotationController {
             @RequestParam(required = false)
             String specification,
 
+            @RequestParam(required = false)
+            String formula,
+
+            @RequestParam(required = false, defaultValue = "ft")
+            String dimensionUnit,
+
             Authentication authentication
     ) {
 
@@ -1777,10 +1843,19 @@ public class EmployeeQuotationController {
                         quotation
                 );
 
+        String resolvedFormula =
+                resolveFormula(quotation, materialOptionId, formula);
+
+        BigDecimal safeWidth =
+                widthValue != null ? widthValue : BigDecimal.ZERO;
+        BigDecimal safeHeight =
+                heightValue != null ? heightValue : BigDecimal.ZERO;
+
         validateDimensions(
+                resolvedFormula,
                 lengthValue,
-                widthValue,
-                heightValue
+                safeWidth,
+                safeHeight
         );
 
         WorkCategory workCategory =
@@ -1854,9 +1929,11 @@ public class EmployeeQuotationController {
 
         BigDecimal calculatedSqft =
                 quotationItemService.calculateSqft(
+                        resolvedFormula,
                         lengthValue,
-                        widthValue,
-                        heightValue
+                        safeWidth,
+                        safeHeight,
+                        dimensionUnit
                 );
 
         BigDecimal amount =
@@ -1870,9 +1947,6 @@ public class EmployeeQuotationController {
                         amount,
                         offerPrice
                 );
-
-        String formula =
-                "(L + W) × H / 144";
 
         String finalSpecification =
                 specification != null
@@ -1890,13 +1964,13 @@ public class EmployeeQuotationController {
                         materialOption,
                         itemDescription,
                         lengthValue,
-                        widthValue,
-                        heightValue,
+                        safeWidth,
+                        safeHeight,
                         calculatedSqft,
                         resolvedRate,
                         amount,
                         finalOfferPrice,
-                        formula,
+                        resolvedFormula,
                         finalSpecification
                 );
 
@@ -1908,10 +1982,11 @@ public class EmployeeQuotationController {
                 quotationItemSizeService.create(
                         quotationItem,
                         lengthValue,
-                        widthValue,
-                        heightValue,
+                        safeWidth,
+                        safeHeight,
                         finalOfferPrice,
-                        1
+                        1,
+                        dimensionUnit
                 );
 
         quotationItem.addSize(
@@ -2061,6 +2136,12 @@ public class EmployeeQuotationController {
             @RequestParam(required = false)
             String specification,
 
+            @RequestParam(required = false)
+            String formula,
+
+            @RequestParam(required = false, defaultValue = "ft")
+            String dimensionUnit,
+
             Authentication authentication
     ) {
 
@@ -2098,10 +2179,25 @@ public class EmployeeQuotationController {
             );
         }
 
+        String resolvedFormula =
+                resolveFormula(
+                        quotation,
+                        materialOptionId,
+                        formula != null && !formula.isBlank()
+                                ? formula
+                                : quotationItem.getFormula()
+                );
+
+        BigDecimal safeWidth =
+                widthValue != null ? widthValue : BigDecimal.ZERO;
+        BigDecimal safeHeight =
+                heightValue != null ? heightValue : BigDecimal.ZERO;
+
         validateDimensions(
+                resolvedFormula,
                 lengthValue,
-                widthValue,
-                heightValue
+                safeWidth,
+                safeHeight
         );
 
         WorkCategory workCategory =
@@ -2171,9 +2267,11 @@ public class EmployeeQuotationController {
 
         BigDecimal calculatedSqft =
                 quotationItemService.calculateSqft(
+                        resolvedFormula,
                         lengthValue,
-                        widthValue,
-                        heightValue
+                        safeWidth,
+                        safeHeight,
+                        dimensionUnit
                 );
 
         BigDecimal amount =
@@ -2187,9 +2285,6 @@ public class EmployeeQuotationController {
                         amount,
                         offerPrice
                 );
-
-        String formula =
-                "(L + W) × H / 144";
 
         String finalSpecification =
                 specification != null
@@ -2206,13 +2301,13 @@ public class EmployeeQuotationController {
                 materialOption,
                 itemDescription,
                 lengthValue,
-                widthValue,
-                heightValue,
+                safeWidth,
+                safeHeight,
                 calculatedSqft,
                 resolvedRate,
                 amount,
                 finalOfferPrice,
-                formula,
+                resolvedFormula,
                 finalSpecification
         );
 
@@ -3108,37 +3203,25 @@ public class EmployeeQuotationController {
     // ============================================================
 
     private void validateDimensions(
-
+            String formula,
             BigDecimal length,
-
             BigDecimal width,
-
             BigDecimal height
     ) {
+        com.example.pravin_quotation.util.CalculationFormula.validateDimensions(
+                formula,
+                length,
+                width,
+                height
+        );
+    }
 
-        if (length == null
-                || width == null
-                || height == null) {
-
-            throw new IllegalArgumentException(
-                    "Length, Width and Height are required."
-            );
-        }
-
-        if (length.compareTo(
-                BigDecimal.ZERO
-        ) <= 0
-                || width.compareTo(
-                BigDecimal.ZERO
-        ) <= 0
-                || height.compareTo(
-                BigDecimal.ZERO
-        ) <= 0) {
-
-            throw new IllegalArgumentException(
-                    "Length, Width and Height must be greater than zero."
-            );
-        }
+    private void validateDimensions(
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height
+    ) {
+        validateDimensions(null, length, width, height);
     }
 
 
@@ -3147,35 +3230,34 @@ public class EmployeeQuotationController {
     // ============================================================
 
     private void validateSizeLists(
-
+            String formula,
             List<BigDecimal> lengthValue,
-
             List<BigDecimal> widthValue,
-
             List<BigDecimal> heightValue
     ) {
 
         if (lengthValue == null
-                || widthValue == null
-                || heightValue == null
-                || lengthValue.isEmpty()
-                || widthValue.isEmpty()
-                || heightValue.isEmpty()) {
+                || lengthValue.isEmpty()) {
 
             throw new IllegalArgumentException(
                     "Please add at least one size."
             );
         }
 
-        if (lengthValue.size()
-                != widthValue.size()
-                || lengthValue.size()
-                != heightValue.size()) {
-
-            throw new IllegalArgumentException(
-                    "Invalid size information."
-            );
+        for (int i = 0; i < lengthValue.size(); i++) {
+            BigDecimal l = lengthValue.get(i);
+            BigDecimal w = (widthValue != null && i < widthValue.size()) ? widthValue.get(i) : null;
+            BigDecimal h = (heightValue != null && i < heightValue.size()) ? heightValue.get(i) : null;
+            validateDimensions(formula, l, w, h);
         }
+    }
+
+    private void validateSizeLists(
+            List<BigDecimal> lengthValue,
+            List<BigDecimal> widthValue,
+            List<BigDecimal> heightValue
+    ) {
+        validateSizeLists(null, lengthValue, widthValue, heightValue);
     }
 
 

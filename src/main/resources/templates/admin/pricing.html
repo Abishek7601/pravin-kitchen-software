@@ -336,6 +336,10 @@
           </th>
 
           <th>
+            Formula
+          </th>
+
+          <th>
             Status
           </th>
 
@@ -574,6 +578,21 @@
                                     : 'N/A'}">
 
                             SQFT
+
+                        </span>
+
+          </td>
+
+          <!-- FORMULA -->
+
+          <td>
+
+                        <span
+                                class="unit-badge"
+                                style="background: #e0f5ec; color: #087f69; font-weight: 700;"
+                                th:text="${pricing.formula != null ? pricing.formula : (pricing.materialOption != null && pricing.materialOption.formula != null ? pricing.materialOption.formula : 'L × W')}">
+
+                            L × W
 
                         </span>
 

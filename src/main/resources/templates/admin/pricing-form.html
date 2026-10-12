@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
@@ -6,11 +5,117 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'} + ' | Pravin KITCHENS & INTERIORS'">
-    Pricing Form | Pravin KITCHENS & INTERIORS
+  <title th:text="(${isEdit != null and isEdit} ? 'Edit Master Data Configuration' : 'Configure Master Data') + ' | Pravin KITCHENS &amp; INTERIORS'">
+    Configure Master Data | Pravin KITCHENS &amp; INTERIORS
   </title>
 
   <link rel="stylesheet" th:href="@{/css/pricing-form.css}">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    .form-section-title {
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--peacock-dark, #063b35);
+      margin: 25px 0 15px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--peacock-light, #e0f5ec);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: -0.2px;
+    }
+
+    .form-section-title:first-of-type {
+      margin-top: 5px;
+    }
+
+    .badge-optional {
+      font-size: 11px;
+      font-weight: 600;
+      background: #f0f2f5;
+      color: #6c757d;
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-left: 6px;
+      letter-spacing: normal;
+    }
+
+    .formula-radio-group {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 14px;
+      margin-top: 8px;
+    }
+
+    .formula-radio-card {
+      border: 1.5px solid var(--border-color, #dfeae5);
+      border-radius: 12px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: #ffffff;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+    }
+
+    .formula-radio-card:hover {
+      border-color: var(--peacock-green, #087f69);
+      background: var(--peacock-pale, #f0faf5);
+    }
+
+    .formula-radio-card.selected {
+      border-color: var(--peacock-green, #087f69);
+      background: var(--peacock-light, #e0f5ec);
+      box-shadow: 0 4px 12px rgba(8, 127, 105, 0.12);
+    }
+
+    .formula-radio-card input[type="radio"] {
+      margin-top: 3px;
+      cursor: pointer;
+    }
+
+    .formula-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--peacock-dark, #063b35);
+      margin-bottom: 4px;
+    }
+
+    .formula-sub {
+      font-size: 12px;
+      color: var(--text-muted, #71847b);
+      line-height: 1.45;
+    }
+
+    .formula-alert {
+      margin-top: 14px;
+      padding: 12px 16px;
+      background: #fff8e6;
+      border: 1px solid #ffd591;
+      border-radius: 8px;
+      font-size: 13px;
+      color: #ad4e00;
+      display: none;
+      line-height: 1.5;
+    }
+
+    .formula-alert code {
+      background: rgba(0, 0, 0, 0.05);
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .validation-hint {
+      display: none;
+      color: #b42318;
+      font-size: 12px;
+      margin-top: 4px;
+      font-weight: 500;
+    }
+  </style>
 </head>
 
 <body>
@@ -18,31 +123,40 @@
 <div class="page-container">
 
   <!-- =========================
-       HEADER
+       PAGE HEADER
   ========================== -->
-  <div class="page-header">
+  <div class="page-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
 
     <div>
-
-      <h1 th:text="${pricing.id == null ? 'Add Pricing' : 'Edit Pricing'}">
-        Add Pricing
+      <span class="page-eyebrow" style="display: flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #006b63; margin-bottom: 6px;">
+        <img th:src="@{/images/company-logo.png}" alt="Pravin Kitchens" style="height: 32px; width: auto; object-fit: contain;">
+        Pravin KITCHENS &amp; INTERIORS
+      </span>
+      <h1 th:text="(${isEdit != null and isEdit} ? 'Edit Master Data Configuration' : 'Configure Master Data')">
+        Configure Master Data
       </h1>
-
-      <p>
-        Configure material pricing for quotation calculations.
+      <p style="margin: 0; color: #71847b;">
+        Configure work category, division, material, specifications, pricing, and calculation formula in one unified workflow.
       </p>
+    </div>
 
-    <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">
-        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-            <span>← Back</span>
-        </button>
-        <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-            <span>⌂ Dashboard</span>
-        </a>
+    <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+      <button type="button" class="btn btn-cancel" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; text-decoration: none;">
+        <span>← Back</span>
+      </button>
+      <a th:href="@{/admin/pricing}" class="btn btn-cancel" style="display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none;">
+        <span>Pricing List</span>
+      </a>
+      <a th:href="@{/admin/dashboard}" class="btn btn-primary" style="display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; min-width: auto;">
+        <span>⌂ Dashboard</span>
+      </a>
     </div>
 
   </div>
 
+  <!-- ALERTS -->
+  <div th:if="${errorMessage}" class="alert alert-danger" style="padding: 12px 16px; background: #fdeceb; color: #b42318; border-radius: 8px; margin-bottom: 20px; border: 1px solid #fecdca;" th:text="${errorMessage}"></div>
+  <div th:if="${successMessage}" class="alert alert-success" style="padding: 12px 16px; background: #e0f5ec; color: #087f69; border-radius: 8px; margin-bottom: 20px; border: 1px solid #b9d8cc;" th:text="${successMessage}"></div>
 
   <!-- =========================
        FORM CARD
@@ -50,345 +164,259 @@
   <div class="form-card">
 
     <div class="form-header">
-
       <div class="form-icon">
-        💰
+        ⚙️
       </div>
-
       <div>
-
-        <h2>Pricing Details</h2>
-
-        <p>
-          Set the rate and pricing mode for a material option.
+        <h2 th:text="(${isEdit != null and isEdit} ? 'Edit Master Data &amp; Pricing' : 'Add New Master Data &amp; Pricing')">
+          Master Data &amp; Pricing Configuration
+        </h2>
+        <p th:text="(${isEdit != null and isEdit} ? 'Update existing master data names, calculation formula, or pricing rate.' : 'Enter master data directly. Formulated items and pricing are automatically made available to quotation builders.')">
+          Enter master data directly. Configured formulas and prices are automatically reused by quotation builders.
         </p>
-
       </div>
-
     </div>
 
+    <!-- FORM -->
+    <form th:action="(${isEdit != null and isEdit and pricing.id != null} ? '/admin/pricing/update/' + ${pricing.id} : '/admin/pricing/save')"
+          method="post"
+          class="pricing-form"
+          id="unifiedForm"
+          novalidate
+          onsubmit="return validateMasterDataForm();">
 
-    <!-- =========================
-         PRICING FORM
-    ========================== -->
+      <!-- Hidden Entity IDs for Edit Workflow -->
+      <input type="hidden" th:if="${pricing.id != null}" id="pricingId" name="pricingId" th:value="${pricing.id}">
+      <input type="hidden" id="workCategoryId" name="workCategoryId" th:value="${selectedCategory != null ? selectedCategory.id : ''}">
+      <input type="hidden" id="divisionId" name="divisionId" th:value="${selectedDivision != null ? selectedDivision.id : ''}">
+      <input type="hidden" id="materialId" name="materialId" th:value="${selectedMaterial != null ? selectedMaterial.id : ''}">
+      <input type="hidden" id="materialOptionId" name="materialOptionId" th:value="${selectedOption != null ? selectedOption.id : ''}">
 
-    <form
-            th:action="${pricing.id == null}
-                    ? @{/admin/pricing/save}
-                    : @{/admin/pricing/update/{id}(id=${pricing.id})}"
-            method="post"
-            class="pricing-form"
-            onsubmit="return validatePricingForm();">
-
-      <!-- CSRF TOKEN -->
-      <input
-              type="hidden"
-              th:name="${_csrf.parameterName}"
-              th:value="${_csrf.token}">
-
-
-      <!-- =========================
-           MATERIAL OPTION
-      ========================== -->
-
-      <div class="form-group">
-
-        <label for="materialOptionId">
-
-          Material Option
-
-          <span class="required">*</span>
-
-        </label>
-
-        <select
-                id="materialOptionId"
-                name="materialOptionId"
-                required>
-
-          <option value="">
-            Select Material Option
-          </option>
-
-          <option
-                  th:each="option : ${materialOptions}"
-                  th:value="${option.id}"
-                  th:selected="${pricing.materialOption != null
-                                and pricing.materialOption.id == option.id}"
-                  th:text="${option.material != null
-                                ? option.material.name + ' - ' + option.name
-                                : option.name}">
-
-            Marine Ply - 18mm
-
-          </option>
-
-        </select>
-
-        <small>
-          Select the material option for which this price applies.
-        </small>
-
+      <!-- =========================================================
+           SECTION 1: MASTER DETAILS (DIRECT TEXT INPUTS)
+      ========================================================== -->
+      <div class="form-section-title">
+        <span>🏷️ 1. Master Details</span>
       </div>
-
-
-      <!-- =========================
-           PRICING MODE
-      ========================== -->
-
-      <div class="form-group">
-
-        <label for="pricingMode">
-
-          Pricing Mode
-
-          <span class="required">*</span>
-
-        </label>
-
-        <select
-                id="pricingMode"
-                name="pricingMode"
-                required>
-
-          <option value="">
-            Select Pricing Mode
-          </option>
-
-          <option
-                  th:each="mode : ${pricingModes}"
-                  th:value="${mode}"
-                  th:selected="${pricing.pricingMode == mode}"
-                  th:text="${mode}">
-
-            PREMIUM
-
-          </option>
-
-        </select>
-
-        <small>
-          Choose the pricing grade used during quotation creation.
-        </small>
-
-      </div>
-
-
-      <!-- =========================
-           RATE + UNIT
-      ========================== -->
 
       <div class="form-row">
 
+        <!-- WORK CATEGORY (TEXT INPUT, REQUIRED) -->
+        <div class="form-group">
+          <label for="workCategoryName">
+            Work Category <span class="required">*</span>
+          </label>
+          <input type="text"
+                 id="workCategoryName"
+                 name="workCategoryName"
+                 th:value="${categoryName}"
+                 placeholder="e.g. Modular Kitchen, Wardrobe, Furniture"
+                 autocomplete="off"
+                 required>
+          <small>Enter primary work category (e.g. Modular Kitchen, Wardrobe).</small>
+          <div id="hintCategory" class="validation-hint">Please enter a Work Category name.</div>
+        </div>
+
+        <!-- DIVISION (TEXT INPUT, REQUIRED) -->
+        <div class="form-group">
+          <label for="divisionName">
+            Division <span class="required">*</span>
+          </label>
+          <input type="text"
+                 id="divisionName"
+                 name="divisionName"
+                 th:value="${divisionName}"
+                 placeholder="e.g. Base Unit Cabinetry, Wall Unit, Tall Unit"
+                 autocomplete="off"
+                 required>
+          <small>Enter division under this work category.</small>
+          <div id="hintDivision" class="validation-hint">Please enter a Division name.</div>
+        </div>
+
+      </div>
+
+      <div class="form-row">
+
+        <!-- MATERIAL (TEXT INPUT, REQUIRED) -->
+        <div class="form-group">
+          <label for="materialName">
+            Material <span class="required">*</span>
+          </label>
+          <input type="text"
+                 id="materialName"
+                 name="materialName"
+                 th:value="${materialName}"
+                 placeholder="e.g. Marine Ply 710, HDHMR Board, Pre-Lam MDF"
+                 autocomplete="off"
+                 required>
+          <small>Enter base material name (e.g. Marine Ply 710, HDHMR Board).</small>
+          <div id="hintMaterial" class="validation-hint">Please enter a Material name.</div>
+        </div>
+
+        <!-- MATERIAL OPTION / SPECIFICATION (TEXT INPUT, OPTIONAL) -->
+        <div class="form-group">
+          <label for="materialOptionName">
+            Material Option / Specification <span class="badge-optional">Optional</span>
+          </label>
+          <input type="text"
+                 id="materialOptionName"
+                 name="materialOptionName"
+                 th:value="${specificationName}"
+                 placeholder="e.g. 18mm BWP, Acrylic Finish (Leave blank if not applicable)"
+                 autocomplete="off">
+          <small>Optional thickness, grade, or finish specification. Leave blank for standard material.</small>
+        </div>
+
+      </div>
+
+      <!-- =========================================================
+           SECTION 2: CALCULATION FORMULA (THE 3 CANONICAL FORMULAS)
+      ========================================================== -->
+      <div class="form-section-title">
+        <span>📐 2. Calculation Formula</span>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 20px;">
+        <p style="margin: 0 0 10px; font-size: 13px; color: #71847b;">
+          Select the calculation formula applied when computing area in quotation builders:
+        </p>
+
+        <div class="formula-radio-group">
+
+          <!-- FORMULA 1: L × W -->
+          <label class="formula-radio-card" id="cardF1">
+            <input type="radio" name="formula" value="L × W"
+                   th:checked="${pricing.formula == null || pricing.formula == 'L × W' || pricing.formula == 'L x W'}"
+                   onchange="updateFormulaSelection()">
+            <div>
+              <div class="formula-title">Formula 1: Length × Width ("L × W")</div>
+              <div class="formula-sub">Evaluates as (L × W) / 144 for inches. Standard 2D surface area (e.g. shutter, countertop).</div>
+            </div>
+          </label>
+
+          <!-- FORMULA 2: (L + W) × H -->
+          <label class="formula-radio-card" id="cardF2">
+            <input type="radio" name="formula" value="(L + W) × H"
+                   th:checked="${pricing.formula != null && (pricing.formula.contains('+') || pricing.formula.contains('W × H') || pricing.formula.contains('W x H'))}"
+                   onchange="updateFormulaSelection()">
+            <div>
+              <div class="formula-title">Formula 2: (Length + Width) × Height ("(L + W) × H")</div>
+              <div class="formula-sub">Evaluates as ((L + W) × H) / 144 for inches. Three-dimensional cabinetry or perimeter calculation.</div>
+            </div>
+          </label>
+
+          <!-- FORMULA 3: L × H -->
+          <label class="formula-radio-card" id="cardF3">
+            <input type="radio" name="formula" value="L × H"
+                   th:checked="${pricing.formula != null && (pricing.formula == 'L × H' || pricing.formula == 'L x H')}"
+                   onchange="updateFormulaSelection()">
+            <div>
+              <div class="formula-title">Formula 3: Length × Height ("L × H")</div>
+              <div class="formula-sub">Evaluates as (L × H) / 144 for inches. Vertical panel, backboard, or elevation area.</div>
+            </div>
+          </label>
+
+        </div>
+
+        <!-- FORMULA 2 CALCULATION NOTICE -->
+        <div id="formula2Alert" class="formula-alert">
+          <strong>ℹ️ Formula 2 Calculation Rule:</strong>
+          Formula 2 evaluates as <code>(Length + Width) × Height</code>. When dimensions are entered in inches, square feet is calculated using <code>((Length + Width) × Height) / 144</code>.
+        </div>
+
+      </div>
+
+      <!-- =========================================================
+           SECTION 3: PRICING DETAILS & MODE
+      ========================================================== -->
+      <div class="form-section-title">
+        <span>💰 3. Pricing &amp; Rate</span>
+      </div>
+
+      <div class="form-row">
+
+        <!-- PRICING MODE -->
+        <div class="form-group">
+          <label for="pricingMode">
+            Pricing Mode <span class="required">*</span>
+          </label>
+          <select id="pricingMode" name="pricingMode" required>
+            <option th:each="mode : ${pricingModes}"
+                    th:value="${mode}"
+                    th:text="${mode}"
+                    th:selected="${pricing.pricingMode != null ? pricing.pricingMode == mode : mode.name() == 'MIDDLE'}">
+              MIDDLE
+            </option>
+          </select>
+          <small>Pricing tier applied during quotation creation (Economy, Middle, Premium).</small>
+        </div>
 
         <!-- RATE -->
-
         <div class="form-group">
-
           <label for="rate">
-
-            Rate
-
-            <span class="required">*</span>
-
+            Price / Rate per Sq. Ft. (₹) <span class="required">*</span>
           </label>
-
           <div class="input-with-prefix">
-
-                        <span class="input-prefix">
-                            ₹
-                        </span>
-
-            <input
-                    type="number"
-                    id="rate"
-                    name="rate"
-                    step="0.01"
-                    min="0.01"
-                    max="999999999999.99"
-                    placeholder="Enter rate"
-                    th:value="${pricing.rate}"
-                    required>
-
+            <span class="input-prefix">₹</span>
+            <input type="number"
+                   id="rate"
+                   name="rate"
+                   step="0.01"
+                   min="0.01"
+                   max="999999999"
+                   placeholder="e.g. 150.00"
+                   th:value="${pricing.rate}"
+                   required>
           </div>
-
-          <small>
-            Enter the pricing amount.
-          </small>
-
+          <small>Configured rate per square foot. Must be greater than zero.</small>
+          <div id="hintRate" class="validation-hint">Please enter a valid rate greater than zero.</div>
         </div>
 
+      </div>
+
+      <div class="form-row">
 
         <!-- UNIT -->
-
         <div class="form-group">
-
           <label for="unit">
-
-            Unit
-
-            <span class="required">*</span>
-
+            Unit <span class="required">*</span>
           </label>
-
-          <select
-                  id="unit"
-                  name="unit"
-                  required>
-
-            <option value="">
-              Select Unit
-            </option>
-
-            <option
-                    value="SQFT"
-                    th:selected="${pricing.unit == 'SQFT'}">
-
-              SQFT
-
-            </option>
-
-            <option
-                    value="NOS"
-                    th:selected="${pricing.unit == 'NOS'}">
-
-              NOS
-
-            </option>
-
-            <option
-                    value="RUNNING_FEET"
-                    th:selected="${pricing.unit == 'RUNNING_FEET'}">
-
-              Running Feet
-
-            </option>
-
-            <option
-                    value="LUMP_SUM"
-                    th:selected="${pricing.unit == 'LUMP_SUM'}">
-
-              Lump Sum
-
-            </option>
-
+          <select id="unit" name="unit" required>
+            <option value="SQFT" th:selected="${pricing.unit == null || pricing.unit == 'SQFT'}">SQFT (Square Feet)</option>
+            <option value="NOS" th:selected="${pricing.unit == 'NOS'}">NOS (Numbers)</option>
+            <option value="RUNNING_FEET" th:selected="${pricing.unit == 'RUNNING_FEET'}">Running Feet</option>
+            <option value="LUMP_SUM" th:selected="${pricing.unit == 'LUMP_SUM'}">Lump Sum</option>
           </select>
+          <small>Standard measurement unit (Default: SQFT).</small>
+        </div>
 
-          <small>
-            Select how the rate will be calculated.
-          </small>
-
+        <!-- DESCRIPTION -->
+        <div class="form-group">
+          <label for="description">
+            Description / Specifications <span class="badge-optional">Optional</span>
+          </label>
+          <input type="text"
+                 id="description"
+                 name="description"
+                 placeholder="Optional details, grade specs, or internal notes..."
+                 th:value="${pricing.description}">
+          <small>Optional internal notes or specifications description.</small>
         </div>
 
       </div>
 
-
-      <!-- =========================
-           DESCRIPTION
-      ========================== -->
-
-      <div class="form-group">
-
-        <label for="description">
-
-          Description / Specification
-
-        </label>
-
-        <textarea
-                id="description"
-                name="description"
-                rows="5"
-                maxlength="500"
-                placeholder="Enter pricing specification or additional details..."
-                th:text="${pricing.description}"></textarea>
-
-        <div class="character-info">
-          Maximum 500 characters
-        </div>
-
-      </div>
-
-
-      <!-- =========================
-           PRICING PREVIEW
-      ========================== -->
-
-      <div class="pricing-preview">
-
-        <div class="preview-icon">
-          💡
-        </div>
-
-        <div>
-
-          <h3>
-            Pricing Preview
-          </h3>
-
-          <p>
-
-                        <span id="previewMode">
-                            Pricing Mode
-                        </span>
-
-            <strong> · </strong>
-
-            <span id="previewRate">
-                            ₹ 0.00
-                        </span>
-
-            <strong> / </strong>
-
-            <span id="previewUnit">
-                            Unit
-                        </span>
-
-          </p>
-
-        </div>
-
-      </div>
-
-
-      <!-- =========================
-           ACTIONS
-      ========================== -->
-
-      <div class="form-actions">
-
-        <a
-                th:href="@{/admin/pricing}"
-                class="btn btn-cancel">
-
+      <!-- =========================================================
+           FORM ACTIONS
+      ========================================================== -->
+      <div class="form-actions" style="margin-top: 30px; display: flex; align-items: center; justify-content: flex-end; gap: 12px;">
+        <a th:href="@{/admin/pricing}" class="btn btn-cancel" style="padding: 11px 22px; font-size: 14px; text-decoration: none;">
           Cancel
-
         </a>
-
-
-        <button
-                type="reset"
-                class="btn btn-reset">
-
-          Reset
-
+        <button type="submit" class="btn btn-primary" style="padding: 11px 26px; font-size: 14px; cursor: pointer;">
+          <span th:text="(${isEdit != null and isEdit} ? 'Update Configuration' : 'Save Configuration')">
+            Save Configuration
+          </span>
         </button>
-
-
-        <button
-                type="submit"
-                class="btn btn-primary">
-
-                    <span th:if="${pricing.id == null}">
-                        + Save Pricing
-                    </span>
-
-          <span th:if="${pricing.id != null}">
-                        ✓ Update Pricing
-                    </span>
-
-        </button>
-
       </div>
 
     </form>
@@ -397,273 +425,91 @@
 
 </div>
 
-
-<!-- =========================
-     JAVASCRIPT
-========================== -->
-
 <script>
-
-  /*
-   * Update pricing preview
-   */
-  function updatePreview() {
-
-      const modeElement =
-          document.getElementById("pricingMode");
-
-      const rateElement =
-          document.getElementById("rate");
-
-      const unitElement =
-          document.getElementById("unit");
-
-      const previewMode =
-          document.getElementById("previewMode");
-
-      const previewRate =
-          document.getElementById("previewRate");
-
-      const previewUnit =
-          document.getElementById("previewUnit");
-
-
-      if (!modeElement || !rateElement || !unitElement) {
-          return;
-      }
-
-
-      const mode =
-          modeElement.value;
-
-      const rate =
-          rateElement.value;
-
-      const unit =
-          unitElement.value;
-
-
-      /*
-       * Pricing Mode
-       */
-      previewMode.textContent =
-          mode || "Pricing Mode";
-
-
-      /*
-       * Rate
-       */
-      if (rate !== "" && !isNaN(parseFloat(rate))) {
-
-          previewRate.textContent =
-              "₹ " + parseFloat(rate).toFixed(2);
-
+  function updateFormulaSelection() {
+    const radios = document.querySelectorAll('input[name="formula"]');
+    let selectedVal = 'L × W';
+    radios.forEach(r => {
+      const card = r.closest('.formula-radio-card');
+      if (r.checked) {
+        selectedVal = r.value;
+        if (card) card.classList.add('selected');
       } else {
-
-          previewRate.textContent =
-              "₹ 0.00";
-
+        if (card) card.classList.remove('selected');
       }
+    });
 
-
-      /*
-       * Unit
-       */
-      previewUnit.textContent =
-          unit || "Unit";
-
+    const alertBox = document.getElementById('formula2Alert');
+    if (alertBox) {
+      if (selectedVal.includes('+') || selectedVal.includes('W × H')) {
+        alertBox.style.display = 'block';
+      } else {
+        alertBox.style.display = 'none';
+      }
+    }
   }
 
+  function validateMasterDataForm() {
+    let isValid = true;
 
-  /*
-   * Validate form before submit
-   */
-  function validatePricingForm() {
+    // 1. Work Category
+    const workCatInput = document.getElementById('workCategoryName');
+    const hintCat = document.getElementById('hintCategory');
+    if (!workCatInput.value || !workCatInput.value.trim()) {
+      workCatInput.style.borderColor = '#d83b30';
+      if (hintCat) hintCat.style.display = 'block';
+      isValid = false;
+    } else {
+      workCatInput.style.borderColor = '';
+      if (hintCat) hintCat.style.display = 'none';
+    }
 
-      const materialOption =
-          document.getElementById("materialOptionId").value;
+    // 2. Division
+    const divInput = document.getElementById('divisionName');
+    const hintDiv = document.getElementById('hintDivision');
+    if (!divInput.value || !divInput.value.trim()) {
+      divInput.style.borderColor = '#d83b30';
+      if (hintDiv) hintDiv.style.display = 'block';
+      isValid = false;
+    } else {
+      divInput.style.borderColor = '';
+      if (hintDiv) hintDiv.style.display = 'none';
+    }
 
-      const pricingMode =
-          document.getElementById("pricingMode").value;
+    // 3. Material
+    const matInput = document.getElementById('materialName');
+    const hintMat = document.getElementById('hintMaterial');
+    if (!matInput.value || !matInput.value.trim()) {
+      matInput.style.borderColor = '#d83b30';
+      if (hintMat) hintMat.style.display = 'block';
+      isValid = false;
+    } else {
+      matInput.style.borderColor = '';
+      if (hintMat) hintMat.style.display = 'none';
+    }
 
-      const rateValue =
-          document.getElementById("rate").value;
+    // Material Option / Specification is OPTIONAL - no validation check required!
 
-      const unit =
-          document.getElementById("unit").value;
+    // 4. Rate
+    const rateInput = document.getElementById('rate');
+    const hintRate = document.getElementById('hintRate');
+    const rateVal = parseFloat(rateInput.value);
+    if (isNaN(rateVal) || rateVal <= 0) {
+      rateInput.style.borderColor = '#d83b30';
+      if (hintRate) hintRate.style.display = 'block';
+      isValid = false;
+    } else {
+      rateInput.style.borderColor = '';
+      if (hintRate) hintRate.style.display = 'none';
+    }
 
-
-      const rate =
-          parseFloat(rateValue);
-
-
-      /*
-       * Material Option validation
-       */
-      if (!materialOption) {
-
-          alert("Please select a material option.");
-
-          document
-              .getElementById("materialOptionId")
-              .focus();
-
-          return false;
-
-      }
-
-
-      /*
-       * Pricing Mode validation
-       */
-      if (!pricingMode) {
-
-          alert("Please select a pricing mode.");
-
-          document
-              .getElementById("pricingMode")
-              .focus();
-
-          return false;
-
-      }
-
-
-      /*
-       * Rate validation
-       */
-      if (
-          rateValue === "" ||
-          isNaN(rate) ||
-          rate <= 0
-      ) {
-
-          alert(
-              "Please enter a valid rate greater than 0."
-          );
-
-          document
-              .getElementById("rate")
-              .focus();
-
-          return false;
-
-      }
-
-
-      /*
-       * Unit validation
-       */
-      if (!unit) {
-
-          alert("Please select a unit.");
-
-          document
-              .getElementById("unit")
-              .focus();
-
-          return false;
-
-      }
-
-
-      /*
-       * Everything is valid
-       */
-      return true;
-
+    return isValid;
   }
 
-
-  /*
-   * Update preview whenever values change
-   */
-  document.addEventListener(
-      "DOMContentLoaded",
-      function () {
-
-          const pricingMode =
-              document.getElementById("pricingMode");
-
-          const rate =
-              document.getElementById("rate");
-
-          const unit =
-              document.getElementById("unit");
-
-
-          if (pricingMode) {
-
-              pricingMode.addEventListener(
-                  "change",
-                  updatePreview
-              );
-
-          }
-
-
-          if (rate) {
-
-              rate.addEventListener(
-                  "input",
-                  updatePreview
-              );
-
-          }
-
-
-          if (unit) {
-
-              unit.addEventListener(
-                  "change",
-                  updatePreview
-              );
-
-          }
-
-
-          /*
-           * Initial preview
-           *
-           * Important for Edit Pricing.
-           * Existing values will immediately appear
-           * in the preview.
-           */
-          updatePreview();
-
-
-          /*
-           * Reset button
-           *
-           * Native reset happens first,
-           * then preview is updated.
-           */
-          const form =
-              document.querySelector(".pricing-form");
-
-          if (form) {
-
-              form.addEventListener(
-                  "reset",
-                  function () {
-
-                      setTimeout(
-                          updatePreview,
-                          50
-                      );
-
-                  }
-              );
-
-          }
-
-      }
-  );
-
+  document.addEventListener('DOMContentLoaded', function() {
+    updateFormulaSelection();
+  });
 </script>
 
 </body>
-
 </html>
-
-

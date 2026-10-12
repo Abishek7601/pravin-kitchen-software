@@ -25,6 +25,9 @@ public class MaterialOption {
     @Column(length = 500)
     private String description;
 
+    @Column(name = "formula", length = 100)
+    private String formula;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
@@ -95,6 +98,14 @@ public class MaterialOption {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getFormula() {
+        return formula;
+    }
+
+    public void setFormula(String formula) {
+        this.formula = formula;
     }
 
     public Material getMaterial() {

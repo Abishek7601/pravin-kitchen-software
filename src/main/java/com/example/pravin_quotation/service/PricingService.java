@@ -1,11 +1,8 @@
 package com.example.pravin_quotation.service;
 
-import com.example.pravin_quotation.model.MaterialOption;
-import com.example.pravin_quotation.model.Pricing;
-import com.example.pravin_quotation.model.PricingMode;
-import com.example.pravin_quotation.repository.DistrictPricingRepository;
-import com.example.pravin_quotation.repository.MaterialOptionRepository;
-import com.example.pravin_quotation.repository.PricingRepository;
+import com.example.pravin_quotation.model.*;
+import com.example.pravin_quotation.repository.*;
+import com.example.pravin_quotation.util.CalculationFormula;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
@@ -18,15 +15,27 @@ public class PricingService {
     private final PricingRepository pricingRepository;
     private final MaterialOptionRepository materialOptionRepository;
     private final DistrictPricingRepository districtPricingRepository;
+    private final WorkCategoryRepository workCategoryRepository;
+    private final DivisionRepository divisionRepository;
+    private final ItemRepository itemRepository;
+    private final MaterialRepository materialRepository;
 
     public PricingService(
             PricingRepository pricingRepository,
             MaterialOptionRepository materialOptionRepository,
-            DistrictPricingRepository districtPricingRepository
+            DistrictPricingRepository districtPricingRepository,
+            WorkCategoryRepository workCategoryRepository,
+            DivisionRepository divisionRepository,
+            ItemRepository itemRepository,
+            MaterialRepository materialRepository
     ) {
         this.pricingRepository = pricingRepository;
         this.materialOptionRepository = materialOptionRepository;
         this.districtPricingRepository = districtPricingRepository;
+        this.workCategoryRepository = workCategoryRepository;
+        this.divisionRepository = divisionRepository;
+        this.itemRepository = itemRepository;
+        this.materialRepository = materialRepository;
     }
 
     public List<Pricing> getAllPricing() {
@@ -77,6 +86,17 @@ public class PricingService {
             String unit,
             String description
     ) {
+        return createPricing(materialOptionId, pricingMode, rate, unit, CalculationFormula.FORMULA_L_X_W, description);
+    }
+
+    public Pricing createPricing(
+            Long materialOptionId,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
+            String description
+    ) {
 
         validateMaterialOption(materialOptionId);
         validatePricingMode(pricingMode);
@@ -100,12 +120,17 @@ public class PricingService {
             );
         }
 
+        String normFormula = CalculationFormula.normalizeFormula(formula);
+        materialOption.setFormula(normFormula);
+        materialOptionRepository.save(materialOption);
+
         Pricing pricing = new Pricing();
 
         pricing.setMaterialOption(materialOption);
         pricing.setPricingMode(pricingMode);
         pricing.setRate(rate);
         pricing.setUnit(unit.trim().toUpperCase());
+        pricing.setFormula(normFormula);
         pricing.setDescription(cleanValue(description));
         pricing.setActive(true);
 
@@ -118,6 +143,18 @@ public class PricingService {
             PricingMode pricingMode,
             BigDecimal rate,
             String unit,
+            String description
+    ) {
+        return updatePricing(id, materialOptionId, pricingMode, rate, unit, CalculationFormula.FORMULA_L_X_W, description);
+    }
+
+    public Pricing updatePricing(
+            Long id,
+            Long materialOptionId,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
             String description
     ) {
 
@@ -146,10 +183,191 @@ public class PricingService {
             );
         }
 
+        String normFormula = CalculationFormula.normalizeFormula(formula);
+        materialOption.setFormula(normFormula);
+        materialOptionRepository.save(materialOption);
+
         pricing.setMaterialOption(materialOption);
         pricing.setPricingMode(pricingMode);
         pricing.setRate(rate);
         pricing.setUnit(unit.trim().toUpperCase());
+        pricing.setFormula(normFormula);
+        pricing.setDescription(cleanValue(description));
+
+        return pricingRepository.save(pricing);
+    }
+
+    /**
+     * Unified Master Data Configuration:
+     * Configures Work Category, Division, Material, Material Option, Pricing Mode, Price, and Formula in one workflow.
+     * Prevents duplicates by reusing existing records when names match (case-insensitive).
+     */
+    public Pricing saveUnifiedMasterData(
+            Long pricingId,
+            Long workCategoryId,
+            String newWorkCategoryName,
+            Long divisionId,
+            String newDivisionName,
+            Long materialId,
+            String newMaterialName,
+            Long materialOptionId,
+            String newMaterialOptionName,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
+            String description
+    ) {
+        // 1. Work Category
+        WorkCategory workCategory;
+        if (newWorkCategoryName != null && !newWorkCategoryName.trim().isEmpty()) {
+            String name = newWorkCategoryName.trim();
+            workCategory = workCategoryRepository.findByNameIgnoreCase(name)
+                    .orElseGet(() -> {
+                        WorkCategory wc = new WorkCategory();
+                        wc.setName(name);
+                        wc.setActive(true);
+                        return workCategoryRepository.save(wc);
+                    });
+        } else if (workCategoryId != null) {
+            workCategory = workCategoryRepository.findById(workCategoryId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected Work Category not found"));
+        } else {
+            throw new IllegalArgumentException("Work Category is required");
+        }
+
+        // 2. Division
+        Division division;
+        if (newDivisionName != null && !newDivisionName.trim().isEmpty()) {
+            String divName = newDivisionName.trim();
+            division = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(workCategory.getId())
+                    .stream()
+                    .filter(d -> d.getName().equalsIgnoreCase(divName))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Division d = new Division();
+                        d.setName(divName);
+                        d.setWorkCategory(workCategory);
+                        d.setActive(true);
+                        return divisionRepository.save(d);
+                    });
+        } else if (divisionId != null) {
+            division = divisionRepository.findById(divisionId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected Division not found"));
+        } else {
+            throw new IllegalArgumentException("Division is required");
+        }
+
+        // 3. Item & Material
+        Material material;
+        if (newMaterialName != null && !newMaterialName.trim().isEmpty()) {
+            String matName = newMaterialName.trim();
+            List<Item> items = itemRepository.findByDivisionIdOrderByDisplayOrderAsc(division.getId());
+            Item item = items.stream()
+                    .filter(i -> i.getName().equalsIgnoreCase(matName))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        if (!items.isEmpty()) {
+                            return items.get(0);
+                        }
+                        Item i = new Item();
+                        i.setName(matName);
+                        i.setDivision(division);
+                        i.setActive(true);
+                        return itemRepository.save(i);
+                    });
+
+            List<Material> mats = materialRepository.findByItemIdOrderByDisplayOrderAsc(item.getId());
+            material = mats.stream()
+                    .filter(m -> m.getName().equalsIgnoreCase(matName))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        Material m = new Material();
+                        m.setName(matName);
+                        m.setItem(item);
+                        m.setActive(true);
+                        return materialRepository.save(m);
+                    });
+        } else if (materialId != null) {
+            material = materialRepository.findById(materialId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected Material not found"));
+        } else {
+            throw new IllegalArgumentException("Material is required");
+        }
+
+        // 4. Material Option (OPTIONAL)
+        String normFormula = CalculationFormula.normalizeFormula(formula);
+        MaterialOption materialOption;
+        if (newMaterialOptionName != null && !newMaterialOptionName.trim().isEmpty()) {
+            String optName = newMaterialOptionName.trim();
+            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(material.getId());
+            materialOption = options.stream()
+                    .filter(o -> o.getName().equalsIgnoreCase(optName))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        MaterialOption o = new MaterialOption();
+                        o.setName(optName);
+                        o.setMaterial(material);
+                        o.setFormula(normFormula);
+                        o.setActive(true);
+                        return materialOptionRepository.save(o);
+                    });
+            materialOption.setFormula(normFormula);
+            materialOption = materialOptionRepository.save(materialOption);
+        } else if (materialOptionId != null) {
+            materialOption = materialOptionRepository.findById(materialOptionId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected Material Option not found"));
+            materialOption.setFormula(normFormula);
+            materialOption = materialOptionRepository.save(materialOption);
+        } else {
+            // Material Option / Specification is optional:
+            // Find existing "Standard" or material-named option, or create a default "Standard" option
+            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(material.getId());
+            materialOption = options.stream()
+                    .filter(o -> o.getName().equalsIgnoreCase("Standard") || o.getName().equalsIgnoreCase(material.getName()))
+                    .findFirst()
+                    .orElseGet(() -> {
+                        MaterialOption o = new MaterialOption();
+                        o.setName("Standard");
+                        o.setMaterial(material);
+                        o.setFormula(normFormula);
+                        o.setActive(true);
+                        return materialOptionRepository.save(o);
+                    });
+            materialOption.setFormula(normFormula);
+            materialOption = materialOptionRepository.save(materialOption);
+        }
+
+        // 5. Rate & Unit & Pricing Mode validation
+        validateRate(rate);
+        if (pricingMode == null) {
+            pricingMode = PricingMode.MIDDLE;
+        }
+        String cleanUnit = (unit == null || unit.isBlank()) ? "SQFT" : unit.trim().toUpperCase();
+
+        // 6. Pricing record create or update
+        Pricing pricing;
+        if (pricingId != null) {
+            pricing = getPricingById(pricingId);
+            if (pricingRepository.existsByMaterialOptionIdAndPricingModeAndIdNot(
+                    materialOption.getId(), pricingMode, pricingId)) {
+                throw new IllegalArgumentException(
+                        "Another pricing record already exists for this material option and pricing mode"
+                );
+            }
+        } else {
+            pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOption.getId(), pricingMode).orElse(null);
+            if (pricing == null) {
+                pricing = new Pricing();
+                pricing.setActive(true);
+            }
+        }
+
+        pricing.setMaterialOption(materialOption);
+        pricing.setPricingMode(pricingMode);
+        pricing.setRate(rate);
+        pricing.setUnit(cleanUnit);
+        pricing.setFormula(normFormula);
         pricing.setDescription(cleanValue(description));
 
         return pricingRepository.save(pricing);
@@ -234,10 +452,10 @@ public class PricingService {
             );
         }
 
-        if (rate.compareTo(BigDecimal.ZERO) < 0) {
+        if (rate.compareTo(BigDecimal.ZERO) <= 0) {
 
             throw new IllegalArgumentException(
-                    "Rate cannot be negative"
+                    "Rate must be greater than zero"
             );
         }
     }

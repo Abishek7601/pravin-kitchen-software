@@ -1,18 +1,13 @@
 package com.example.pravin_quotation.controller;
 
-import com.example.pravin_quotation.model.Division;
-import com.example.pravin_quotation.model.Item;
-import com.example.pravin_quotation.model.Material;
-import com.example.pravin_quotation.model.MaterialOption;
-import com.example.pravin_quotation.model.QuotationItem;
-import com.example.pravin_quotation.model.QuotationItemSize;
-import com.example.pravin_quotation.model.QuotationRoom;
-import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.ItemRepository;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.MaterialRepository;
+import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
+import com.example.pravin_quotation.util.CalculationFormula;
 import com.example.pravin_quotation.service.QuotationCalculationService;
 import com.example.pravin_quotation.service.QuotationItemService;
 import com.example.pravin_quotation.service.QuotationItemSizeService;
@@ -43,6 +38,7 @@ public class QuotationItemController {
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
     private final MaterialOptionRepository materialOptionRepository;
+    private final PricingRepository pricingRepository;
 
     public QuotationItemController(
             QuotationItemService quotationItemService,
@@ -53,7 +49,8 @@ public class QuotationItemController {
             DivisionRepository divisionRepository,
             ItemRepository itemRepository,
             MaterialRepository materialRepository,
-            MaterialOptionRepository materialOptionRepository) {
+            MaterialOptionRepository materialOptionRepository,
+            PricingRepository pricingRepository) {
 
         this.quotationItemService = quotationItemService;
         this.quotationItemSizeService = quotationItemSizeService;
@@ -65,6 +62,7 @@ public class QuotationItemController {
         this.itemRepository = itemRepository;
         this.materialRepository = materialRepository;
         this.materialOptionRepository = materialOptionRepository;
+        this.pricingRepository = pricingRepository;
     }
 
     // =========================================================
@@ -160,6 +158,12 @@ public class QuotationItemController {
             @RequestParam(required = false)
             String specification,
 
+            @RequestParam(required = false)
+            String formula,
+
+            @RequestParam(required = false, defaultValue = "ft")
+            String dimensionUnit,
+
             Model model) {
 
         try {
@@ -175,16 +179,6 @@ public class QuotationItemController {
                 throw new IllegalArgumentException(
                         "Quotation room not found.");
             }
-
-            // -------------------------------------------------
-            // Validate size lists
-            // -------------------------------------------------
-
-            validateSizeLists(
-                    lengthValues,
-                    widthValues,
-                    heightValues
-            );
 
             // -------------------------------------------------
             // Load master data
@@ -221,11 +215,62 @@ public class QuotationItemController {
                                             "Material option not found."));
 
             // -------------------------------------------------
+            // Resolve formula
+            // -------------------------------------------------
+
+            Quotation quotation = room.getQuotation();
+            Long quotationId = quotation.getId();
+
+            if (formula == null || formula.trim().isEmpty()) {
+                Pricing pricing = pricingRepository
+                        .findByMaterialOptionIdAndPricingMode(
+                                materialOptionId,
+                                quotation.getPricingMode()
+                        ).orElse(null);
+                if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().trim().isEmpty()) {
+                    formula = pricing.getFormula();
+                } else if (materialOption.getFormula() != null && !materialOption.getFormula().trim().isEmpty()) {
+                    formula = materialOption.getFormula();
+                } else {
+                    formula = CalculationFormula.FORMULA_L_X_W;
+                }
+            }
+            formula = CalculationFormula.normalizeFormula(formula);
+
+            // Pad width and height lists if needed
+            int sizeCount = lengthValues != null ? lengthValues.size() : 0;
+            if (widthValues == null) {
+                widthValues = new ArrayList<>();
+            }
+            while (widthValues.size() < sizeCount) {
+                widthValues.add(BigDecimal.ZERO);
+            }
+            if (heightValues == null) {
+                heightValues = new ArrayList<>();
+            }
+            while (heightValues.size() < sizeCount) {
+                heightValues.add(BigDecimal.ZERO);
+            }
+
+            // -------------------------------------------------
+            // Validate size lists
+            // -------------------------------------------------
+
+            validateSizeLists(
+                    formula,
+                    lengthValues,
+                    widthValues,
+                    heightValues
+            );
+
+            // -------------------------------------------------
             // Calculate total SQ.FT
             // -------------------------------------------------
 
             BigDecimal totalSqft =
                     calculateTotalSqft(
+                            formula,
+                            dimensionUnit,
                             lengthValues,
                             widthValues,
                             heightValues
@@ -234,9 +279,6 @@ public class QuotationItemController {
             // -------------------------------------------------
             // Resolve server-side rate
             // -------------------------------------------------
-
-            Long quotationId =
-                    room.getQuotation().getId();
 
             BigDecimal rate =
                     quotationCalculationService.resolveItemRate(
@@ -265,8 +307,7 @@ public class QuotationItemController {
                     );
 
             // -------------------------------------------------
-            // Parent item keeps first size for backward
-            // compatibility.
+            // Parent item keeps first size for backward compatibility
             // -------------------------------------------------
 
             BigDecimal firstLength =
@@ -277,9 +318,6 @@ public class QuotationItemController {
 
             BigDecimal firstHeight =
                     heightValues.get(0);
-
-            String formula =
-                    "(Length + Width) × Height / 144";
 
             // -------------------------------------------------
             // Create parent quotation item
@@ -321,11 +359,10 @@ public class QuotationItemController {
                                 widthValues.get(i),
                                 heightValues.get(i),
 
-                                // Offer price remains at parent
-                                // quotation item level.
                                 null,
 
-                                i + 1
+                                i + 1,
+                                dimensionUnit
                         );
 
                 savedItem.addSize(savedSize);
@@ -445,6 +482,12 @@ public class QuotationItemController {
             @RequestParam(required = false)
             String specification,
 
+            @RequestParam(required = false)
+            String formula,
+
+            @RequestParam(required = false, defaultValue = "ft")
+            String dimensionUnit,
+
             Model model) {
 
         try {
@@ -465,16 +508,6 @@ public class QuotationItemController {
                     quotationRoomService.getById(
                             quotationRoomId
                     );
-
-            // -------------------------------------------------
-            // Validate size lists
-            // -------------------------------------------------
-
-            validateSizeLists(
-                    lengthValues,
-                    widthValues,
-                    heightValues
-            );
 
             // -------------------------------------------------
             // Load master data
@@ -511,11 +544,64 @@ public class QuotationItemController {
                                             "Material option not found."));
 
             // -------------------------------------------------
+            // Resolve formula
+            // -------------------------------------------------
+
+            Quotation quotation = room.getQuotation();
+            Long quotationId = quotation.getId();
+
+            if (formula == null || formula.trim().isEmpty()) {
+                Pricing pricing = pricingRepository
+                        .findByMaterialOptionIdAndPricingMode(
+                                materialOptionId,
+                                quotation.getPricingMode()
+                        ).orElse(null);
+                if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().trim().isEmpty()) {
+                    formula = pricing.getFormula();
+                } else if (materialOption.getFormula() != null && !materialOption.getFormula().trim().isEmpty()) {
+                    formula = materialOption.getFormula();
+                } else if (existingItem.getFormula() != null && !existingItem.getFormula().trim().isEmpty()) {
+                    formula = existingItem.getFormula();
+                } else {
+                    formula = CalculationFormula.FORMULA_L_X_W;
+                }
+            }
+            formula = CalculationFormula.normalizeFormula(formula);
+
+            // Pad width and height lists if needed
+            int sizeCount = lengthValues != null ? lengthValues.size() : 0;
+            if (widthValues == null) {
+                widthValues = new ArrayList<>();
+            }
+            while (widthValues.size() < sizeCount) {
+                widthValues.add(BigDecimal.ZERO);
+            }
+            if (heightValues == null) {
+                heightValues = new ArrayList<>();
+            }
+            while (heightValues.size() < sizeCount) {
+                heightValues.add(BigDecimal.ZERO);
+            }
+
+            // -------------------------------------------------
+            // Validate size lists
+            // -------------------------------------------------
+
+            validateSizeLists(
+                    formula,
+                    lengthValues,
+                    widthValues,
+                    heightValues
+            );
+
+            // -------------------------------------------------
             // Calculate total SQ.FT
             // -------------------------------------------------
 
             BigDecimal totalSqft =
                     calculateTotalSqft(
+                            formula,
+                            dimensionUnit,
                             lengthValues,
                             widthValues,
                             heightValues
@@ -524,9 +610,6 @@ public class QuotationItemController {
             // -------------------------------------------------
             // Resolve current server-side rate
             // -------------------------------------------------
-
-            Long quotationId =
-                    room.getQuotation().getId();
 
             BigDecimal rate =
                     quotationCalculationService.resolveItemRate(
@@ -566,9 +649,6 @@ public class QuotationItemController {
 
             BigDecimal firstHeight =
                     heightValues.get(0);
-
-            String formula =
-                    "(Length + Width) × Height / 144";
 
             // -------------------------------------------------
             // Update parent quotation item
@@ -625,7 +705,8 @@ public class QuotationItemController {
 
                                 null,
 
-                                i + 1
+                                i + 1,
+                                dimensionUnit
                         );
 
                 updatedItem.addSize(savedSize);
@@ -751,14 +832,18 @@ public class QuotationItemController {
     @GetMapping("/calculate-sqft")
     @ResponseBody
     public BigDecimal calculateSqft(
+            @RequestParam(required = false) String formula,
             @RequestParam BigDecimal length,
-            @RequestParam BigDecimal width,
-            @RequestParam BigDecimal height) {
+            @RequestParam(required = false) BigDecimal width,
+            @RequestParam(required = false) BigDecimal height,
+            @RequestParam(required = false, defaultValue = "ft") String unit) {
 
         return quotationItemSizeService.calculateSqft(
+                formula,
                 length,
-                width,
-                height
+                width != null ? width : BigDecimal.ZERO,
+                height != null ? height : BigDecimal.ZERO,
+                unit
         );
     }
 
@@ -796,13 +881,39 @@ public class QuotationItemController {
                         .body(java.util.Map.of("success", false, "message", "Quotation room not found."));
             }
 
+            Quotation quotation = room.getQuotation();
             BigDecimal rate = quotationCalculationService.resolveItemRate(
-                    room.getQuotation().getId(),
+                    quotation.getId(),
                     materialOptionId
             );
 
+            // Resolve formula from Pricing or MaterialOption
+            Pricing pricing = pricingRepository
+                    .findByMaterialOptionIdAndPricingMode(
+                            materialOptionId,
+                            quotation.getPricingMode()
+                    ).orElse(null);
+
+            String formula = null;
+            if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().trim().isEmpty()) {
+                formula = CalculationFormula.normalizeFormula(pricing.getFormula());
+            } else {
+                MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
+                if (mo != null && mo.getFormula() != null && !mo.getFormula().trim().isEmpty()) {
+                    formula = CalculationFormula.normalizeFormula(mo.getFormula());
+                }
+            }
+            if (formula == null || formula.trim().isEmpty()) {
+                formula = CalculationFormula.FORMULA_L_X_W;
+            }
+
             return org.springframework.http.ResponseEntity.ok(
-                    java.util.Map.of("success", true, "rate", rate)
+                    java.util.Map.of(
+                            "success", true,
+                            "rate", rate,
+                            "formula", formula,
+                            "pricingMode", quotation.getPricingMode() != null ? quotation.getPricingMode().name() : ""
+                    )
             );
 
         } catch (Exception e) {
@@ -864,6 +975,7 @@ public class QuotationItemController {
     // =========================================================
 
     private void validateSizeLists(
+            String formula,
             List<BigDecimal> lengths,
             List<BigDecimal> widths,
             List<BigDecimal> heights) {
@@ -874,43 +986,24 @@ public class QuotationItemController {
             );
         }
 
-        if (widths == null || widths.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Width is required."
-            );
-        }
-
-        if (heights == null || heights.isEmpty()) {
-            throw new IllegalArgumentException(
-                    "Height is required."
-            );
-        }
-
-        if (lengths.size() != widths.size()
-                || lengths.size() != heights.size()) {
-
-            throw new IllegalArgumentException(
-                    "Size information is incomplete."
-            );
-        }
-
         for (int i = 0; i < lengths.size(); i++) {
-
             BigDecimal length = lengths.get(i);
-            BigDecimal width = widths.get(i);
-            BigDecimal height = heights.get(i);
+            BigDecimal width = (widths != null && i < widths.size()) ? widths.get(i) : null;
+            BigDecimal height = (heights != null && i < heights.size()) ? heights.get(i) : null;
 
-            if (!hasValidDimension(length)
-                    || !hasValidDimension(width)
-                    || !hasValidDimension(height)) {
-
-                throw new IllegalArgumentException(
-                        "Length, Width and Height must be greater than zero for Size "
-                                + (i + 1)
-                                + "."
-                );
+            try {
+                CalculationFormula.validateDimensions(formula, length, width, height);
+            } catch (IllegalArgumentException ex) {
+                throw new IllegalArgumentException(ex.getMessage() + " (for Size " + (i + 1) + ")");
             }
         }
+    }
+
+    private void validateSizeLists(
+            List<BigDecimal> lengths,
+            List<BigDecimal> widths,
+            List<BigDecimal> heights) {
+        validateSizeLists(null, lengths, widths, heights);
     }
 
     // =========================================================
@@ -918,30 +1011,41 @@ public class QuotationItemController {
     // =========================================================
 
     private BigDecimal calculateTotalSqft(
+            String formula,
+            String unit,
             List<BigDecimal> lengths,
             List<BigDecimal> widths,
             List<BigDecimal> heights) {
 
-        BigDecimal total =
-                BigDecimal.ZERO;
+        BigDecimal total = BigDecimal.ZERO;
 
         for (int i = 0; i < lengths.size(); i++) {
+            BigDecimal l = lengths.get(i);
+            BigDecimal w = (widths != null && i < widths.size()) ? widths.get(i) : BigDecimal.ZERO;
+            BigDecimal h = (heights != null && i < heights.size()) ? heights.get(i) : BigDecimal.ZERO;
 
-            BigDecimal sqft =
-                    quotationItemSizeService.calculateSqft(
-                            lengths.get(i),
-                            widths.get(i),
-                            heights.get(i)
-                    );
+            BigDecimal sqft = quotationItemSizeService.calculateSqft(
+                    formula,
+                    l,
+                    w,
+                    h,
+                    unit
+            );
 
-            total =
-                    total.add(sqft);
+            total = total.add(sqft);
         }
 
         return total.setScale(
                 2,
                 RoundingMode.HALF_UP
         );
+    }
+
+    private BigDecimal calculateTotalSqft(
+            List<BigDecimal> lengths,
+            List<BigDecimal> widths,
+            List<BigDecimal> heights) {
+        return calculateTotalSqft(null, "ft", lengths, widths, heights);
     }
 
     // =========================================================

@@ -445,123 +445,102 @@
         </h2>
 
         <p>
-          Enter dimensions in inches.
+          Configure dimensions and units for calculation.
         </p>
 
       </div>
 
+      <!-- DIMENSION UNIT SELECTOR -->
+      <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
+        <div class="form-group" style="margin-bottom: 0;">
+          <label for="dimensionUnit" style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 6px; display: block;">Dimension Unit</label>
+          <select id="dimensionUnit" name="dimensionUnit" style="padding: 8px 14px; border: 1px solid #c8dad6; border-radius: 8px; font-weight: 600; color: #0f172a; background: #f8fafc; font-size: 14px;">
+            <option value="ft" selected>Feet (ft)</option>
+            <option value="in">Inches (in)</option>
+          </select>
+        </div>
+        <div style="font-size: 13px; color: #64748b; padding-bottom: 6px;">
+          Dimensions in feet calculate directly; dimensions in inches convert to feet first (÷ 12).
+        </div>
+      </div>
 
       <div class="form-grid three-columns">
 
-
         <!-- LENGTH -->
-
-        <div class="form-group">
-
+        <div class="form-group length-field">
           <label for="lengthValue">
-            Length (L) <span>*</span>
+            Length (L) (<span class="unit-label">ft</span>) <span>*</span>
           </label>
-
-
           <input type="number"
-
                  id="lengthValue"
-
                  name="lengthValue"
-
                  min="0.01"
-
                  step="0.01"
-
-                 placeholder="Example: 5"
-
+                 placeholder="0.00"
                  th:value="${quotationItem != null
                             ? quotationItem.lengthValue
                             : ''}"
-
                  required>
-
         </div>
 
-
         <!-- WIDTH -->
-
-        <div class="form-group">
-
+        <div class="form-group width-field">
           <label for="widthValue">
-            Width (W) <span>*</span>
+            Width (W) (<span class="unit-label">ft</span>) <span>*</span>
           </label>
-
-
           <input type="number"
-
                  id="widthValue"
-
                  name="widthValue"
-
                  min="0.01"
-
                  step="0.01"
-
-                 placeholder="Example: 4.76"
-
+                 placeholder="0.00"
                  th:value="${quotationItem != null
                             ? quotationItem.widthValue
                             : ''}"
-
                  required>
-
         </div>
 
-
         <!-- HEIGHT -->
-
-        <div class="form-group">
-
+        <div class="form-group height-field">
           <label for="heightValue">
-            Height (H) <span>*</span>
+            Height (H) (<span class="unit-label">ft</span>) <span>*</span>
           </label>
-
-
           <input type="number"
-
                  id="heightValue"
-
                  name="heightValue"
-
                  min="0.01"
-
                  step="0.01"
-
-                 placeholder="Example: 7"
-
+                 placeholder="0.00"
                  th:value="${quotationItem != null
                             ? quotationItem.heightValue
                             : ''}"
-
                  required>
-
         </div>
 
       </div>
 
-
       <!-- FORMULA -->
-
       <div class="formula-box">
-
         <span>
-          Calculation Formula
+          Active Calculation Formula
         </span>
 
-        <strong>
-          (L + W) × H / 144
+        <input type="hidden"
+               id="formulaInput"
+               name="formula"
+               th:value="${quotationItem?.formula != null ? quotationItem.formula : 'L × W'}">
+
+        <strong id="displayFormulaName" th:text="${quotationItem?.formula != null ? quotationItem.formula : 'L × W'}">
+          L × W
         </strong>
+
+        <div id="formulaNotice" style="display: none; margin-top: 10px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px; color: #b45309; font-size: 13px; text-align: left;">
+            ℹ️ <strong>Calculation Rule:</strong> Evaluated as <code>(Length + Width) × Height</code> (calculated as <code>((Length + Width) × Height) / 144</code> for dimensions in inches).
+        </div>
 
         <small>
           Area and estimated amount update automatically.
         </small>
-
       </div>
 
     </div>
@@ -749,164 +728,153 @@
 
   document.addEventListener("DOMContentLoaded", function () {
 
-
       /* =========================================================
          FORM ELEMENTS
       ========================================================== */
 
-      const form =
-          document.getElementById(
-              "quotationItemForm"
-          );
+      const form = document.getElementById("quotationItemForm");
+      const lengthInput = document.getElementById("lengthValue");
+      const widthInput = document.getElementById("widthValue");
+      const heightInput = document.getElementById("heightValue");
+      const rateInput = document.getElementById("rate");
+      const offerPriceInput = document.getElementById("offerPrice");
+      const previewSqft = document.getElementById("previewSqft");
+      const previewAmount = document.getElementById("previewAmount");
+      const dimensionUnitSelect = document.getElementById("dimensionUnit");
+      const formulaInput = document.getElementById("formulaInput");
+      const displayFormulaName = document.getElementById("displayFormulaName");
+      const formulaNotice = document.getElementById("formulaNotice");
 
+      /* =========================================================
+         FORMULA & UNIT HELPERS
+      ========================================================== */
 
-      const lengthInput =
-          document.getElementById(
-              "lengthValue"
-          );
+      function normalizeFormula(f) {
+          if (!f) return "L × W";
+          const clean = f.replace(/\s+/g, "").toLowerCase();
+          if (clean === "l+w*h" || clean === "l+(w*h)" || clean.includes("(l+w)") || clean.includes("l+w") || clean.includes("+")) return "(L + W) × H";
+          if (clean === "l*h" || clean === "lxh") return "L × H";
+          return "L × W";
+      }
 
+      let currentFormula = normalizeFormula(formulaInput ? formulaInput.value : "L × W");
 
-      const widthInput =
-          document.getElementById(
-              "widthValue"
-          );
+      function applyFormula(formula) {
+          currentFormula = normalizeFormula(formula);
+          if (formulaInput) formulaInput.value = currentFormula;
+          if (displayFormulaName) displayFormulaName.textContent = currentFormula;
+          if (formulaNotice) {
+              formulaNotice.style.display = (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") ? "block" : "none";
+          }
+          updateDimensionFields();
+          calculatePreview();
+      }
 
+      function updateDimensionFields() {
+          const widthGroup = document.querySelector(".width-field");
+          const heightGroup = document.querySelector(".height-field");
+          const unit = dimensionUnitSelect ? dimensionUnitSelect.value : "ft";
 
-      const heightInput =
-          document.getElementById(
-              "heightValue"
-          );
+          document.querySelectorAll(".unit-label").forEach(function (el) {
+              el.textContent = unit;
+          });
 
+          if (currentFormula === "L × W") {
+              if (widthGroup) widthGroup.style.display = "";
+              if (widthInput) widthInput.required = true;
+              if (heightGroup) heightGroup.style.display = "none";
+              if (heightInput) heightInput.required = false;
+          } else if (currentFormula === "L × H") {
+              if (widthGroup) widthGroup.style.display = "none";
+              if (widthInput) widthInput.required = false;
+              if (heightGroup) heightGroup.style.display = "";
+              if (heightInput) heightInput.required = true;
+          } else { // "L + (W × H)"
+              if (widthGroup) widthGroup.style.display = "";
+              if (widthInput) widthInput.required = true;
+              if (heightGroup) heightGroup.style.display = "";
+              if (heightInput) heightGroup.required = true;
+          }
+      }
 
-      const rateInput =
-          document.getElementById(
-              "rate"
-          );
-
-
-      const offerPriceInput =
-          document.getElementById(
-              "offerPrice"
-          );
-
-
-      const previewSqft =
-          document.getElementById(
-              "previewSqft"
-          );
-
-
-      const previewAmount =
-          document.getElementById(
-              "previewAmount"
-          );
-
+      if (dimensionUnitSelect) {
+          dimensionUnitSelect.addEventListener("change", function () {
+              updateDimensionFields();
+              calculatePreview();
+          });
+      }
 
       /* =========================================================
          NUMBER HELPER
       ========================================================== */
 
       function getNumber(input) {
-
-          const value =
-              Number.parseFloat(
-                  input.value
-              );
-
-          return Number.isFinite(value)
-              ? value
-              : 0;
+          if (!input) return 0;
+          const value = Number.parseFloat(input.value);
+          return Number.isFinite(value) ? value : 0;
       }
-
 
       /* =========================================================
          CALCULATE PREVIEW
       ========================================================== */
 
       function calculatePreview() {
+          let length = getNumber(lengthInput);
+          let width = getNumber(widthInput);
+          let height = getNumber(heightInput);
+          const rate = getNumber(rateInput);
 
-          const length =
-              getNumber(lengthInput);
-
-
-          const width =
-              getNumber(widthInput);
-
-
-          const height =
-              getNumber(heightInput);
-
-
-          const rate =
-              getNumber(rateInput);
-
-
-          let sqft = 0;
-
-
-          if (
-              length > 0 &&
-              width > 0 &&
-              height > 0
-          ) {
-
-              sqft =
-                  (
-                      (length + width)
-                      * height
-                  ) / 144;
-
+          const isInch = dimensionUnitSelect && dimensionUnitSelect.value === "in";
+          if (isInch) {
+              length = length / 12;
+              width = width / 12;
+              height = height / 12;
           }
 
-
-          sqft =
-              Math.round(
-                  sqft * 100
-              ) / 100;
-
-
-          const amount =
-              Math.round(
-                  sqft * rate * 100
-              ) / 100;
-
-
-          previewSqft.textContent =
-              sqft.toFixed(2);
-
-
-          previewAmount.textContent =
-              amount.toLocaleString(
-                  "en-IN",
-                  {
-                      style: "currency",
-                      currency: "INR",
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2
+          let sqft = 0;
+          if (currentFormula === "L × W") {
+              if (length > 0 && width > 0) {
+                  sqft = length * width;
+              }
+          } else if (currentFormula === "L × H") {
+              if (length > 0 && height > 0) {
+                  sqft = length * height;
+              }
+          } else if (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") {
+              if (length > 0 && width > 0 && height > 0) {
+                  if (isInch) {
+                      sqft = ((getNumber(lengthInput) + getNumber(widthInput)) * getNumber(heightInput)) / 144;
+                  } else {
+                      sqft = (length + width) * height;
                   }
-              );
+              }
+          } else {
+              if (length > 0 && width > 0) {
+                  sqft = length * width;
+              }
+          }
 
+          sqft = Math.round(sqft * 100) / 100;
+          const amount = Math.round(sqft * rate * 100) / 100;
+
+          if (previewSqft) previewSqft.textContent = sqft.toFixed(2);
+          if (previewAmount) {
+              previewAmount.textContent = amount.toLocaleString("en-IN", {
+                  style: "currency",
+                  currency: "INR",
+                  minimumFractionDigits: 2,
+                  maximumFractionDigits: 2
+              });
+          }
       }
-
 
       /* =========================================================
          RATE DYNAMIC FETCHING
       ========================================================== */
 
-      const quotationIdInput =
-          document.getElementById(
-              "quotationId"
-          );
-
-      const materialOptionSelect =
-          document.getElementById(
-              "materialOptionId"
-          );
-
-      const rateWarningMessage =
-          document.getElementById(
-              "rateWarningMessage"
-          );
+      const quotationIdInput = document.getElementById("quotationId");
+      const materialOptionSelect = document.getElementById("materialOptionId");
+      const rateWarningMessage = document.getElementById("rateWarningMessage");
 
       async function fetchConfiguredRate() {
           const optionId = materialOptionSelect ? materialOptionSelect.value : "";
@@ -923,6 +891,9 @@
 
               if (data.success && data.rate !== undefined) {
                   rateInput.value = data.rate;
+                  if (data.formula) {
+                      applyFormula(data.formula);
+                  }
                   if (rateWarningMessage) {
                       rateWarningMessage.style.display = "none";
                       rateWarningMessage.textContent = "";
@@ -945,140 +916,83 @@
           materialOptionSelect.addEventListener("change", fetchConfiguredRate);
       }
 
-
       /* =========================================================
-         LIVE PREVIEW
+         LIVE PREVIEW LISTENERS
       ========================================================== */
 
-      [
-          lengthInput,
-          widthInput,
-          heightInput,
-          rateInput
-      ].forEach(function (input) {
-
-          input.addEventListener(
-              "input",
-              calculatePreview
-          );
-
+      [lengthInput, widthInput, heightInput, rateInput].forEach(function (input) {
+          if (input) {
+              input.addEventListener("input", calculatePreview);
+          }
       });
-
 
       /* =========================================================
          FORM VALIDATION
       ========================================================== */
 
-      form.addEventListener(
-          "submit",
-          function (event) {
+      form.addEventListener("submit", function (event) {
+          const length = getNumber(lengthInput);
+          const width = getNumber(widthInput);
+          const height = getNumber(heightInput);
+          const rate = getNumber(rateInput);
 
-
-              const length =
-                  getNumber(
-                      lengthInput
-                  );
-
-
-              const width =
-                  getNumber(
-                      widthInput
-                  );
-
-
-              const height =
-                  getNumber(
-                      heightInput
-                  );
-
-
-              const rate =
-                  getNumber(
-                      rateInput
-                  );
-
-
-              /* -----------------------------------------------
-                 DIMENSIONS
-              ------------------------------------------------ */
-
-              if (
-                  length <= 0 ||
-                  width <= 0 ||
-                  height <= 0
-              ) {
-
-                  event.preventDefault();
-
-
-                  alert(
-                      "Please enter valid Length, Width and Height values."
-                  );
-
-
-                  return;
-
+          let invalid = false;
+          if (currentFormula === "L × W") {
+              if (length <= 0 || width <= 0) invalid = true;
+              if (heightInput && (!heightInput.value || heightInput.value.trim() === "")) {
+                  heightInput.value = "0";
               }
-
-
-              /* -----------------------------------------------
-                 RATE
-              ------------------------------------------------ */
-
-              if (rate < 0) {
-
-                  event.preventDefault();
-
-
-                  alert(
-                      "Rate cannot be negative."
-                  );
-
-
-                  return;
-
+          } else if (currentFormula === "L × H") {
+              if (length <= 0 || height <= 0) invalid = true;
+              if (widthInput && (!widthInput.value || widthInput.value.trim() === "")) {
+                  widthInput.value = "0";
               }
-
-
-              /* -----------------------------------------------
-                 OFFER PRICE
-              ------------------------------------------------ */
-
-              if (
-                  offerPriceInput.value.trim() !== ""
-                  &&
-                  getNumber(
-                      offerPriceInput
-                  ) < 0
-              ) {
-
-                  event.preventDefault();
-
-
-                  alert(
-                      "Offer Price cannot be negative."
-                  );
-
-
-                  return;
-
+          } else if (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") {
+              if (length <= 0 || width <= 0 || height <= 0) invalid = true;
+          } else {
+              if (length <= 0 || width <= 0) invalid = true;
+              if (heightInput && (!heightInput.value || heightInput.value.trim() === "")) {
+                  heightInput.value = "0";
               }
-
           }
-      );
 
+          if (invalid) {
+              event.preventDefault();
+              if (currentFormula === "L × W") {
+                  alert("Please enter valid positive Length and Width values.");
+              } else if (currentFormula === "L × H") {
+                  alert("Please enter valid positive Length and Height values.");
+              } else {
+                  alert("Please enter valid positive Length, Width and Height values.");
+              }
+              return;
+          }
+
+          if (rate < 0) {
+              event.preventDefault();
+              alert("Rate cannot be negative.");
+              return;
+          }
+
+          if (offerPriceInput.value.trim() !== "" && getNumber(offerPriceInput) < 0) {
+              event.preventDefault();
+              alert("Offer Price cannot be negative.");
+              return;
+          }
+      });
 
       /* =========================================================
          INITIAL PREVIEW
       ========================================================== */
+
+      applyFormula(currentFormula);
+      updateDimensionFields();
 
       if (materialOptionSelect && materialOptionSelect.value) {
           fetchConfiguredRate();
       } else {
           calculatePreview();
       }
-
-  });
 
   });
 

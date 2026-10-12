@@ -741,7 +741,7 @@
     <!-- MASTER DATA -->
     <!-- ================================================= -->
 
-    <div class="section-header master-data-header">
+    <div class="section-header master-data-header" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px;">
 
       <div>
 
@@ -760,6 +760,13 @@
 
       </div>
 
+      <a th:href="@{/admin/pricing/new}"
+         class="btn btn-primary btn-sm"
+         style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>Configure Master Data (Unified)</span>
+      </a>
+
     </div>
 
 
@@ -768,7 +775,7 @@
 
 
       <!-- ================================================= -->
-      <!-- WORK CATEGORIES -->
+      <!-- 1. WORK CATEGORIES -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/work-categories}"
@@ -787,8 +794,8 @@
           </strong>
 
           <span>
-                        Manage work categories
-                    </span>
+            Manage work categories
+          </span>
 
         </div>
 
@@ -799,7 +806,7 @@
 
 
       <!-- ================================================= -->
-      <!-- DIVISIONS -->
+      <!-- 2. DIVISIONS -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/divisions}"
@@ -818,8 +825,8 @@
           </strong>
 
           <span>
-                        Manage work divisions
-                    </span>
+            Manage divisions under selected work categories
+          </span>
 
         </div>
 
@@ -830,38 +837,7 @@
 
 
       <!-- ================================================= -->
-      <!-- ITEMS -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/items}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-box-seam-fill"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            Items
-          </strong>
-
-          <span>
-                        Manage quotation items
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
-
-
-
-      <!-- ================================================= -->
-      <!-- MATERIALS -->
+      <!-- 3. MATERIALS -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/materials}"
@@ -880,8 +856,8 @@
           </strong>
 
           <span>
-                        Add and manage materials
-                    </span>
+            Add and manage materials
+          </span>
 
         </div>
 
@@ -892,7 +868,7 @@
 
 
       <!-- ================================================= -->
-      <!-- MATERIAL OPTIONS -->
+      <!-- 4. MATERIAL OPTIONS -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/material-options}"
@@ -911,8 +887,8 @@
           </strong>
 
           <span>
-                        Manage material specifications
-                    </span>
+            Manage material specifications and options
+          </span>
 
         </div>
 
@@ -923,7 +899,7 @@
 
 
       <!-- ================================================= -->
-      <!-- PRICING -->
+      <!-- 5. PRICING -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/pricing}"
@@ -942,70 +918,8 @@
           </strong>
 
           <span>
-                        Manage quotation pricing
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
-
-
-
-      <!-- ================================================= -->
-      <!-- DISTRICT PRICING -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/district-pricing}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-geo-alt-fill"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            District Pricing
-          </strong>
-
-          <span>
-                        Manage district-wise prices
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
-
-
-
-      <!-- ================================================= -->
-      <!-- TRAVEL CHARGES -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/travel-charges}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-truck"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            Travel Charges
-          </strong>
-
-          <span>
-                        Manage travel charges
-                    </span>
+            Manage quotation pricing &amp; formulas
+          </span>
 
         </div>
 

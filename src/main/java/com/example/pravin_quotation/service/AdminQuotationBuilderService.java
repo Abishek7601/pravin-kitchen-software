@@ -429,9 +429,11 @@ public class AdminQuotationBuilderService {
                     BigDecimal sqft =
                             quotationItemSizeService
                                     .calculateSqft(
+                                            com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_PLUS_W_X_H,
                                             length,
                                             width,
-                                            height
+                                            height,
+                                            "in"
                                     );
 
                     BigDecimal amount =
@@ -533,9 +535,11 @@ public class AdminQuotationBuilderService {
                     BigDecimal sqft =
                             quotationItemSizeService
                                     .calculateSqft(
+                                            com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_PLUS_W_X_H,
                                             length,
                                             width,
-                                            height
+                                            height,
+                                            "in"
                                     );
 
                     BigDecimal amount =
@@ -561,7 +565,8 @@ public class AdminQuotationBuilderService {
                             width,
                             height,
                             offerPrice,
-                            sizeIndex + 1
+                            sizeIndex + 1,
+                            "in"
                     );
                 }
             }

@@ -462,6 +462,10 @@
                  name="specification"
                  id="formSpecification">
 
+          <input type="hidden"
+                 name="formula"
+                 id="formFormula">
+
 
           <div class="dimension-grid">
 
@@ -988,9 +992,17 @@
       let selectedOptionId = null;
       let selectedRate = 0;
       let selectedUnit = "SQFT";
+      let selectedFormula = "L × W";
       let selectedSpecification = "";
       let pending = [];
 
+      function normalizeFormula(f) {
+          if (!f) return "L × W";
+          const clean = f.replace(/\s+/g, "").toLowerCase();
+          if (clean === "l+w*h" || clean === "l+(w*h)" || clean.includes("(l+w)") || clean.includes("l+w") || clean.includes("+")) return "(L + W) × H";
+          if (clean === "l*h" || clean === "lxh") return "L × H";
+          return "L × W";
+      }
 
       function money(value) {
           return Number(value || 0).toLocaleString("en-IN", {
@@ -1014,10 +1026,28 @@
           const width = numberValue(widthInput);
           const height = numberValue(heightInput);
 
-          let sqft = 0;
+          const l_ft = length / 12;
+          const w_ft = width / 12;
+          const h_ft = height / 12;
 
-          if (length > 0 && width > 0 && height > 0) {
-              sqft = ((length + width) * height) / 144;
+          let sqft = 0;
+          const f = normalizeFormula(selectedFormula);
+          if (f === "L × W") {
+              if (length > 0 && width > 0) {
+                  sqft = l_ft * w_ft;
+              }
+          } else if (f === "L × H") {
+              if (length > 0 && height > 0) {
+                  sqft = l_ft * h_ft;
+              }
+          } else if (f === "(L + W) × H" || f === "L + (W × H)") {
+              if (length > 0 && width > 0 && height > 0) {
+                  sqft = ((length + width) * height) / 144;
+              }
+          } else {
+              if (length > 0 && width > 0) {
+                  sqft = l_ft * w_ft;
+              }
           }
 
           sqft = Math.round(sqft * 100) / 100;
@@ -1365,6 +1395,7 @@
 
               selectedRate = Number(data.rate || 0);
               selectedUnit = data.unit || "SQFT";
+              selectedFormula = normalizeFormula(data.formula);
               selectedSpecification =
                   data.description || option.description || "";
 
@@ -1403,14 +1434,22 @@
               const calculation =
                   calculatePreview();
 
-              if (calculation.length <= 0
-                  || calculation.width <= 0
-                  || calculation.height <= 0) {
+              const f = normalizeFormula(selectedFormula);
+              let dimInvalid = false;
+              if (f === "L × W") {
+                  if (calculation.length <= 0 || calculation.width <= 0) dimInvalid = true;
+              } else if (f === "L × H") {
+                  if (calculation.length <= 0 || calculation.height <= 0) dimInvalid = true;
+              } else if (f === "(L + W) × H" || f === "L + (W × H)") {
+                  if (calculation.length <= 0 || calculation.width <= 0 || calculation.height <= 0) dimInvalid = true;
+              } else {
+                  if (calculation.length <= 0 || calculation.width <= 0) dimInvalid = true;
+              }
 
-                  alert(
-                      "Please enter valid Length, Width and Height."
-                  );
-
+              if (dimInvalid) {
+                  if (f === "L × W") alert("Please enter valid positive Length and Width.");
+                  else if (f === "L × H") alert("Please enter valid positive Length and Height.");
+                  else alert("Please enter valid positive Length, Width and Height.");
                   return;
               }
 
@@ -1539,6 +1578,11 @@
 
               document.getElementById("formSpecification").value =
                   selectedSpecification;
+
+              const formFormula = document.getElementById("formFormula");
+              if (formFormula) {
+                  formFormula.value = selectedFormula;
+              }
 
               /*
                * Create repeated hidden fields for every pending size.

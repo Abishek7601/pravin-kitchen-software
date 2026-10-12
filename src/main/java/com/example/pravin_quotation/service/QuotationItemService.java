@@ -467,39 +467,36 @@ public class QuotationItemService {
     // =========================================================
 
     public BigDecimal calculateSqft(
+            String formula,
+            BigDecimal lengthValue,
+            BigDecimal widthValue,
+            BigDecimal heightValue,
+            String unit
+    ) {
+        return com.example.pravin_quotation.util.CalculationFormula.calculateArea(
+                formula,
+                lengthValue,
+                widthValue,
+                heightValue,
+                unit
+        );
+    }
+
+    public BigDecimal calculateSqft(
+            String formula,
             BigDecimal lengthValue,
             BigDecimal widthValue,
             BigDecimal heightValue
     ) {
+        return calculateSqft(formula, lengthValue, widthValue, heightValue, "ft");
+    }
 
-        validatePositive(
-                lengthValue,
-                "Length"
-        );
-
-        validatePositive(
-                widthValue,
-                "Width"
-        );
-
-        validatePositive(
-                heightValue,
-                "Height"
-        );
-
-        BigDecimal result =
-                lengthValue
-                        .add(widthValue)
-                        .multiply(heightValue)
-                        .divide(
-                                new BigDecimal("144"),
-                                2,
-                                RoundingMode.HALF_UP
-                        );
-
-        return result.max(
-                BigDecimal.ZERO
-        );
+    public BigDecimal calculateSqft(
+            BigDecimal lengthValue,
+            BigDecimal widthValue,
+            BigDecimal heightValue
+    ) {
+        return calculateSqft("(Length + Width) × Height / 144", lengthValue, widthValue, heightValue, "in");
     }
 
 

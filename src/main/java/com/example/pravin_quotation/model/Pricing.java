@@ -60,6 +60,15 @@ public class Pricing {
     private String unit;
 
     /*
+     * Calculation formula used for quotation item sizing:
+     * L × W
+     * L + (W × H)
+     * L × H
+     */
+    @Column(name = "formula", length = 100)
+    private String formula;
+
+    /*
      * Optional description/specification for the rate.
      */
     @Column(length = 500)
@@ -159,6 +168,14 @@ public class Pricing {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public String getFormula() {
+        return formula;
+    }
+
+    public void setFormula(String formula) {
+        this.formula = formula;
     }
 
     public String getDescription() {

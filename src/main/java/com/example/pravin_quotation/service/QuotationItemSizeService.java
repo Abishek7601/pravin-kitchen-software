@@ -72,33 +72,36 @@ public class QuotationItemSizeService {
     // =========================================================
 
     public BigDecimal calculateSqft(
+            String formula,
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height,
+            String unit) {
+
+        return com.example.pravin_quotation.util.CalculationFormula.calculateArea(
+                formula,
+                length,
+                width,
+                height,
+                unit
+        );
+    }
+
+    public BigDecimal calculateSqft(
+            String formula,
             BigDecimal length,
             BigDecimal width,
             BigDecimal height) {
 
-        validateDimensions(
-                length,
-                width,
-                height
-        );
+        return calculateSqft(formula, length, width, height, "ft");
+    }
 
-        /*
-         * Existing project formula:
-         *
-         * (Length + Width) × Height / 144
-         */
+    public BigDecimal calculateSqft(
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height) {
 
-        BigDecimal total =
-                length
-                        .add(width)
-                        .multiply(height)
-                        .divide(
-                                BigDecimal.valueOf(144),
-                                2,
-                                RoundingMode.HALF_UP
-                        );
-
-        return total;
+        return calculateSqft("(Length + Width) × Height / 144", length, width, height, "in");
     }
 
 
@@ -149,7 +152,8 @@ public class QuotationItemSizeService {
             BigDecimal width,
             BigDecimal height,
             BigDecimal offerPrice,
-            Integer displayOrder) {
+            Integer displayOrder,
+            String unit) {
 
         if (quotationItem == null) {
             throw new IllegalArgumentException(
@@ -157,7 +161,9 @@ public class QuotationItemSizeService {
             );
         }
 
+        String formula = quotationItem.getFormula();
         validateDimensions(
+                formula,
                 length,
                 width,
                 height
@@ -165,9 +171,11 @@ public class QuotationItemSizeService {
 
         BigDecimal sqft =
                 calculateSqft(
+                        formula,
                         length,
-                        width,
-                        height
+                        width != null ? width : BigDecimal.ZERO,
+                        height != null ? height : BigDecimal.ZERO,
+                        unit != null ? unit : "ft"
                 );
 
         QuotationItemSize size =
@@ -175,11 +183,11 @@ public class QuotationItemSizeService {
 
         size.setQuotationItem(quotationItem);
 
-        size.setLengthValue(length);
+        size.setLengthValue(length != null ? length : BigDecimal.ZERO);
 
-        size.setWidthValue(width);
+        size.setWidthValue(width != null ? width : BigDecimal.ZERO);
 
-        size.setHeightValue(height);
+        size.setHeightValue(height != null ? height : BigDecimal.ZERO);
 
         size.setCalculatedSqft(sqft);
 
@@ -192,12 +200,30 @@ public class QuotationItemSizeService {
         size.setDisplayOrder(
                 displayOrder != null
                         ? displayOrder
-                        : 0
+                        : 1
         );
-
         size.setActive(true);
 
         return quotationItemSizeRepository.save(size);
+    }
+
+    public QuotationItemSize create(
+            QuotationItem quotationItem,
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height,
+            BigDecimal offerPrice,
+            Integer displayOrder) {
+
+        return create(
+                quotationItem,
+                length,
+                width,
+                height,
+                offerPrice,
+                displayOrder,
+                "in"
+        );
     }
 
 
@@ -216,7 +242,12 @@ public class QuotationItemSizeService {
         QuotationItemSize size =
                 getById(id);
 
+        String formula = size.getQuotationItem() != null
+                ? size.getQuotationItem().getFormula()
+                : null;
+
         validateDimensions(
+                formula,
                 length,
                 width,
                 height
@@ -224,9 +255,11 @@ public class QuotationItemSizeService {
 
         BigDecimal sqft =
                 calculateSqft(
+                        formula,
                         length,
                         width,
-                        height
+                        height,
+                        "ft"
                 );
 
         size.setLengthValue(length);
@@ -342,27 +375,30 @@ public class QuotationItemSizeService {
     // VALIDATE DIMENSIONS
     // =========================================================
 
-    private void validateDimensions(
+    public void validateDimensions(
+            String formula,
             BigDecimal length,
             BigDecimal width,
             BigDecimal height) {
 
-        if (length == null
-                || width == null
-                || height == null) {
+        com.example.pravin_quotation.util.CalculationFormula.validateDimensions(
+                formula,
+                length,
+                width,
+                height
+        );
+    }
 
-            throw new IllegalArgumentException(
-                    "Length, width and height are required."
-            );
-        }
+    public void validateDimensions(
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height) {
 
-        if (length.compareTo(BigDecimal.ZERO) <= 0
-                || width.compareTo(BigDecimal.ZERO) <= 0
-                || height.compareTo(BigDecimal.ZERO) <= 0) {
-
-            throw new IllegalArgumentException(
-                    "Length, width and height must be greater than zero."
-            );
-        }
+        validateDimensions(
+                null,
+                length,
+                width,
+                height
+        );
     }
 }

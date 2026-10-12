@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Formula Calculation | Pravin KITCHENS & INTERIORS</title>
+
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary: #006b63;
+      --primary-dark: #004d47;
+      --primary-light: #e6f4f1;
+      --primary-accent: #0f8a7e;
+      --surface: #ffffff;
+      --bg: #f5f8f8;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border: #e2e8f0;
+      --border-accent: #c8dad6;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+      --radius: 12px;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* HEADER */
+    .app-header {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 1rem 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo-img {
+      height: 40px;
+      width: auto;
+      object-fit: contain;
+      background: #ffffff;
+      border-radius: 6px;
+    }
+
+    .brand-name {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 0;
+      line-height: 1.2;
+    }
+
+    .brand-sub {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+
+    .btn-nav {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .btn-nav-outline {
+      background: #ffffff;
+      border: 1px solid var(--border-accent);
+      color: var(--primary);
+    }
+
+    .btn-nav-outline:hover {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary-dark);
+    }
+
+    .btn-nav-primary {
+      background: var(--primary);
+      border: 1px solid var(--primary);
+      color: #ffffff;
+    }
+
+    .btn-nav-primary:hover {
+      background: var(--primary-dark);
+      border-color: var(--primary-dark);
+      color: #ffffff;
+    }
+
+    /* WORKFLOW BREADCRUMB */
+    .workflow-strip {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 0.75rem 2rem;
+    }
+
+    .workflow-steps {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    .workflow-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      text-decoration: none;
+      padding: 4px 10px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .workflow-step:hover {
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .workflow-step.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+      border: 1px solid var(--border-accent);
+    }
+
+    .workflow-separator {
+      color: #cbd5e1;
+      font-size: 0.75rem;
+    }
+
+    /* MAIN CONTAINER */
+    .content-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+      width: 100%;
+    }
+
+    .page-title-box {
+      margin-bottom: 2rem;
+    }
+
+    .page-title {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 0.35rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .page-desc {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin: 0;
+    }
+
+    /* CARDS */
+    .card-formula {
+      background: var(--surface);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      padding: 1.5rem;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      height: 100%;
+    }
+
+    .card-formula:hover {
+      box-shadow: var(--shadow-md);
+      border-color: var(--border-accent);
+    }
+
+    .formula-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .formula-expression {
+      background: #f8fafc;
+      border: 1px dashed #cbd5e1;
+      border-left: 4px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.85rem 1.25rem;
+      font-family: "Courier New", Courier, monospace;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #0f172a;
+      margin: 0.85rem 0;
+    }
+
+    .card-title-custom {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1e293b;
+      margin-bottom: 0.25rem;
+    }
+
+    .card-desc {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+
+    /* CALCULATOR BOX */
+    .calculator-card {
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    .calculator-header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: #ffffff;
+      padding: 1.25rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .calculator-header h4 {
+      margin: 0;
+      font-size: 1.2rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .calculator-body {
+      padding: 1.75rem;
+    }
+
+    .result-display {
+      background: #f8fafc;
+      border-radius: 10px;
+      border: 1px solid #e2e8f0;
+      padding: 1.25rem;
+    }
+
+    .result-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 4px;
+    }
+
+    .result-value {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: var(--primary);
+      line-height: 1.2;
+    }
+
+    /* FOOTER */
+    .app-footer {
+      background: #ffffff;
+      border-top: 1px solid var(--border);
+      padding: 1.25rem 2rem;
+      text-align: center;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-top: auto;
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- APP HEADER -->
+  <header class="app-header">
+    <div class="d-flex align-items-center">
+      <div class="brand-section">
+        <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS" class="brand-logo-img">
+        <div>
+          <h1 class="brand-name">Pravin KITCHENS & INTERIORS</h1>
+          <p class="brand-sub">Quotation Management System</p>
+        </div>
+      </div>
+
+      <div class="nav-actions">
+        <button type="button" class="btn-nav btn-nav-outline"
+          onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }">
+          <i class="bi bi-arrow-left"></i>
+          <span>Back</span>
+        </button>
+        <a th:href="@{/admin/dashboard}" class="btn-nav btn-nav-primary">
+          <i class="bi bi-house-door"></i>
+          <span>Dashboard</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- MASTER DATA WORKFLOW BAR -->
+  <nav class="workflow-strip" aria-label="Master Data Workflow">
+    <ul class="workflow-steps">
+      <li>
+        <a th:href="@{/admin/work-categories}" class="workflow-step">
+          <i class="bi bi-diagram-3-fill"></i>
+          <span>1. Work Categories</span>
+        </a>
+      </li>
+      <li class="workflow-separator"><i class="bi bi-chevron-right"></i></li>
+      <li>
+        <a th:href="@{/admin/divisions}" class="workflow-step">
+          <i class="bi bi-layers-fill"></i>
+          <span>2. Divisions</span>
+        </a>
+      </li>
+      <li class="workflow-separator"><i class="bi bi-chevron-right"></i></li>
+      <li>
+        <a th:href="@{/admin/materials}" class="workflow-step">
+          <i class="bi bi-bricks"></i>
+          <span>3. Materials</span>
+        </a>
+      </li>
+      <li class="workflow-separator"><i class="bi bi-chevron-right"></i></li>
+      <li>
+        <a th:href="@{/admin/material-options}" class="workflow-step">
+          <i class="bi bi-sliders"></i>
+          <span>4. Material Options</span>
+        </a>
+      </li>
+      <li class="workflow-separator"><i class="bi bi-chevron-right"></i></li>
+      <li>
+        <span class="workflow-step active">
+          <i class="bi bi-calculator-fill"></i>
+          <span>5. Formula Calculation</span>
+        </span>
+      </li>
+    </ul>
+  </nav>
+
+  <!-- CONTENT CONTAINER -->
+  <main class="content-container">
+
+    <div class="page-title-box">
+      <h2 class="page-title">
+        <i class="bi bi-calculator-fill text-primary" style="color: var(--primary) !important;"></i>
+        Formula Calculation
+      </h2>
+      <p class="page-desc">
+        Overview and verification of measurement sizing, pricing multipliers, and quotation calculation rules applied across the system.
+      </p>
+    </div>
+
+    <!-- SECTION: ACTIVE FORMULAS -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-check-circle-fill"></i> Primary Dimension Formula
+          </div>
+          <h3 class="card-title-custom">Measurement &amp; SQ.FT Calculation</h3>
+          <p class="card-desc">
+            Applied to standard modular items (wardrobes, kitchen cabinets, overhead units) where Length, Width, and Height dimensions are specified in inches.
+          </p>
+          <div class="formula-expression">
+            SQ.FT = (Length + Width) × Height / 144
+          </div>
+          <ul class="text-muted small ps-3 mb-0">
+            <li><strong>Length &amp; Width:</strong> Horizontal dimension components (inches).</li>
+            <li><strong>Height:</strong> Vertical dimension component (inches).</li>
+            <li><strong>Divisor (144):</strong> Converts total square inches into square feet.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-currency-rupee"></i> Item Pricing Formula
+          </div>
+          <h3 class="card-title-custom">Material &amp; Rate Application</h3>
+          <p class="card-desc">
+            Calculates line-item amounts by multiplying calculated square footage with the unit rate resolved from the active Material, Material Option, and Pricing Mode.
+          </p>
+          <div class="formula-expression">
+            Item Amount = Calculated SQ.FT × Unit Rate
+          </div>
+          <ul class="text-muted small ps-3 mb-0">
+            <li><strong>Unit Rate:</strong> Resolved from Division, Material Option, &amp; Pricing Mode (Economy / Standard / Premium).</li>
+            <li><strong>Offer Price:</strong> Optional manual override per item or room when applicable.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: QUOTATION TOTALS RULES -->
+    <div class="row g-4 mb-5">
+      <div class="col-lg-4">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-grid-fill"></i> Subtotal Calculation
+          </div>
+          <h4 class="card-title-custom">Room &amp; Item Subtotal</h4>
+          <div class="formula-expression" style="font-size: 0.95rem;">
+            Subtotal = Σ(Item Amounts)
+          </div>
+          <p class="card-desc mb-0">
+            Aggregates all active items across configured rooms. Discount amount is subtracted from the taxable base.
+          </p>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-percent"></i> GST Calculation
+          </div>
+          <h4 class="card-title-custom">Tax Computation</h4>
+          <div class="formula-expression" style="font-size: 0.95rem;">
+            GST = Taxable Amount × (GST% / 100)
+          </div>
+          <p class="card-desc mb-0">
+            Calculated on the net taxable amount (including other charges, accessories, and travel charge).
+          </p>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-cash-stack"></i> Grand Total
+          </div>
+          <h4 class="card-title-custom">Quotation Grand Total</h4>
+          <div class="formula-expression" style="font-size: 0.95rem;">
+            Grand Total = Subtotal + GST
+          </div>
+          <p class="card-desc mb-0">
+            Final payable amount presented on customer PDF quotations, WhatsApp notifications, and administrative dashboards.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION: INTERACTIVE FORMULA CALCULATOR -->
+    <div class="calculator-card mb-5">
+      <div class="calculator-header">
+        <h4>
+          <i class="bi bi-sliders"></i>
+          Formula Verification &amp; Live Calculator
+        </h4>
+        <span class="badge bg-light text-dark">Live Simulator</span>
+      </div>
+      <div class="calculator-body">
+        <div class="row g-4">
+          <div class="col-md-3">
+            <label for="calcLength" class="form-label fw-bold small">Length (inches)</label>
+            <input type="number" id="calcLength" class="form-control" value="72" min="0" step="0.1" oninput="calculateLiveFormula()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcWidth" class="form-label fw-bold small">Width (inches)</label>
+            <input type="number" id="calcWidth" class="form-control" value="24" min="0" step="0.1" oninput="calculateLiveFormula()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcHeight" class="form-label fw-bold small">Height (inches)</label>
+            <input type="number" id="calcHeight" class="form-control" value="36" min="0" step="0.1" oninput="calculateLiveFormula()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcRate" class="form-label fw-bold small">Rate / SQ.FT (₹)</label>
+            <input type="number" id="calcRate" class="form-control" value="1250" min="0" step="1" oninput="calculateLiveFormula()">
+          </div>
+        </div>
+
+        <div class="row g-4 mt-2">
+          <div class="col-md-3">
+            <label for="calcGst" class="form-label fw-bold small">GST Percentage (%)</label>
+            <select id="calcGst" class="form-select" onchange="calculateLiveFormula()">
+              <option value="18" selected>18% (Standard GST)</option>
+              <option value="12">12%</option>
+              <option value="5">5%</option>
+              <option value="0">0% (Nil)</option>
+            </select>
+          </div>
+          <div class="col-md-9 d-flex align-items-end">
+            <div class="text-muted small">
+              Formula applied: <code>((Length + Width) × Height) / 144</code>. Updates live as you change dimension values.
+            </div>
+          </div>
+        </div>
+
+        <hr class="my-4">
+
+        <div class="row g-3">
+          <div class="col-sm-6 col-lg-3">
+            <div class="result-display">
+              <div class="result-label">Calculated SQ.FT</div>
+              <div class="result-value" id="resSqft">24.00</div>
+              <small class="text-muted">sq.ft</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="result-display">
+              <div class="result-label">Base Item Total</div>
+              <div class="result-value" id="resAmount">₹ 30,000</div>
+              <small class="text-muted">SQ.FT × Rate</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="result-display">
+              <div class="result-label">GST Tax Amount</div>
+              <div class="result-value" id="resGst">₹ 5,400</div>
+              <small class="text-muted">at selected %</small>
+            </div>
+          </div>
+          <div class="col-sm-6 col-lg-3">
+            <div class="result-display" style="border-color: var(--border-accent); background: var(--primary-light);">
+              <div class="result-label" style="color: var(--primary-dark);">Grand Total</div>
+              <div class="result-value" id="resTotal" style="color: var(--primary-dark);">₹ 35,400</div>
+              <small class="text-muted">Amount + Tax</small>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="app-footer">
+    <div>&copy; Pravin KITCHENS & INTERIORS. Quotation Calculation Management System.</div>
+  </footer>
+
+  <script>
+    function calculateLiveFormula() {
+      const length = parseFloat(document.getElementById('calcLength').value) || 0;
+      const width = parseFloat(document.getElementById('calcWidth').value) || 0;
+      const height = parseFloat(document.getElementById('calcHeight').value) || 0;
+      const rate = parseFloat(document.getElementById('calcRate').value) || 0;
+      const gstPercent = parseFloat(document.getElementById('calcGst').value) || 0;
+
+      // Project measurement formula: (Length + Width) * Height / 144
+      const sqft = ((length + width) * height) / 144;
+      const amount = sqft * rate;
+      const gst = (amount * gstPercent) / 100;
+      const total = amount + gst;
+
+      document.getElementById('resSqft').innerText = sqft.toFixed(2);
+      document.getElementById('resAmount').innerText = '₹ ' + amount.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      document.getElementById('resGst').innerText = '₹ ' + gst.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+      document.getElementById('resTotal').innerText = '₹ ' + total.toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', calculateLiveFormula);
+  </script>
+
+</body>
+</html>

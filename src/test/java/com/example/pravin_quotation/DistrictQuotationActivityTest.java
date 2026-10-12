@@ -244,6 +244,7 @@ public class DistrictQuotationActivityTest {
         WebContext branchDetailsContext = createWebContext();
         branchDetailsContext.setVariable("branch", branch);
         branchDetailsContext.setVariable("employees", List.of(emp));
+        branchDetailsContext.setVariable("customers", List.of(cust));
         branchDetailsContext.setVariable("quotations", List.of(qSent, qPending, qWorking));
         branchDetailsContext.setVariable("pendingCount", 1L);
         branchDetailsContext.setVariable("workingCount", 1L);
@@ -254,6 +255,22 @@ public class DistrictQuotationActivityTest {
         String branchDetailsHtml = templateEngine.process("admin/branch-details", branchDetailsContext);
         assertNotNull(branchDetailsHtml);
         assertTrue(branchDetailsHtml.contains("data-quotation-number=\"Q-SENT-001\""));
+
+        // Verify Approved Business section is removed
+        assertFalse(branchDetailsHtml.contains("APPROVED BUSINESS"), "Approved Business section should be removed");
+        assertFalse(branchDetailsHtml.contains("id=\"approved\""), "id='approved' section should be removed");
+
+        // Verify Expected Section Order: 1. Quoted Value -> 2. Customers -> 3. Quotations
+        assertTrue(branchDetailsHtml.contains("id=\"quotation-value\""), "Quoted Value section should exist");
+        assertTrue(branchDetailsHtml.contains("CUSTOMER ACTIVITY"), "Customers section should exist");
+        assertTrue(branchDetailsHtml.contains("id=\"quotations\""), "Quotations section should exist");
+
+        int quotedValueIndex = branchDetailsHtml.indexOf("id=\"quotation-value\"");
+        int customersIndex = branchDetailsHtml.indexOf("CUSTOMER ACTIVITY");
+        int quotationsIndex = branchDetailsHtml.indexOf("id=\"quotations\"");
+
+        assertTrue(quotedValueIndex < customersIndex, "Quoted Value must appear above Customers section");
+        assertTrue(customersIndex < quotationsIndex, "Customers must appear immediately above Quotations section");
     }
 
     private WebContext createWebContext() {
