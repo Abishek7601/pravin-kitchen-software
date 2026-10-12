@@ -228,7 +228,8 @@ a {
     margin-left: 3px;
 }
 
-.form-group input {
+.form-group input,
+.form-group textarea {
     width: 100%;
     min-height: 48px;
     padding: 12px 14px;
@@ -243,17 +244,26 @@ a {
                 background var(--transition);
 }
 
-.form-group input:hover {
+.form-group textarea {
+    min-height: 90px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.form-group input:hover,
+.form-group textarea:hover {
     border-color: #9ccbb5;
 }
 
-.form-group input:focus {
+.form-group input:focus,
+.form-group textarea:focus {
     background: #ffffff;
     border-color: var(--peacock-green);
     box-shadow: 0 0 0 4px rgba(8, 127, 105, 0.11);
 }
 
-.form-group input::placeholder {
+.form-group input::placeholder,
+.form-group textarea::placeholder {
     color: #a1b2a8;
     font-weight: 400;
 }

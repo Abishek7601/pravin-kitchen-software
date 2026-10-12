@@ -519,6 +519,10 @@ color: #53666b;
 color: var(--warning-text);
 }
 
+.status-action.working {
+color: #1a6f8f;
+}
+
 .status-action.sent {
 color: var(--info-text);
 }

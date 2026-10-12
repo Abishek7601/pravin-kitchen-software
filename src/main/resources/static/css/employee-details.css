@@ -1062,6 +1062,69 @@ body {
     transform: translateY(-1px);
 }
 
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 31px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.view-btn {
+    color: var(--peacock-dark);
+    background: #e9f6f2;
+    border-color: #d5ece4;
+}
+
+.view-btn:hover {
+    color: #ffffff;
+    background: var(--peacock-green);
+    border-color: var(--peacock-green);
+}
+
+.edit-btn {
+    color: #226e94;
+    background: #edf7fc;
+    border-color: #c8e3ef;
+}
+
+.edit-btn:hover {
+    color: #ffffff;
+    background: #26749c;
+    border-color: #26749c;
+}
+
+.delete-btn {
+    color: #b33939;
+    background: #fdf2f2;
+    border-color: #f7d2d2;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.delete-btn:hover {
+    color: #ffffff;
+    background: #c53030;
+    border-color: #c53030;
+}
+
 
 /* =========================================================
    ACCOUNT ACTIONS

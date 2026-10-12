@@ -467,8 +467,7 @@
       <!-- 60 DAY QUOTED VALUE -->
       <!-- ================================================= -->
 
-      <a th:href="@{/admin/quotations/value(period='60')}"
-         class="dashboard-card value-card">
+      <div class="dashboard-card value-card">
 
         <div class="card-top">
 
@@ -477,12 +476,6 @@
             <i class="bi bi-currency-rupee"></i>
 
           </div>
-
-          <span class="card-arrow">
-
-                        <i class="bi bi-arrow-up-right"></i>
-
-                    </span>
 
         </div>
 
@@ -510,7 +503,7 @@
 
         </div>
 
-      </a>
+      </div>
 
 
 
@@ -559,17 +552,17 @@
 
 
       <!-- ================================================= -->
-      <!-- APPROVED CUSTOMERS -->
+      <!-- QUOTATIONS PENDING -->
       <!-- ================================================= -->
 
-      <a th:href="@{/admin/customers(status='approved')}"
-         class="dashboard-card approved-card">
+      <a th:href="@{/admin/quotations/status/PENDING}"
+         class="dashboard-card pending-card">
 
         <div class="card-top">
 
           <div class="card-icon">
 
-            <i class="bi bi-check-circle-fill"></i>
+            <i class="bi bi-clock-history"></i>
 
           </div>
 
@@ -585,15 +578,103 @@
         <div class="card-content">
 
                     <span class="card-label">
-                        Approved Customers
+                        Quotations Pending
                     </span>
 
-          <h2 th:text="${approvedCustomerCount}">
+          <h2 th:text="${pendingQuotationCount}">
             0
           </h2>
 
           <p>
-            Customers with approved quotations
+            Awaiting quotation building
+          </p>
+
+        </div>
+
+      </a>
+
+
+
+      <!-- ================================================= -->
+      <!-- QUOTATIONS WORKING -->
+      <!-- ================================================= -->
+
+      <a th:href="@{/admin/quotations/status/WORKING}"
+         class="dashboard-card working-card">
+
+        <div class="card-top">
+
+          <div class="card-icon">
+
+            <i class="bi bi-pencil-square"></i>
+
+          </div>
+
+          <span class="card-arrow">
+
+                        <i class="bi bi-arrow-up-right"></i>
+
+                    </span>
+
+        </div>
+
+
+        <div class="card-content">
+
+                    <span class="card-label">
+                        Quotations Working
+                    </span>
+
+          <h2 th:text="${workingQuotationCount}">
+            0
+          </h2>
+
+          <p>
+            In preparation / items entered
+          </p>
+
+        </div>
+
+      </a>
+
+
+
+      <!-- ================================================= -->
+      <!-- QUOTATIONS SENT -->
+      <!-- ================================================= -->
+
+      <a th:href="@{/admin/quotations/status/SENT}"
+         class="dashboard-card sent-card">
+
+        <div class="card-top">
+
+          <div class="card-icon">
+
+            <i class="bi bi-send-check-fill"></i>
+
+          </div>
+
+          <span class="card-arrow">
+
+                        <i class="bi bi-arrow-up-right"></i>
+
+                    </span>
+
+        </div>
+
+
+        <div class="card-content">
+
+                    <span class="card-label">
+                        Quotations Sent
+                    </span>
+
+          <h2 th:text="${sentQuotationCount}">
+            0
+          </h2>
+
+          <p>
+            Quotations sent to customers
           </p>
 
         </div>
@@ -648,149 +729,6 @@
           </p>
 
         </div>
-
-      </a>
-
-
-    </div>
-
-
-
-    <!-- ================================================= -->
-    <!-- QUICK ACTIONS -->
-    <!-- ================================================= -->
-
-    <div class="section-header">
-
-      <div>
-
-                <span class="section-label">
-                    QUICK ACCESS
-                </span>
-
-        <h3>
-          Manage System
-        </h3>
-
-      </div>
-
-    </div>
-
-
-    <div class="quick-actions">
-
-
-      <!-- Employees -->
-
-      <a th:href="@{/admin/employees}"
-         class="quick-action">
-
-        <div class="quick-icon">
-
-          <i class="bi bi-person-plus-fill"></i>
-
-        </div>
-
-        <div>
-
-          <strong>
-            Employees
-          </strong>
-
-          <span>
-                        Manage employees
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right"></i>
-
-      </a>
-
-
-
-      <!-- Branches -->
-
-      <a th:href="@{/admin/branches}"
-         class="quick-action">
-
-        <div class="quick-icon">
-
-          <i class="bi bi-building-add"></i>
-
-        </div>
-
-        <div>
-
-          <strong>
-            Branches
-          </strong>
-
-          <span>
-                        Manage districts
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right"></i>
-
-      </a>
-
-
-
-      <!-- Quotations -->
-
-      <a th:href="@{/admin/quotations}"
-         class="quick-action">
-
-        <div class="quick-icon">
-
-          <i class="bi bi-file-earmark-plus-fill"></i>
-
-        </div>
-
-        <div>
-
-          <strong>
-            Quotations
-          </strong>
-
-          <span>
-                        View quotations
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right"></i>
-
-      </a>
-
-
-
-      <!-- Customers -->
-
-      <a th:href="@{/admin/customers}"
-         class="quick-action">
-
-        <div class="quick-icon">
-
-          <i class="bi bi-person-vcard-fill"></i>
-
-        </div>
-
-        <div>
-
-          <strong>
-            Customers
-          </strong>
-
-          <span>
-                        Manage customers
-                    </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right"></i>
 
       </a>
 

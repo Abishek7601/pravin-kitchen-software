@@ -172,22 +172,26 @@ public class AdminQuotationBuilderService {
                 );
 
         // -----------------------------------------------------
-        // Generate quotation number
+        // Quotation lookup or creation
         // -----------------------------------------------------
 
-        String quotationNumber =
-                nextQuotationNumber();
-
-        // -----------------------------------------------------
-        // Create quotation
-        // -----------------------------------------------------
-
-        Quotation quotation =
-                new Quotation();
-
-        quotation.setQuotationNumber(
-                quotationNumber
-        );
+        Quotation quotation;
+        if (request.quotationId() != null) {
+            quotation = quotationRepository.findById(request.quotationId())
+                    .orElseGet(Quotation::new);
+            if (quotation.getId() != null) {
+                List<QuotationRoom> oldRooms =
+                        quotationRoomService.getActiveByQuotationId(quotation.getId());
+                for (QuotationRoom oldRoom : oldRooms) {
+                    quotationRoomService.deactivate(oldRoom.getId());
+                }
+            } else {
+                quotation.setQuotationNumber(nextQuotationNumber());
+            }
+        } else {
+            quotation = new Quotation();
+            quotation.setQuotationNumber(nextQuotationNumber());
+        }
 
         quotation.setCustomer(
                 customer
@@ -211,8 +215,9 @@ public class AdminQuotationBuilderService {
                 request.pricingMode()
         );
 
+        boolean hasRooms = request.rooms() != null && !request.rooms().isEmpty();
         quotation.setStatus(
-                QuotationStatus.DRAFT
+                hasRooms ? QuotationStatus.WORKING : QuotationStatus.PENDING
         );
 
         quotation.setCustomerRequirements(
@@ -819,6 +824,7 @@ public class AdminQuotationBuilderService {
     // =========================================================
 
     public record BuilderRequest(
+            Long quotationId,
             CustomerRequest customer,
             Long branchId,
             LocalDate quotationDate,

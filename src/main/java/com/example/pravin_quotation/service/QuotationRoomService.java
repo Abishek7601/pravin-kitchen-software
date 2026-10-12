@@ -3,6 +3,8 @@ package com.example.pravin_quotation.service;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationRoom;
 import com.example.pravin_quotation.model.QuotationWorkflow;
+import com.example.pravin_quotation.model.QuotationStatus;
+import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.QuotationRoomRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,13 +17,16 @@ public class QuotationRoomService {
 
     private final QuotationRoomRepository quotationRoomRepository;
     private final QuotationWorkflowService quotationWorkflowService;
+    private final QuotationRepository quotationRepository;
 
     public QuotationRoomService(
             QuotationRoomRepository quotationRoomRepository,
-            QuotationWorkflowService quotationWorkflowService
+            QuotationWorkflowService quotationWorkflowService,
+            QuotationRepository quotationRepository
     ) {
         this.quotationRoomRepository = quotationRoomRepository;
         this.quotationWorkflowService = quotationWorkflowService;
+        this.quotationRepository = quotationRepository;
     }
 
 
@@ -221,6 +226,11 @@ public class QuotationRoomService {
                 null,
                 buildRoomValue(savedRoom)
         );
+
+        if (quotation.getStatus() == QuotationStatus.PENDING) {
+            quotation.setStatus(QuotationStatus.WORKING);
+            quotationRepository.save(quotation);
+        }
 
         return savedRoom;
     }

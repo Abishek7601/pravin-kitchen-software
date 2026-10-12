@@ -214,6 +214,33 @@ a {
 
 
 /* =========================================================
+   ALERT MESSAGES
+   ========================================================= */
+
+.alert {
+    width: min(1400px, 100%);
+    margin: 15px auto 0;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    color: var(--success);
+    background: var(--success-bg);
+    border-color: #bce5d2;
+}
+
+.alert-error {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-color: #f0c5c5;
+}
+
+
+/* =========================================================
    TABLE CARD
    ========================================================= */
 
@@ -375,6 +402,28 @@ a {
 }
 
 
+/* WORKING */
+
+.status-working {
+    background: #e6f4fa;
+
+    border-color: #b8e2f2;
+
+    color: #1a6f8f;
+}
+
+
+/* SENT */
+
+.status-sent {
+    background: #edf7fc;
+
+    border-color: #c8e3ef;
+
+    color: #226e94;
+}
+
+
 /* APPROVED */
 
 .status-approved {
@@ -436,6 +485,69 @@ a {
 
     box-shadow:
         0 6px 15px rgba(8, 127, 105, 0.17);
+}
+
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.view-btn {
+    color: var(--peacock-deep);
+    background: var(--peacock-pale);
+    border-color: #cbe4da;
+}
+
+.view-btn:hover {
+    color: #ffffff;
+    background: var(--peacock-green);
+    border-color: var(--peacock-green);
+}
+
+.edit-btn {
+    color: #226e94;
+    background: #edf7fc;
+    border-color: #c8e3ef;
+}
+
+.edit-btn:hover {
+    color: #ffffff;
+    background: #26749c;
+    border-color: #26749c;
+}
+
+.delete-btn {
+    color: #b33939;
+    background: #fdf2f2;
+    border-color: #f7d2d2;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.delete-btn:hover {
+    color: #ffffff;
+    background: #c23616;
+    border-color: #c23616;
 }
 
 

@@ -7,6 +7,7 @@ import com.example.pravin_quotation.model.Material;
 import com.example.pravin_quotation.model.MaterialOption;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
+import com.example.pravin_quotation.model.QuotationCommunication;
 import com.example.pravin_quotation.model.QuotationItem;
 import com.example.pravin_quotation.model.QuotationItemSize;
 import com.example.pravin_quotation.model.QuotationRoom;
@@ -628,6 +629,59 @@ public class EmployeeQuotationController {
         return "redirect:/employee/quotations/builder/"
                 + id
                 + "?saved=customer";
+    }
+
+    // ============================================================
+    // SAVE AND VIEW FULL QUOTATION FROM BUILDER
+    // ============================================================
+
+    @PostMapping("/builder/{id}/save")
+    public String saveAndFinishBuilder(
+            @PathVariable Long id,
+            @RequestParam(required = false) String customerName,
+            @RequestParam(required = false) String phone,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String address,
+            @RequestParam(required = false) String quotationDate,
+            @RequestParam(required = false) String customerRequirements,
+            @RequestParam(required = false) String notes,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        User employee = getLoggedInEmployee(authentication);
+        Quotation quotation = getQuotationAndCheckOwnership(id, employee);
+
+        if (customerName != null && !customerName.isBlank() && phone != null && !phone.isBlank()) {
+            Customer customer = customerService.createOrUpdateForQuotation(
+                    customerName.trim(),
+                    email,
+                    phone.trim(),
+                    address,
+                    employee.getBranch().getId()
+            );
+            quotation.setCustomer(customer);
+        }
+
+        if (quotationDate != null && !quotationDate.isBlank()) {
+            quotation.setQuotationDate(
+                    LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE)
+            );
+        }
+        if (customerRequirements != null) {
+            quotation.setCustomerRequirements(customerRequirements);
+        }
+        if (notes != null) {
+            quotation.setNotes(notes);
+        }
+
+        quotationCalculationService.calculateQuotation(id);
+        quotationRepository.save(quotation);
+
+        redirectAttributes.addFlashAttribute(
+                "successMessage",
+                "Quotation " + quotation.getQuotationNumber() + " saved successfully."
+        );
+        return "redirect:/employee/quotations/view/" + id;
     }
 
 
@@ -2430,6 +2484,20 @@ public class EmployeeQuotationController {
                             java.nio.charset.StandardCharsets.UTF_8
                     );
 
+            quotationCommunicationService.record(
+                    quotation,
+                    QuotationCommunication.CommunicationType.WHATSAPP,
+                    phone,
+                    QuotationCommunication.CommunicationStatus.SENT,
+                    "Quotation WhatsApp message initiated."
+            );
+
+            if (quotation.getStatus() == QuotationStatus.PENDING
+                    || quotation.getStatus() == QuotationStatus.WORKING) {
+                quotation.setStatus(QuotationStatus.SENT);
+                quotationRepository.save(quotation);
+            }
+
             String whatsappUrl =
                     "https://wa.me/"
                             + phone
@@ -2527,6 +2595,55 @@ public class EmployeeQuotationController {
 
         return "redirect:/employee/quotations/view/"
                 + id;
+    }
+
+
+    // ============================================================
+    // DELETE QUOTATION
+    // ============================================================
+
+    @PostMapping("/delete/{id}")
+    public String deleteQuotation(
+            @PathVariable Long id,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+
+        try {
+
+            User employee =
+                    getLoggedInEmployee(
+                            authentication
+                    );
+
+            /*
+             * Verify that this quotation belongs
+             * to the logged-in employee before deletion.
+             */
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
+
+            quotationService.delete(
+                    id
+            );
+
+            redirectAttributes.addFlashAttribute(
+                    "successMessage",
+                    "Quotation deleted successfully."
+            );
+
+        } catch (Exception e) {
+
+            redirectAttributes.addFlashAttribute(
+                    "errorMessage",
+                    "Unable to delete quotation: "
+                            + e.getMessage()
+            );
+        }
+
+        return "redirect:/employee/quotations";
     }
 
 

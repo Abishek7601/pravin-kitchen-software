@@ -222,7 +222,7 @@ public class EmployeeController {
                 quotations.stream()
                         .filter(q ->
                                 q.getStatus() ==
-                                        QuotationStatus.APPROVED
+                                        QuotationStatus.SENT
                         )
                         .count();
 

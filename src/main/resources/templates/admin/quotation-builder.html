@@ -40,7 +40,10 @@
         <label class="field">Branch / District <span>*</span>
           <select id="branchId">
             <option value="">Select branch / district</option>
-            <option th:each="branch : ${branches}" th:value="${branch.id}" th:text="${branch.name}"></option>
+            <option th:each="branch : ${branches}"
+                    th:value="${branch.id}"
+                    th:text="${branch.name}"
+                    th:selected="${selectedBranchId != null and selectedBranchId == branch.id}"></option>
           </select>
         </label>
       </div>
@@ -56,11 +59,22 @@
       <div id="pricingMessage" class="inline-message"></div>
     </section>
 
-    <section class="card room-setup-card">
-      <div class="section-heading"><span class="step">03</span><div><h2>Floor & Room</h2><p>Select where the work is being done.</p></div></div>
+    <section class="card room-setup-card" id="roomSetupSection">
+      <div class="section-heading">
+        <span class="step">03</span>
+        <div>
+          <h2>Floor & Room</h2>
+          <p>Select where the work is being done or add another room.</p>
+        </div>
+        <button type="button" id="addAnotherRoomBtnStep3" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+          + Add Another Room
+        </button>
+      </div>
+      <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #006b63; font-weight: 600;"></div>
       <div class="grid two">
         <label class="field">Floor <span>*</span>
-          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option></select>
+          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Terrace</option><option>Other</option></select>
         </label>
         <label class="field">Room Number <span>*</span>
           <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
@@ -104,11 +118,32 @@
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
 
-    <section class="card summary-card">
-      <div class="section-heading"><span class="step">06</span><div><h2>Quote Summary</h2><p>Items are grouped by floor and room.</p></div></div>
+    <section class="card summary-card" id="summaryCard">
+      <div class="section-heading">
+        <span class="step">06</span>
+        <div>
+          <h2>Quote Summary</h2>
+          <p>Items and individual subtotals grouped by floor and room.</p>
+        </div>
+        <button type="button" id="addAnotherRoomBtnSummary" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+          + Add Another Room
+        </button>
+      </div>
       <div id="summaryEmpty" class="summary-empty"><div class="empty-icon">▦</div><h3>No items added yet</h3><p>Select a room, item, material and size to build the quotation.</p></div>
       <div id="roomsSummary"></div>
-      <div class="grand-summary"><span>Quotation Total</span><strong id="grandTotal">₹0.00</strong></div>
+      <div id="addAnotherRoomBottomArea" style="margin-top: 14px; display: none; justify-content: flex-end;">
+        <button type="button" id="addAnotherRoomBtnBottom" class="btn btn-outline-primary btn-sm">
+          + Add Another Room to Quotation
+        </button>
+      </div>
+      <div class="grand-summary" style="display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: #475569;">
+          <span>Combined Rooms Subtotal</span><strong id="combinedSubtotal">₹0.00</strong>
+        </div>
+        <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; color: #006b63;">
+          <span>Grand Total</span><strong id="grandTotal">₹0.00</strong>
+        </div>
+      </div>
     </section>
 
     <section class="card notes-card">
@@ -126,7 +161,13 @@
 <script th:inline="javascript">
   const csrfToken = /*[[${_csrf.token}]]*/ '';
   const API_BASE = /*[[@{/admin/quotations/builder}]]*/ '/admin/quotations/builder';
-  const state = { rooms: [], draft: null, pricingMode: 'MIDDLE' };
+  const editQuotationId = /*[[${editQuotationId}]]*/ '';
+  const state = {
+      quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
+      rooms: [],
+      draft: null,
+      pricingMode: 'MIDDLE'
+  };
 
   const $ = id => document.getElementById(id);
   const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -141,8 +182,82 @@
       if (!existing) {
           existing = {key: currentRoomKey(), floor, room, workDescription: $('workDescription').value, items: []};
           state.rooms.push(existing);
-      } else existing.workDescription = $('workDescription').value;
+      } else {
+          existing.workDescription = $('workDescription').value;
+      }
+      renderRoomPills();
       return existing;
+  }
+
+  function renderRoomPills() {
+      const container = $('roomPillsContainer');
+      if (!container) return;
+      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
+      if (roomsWithItems.length === 0) {
+          container.style.display = 'none';
+          container.innerHTML = '';
+          return;
+      }
+      container.style.display = 'flex';
+      const currentKey = currentRoomKey();
+      let html = '<span style="font-size: 12px; font-weight: 600; color: #475569; margin-right: 4px;">Configured Rooms:</span>';
+      roomsWithItems.forEach(r => {
+          const isActive = r.key === currentKey;
+          const roomTotal = r.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => s + (((z.length + z.width) * z.height) / 144) * Number(item.rate || 0), 0), 0);
+          html += `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'}" data-floor="${esc(r.floor)}" data-room="${esc(r.room)}" style="padding: 4px 10px; font-size: 12px; border-radius: 16px;">
+            ${esc(r.floor)} - Room ${esc(r.room)} (${money(roomTotal)})
+          </button>`;
+      });
+      html += `<button type="button" id="pillAddRoomBtn" class="btn btn-sm btn-outline-success" style="padding: 4px 10px; font-size: 12px; border-radius: 16px; font-weight: 600;">
+        + Add New Room
+      </button>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll('button[data-floor]').forEach(btn => {
+          btn.addEventListener('click', () => {
+              $('floor').value = btn.dataset.floor;
+              $('roomNumber').value = btn.dataset.room;
+              const r = currentRoom();
+              $('workDescription').value = r && r.workDescription ? r.workDescription : '';
+              renderRoomPills();
+              showRoomNotice(`Switched to ${btn.dataset.floor} / Room ${btn.dataset.room}. You can add more items below.`);
+          });
+      });
+      const pillAdd = $('pillAddRoomBtn');
+      if (pillAdd) pillAdd.addEventListener('click', triggerAddAnotherRoom);
+  }
+
+  function showRoomNotice(msg) {
+      const notice = $('roomNotice');
+      if (notice) {
+          notice.textContent = msg;
+          notice.style.display = 'block';
+          setTimeout(() => { notice.style.display = 'none'; }, 6000);
+      }
+  }
+
+  function triggerAddAnotherRoom() {
+      // Find the next unused room number for current or ground floor
+      const currentFloor = $('floor').value || 'Ground Floor';
+      const usedNumbers = state.rooms.filter(r => r.floor === currentFloor).map(r => Number(r.room));
+      let nextNum = 1;
+      while (usedNumbers.includes(nextNum) && nextNum <= 10) {
+          nextNum++;
+      }
+      $('floor').value = currentFloor;
+      if (nextNum <= 10) {
+          $('roomNumber').value = String(nextNum);
+      } else {
+          $('roomNumber').value = '';
+      }
+      $('workDescription').value = '';
+      hide('itemBuilder');
+      hide('itemArea');
+      hide('divisionArea');
+      state.draft = null;
+      renderRoomPills();
+      showRoomNotice(`Ready to configure another room (${currentFloor} - Room ${$('roomNumber').value || '?'}). Select items below.`);
+      $('roomSetupSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   async function getJson(url) {
@@ -253,23 +368,64 @@
       state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:s.offerPrice}));
       room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
-      $('itemBuilder').scrollIntoView({behavior:'smooth',block:'start'});
+      renderRoomPills();
+      $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
   }
 
   function renderSummary() {
       const container=$('roomsSummary'); container.innerHTML=''; let total=0;
-      $('summaryEmpty').classList.toggle('hidden', state.rooms.every(r=>r.items.length===0));
-      state.rooms.forEach((room, ri) => {
-          if (!room.items.length) return;
-          const roomTotal=room.items.reduce((sum,item)=>sum+item.sizes.reduce((s,z)=>s+(((z.length+z.width)*z.height)/144)*Number(item.rate||0),0),0); total+=roomTotal;
-          const block=document.createElement('div'); block.className='summary-room';
-          block.innerHTML=`<div class="summary-room-head"><div><span>${esc(room.floor)} · ROOM ${esc(room.room)}</span><h3>${esc(room.floor)} / Room ${esc(room.room)}</h3></div><strong>${money(roomTotal)}</strong></div>`;
-          const table=document.createElement('div'); table.className='summary-table';
-          room.items.forEach((item,ii)=>{ item.sizes.forEach((z,si)=>{ const sqft=((z.length+z.width)*z.height)/144; const amount=sqft*Number(item.rate||0); const offer=z.offerPrice==null?amount:Number(z.offerPrice); const row=document.createElement('div'); row.className='summary-row'; row.innerHTML=`<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${sqft.toFixed(2)} SQ.FT</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><div>${money(offer)}</div><button type="button" class="summary-delete" data-room="${ri}" data-item="${ii}" data-size="${si}">×</button>`; table.appendChild(row); }); });
-          block.appendChild(table); container.appendChild(block);
+      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
+      $('summaryEmpty').classList.toggle('hidden', roomsWithItems.length > 0);
+      $('addAnotherRoomBottomArea').style.display = roomsWithItems.length > 0 ? 'flex' : 'none';
+
+      roomsWithItems.forEach((room, ri) => {
+          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => s + (((z.length + z.width) * z.height) / 144) * Number(item.rate || 0), 0), 0);
+          total += roomTotal;
+          const block = document.createElement('div');
+          block.className = 'summary-room';
+          block.innerHTML = `<div class="summary-room-head">
+            <div>
+              <span>${esc(room.floor)} · ROOM ${esc(room.room)}</span>
+              <h3>${esc(room.floor)} / Room ${esc(room.room)}</h3>
+              ${room.workDescription ? `<small style="color: #64748b; display: block; margin-top: 2px;">${esc(room.workDescription)}</small>` : ''}
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 11px; color: #64748b; display: block;">Room Subtotal</span>
+              <strong style="color: #006b63; font-size: 1.15rem;">${money(roomTotal)}</strong>
+            </div>
+          </div>`;
+          const table = document.createElement('div');
+          table.className = 'summary-table';
+          room.items.forEach((item, ii) => {
+              item.sizes.forEach((z, si) => {
+                  const sqft = ((z.length + z.width) * z.height) / 144;
+                  const amount = sqft * Number(item.rate || 0);
+                  const offer = z.offerPrice == null ? amount : Number(z.offerPrice);
+                  const row = document.createElement('div');
+                  row.className = 'summary-row';
+                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${sqft.toFixed(2)} SQ.FT</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><div>${money(offer)}</div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
+                  table.appendChild(row);
+              });
+          });
+          block.appendChild(table);
+          container.appendChild(block);
       });
-      $('grandTotal').textContent=money(total);
-      document.querySelectorAll('.summary-delete').forEach(btn=>btn.addEventListener('click',()=>{const r=state.rooms[btn.dataset.room], itemIndex=Number(btn.dataset.item), sizeIndex=Number(btn.dataset.size); r.items[itemIndex].sizes.splice(sizeIndex,1); if(!r.items[itemIndex].sizes.length)r.items.splice(itemIndex,1); renderSummary();}));
+
+      if ($('combinedSubtotal')) $('combinedSubtotal').textContent = money(total);
+      $('grandTotal').textContent = money(total);
+
+      document.querySelectorAll('.summary-delete').forEach(btn => {
+          btn.addEventListener('click', () => {
+              const r = state.rooms.find(rm => rm.key === btn.dataset.roomKey);
+              if (!r) return;
+              const itemIndex = Number(btn.dataset.item);
+              const sizeIndex = Number(btn.dataset.size);
+              r.items[itemIndex].sizes.splice(sizeIndex, 1);
+              if (!r.items[itemIndex].sizes.length) r.items.splice(itemIndex, 1);
+              renderSummary();
+              renderRoomPills();
+          });
+      });
   }
 
   async function recalculateAll() {
@@ -284,15 +440,86 @@
       const name=$('customerName').value.trim(), phone=$('customerPhone').value.trim(), branchId=Number($('branchId').value||0);
       if(!name||!phone||!branchId||!$('quotationDate').value)return alert('Customer Name, Phone, Branch and Date are required.');
       if(!state.rooms.some(r=>r.items.length))return alert('Add at least one item to the quotation.');
-      const payload={customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},branchId,quotationDate:$('quotationDate').value,pricingMode:state.pricingMode,customerRequirements:$('customerRequirements').value.trim(),notes:$('notes').value.trim(),rooms:state.rooms.filter(r=>r.items.length).map(r=>({floor:r.floor,room:r.room,workDescription:r.workDescription,items:r.items.map(i=>({workCategoryId:i.categoryId,divisionId:i.divisionId,itemId:i.itemId,materialId:i.materialId,materialOptionId:i.materialOptionId,itemDescription:i.itemDescription,specification:i.specification,sizes:i.sizes}))}))};
+      const payload={quotationId:state.quotationId, customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},branchId,quotationDate:$('quotationDate').value,pricingMode:state.pricingMode,customerRequirements:$('customerRequirements').value.trim(),notes:$('notes').value.trim(),rooms:state.rooms.filter(r=>r.items.length).map(r=>({floor:r.floor,room:r.room,workDescription:r.workDescription,items:r.items.map(i=>({workCategoryId:i.categoryId,divisionId:i.divisionId,itemId:i.itemId,materialId:i.materialId,materialOptionId:i.materialOptionId,itemDescription:i.itemDescription,specification:i.specification,sizes:i.sizes}))}))};
       const button=$('saveQuotationBtn'); button.disabled=true; button.textContent='Saving Quotation...'; $('saveMessage').textContent='Saving customer, rooms, items and pricing...';
       try { const response=await fetch(`${API_BASE}/save`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify(payload)}); if(response.redirected){window.location.href=response.url;return;} const text=await response.text(); throw new Error(text||'Unable to save quotation.'); } catch(e){ $('saveMessage').textContent=e.message; button.disabled=false; button.textContent='Save Quotation'; }
   }
 
+  // Event Listeners
   document.querySelectorAll('.category-choice').forEach(btn=>btn.addEventListener('click',()=>loadDivisions(Number(btn.dataset.id),btn.dataset.name)));
-  $('addSizeBtn').addEventListener('click',()=>addSizeRow()); $('addItemBtn').addEventListener('click',addDraftToRoom); $('cancelItemBtn').addEventListener('click',()=>hide('itemBuilder'));
-  document.querySelectorAll('input[name="pricingMode"]').forEach(r=>r.addEventListener('change',recalculateAll)); $('branchId').addEventListener('change',()=>{if(state.draft)refreshDraftRate();}); $('floor').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();}); $('roomNumber').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();}); $('workDescription').addEventListener('input',()=>{const r=currentRoom();if(r)r.workDescription=$('workDescription').value;}); $('saveQuotationBtn').addEventListener('click',saveQuotation);
-  $('quoteNumberPreview').textContent='AUTO'; addSizeRow();
+  $('addSizeBtn').addEventListener('click',()=>addSizeRow());
+  $('addItemBtn').addEventListener('click',addDraftToRoom);
+  $('cancelItemBtn').addEventListener('click',()=>hide('itemBuilder'));
+  document.querySelectorAll('input[name="pricingMode"]').forEach(r=>r.addEventListener('change',recalculateAll));
+  $('branchId').addEventListener('change',()=>{if(state.draft)refreshDraftRate();});
+  $('floor').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
+  $('roomNumber').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
+  $('workDescription').addEventListener('input',()=>{const r=currentRoom();if(r)r.workDescription=$('workDescription').value;});
+  $('saveQuotationBtn').addEventListener('click',saveQuotation);
+
+  // Add Another Room buttons
+  $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
+  $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
+  $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
+
+  $('quoteNumberPreview').textContent='AUTO';
+  addSizeRow();
+
+  // Load existing quotation if editing
+  if (state.quotationId) {
+      getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
+          if (!data) return;
+          if (data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
+          if (data.customerName) $('customerName').value = data.customerName;
+          if (data.phone) $('customerPhone').value = data.phone;
+          if (data.email) $('customerEmail').value = data.email;
+          if (data.address) $('customerAddress').value = data.address;
+          if (data.quotationDate) $('quotationDate').value = data.quotationDate;
+          if (data.branchId) $('branchId').value = data.branchId;
+          if (data.customerRequirements) $('customerRequirements').value = data.customerRequirements;
+          if (data.notes) $('notes').value = data.notes;
+          if (data.pricingMode) {
+              const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
+              if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
+          }
+          if (data.rooms && data.rooms.length > 0) {
+              state.rooms = data.rooms.map(r => ({
+                  key: `${r.floor}||${r.room}`,
+                  floor: r.floor,
+                  room: r.room,
+                  workDescription: r.workDescription || '',
+                  items: (r.items || []).map(i => ({
+                      categoryId: i.categoryId,
+                      categoryName: i.categoryName,
+                      divisionId: i.divisionId,
+                      divisionName: i.divisionName,
+                      itemId: i.itemId,
+                      itemName: i.itemName,
+                      materialId: i.materialId,
+                      materialName: i.materialName,
+                      materialOptionId: i.materialOptionId,
+                      materialOptionName: i.materialOptionName,
+                      rate: Number(i.rate || 0),
+                      itemDescription: i.itemDescription || '',
+                      specification: i.specification || '',
+                      sizes: (i.sizes || []).map(s => ({
+                          length: Number(s.length || 0),
+                          width: Number(s.width || 0),
+                          height: Number(s.height || 0),
+                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null
+                      }))
+                  }))
+              }));
+              $('floor').value = state.rooms[0].floor;
+              $('roomNumber').value = state.rooms[0].room;
+              $('workDescription').value = state.rooms[0].workDescription || '';
+              renderSummary();
+              renderRoomPills();
+          }
+      }).catch(err => {
+          console.error("Failed to load quotation", err);
+      });
+  }
 </script>
 </body>
 </html>

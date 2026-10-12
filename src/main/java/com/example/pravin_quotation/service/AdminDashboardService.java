@@ -146,7 +146,7 @@ public class AdminDashboardService {
 
         return quotationRepository
                 .findByStatusOrderByCreatedAtDesc(
-                        com.example.pravin_quotation.model.QuotationStatus.APPROVED
+                        com.example.pravin_quotation.model.QuotationStatus.SENT
                 )
                 .stream()
                 .map(quotation -> quotation.getCustomer())
@@ -157,6 +157,36 @@ public class AdminDashboardService {
     }
 
     // ==============================
+    // QUOTATIONS SENT
+    // ==============================
+
+    public long getSentQuotationCount() {
+        return quotationRepository.countByStatus(
+                com.example.pravin_quotation.model.QuotationStatus.SENT
+        );
+    }
+
+    // ==============================
+    // QUOTATIONS WORKING
+    // ==============================
+
+    public long getWorkingQuotationCount() {
+        return quotationRepository.countByStatus(
+                com.example.pravin_quotation.model.QuotationStatus.WORKING
+        );
+    }
+
+    // ==============================
+    // QUOTATIONS PENDING
+    // ==============================
+
+    public long getPendingQuotationCount() {
+        return quotationRepository.countByStatus(
+                com.example.pravin_quotation.model.QuotationStatus.PENDING
+        );
+    }
+
+    // ==============================
     // APPROVED CUSTOMER QUOTATIONS
     // ==============================
 
@@ -164,7 +194,7 @@ public class AdminDashboardService {
 
         return quotationRepository
                 .findByStatusOrderByCreatedAtDesc(
-                        com.example.pravin_quotation.model.QuotationStatus.APPROVED
+                        com.example.pravin_quotation.model.QuotationStatus.SENT
                 );
     }
 

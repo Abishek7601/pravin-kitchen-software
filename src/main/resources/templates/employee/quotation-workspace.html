@@ -49,6 +49,12 @@
 
         <div class="header-actions">
 
+            <!-- Employee Builder endpoint -->
+            <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
+               class="btn btn-primary" style="background: #006b63; color: white;">
+                ✏ Edit in Builder
+            </a>
+
             <!-- Employee PDF endpoint -->
             <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
                class="btn btn-dark">
@@ -154,7 +160,7 @@
 
             <div class="status-badge"
                  th:text="${quotation.status}">
-                DRAFT
+                PENDING
             </div>
 
         </div>
@@ -193,7 +199,7 @@
                 </span>
 
                 <strong th:text="${quotation.status}">
-                    DRAFT
+                    PENDING
                 </strong>
 
             </div>
@@ -223,31 +229,6 @@
 
         <div class="status-actions">
 
-
-            <!-- DRAFT -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="DRAFT">
-
-                <button type="submit"
-                        class="status-action draft"
-                        th:disabled="${quotation.status.name() == 'DRAFT'}">
-
-                    Draft
-
-                </button>
-
-            </form>
-
-
             <!-- PENDING -->
 
             <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
@@ -266,6 +247,30 @@
                         th:disabled="${quotation.status.name() == 'PENDING'}">
 
                     Pending
+
+                </button>
+
+            </form>
+
+
+            <!-- WORKING -->
+
+            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}"/>
+
+                <input type="hidden"
+                       name="status"
+                       value="WORKING">
+
+                <button type="submit"
+                        class="status-action working"
+                        th:disabled="${quotation.status.name() == 'WORKING'}">
+
+                    Working
 
                 </button>
 
@@ -294,79 +299,6 @@
                 </button>
 
             </form>
-
-
-            <!-- APPROVED -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="APPROVED">
-
-                <button type="submit"
-                        class="status-action approved"
-                        th:disabled="${quotation.status.name() == 'APPROVED'}">
-
-                    Approved
-
-                </button>
-
-            </form>
-
-
-            <!-- CANCELLED -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="CANCELLED">
-
-                <button type="submit"
-                        class="status-action cancelled"
-                        th:disabled="${quotation.status.name() == 'CANCELLED'}">
-
-                    Cancelled
-
-                </button>
-
-            </form>
-
-
-            <!-- COMPLETED -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="COMPLETED">
-
-                <button type="submit"
-                        class="status-action completed"
-                        th:disabled="${quotation.status.name() == 'COMPLETED'}">
-
-                    Completed
-
-                </button>
-
-            </form>
-
 
         </div>
 

@@ -347,6 +347,17 @@ select {
 }
 
 
+/* Working */
+
+.summary-icon.working-icon {
+    background: #e6f4fa;
+
+    color: #1a6f8f;
+
+    border-color: #b8e2f2;
+}
+
+
 /* Approved */
 
 .summary-icon.approved-icon {
@@ -846,6 +857,17 @@ select {
 }
 
 
+/* Working */
+
+.status-working {
+    color: #1a6f8f;
+
+    background: #e6f4fa;
+
+    border-color: #b8e2f2;
+}
+
+
 /* Sent */
 
 .status-sent {
@@ -980,6 +1002,28 @@ select {
     background: #26749c;
 
     border-color: #26749c;
+}
+
+
+/* Delete */
+
+.delete-btn {
+    color: #b33939;
+
+    background: #fdf2f2;
+
+    border-color: #f7d2d2;
+
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.delete-btn:hover {
+    color: #ffffff;
+
+    background: #c23616;
+
+    border-color: #c23616;
 }
 
 

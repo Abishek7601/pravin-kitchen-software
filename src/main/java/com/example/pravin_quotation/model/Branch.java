@@ -21,6 +21,9 @@ public class Branch {
     @Column
     private String whatsapp;
 
+    @Column(name = "branch_address", columnDefinition = "TEXT")
+    private String branchAddress;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -31,13 +34,19 @@ public class Branch {
     }
 
     public Branch(Long id, String name, String email, String whatsapp,
-                  Boolean active, LocalDateTime createdAt) {
+                  String branchAddress, Boolean active, LocalDateTime createdAt) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.whatsapp = whatsapp;
+        this.branchAddress = branchAddress;
         this.active = active;
         this.createdAt = createdAt;
+    }
+
+    public Branch(Long id, String name, String email, String whatsapp,
+                  Boolean active, LocalDateTime createdAt) {
+        this(id, name, email, whatsapp, null, active, createdAt);
     }
 
     @PrePersist
@@ -79,6 +88,14 @@ public class Branch {
 
     public void setWhatsapp(String whatsapp) {
         this.whatsapp = whatsapp;
+    }
+
+    public String getBranchAddress() {
+        return branchAddress;
+    }
+
+    public void setBranchAddress(String branchAddress) {
+        this.branchAddress = branchAddress;
     }
 
     public Boolean getActive() {

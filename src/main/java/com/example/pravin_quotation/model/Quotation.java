@@ -74,7 +74,7 @@ public class Quotation {
      */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
-    private QuotationStatus status = QuotationStatus.DRAFT;
+    private QuotationStatus status = QuotationStatus.PENDING;
 
     /*
      * Pricing mode selected for this quotation.
@@ -202,7 +202,7 @@ public class Quotation {
         }
 
         if (status == null) {
-            status = QuotationStatus.DRAFT;
+            status = QuotationStatus.PENDING;
         }
 
         if (subtotal == null) {

@@ -129,6 +129,14 @@ public class QuotationCalculationService {
         quotation.setGrandTotal(
                 money(grandTotal));
 
+        if (quotation.getStatus() == QuotationStatus.PENDING) {
+            boolean hasRooms = !rooms.isEmpty();
+            boolean hasTotal = quotationSubtotal.compareTo(BigDecimal.ZERO) > 0;
+            if (hasRooms || hasTotal) {
+                quotation.setStatus(QuotationStatus.WORKING);
+            }
+        }
+
         return quotationRepository.save(quotation);
     }
 

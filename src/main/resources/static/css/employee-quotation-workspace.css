@@ -577,6 +577,17 @@ input:focus-visible {
     background: #ffedcc;
 }
 
+.status-action.working {
+    color: #1a6f8f;
+    background: #e6f4fa;
+    border-color: #b8e2f2;
+}
+
+.status-action.working:hover:not(:disabled),
+.status-action.working:disabled {
+    background: #cce9f5;
+}
+
 .status-action.sent {
     color: #176b9a;
     background: #f0f8ff;

@@ -219,7 +219,7 @@
          WORK BUILDER
     ====================================================== -->
 
-    <section class="work-builder">
+    <section class="work-builder" id="workLocationSection">
 
       <div class="builder-section-heading">
 
@@ -228,7 +228,7 @@
           <h2>Which room are you working on?</h2>
         </div>
 
-        <div class="location-controls">
+        <div class="location-controls" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
 
           <label>
             <span>Floor</span>
@@ -258,9 +258,26 @@
             </select>
           </label>
 
+          <button type="button" id="addAnotherRoomBtnHeader" class="small-save-btn" style="background: #006b63; color: #ffffff; cursor: pointer; height: 38px;">
+            + Add Another Room
+          </button>
+
         </div>
 
       </div>
+
+      <!-- Quick Room Switcher Tabs for existing rooms -->
+      <div id="employeeRoomPills" style="margin: 10px 0 14px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;" th:if="${!#lists.isEmpty(rooms)}">
+        <span style="font-size: 12px; font-weight: 600; color: #475569;">Configured Rooms:</span>
+        <button type="button" class="btn-employee-room-pill" th:each="r : ${rooms}"
+                th:attr="data-floor=${r.floor},data-room=${r.room}"
+                style="padding: 4px 10px; font-size: 12px; border-radius: 16px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #1e293b;">
+          <span th:text="${r.floor + ' - Room ' + r.room}">Ground Floor - Room 1</span>
+          (<b th:text="${'₹' + #numbers.formatDecimal(r.subtotal, 1, 2)}" style="color: #006b63;">₹0.00</b>)
+        </button>
+      </div>
+
+      <div id="roomAlertMsgEmployee" style="display: none; padding: 10px 14px; background: #f0faf5; color: #006b63; border-radius: 6px; border: 1px solid #c8dad6; margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
 
 
       <div class="category-strip">
@@ -563,13 +580,19 @@
           <h2>Rooms, Materials &amp; Pricing</h2>
         </div>
 
-        <div class="summary-total">
-          <span>Grand Total</span>
-          <strong>
-            ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
-                            0.00
-                        </span>
-          </strong>
+        <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+          <button type="button" id="addAnotherRoomBtnSummary" style="padding: 8px 14px; background: #ffffff; color: #006b63; border: 1.5px solid #006b63; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
+            + Add Another Room
+          </button>
+
+          <div class="summary-total">
+            <span>Grand Total</span>
+            <strong>
+              ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                              0.00
+                          </span>
+            </strong>
+          </div>
         </div>
 
       </div>
@@ -806,9 +829,27 @@
 
     <div class="bottom-actions">
 
+      <form th:if="${quotation != null and quotation.id != null}"
+            th:action="@{/employee/quotations/builder/{id}/save(id=${quotation.id})}"
+            method="post"
+            id="finishQuotationForm"
+            style="display: inline-block;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="customerName" id="saveCustName">
+        <input type="hidden" name="phone" id="saveCustPhone">
+        <input type="hidden" name="email" id="saveCustEmail">
+        <input type="hidden" name="address" id="saveCustAddress">
+        <input type="hidden" name="quotationDate" id="saveCustDate">
+        <input type="hidden" name="customerRequirements" id="saveCustReq">
+        <input type="hidden" name="notes" id="saveCustNotes">
+        <button type="submit" class="primary-btn" id="saveQuotationBtnEmployee" style="background: #006b63; color: #ffffff; font-weight: 700; cursor: pointer;">
+          ✓ Save Quotation
+        </button>
+      </form>
+
       <a th:if="${quotation != null and quotation.id != null}"
          th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-         class="primary-btn">
+         class="secondary-btn">
         ↓ Download PDF
       </a>
 
@@ -1581,6 +1622,109 @@ categoryButtons.forEach(function (button) {
       if (categoryButtons.length > 0) {
 
           categoryButtons[0].click();
+      }
+
+      // =====================================================
+      // ADD ANOTHER ROOM & ROOM SWITCHER
+      // =====================================================
+
+      function triggerAddAnotherRoomEmployee() {
+          const floorEl = document.getElementById("floor");
+          const roomEl = document.getElementById("room");
+          const alertMsg = document.getElementById("roomAlertMsgEmployee");
+
+          const currentFloor = floorEl ? floorEl.value : "Ground Floor";
+          const usedNums = [];
+          document.querySelectorAll(".room-summary-card").forEach(function (card) {
+              const f = card.querySelector(".room-floor")?.textContent.trim();
+              const r = card.querySelector(".room-summary-header h3 span")?.textContent.trim();
+              if (f === currentFloor && r) {
+                  usedNums.push(Number(r));
+              }
+          });
+
+          let nextNum = 1;
+          while (usedNums.includes(nextNum) && nextNum <= 10) {
+              nextNum++;
+          }
+          if (roomEl && nextNum <= 10) {
+              roomEl.value = String(nextNum);
+          }
+
+          if (materialPanel) materialPanel.hidden = true;
+          if (sizePanel) sizePanel.hidden = true;
+          pending = [];
+          renderPending();
+          resetSizeInputs();
+
+          if (alertMsg) {
+              alertMsg.textContent = `Ready to add items for ${currentFloor} - Room ${roomEl ? roomEl.value : '?'}. Choose a category and items below.`;
+              alertMsg.style.display = "block";
+              setTimeout(function () { alertMsg.style.display = "none"; }, 6000);
+          }
+
+          const targetSection = document.getElementById("workLocationSection");
+          if (targetSection) {
+              targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+          }
+      }
+
+      const btnHeader = document.getElementById("addAnotherRoomBtnHeader");
+      if (btnHeader) {
+          btnHeader.addEventListener("click", triggerAddAnotherRoomEmployee);
+      }
+
+      const btnSummary = document.getElementById("addAnotherRoomBtnSummary");
+      if (btnSummary) {
+          btnSummary.addEventListener("click", triggerAddAnotherRoomEmployee);
+      }
+
+      document.querySelectorAll(".btn-employee-room-pill").forEach(function (pill) {
+          pill.addEventListener("click", function () {
+              const f = this.dataset.floor;
+              const r = this.dataset.room;
+              const floorEl = document.getElementById("floor");
+              const roomEl = document.getElementById("room");
+              if (floorEl && f) floorEl.value = f;
+              if (roomEl && r) roomEl.value = r;
+
+              const alertMsg = document.getElementById("roomAlertMsgEmployee");
+              if (alertMsg) {
+                  alertMsg.textContent = `Switched to ${f} - Room ${r}. You can configure more items below or click "+ Add Another Room".`;
+                  alertMsg.style.display = "block";
+                  setTimeout(function () { alertMsg.style.display = "none"; }, 6000);
+              }
+
+              const targetSection = document.getElementById("workLocationSection");
+              if (targetSection) {
+                  targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
+              }
+          });
+      });
+
+      // =====================================================
+      // FINISH & SAVE QUOTATION SYNC
+      // =====================================================
+
+      const finishForm = document.getElementById("finishQuotationForm");
+      if (finishForm) {
+          finishForm.addEventListener("submit", function () {
+              const cName = document.getElementById("customerName")?.value || "";
+              const cPhone = document.getElementById("phone")?.value || "";
+              const cEmail = document.getElementById("email")?.value || "";
+              const cAddress = document.getElementById("address")?.value || "";
+              const cDate = document.getElementById("quotationDate")?.value || "";
+              const cReq = document.getElementById("customerRequirements")?.value || "";
+              const cNotes = document.getElementById("notes")?.value || "";
+
+              document.getElementById("saveCustName").value = cName;
+              document.getElementById("saveCustPhone").value = cPhone;
+              document.getElementById("saveCustEmail").value = cEmail;
+              document.getElementById("saveCustAddress").value = cAddress;
+              document.getElementById("saveCustDate").value = cDate;
+              document.getElementById("saveCustReq").value = cReq;
+              document.getElementById("saveCustNotes").value = cNotes;
+          });
       }
 
   });

@@ -247,6 +247,32 @@
 
                 </div>
 
+
+                <!-- BRANCH ADDRESS -->
+
+                <div class="contact-row">
+
+                    <span class="contact-icon">
+                        📍
+                    </span>
+
+                    <span class="contact-value"
+                          th:if="${branch.branchAddress != null and !#strings.isEmpty(branch.branchAddress)}"
+                          th:text="${branch.branchAddress}">
+
+                        Branch address
+
+                    </span>
+
+                    <span class="contact-value muted"
+                          th:if="${branch.branchAddress == null or #strings.isEmpty(branch.branchAddress)}">
+
+                        Address not provided
+
+                    </span>
+
+                </div>
+
             </div>
 
 

@@ -176,6 +176,17 @@ public class BranchService {
         }
 
 
+        if (branch.getBranchAddress() != null) {
+
+            String branchAddress =
+                    branch.getBranchAddress().trim();
+
+            branch.setBranchAddress(
+                    branchAddress.isEmpty() ? null : branchAddress
+            );
+        }
+
+
         // -----------------------------------------------------
         // Default active status
         // -----------------------------------------------------

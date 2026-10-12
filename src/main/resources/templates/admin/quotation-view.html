@@ -112,7 +112,7 @@
               th:classappend="' status-' + ${#strings.toLowerCase(quotation.status.name())}"
               th:text="${quotation.status}">
 
-            DRAFT
+            PENDING
 
         </span>
 
@@ -146,7 +146,7 @@
                 Current:
 
                 <strong th:text="${quotation.status}">
-                    DRAFT
+                    PENDING
                 </strong>
 
             </div>
@@ -155,28 +155,6 @@
 
 
         <div class="status-buttons">
-
-
-            <!-- DRAFT -->
-
-            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       name="status"
-                       value="DRAFT">
-
-                <button type="submit"
-                        class="status-action draft"
-                        th:disabled="${quotation.status.name() == 'DRAFT'}">
-
-                    Draft
-
-                </button>
-
-            </form>
-
-
 
             <!-- PENDING -->
 
@@ -199,6 +177,27 @@
 
 
 
+            <!-- WORKING -->
+
+            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
+                  method="post">
+
+                <input type="hidden"
+                       name="status"
+                       value="WORKING">
+
+                <button type="submit"
+                        class="status-action working"
+                        th:disabled="${quotation.status.name() == 'WORKING'}">
+
+                    Working
+
+                </button>
+
+            </form>
+
+
+
             <!-- SENT -->
 
             <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
@@ -213,72 +212,6 @@
                         th:disabled="${quotation.status.name() == 'SENT'}">
 
                     Sent
-
-                </button>
-
-            </form>
-
-
-
-            <!-- APPROVED -->
-
-            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       name="status"
-                       value="APPROVED">
-
-                <button type="submit"
-                        class="status-action approved"
-                        th:disabled="${quotation.status.name() == 'APPROVED'}">
-
-                    Approved
-
-                </button>
-
-            </form>
-
-
-
-
-
-
-            <!-- CANCELLED -->
-
-            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       name="status"
-                       value="CANCELLED">
-
-                <button type="submit"
-                        class="status-action cancelled"
-                        th:disabled="${quotation.status.name() == 'CANCELLED'}">
-
-                    Cancelled
-
-                </button>
-
-            </form>
-
-
-
-            <!-- EXPIRED -->
-
-            <form th:action="@{/admin/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       name="status"
-                       value="COMPLETED">
-
-                <button type="submit"
-                        class="status-action completed"
-                        th:disabled="${quotation.status.name() == 'EXPIRED'}">
-
-                    Completed
 
                 </button>
 
@@ -471,7 +404,7 @@
                 <strong
                         th:text="${quotation.status}">
 
-                    DRAFT
+                    PENDING
 
                 </strong>
 
@@ -543,10 +476,10 @@
                 Add rooms and work items to build the quotation.
             </p>
 
-            <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+            <a th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
                class="btn btn-primary">
 
-                Manage Rooms & Items
+                + Add Rooms & Items
 
             </a>
 
@@ -1248,20 +1181,7 @@
         </div>
 
 
-        <!-- MANAGE BUTTON -->
 
-        <div class="work-section-footer"
-             th:if="${quotationRooms != null
-             && !#lists.isEmpty(quotationRooms)}">
-
-            <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
-               class="btn btn-secondary">
-
-                ⚙ Manage Rooms & Items
-
-            </a>
-
-        </div>
 
     </section>
 
@@ -2059,10 +1979,10 @@
     <section class="bottom-actions">
 
 
-        <a th:href="@{/admin/quotation-rooms/quotation/{id}(id=${quotation.id})}"
+        <a th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
            class="btn btn-secondary">
 
-            Manage Rooms & Items
+            ✏ Edit in Builder
 
         </a>
 

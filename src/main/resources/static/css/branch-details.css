@@ -293,7 +293,7 @@ button:focus-visible {
 
 .district-info-card {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 0;
     margin-bottom: 26px;
     padding: 23px 26px;
@@ -416,7 +416,13 @@ button:focus-visible {
     opacity: 0.8;
 }
 
-.summary-card:hover {
+a.summary-card,
+.summary-card.clickable {
+    cursor: pointer;
+}
+
+a.summary-card:hover,
+.summary-card.clickable:hover {
     transform: translateY(-4px);
     border-color: rgba(8, 120, 109, 0.35);
     box-shadow: var(--shadow-md);
@@ -808,6 +814,160 @@ tbody td > span {
     transform: translateY(-1px);
 }
 
+.table-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    white-space: nowrap;
+}
+
+.action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 31px;
+    padding: 0 10px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+    font-size: 11px;
+    font-weight: 700;
+    text-decoration: none;
+    transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.action-btn:hover {
+    transform: translateY(-1px);
+}
+
+.view-btn {
+    color: var(--peacock-dark);
+    background: #e9f6f2;
+    border-color: #d5ece4;
+}
+
+.view-btn:hover {
+    color: var(--white);
+    background: var(--peacock);
+    border-color: var(--peacock);
+}
+
+.edit-btn {
+    color: #226e94;
+    background: #edf7fc;
+    border-color: #c8e3ef;
+}
+
+.edit-btn:hover {
+    color: var(--white);
+    background: #26749c;
+    border-color: #26749c;
+}
+
+.delete-btn {
+    color: #b33939;
+    background: #fdf2f2;
+    border-color: #f7d2d2;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.delete-btn:hover {
+    color: var(--white);
+    background: #c53030;
+    border-color: #c53030;
+}
+
+/* Alert messages */
+.alert {
+    width: 100%;
+    margin-bottom: 20px;
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    border: 1px solid transparent;
+}
+
+.alert-success {
+    color: var(--success);
+    background: var(--success-bg);
+    border-color: #bce5d2;
+}
+
+.alert-error {
+    color: var(--danger);
+    background: var(--danger-bg);
+    border-color: #f0c5c5;
+}
+
+/* Status Cards & Filter Pills */
+.quotation-status-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 19px;
+    margin-bottom: 34px;
+}
+
+.summary-card.sent-card::before {
+    background: #16845d;
+}
+
+.summary-card.pending-card::before {
+    background: #c5861b;
+}
+
+.summary-card.working-card::before {
+    background: #1b6890;
+}
+
+.summary-icon.sent-icon {
+    color: #16845d;
+    background: #e9f8f0;
+    border-color: #c7eed9;
+}
+
+.summary-icon.pending-icon {
+    color: #a96f12;
+    background: #fff6df;
+    border-color: #fae7b5;
+}
+
+.summary-icon.working-icon {
+    color: #1b6890;
+    background: #edf6fb;
+    border-color: #cde4f2;
+}
+
+.status-filter-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #edf6f3;
+    padding: 4px;
+    border-radius: 9px;
+}
+
+.filter-pill {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--peacock-dark);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+    background: #ffffff;
+    color: var(--peacock);
+}
+
+.filter-pill.active {
+    background: var(--peacock);
+    color: var(--white);
+    box-shadow: 0 2px 6px rgba(8, 120, 109, 0.2);
+}
+
 /* =========================================================
    EMPTY TABLE STATE
 ========================================================= */
@@ -1014,7 +1174,7 @@ tbody td > span {
 
     .district-info-card {
         grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 20px 0;
+        gap: 16px 0;
         padding: 22px;
     }
 
@@ -1022,20 +1182,18 @@ tbody td > span {
         padding: 5px 18px;
     }
 
-    .district-info-item:first-child {
+    .district-info-item:nth-child(odd) {
         padding-left: 0;
     }
 
-    .district-info-item:nth-child(2) {
+    .district-info-item:nth-child(even) {
         padding-right: 0;
         border-right: none;
     }
 
-    .district-info-item:last-child {
-        padding-left: 0;
-        grid-column: 1 / -1;
+    .district-info-item:nth-child(n+3) {
         border-top: 1px solid var(--border);
-        padding-top: 18px;
+        padding-top: 16px;
     }
 
     .financial-item {

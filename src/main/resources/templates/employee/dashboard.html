@@ -307,24 +307,24 @@
       </a>
 
 
-      <!-- APPROVED -->
+      <!-- WORKING -->
 
       <a th:href="@{/employee/quotations}"
          class="stat-card">
 
-        <div class="stat-icon approved-icon">
-          ✓
+        <div class="stat-icon working-icon" style="background: #e6f4fa; color: #1a6f8f; border-color: #b8e2f2;">
+          ⚙
         </div>
 
 
         <div class="stat-content">
 
                     <span>
-                        Approved
+                        Working
                     </span>
 
           <strong
-                  th:text="${approvedQuotations}">
+                  th:text="${workingQuotations}">
             0
           </strong>
 
@@ -655,13 +655,13 @@
 
                                   th:classappend="${quotation.status != null
                                   ? ' status-' + #strings.toLowerCase(quotation.status.name())
-                                  : ' status-draft'}"
+                                  : ' status-pending'}"
 
                                   th:text="${quotation.status != null
                                   ? quotation.status.name()
-                                  : 'DRAFT'}">
+                                  : 'PENDING'}">
 
-                                DRAFT
+                                PENDING
 
                             </span>
 

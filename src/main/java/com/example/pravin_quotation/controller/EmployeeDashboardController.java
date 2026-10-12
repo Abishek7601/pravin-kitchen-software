@@ -82,11 +82,11 @@ public class EmployeeDashboardController {
                         )
                         .count();
 
-        long approvedQuotations =
+        long workingQuotations =
                 quotations.stream()
                         .filter(q ->
                                 q.getStatus()
-                                        == QuotationStatus.APPROVED
+                                        == QuotationStatus.WORKING
                         )
                         .count();
 
@@ -144,13 +144,18 @@ public class EmployeeDashboardController {
         );
 
         model.addAttribute(
+                "workingQuotations",
+                workingQuotations
+        );
+
+        model.addAttribute(
                 "sentQuotations",
                 sentQuotations
         );
 
         model.addAttribute(
                 "approvedQuotations",
-                approvedQuotations
+                workingQuotations
         );
 
         model.addAttribute(

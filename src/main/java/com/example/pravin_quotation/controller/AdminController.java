@@ -46,8 +46,14 @@ public class AdminController {
         model.addAttribute("oneYearCustomerCount",
                 adminDashboardService.getOneYearCustomerCount());
 
-        model.addAttribute("approvedCustomerCount",
-                adminDashboardService.getApprovedCustomerCount());
+        model.addAttribute("sentQuotationCount",
+                adminDashboardService.getSentQuotationCount());
+
+        model.addAttribute("workingQuotationCount",
+                adminDashboardService.getWorkingQuotationCount());
+
+        model.addAttribute("pendingQuotationCount",
+                adminDashboardService.getPendingQuotationCount());
 
         model.addAttribute("totalPortfolioValue",
                 adminDashboardService.getTotalPortfolioValue());

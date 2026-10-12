@@ -317,62 +317,9 @@ public class QuotationController {
 
     @GetMapping("/edit/{id}")
     public String editQuotation(
-            @PathVariable Long id,
-            Model model
+            @PathVariable Long id
     ) {
-
-        model.addAttribute(
-                "quotation",
-                quotationService.getById(id)
-        );
-
-        model.addAttribute(
-                "customers",
-                customerRepository.findByActiveTrue()
-        );
-
-        model.addAttribute(
-                "employees",
-                userRepository.findAll()
-                        .stream()
-                        .filter(user ->
-                                Boolean.TRUE.equals(
-                                        user.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "branches",
-                branchRepository.findAll()
-                        .stream()
-                        .filter(branch ->
-                                Boolean.TRUE.equals(
-                                        branch.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "divisions",
-                divisionRepository.findAll()
-                        .stream()
-                        .filter(division ->
-                                Boolean.TRUE.equals(
-                                        division.getActive()
-                                )
-                        )
-                        .toList()
-        );
-
-        model.addAttribute(
-                "pricingModes",
-                PricingMode.values()
-        );
-
-        return "admin/quotation-form";
+        return "redirect:/admin/quotations/builder?quotationId=" + id;
     }
 
 
@@ -586,6 +533,12 @@ public class QuotationController {
                     "Quotation WhatsApp message initiated."
             );
 
+            if (quotation.getStatus() == QuotationStatus.PENDING
+                    || quotation.getStatus() == QuotationStatus.WORKING) {
+                quotation.setStatus(QuotationStatus.SENT);
+                quotationService.save(quotation);
+            }
+
 
             return "redirect:/admin/quotations/view/" + id;
 
@@ -609,6 +562,7 @@ public class QuotationController {
     @PostMapping("/delete/{id}")
     public String deleteQuotation(
             @PathVariable Long id,
+            @RequestParam(required = false) String returnUrl,
             RedirectAttributes redirectAttributes
     ) {
 
@@ -629,6 +583,10 @@ public class QuotationController {
                     "errorMessage",
                     e.getMessage()
             );
+        }
+
+        if (returnUrl != null && !returnUrl.isBlank() && returnUrl.startsWith("/admin")) {
+            return "redirect:" + returnUrl;
         }
 
         return "redirect:/admin/quotations";
@@ -782,6 +740,14 @@ public class QuotationController {
         );
 
         return "admin/quotations";
+    }
+
+    @GetMapping("/branch/{branchId}/status/{status}")
+    public String branchQuotationsByStatus(
+            @PathVariable Long branchId,
+            @PathVariable QuotationStatus status
+    ) {
+        return "redirect:/admin/branches/" + branchId + "/quotations/status/" + status;
     }
 
     @PostMapping("/charges/{id}")

@@ -2,6 +2,8 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationCommunication;
+import com.example.pravin_quotation.model.QuotationStatus;
+import com.example.pravin_quotation.repository.QuotationRepository;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -14,16 +16,19 @@ public class QuotationEmailService {
     private final JavaMailSender mailSender;
     private final QuotationPdfService quotationPdfService;
     private final QuotationCommunicationService quotationCommunicationService;
+    private final QuotationRepository quotationRepository;
 
     public QuotationEmailService(
             JavaMailSender mailSender,
             QuotationPdfService quotationPdfService,
-            QuotationCommunicationService quotationCommunicationService) {
+            QuotationCommunicationService quotationCommunicationService,
+            QuotationRepository quotationRepository) {
 
         this.mailSender = mailSender;
         this.quotationPdfService = quotationPdfService;
         this.quotationCommunicationService =
                 quotationCommunicationService;
+        this.quotationRepository = quotationRepository;
     }
 
     public void sendQuotationEmail(Quotation quotation) {
@@ -113,6 +118,12 @@ public class QuotationEmailService {
                     QuotationCommunication.CommunicationStatus.SENT,
                     "Quotation PDF emailed successfully."
             );
+
+            if (quotation.getStatus() == QuotationStatus.PENDING
+                    || quotation.getStatus() == QuotationStatus.WORKING) {
+                quotation.setStatus(QuotationStatus.SENT);
+                quotationRepository.save(quotation);
+            }
 
         } catch (Exception e) {
 

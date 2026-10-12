@@ -127,11 +127,11 @@
           <span class="status-badge"
                 th:classappend="${quotation.status != null
                               ? 'status-' + #strings.toLowerCase(quotation.status.name())
-                              : 'status-draft'}"
+                              : 'status-pending'}"
                 th:text="${quotation.status != null
                               ? quotation.status
-                              : 'DRAFT'}">
-                        DRAFT
+                              : 'PENDING'}">
+                        PENDING
                     </span>
 
         </div>

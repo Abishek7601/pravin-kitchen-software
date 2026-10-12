@@ -11,4 +11,8 @@ public interface QuotationCommunicationRepository
     List<QuotationCommunication> findByQuotationIdOrderBySentAtDesc(
             Long quotationId
     );
+
+    List<QuotationCommunication> findByStatus(
+            QuotationCommunication.CommunicationStatus status
+    );
 }

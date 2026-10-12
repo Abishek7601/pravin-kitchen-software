@@ -113,6 +113,7 @@ public class BranchController {
     @GetMapping("/view/{id}")
     public String viewBranch(
             @PathVariable Long id,
+            @RequestParam(required = false) QuotationStatus status,
             Model model) {
 
         // ---------------------------------
@@ -137,11 +138,48 @@ public class BranchController {
         );
 
         // ---------------------------------
+        // DISTRICT-SPECIFIC STATUS COUNTS
+        // ---------------------------------
+
+        long pendingCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.PENDING);
+
+        long workingCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.WORKING);
+
+        long sentCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.SENT);
+
+        model.addAttribute(
+                "pendingCount",
+                pendingCount
+        );
+
+        model.addAttribute(
+                "workingCount",
+                workingCount
+        );
+
+        model.addAttribute(
+                "sentCount",
+                sentCount
+        );
+
+        model.addAttribute(
+                "selectedStatus",
+                status
+        );
+
+        // ---------------------------------
         // QUOTATIONS
         // ---------------------------------
 
-        List<Quotation> quotations =
+        List<Quotation> allQuotations =
                 quotationRepository.findByBranchIdOrderByCreatedAtDesc(id);
+
+        List<Quotation> quotations = (status != null)
+                ? quotationRepository.findByBranchIdAndStatusOrderByCreatedAtDesc(id, status)
+                : allQuotations;
 
         model.addAttribute(
                 "quotations",
@@ -220,7 +258,7 @@ public class BranchController {
                 quotations.stream()
                         .filter(q ->
                                 q.getStatus() ==
-                                        QuotationStatus.APPROVED
+                                        QuotationStatus.SENT
                         )
                         .toList();
 
@@ -294,6 +332,42 @@ public class BranchController {
         // ---------------------------------
 
         return "admin/branch-details";
+    }
+
+    // =========================================================
+    // DISTRICT-WISE QUOTATIONS BY STATUS
+    // =========================================================
+
+    @GetMapping("/{id}/quotations/status/{status}")
+    public String viewBranchQuotationsByStatus(
+            @PathVariable Long id,
+            @PathVariable QuotationStatus status,
+            Model model) {
+
+        Branch branch =
+                branchService.getBranchById(id);
+
+        List<Quotation> quotations =
+                quotationRepository.findByBranchIdAndStatusOrderByCreatedAtDesc(id, status);
+
+        long pendingCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.PENDING);
+
+        long workingCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.WORKING);
+
+        long sentCount =
+                quotationRepository.countByBranchIdAndStatus(id, QuotationStatus.SENT);
+
+        model.addAttribute("branch", branch);
+        model.addAttribute("quotations", quotations);
+        model.addAttribute("quotationList", quotations);
+        model.addAttribute("selectedStatus", status);
+        model.addAttribute("pendingCount", pendingCount);
+        model.addAttribute("workingCount", workingCount);
+        model.addAttribute("sentCount", sentCount);
+
+        return "admin/branch-quotations";
     }
 
     // =========================

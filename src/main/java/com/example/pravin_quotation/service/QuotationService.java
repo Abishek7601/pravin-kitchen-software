@@ -7,9 +7,20 @@ import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationStatus;
 import com.example.pravin_quotation.model.QuotationWorkflow;
 import com.example.pravin_quotation.model.User;
+import com.example.pravin_quotation.model.QuotationCommunication;
+import com.example.pravin_quotation.model.QuotationItem;
+import com.example.pravin_quotation.model.QuotationItemSize;
+import com.example.pravin_quotation.model.QuotationRoom;
+import com.example.pravin_quotation.model.QuotationStatusHistory;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
+import com.example.pravin_quotation.repository.QuotationCommunicationRepository;
+import com.example.pravin_quotation.repository.QuotationItemRepository;
+import com.example.pravin_quotation.repository.QuotationItemSizeRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
+import com.example.pravin_quotation.repository.QuotationRoomRepository;
+import com.example.pravin_quotation.repository.QuotationStatusHistoryRepository;
+import com.example.pravin_quotation.repository.QuotationWorkflowRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,19 +37,37 @@ public class QuotationService {
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final QuotationWorkflowService quotationWorkflowService;
+    private final QuotationRoomRepository quotationRoomRepository;
+    private final QuotationItemRepository quotationItemRepository;
+    private final QuotationItemSizeRepository quotationItemSizeRepository;
+    private final QuotationStatusHistoryRepository quotationStatusHistoryRepository;
+    private final QuotationWorkflowRepository quotationWorkflowRepository;
+    private final QuotationCommunicationRepository quotationCommunicationRepository;
 
     public QuotationService(
             QuotationRepository quotationRepository,
             CustomerRepository customerRepository,
             UserRepository userRepository,
             BranchRepository branchRepository,
-            QuotationWorkflowService quotationWorkflowService
+            QuotationWorkflowService quotationWorkflowService,
+            QuotationRoomRepository quotationRoomRepository,
+            QuotationItemRepository quotationItemRepository,
+            QuotationItemSizeRepository quotationItemSizeRepository,
+            QuotationStatusHistoryRepository quotationStatusHistoryRepository,
+            QuotationWorkflowRepository quotationWorkflowRepository,
+            QuotationCommunicationRepository quotationCommunicationRepository
     ) {
         this.quotationRepository = quotationRepository;
         this.customerRepository = customerRepository;
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.quotationWorkflowService = quotationWorkflowService;
+        this.quotationRoomRepository = quotationRoomRepository;
+        this.quotationItemRepository = quotationItemRepository;
+        this.quotationItemSizeRepository = quotationItemSizeRepository;
+        this.quotationStatusHistoryRepository = quotationStatusHistoryRepository;
+        this.quotationWorkflowRepository = quotationWorkflowRepository;
+        this.quotationCommunicationRepository = quotationCommunicationRepository;
     }
 
     // ---------------------------------------------------------
@@ -143,6 +172,45 @@ public class QuotationService {
                 .findByBranchIdOrderByCreatedAtDesc(
                         branchId
                 );
+    }
+
+    // ---------------------------------------------------------
+    // Get quotations by branch and status
+    // ---------------------------------------------------------
+
+    public List<Quotation> getByBranchIdAndStatus(
+            Long branchId,
+            QuotationStatus status
+    ) {
+
+        validateId(branchId, "Branch ID");
+
+        if (status == null) {
+            return getByBranchId(branchId);
+        }
+
+        return quotationRepository
+                .findByBranchIdAndStatusOrderByCreatedAtDesc(
+                        branchId,
+                        status
+                );
+    }
+
+    public long getCountByBranchIdAndStatus(
+            Long branchId,
+            QuotationStatus status
+    ) {
+
+        validateId(branchId, "Branch ID");
+
+        if (status == null) {
+            return quotationRepository.countByBranchId(branchId);
+        }
+
+        return quotationRepository.countByBranchIdAndStatus(
+                branchId,
+                status
+        );
     }
 
     // ---------------------------------------------------------
@@ -253,7 +321,15 @@ public class QuotationService {
 
         return quotationRepository
                 .findByStatusOrderByCreatedAtDesc(
-                        QuotationStatus.APPROVED
+                        QuotationStatus.SENT
+                );
+    }
+
+    public List<Quotation> getWorkingQuotations() {
+
+        return quotationRepository
+                .findByStatusOrderByCreatedAtDesc(
+                        QuotationStatus.WORKING
                 );
     }
 
@@ -427,7 +503,7 @@ public class QuotationService {
         );
 
         quotation.setStatus(
-                QuotationStatus.DRAFT
+                QuotationStatus.PENDING
         );
 
         quotation.setPricingMode(
@@ -879,20 +955,47 @@ public class QuotationService {
 
         Quotation quotation = getById(id);
 
-        String quotationNumber =
-                quotation.getQuotationNumber();
+        // 1. Delete all rooms, items, and sizes belonging to this quotation
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(id);
+        if (rooms != null) {
+            for (QuotationRoom room : rooms) {
+                List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
+                if (items != null) {
+                    for (QuotationItem item : items) {
+                        List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdOrderByDisplayOrderAsc(item.getId());
+                        if (sizes != null && !sizes.isEmpty()) {
+                            quotationItemSizeRepository.deleteAll(sizes);
+                        }
+                    }
+                    if (!items.isEmpty()) {
+                        quotationItemRepository.deleteAll(items);
+                    }
+                }
+            }
+            if (!rooms.isEmpty()) {
+                quotationRoomRepository.deleteAll(rooms);
+            }
+        }
 
+        // 2. Delete communication records referencing this quotation
+        List<QuotationCommunication> communications = quotationCommunicationRepository.findByQuotationIdOrderBySentAtDesc(id);
+        if (communications != null && !communications.isEmpty()) {
+            quotationCommunicationRepository.deleteAll(communications);
+        }
 
+        // 3. Delete status history records referencing this quotation
+        List<QuotationStatusHistory> history = quotationStatusHistoryRepository.findByQuotationIdOrderByIdDesc(id);
+        if (history != null && !history.isEmpty()) {
+            quotationStatusHistoryRepository.deleteAll(history);
+        }
 
-        quotationWorkflowService.record(
-                quotation,
-                QuotationWorkflow.WorkflowAction.DELETED,
-                quotation.getEmployee(),
-                "Quotation deleted.",
-                "Quotation " + quotationNumber,
-                null
-        );
+        // 4. Delete workflow tracking records referencing this quotation
+        List<QuotationWorkflow> workflows = quotationWorkflowRepository.findByQuotationIdOrderByCreatedAtDesc(id);
+        if (workflows != null && !workflows.isEmpty()) {
+            quotationWorkflowRepository.deleteAll(workflows);
+        }
 
+        // 5. Delete quotation record (master records customer, employee, branch, division are preserved)
         quotationRepository.delete(quotation);
     }
 
@@ -908,7 +1011,14 @@ public class QuotationService {
     public long getApprovedQuotationCount() {
 
         return quotationRepository.countByStatus(
-                QuotationStatus.APPROVED
+                QuotationStatus.SENT
+        );
+    }
+
+    public long getWorkingQuotationCount() {
+
+        return quotationRepository.countByStatus(
+                QuotationStatus.WORKING
         );
     }
 

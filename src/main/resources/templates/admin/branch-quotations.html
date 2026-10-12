@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en"
+      xmlns:th="http://www.thymeleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title th:text="${branch.name + ' - ' + selectedStatus.name().substring(0,1) + selectedStatus.name().substring(1).toLowerCase() + ' Quotations | Pravin KITCHENS & INTERIORS'}">District Quotations | Pravin KITCHENS & INTERIORS</title>
+
+    <link rel="stylesheet"
+          th:href="@{/css/quotations.css}">
+</head>
+
+<body>
+
+<div class="quotation-page">
+
+    <!-- =========================
+         PAGE HEADER
+    ========================== -->
+
+    <div class="page-header">
+
+        <div class="header-content">
+
+            <div>
+                <span class="page-eyebrow"
+                      th:text="${branch.name + ' DISTRICT'}">
+                    DISTRICT
+                </span>
+
+                <h1>
+                    <span th:text="${branch.name}">District</span> —
+                    <span th:text="${selectedStatus.name().substring(0,1) + selectedStatus.name().substring(1).toLowerCase() + ' Quotations'}">Sent Quotations</span>
+                </h1>
+
+                <p th:text="${'Viewing all ' + selectedStatus.name() + ' quotations created under ' + branch.name + ' district.'}">
+                    Viewing quotations for this district.
+                </p>
+            </div>
+
+            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">
+                <a th:href="@{'/admin/branches/view/' + ${branch.id}}"
+                   class="btn btn-outline-secondary btn-sm nav-back-btn"
+                   style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                    <span>← Back to District Details</span>
+                </a>
+                <a th:href="@{/admin/dashboard}"
+                   class="btn btn-primary btn-sm nav-dashboard-btn"
+                   style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                    <span>⌂ Dashboard</span>
+                </a>
+            </div>
+
+            <a th:href="@{/admin/quotations/builder}"
+               class="btn btn-primary">
+                + Create Quotation
+            </a>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         MESSAGES
+    ========================== -->
+
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}">
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-error"
+         th:text="${errorMessage}">
+    </div>
+
+
+    <!-- =========================
+         DISTRICT STATUS CARDS
+    ========================== -->
+
+    <div class="summary-grid">
+
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/PENDING'}"
+           class="summary-card"
+           th:style="${selectedStatus.name() == 'PENDING' ? 'border: 2px solid #a96f12; background: #fffdf7;' : 'text-decoration: none; color: inherit;'}">
+
+            <div class="summary-icon pending-icon" style="color: #a96f12; background: #fff6df;">
+                ⏳
+            </div>
+
+            <div>
+                <span>Pending Quotations</span>
+
+                <strong th:text="${pendingCount}">
+                    0
+                </strong>
+            </div>
+
+        </a>
+
+
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/WORKING'}"
+           class="summary-card"
+           th:style="${selectedStatus.name() == 'WORKING' ? 'border: 2px solid #1b6890; background: #f6fbfe;' : 'text-decoration: none; color: inherit;'}">
+
+            <div class="summary-icon working-icon" style="color: #1b6890; background: #edf6fb;">
+                ⚙
+            </div>
+
+            <div>
+                <span>Working Quotations</span>
+
+                <strong th:text="${workingCount}">
+                    0
+                </strong>
+            </div>
+
+        </a>
+
+
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/SENT'}"
+           class="summary-card"
+           th:style="${selectedStatus.name() == 'SENT' ? 'border: 2px solid #16845d; background: #f4faf7;' : 'text-decoration: none; color: inherit;'}">
+
+            <div class="summary-icon sent-icon" style="color: #16845d; background: #e9f8f0;">
+                ↗
+            </div>
+
+            <div>
+                <span>Sent Quotations</span>
+
+                <strong th:text="${sentCount}">
+                    0
+                </strong>
+            </div>
+
+        </a>
+
+    </div>
+
+
+    <!-- =========================
+         SEARCH BAR
+    ========================== -->
+
+    <div class="filter-card">
+
+        <div class="filter-controls">
+
+            <div class="search-box">
+
+                <span class="search-icon">🔍</span>
+
+                <input
+                        type="text"
+                        id="tableSearch"
+                        placeholder="Search quotation, customer, employee..."
+                        autocomplete="off">
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- =========================
+         QUOTATION TABLE
+    ========================== -->
+
+    <div class="table-card">
+
+        <div class="table-wrapper">
+
+            <table id="quotationTable">
+
+                <thead>
+
+                <tr>
+
+                    <th>Quotation</th>
+
+                    <th>Date</th>
+
+                    <th>Customer</th>
+
+                    <th>District</th>
+
+                    <th>Employee</th>
+
+                    <th>Pricing</th>
+
+                    <th>Grand Total</th>
+
+                    <th>Status</th>
+
+                    <th>Action</th>
+
+                </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                <tr th:each="quotation : ${quotations}">
+
+                    <!-- Quotation Number -->
+
+                    <td>
+
+                        <a
+                                th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                                class="quotation-link"
+                                th:text="${quotation.quotationNumber}">
+                            QT-00001
+                        </a>
+
+                    </td>
+
+
+                    <!-- Date -->
+
+                    <td
+                            th:text="${quotation.quotationDate}">
+                        2026-10-01
+                    </td>
+
+
+                    <!-- Customer -->
+
+                    <td>
+
+                        <div class="customer-info"
+                             th:if="${quotation.customer != null}">
+
+                            <strong
+                                    th:text="${quotation.customer.name}">
+                                Customer
+                            </strong>
+
+                            <span
+                                    class="sub-text"
+                                    th:if="${quotation.customer.phone}"
+                                    th:text="${quotation.customer.phone}">
+                                Phone
+                            </span>
+
+                        </div>
+
+                        <span th:if="${quotation.customer == null}">-</span>
+
+                    </td>
+
+
+                    <!-- District -->
+
+                    <td th:text="${quotation.branch != null ? quotation.branch.name : '-'}">
+                        District
+                    </td>
+
+
+                    <!-- Employee -->
+
+                    <td th:text="${quotation.employee != null ? quotation.employee.name : '-'}">
+                        Employee
+                    </td>
+
+
+                    <!-- Pricing -->
+
+                    <td>
+
+                        <span class="pricing-badge"
+                              th:text="${quotation.pricingMode}">
+                            MIDDLE
+                        </span>
+
+                    </td>
+
+
+                    <!-- Grand Total -->
+
+                    <td>
+
+                        <strong class="amount"
+                                th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : 0, 1, 2)}">
+                            ₹ 0.00
+                        </strong>
+
+                    </td>
+
+
+                    <!-- Status -->
+
+                    <td>
+
+                        <span
+                                class="status-badge"
+                                th:classappend="${' status-' + quotation.status.name().toLowerCase()}"
+                                th:text="${quotation.status}">
+                            PENDING
+                        </span>
+
+                    </td>
+
+
+                    <!-- Actions -->
+
+                    <td>
+
+                        <div class="action-buttons">
+
+                            <a
+                                    th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                                    class="action-btn view-btn"
+                                    title="View">
+                                View
+                            </a>
+
+                            <a
+                                    th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
+                                    class="action-btn edit-btn"
+                                    title="Edit">
+                                Edit
+                            </a>
+
+                            <form th:action="@{/admin/quotations/delete/{id}(id=${quotation.id})}"
+                                  method="post"
+                                  style="display: inline; margin: 0;"
+                                  th:data-quotation-number="${quotation.quotationNumber}"
+                                  onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
+                                <input type="hidden"
+                                       th:name="${_csrf.parameterName}"
+                                       th:value="${_csrf.token}">
+                                <input type="hidden"
+                                       name="returnUrl"
+                                       th:value="@{'/admin/branches/' + ${branch.id} + '/quotations/status/' + ${selectedStatus.name()}}">
+                                <button type="submit"
+                                        class="action-btn delete-btn"
+                                        title="Delete">
+                                    Delete
+                                </button>
+                            </form>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+
+                <!-- Empty State -->
+
+                <tr th:if="${#lists.isEmpty(quotations)}">
+
+                    <td colspan="9">
+
+                        <div class="empty-state">
+
+                            <div class="empty-icon">
+                                📄
+                            </div>
+
+                            <h3 th:text="${'No ' + selectedStatus.name() + ' quotations found'}">
+                                No quotations found
+                            </h3>
+
+                            <p th:text="${'There are currently no ' + selectedStatus.name() + ' quotations under ' + branch.name + ' district.'}">
+                                There are no quotations for this district with this status.
+                            </p>
+
+                            <a
+                                    th:href="@{'/admin/branches/view/' + ${branch.id}}"
+                                    class="btn btn-primary">
+                                ← Back to District Details
+                            </a>
+
+                        </div>
+
+                    </td>
+
+                </tr>
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================
+     SEARCH SCRIPT
+========================== -->
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById("tableSearch");
+        const table = document.getElementById("quotationTable");
+
+        if (searchInput && table) {
+            searchInput.addEventListener("keyup", function () {
+                const term = this.value.toLowerCase().trim();
+                const rows = table.querySelectorAll("tbody tr:not(:has(.empty-state))");
+
+                rows.forEach(function (row) {
+                    const text = row.innerText.toLowerCase();
+                    row.style.display = text.includes(term) ? "" : "none";
+                });
+            });
+        }
+    });
+</script>
+
+</body>
+</html>

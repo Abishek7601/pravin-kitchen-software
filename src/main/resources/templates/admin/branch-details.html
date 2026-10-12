@@ -172,7 +172,48 @@
 
         </div>
 
+
+        <!-- BRANCH ADDRESS -->
+
+        <div class="district-info-item">
+
+            <span class="info-label">
+                Branch Address
+            </span>
+
+            <span class="info-value"
+                  th:if="${branch.branchAddress != null and !#strings.isEmpty(branch.branchAddress)}"
+                  th:text="${branch.branchAddress}">
+
+                123 Main Street, Chennai
+
+            </span>
+
+            <span class="info-value muted"
+                  th:if="${branch.branchAddress == null or #strings.isEmpty(branch.branchAddress)}">
+
+                Not available
+
+            </span>
+
+        </div>
+
     </section>
+
+
+    <!-- =========================
+         MESSAGES
+    ========================== -->
+
+    <div th:if="${successMessage}"
+         class="alert alert-success"
+         th:text="${successMessage}">
+    </div>
+
+    <div th:if="${errorMessage}"
+         class="alert alert-error"
+         th:text="${errorMessage}">
+    </div>
 
 
     <!-- =================================================
@@ -186,8 +227,7 @@
              EMPLOYEES
         ================================================== -->
 
-        <a th:href="@{'/admin/employees?branchId=' + ${branch.id}}"
-           class="summary-card clickable">
+        <div class="summary-card">
 
             <div class="summary-icon">
                 👥
@@ -205,6 +245,32 @@
 
             </div>
 
+        </div>
+
+
+        <!-- =================================================
+             TOTAL DISTRICT QUOTATIONS
+        ================================================== -->
+
+        <a href="#quotations"
+           class="summary-card clickable">
+
+            <div class="summary-icon">
+                📄
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Total Quotations
+                </span>
+
+                <strong th:text="${totalQuotationCount}">
+                    0
+                </strong>
+
+            </div>
+
             <span class="card-arrow">
                 →
             </span>
@@ -216,11 +282,10 @@
              60 DAY QUOTATIONS
         ================================================== -->
 
-        <a href="#quotations"
-           class="summary-card clickable">
+        <div class="summary-card">
 
             <div class="summary-icon">
-                📄
+                📋
             </div>
 
             <div class="summary-content">
@@ -235,19 +300,14 @@
 
             </div>
 
-            <span class="card-arrow">
-                →
-            </span>
-
-        </a>
+        </div>
 
 
         <!-- =================================================
              60 DAY VALUE
         ================================================== -->
 
-        <a href="#quotation-value"
-           class="summary-card clickable">
+        <div class="summary-card">
 
             <div class="summary-icon">
                 ₹
@@ -271,6 +331,38 @@
 
             </div>
 
+        </div>
+
+    </section>
+
+
+    <!-- =================================================
+         DISTRICT QUOTATION STATUS CARDS (SENT, PENDING, WORKING)
+    ================================================== -->
+
+    <section class="quotation-status-grid">
+
+        <!-- SENT QUOTATIONS -->
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/SENT'}"
+           class="summary-card clickable sent-card"
+           style="text-decoration: none; color: inherit;">
+
+            <div class="summary-icon sent-icon">
+                ↗
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Sent Quotations
+                </span>
+
+                <strong th:text="${sentCount}">
+                    0
+                </strong>
+
+            </div>
+
             <span class="card-arrow">
                 →
             </span>
@@ -278,24 +370,50 @@
         </a>
 
 
-        <!-- =================================================
-             APPROVED QUOTATIONS
-        ================================================== -->
+        <!-- PENDING QUOTATIONS -->
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/PENDING'}"
+           class="summary-card clickable pending-card"
+           style="text-decoration: none; color: inherit;">
 
-        <a href="#approved"
-           class="summary-card clickable">
-
-            <div class="summary-icon">
-                ✓
+            <div class="summary-icon pending-icon">
+                ⏳
             </div>
 
             <div class="summary-content">
 
                 <span class="summary-label">
-                    Approved Quotations
+                    Pending Quotations
                 </span>
 
-                <strong th:text="${approvedCount}">
+                <strong th:text="${pendingCount}">
+                    0
+                </strong>
+
+            </div>
+
+            <span class="card-arrow">
+                →
+            </span>
+
+        </a>
+
+
+        <!-- WORKING QUOTATIONS -->
+        <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/WORKING'}"
+           class="summary-card clickable working-card"
+           style="text-decoration: none; color: inherit;">
+
+            <div class="summary-icon working-icon">
+                ⚙
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Working Quotations
+                </span>
+
+                <strong th:text="${workingCount}">
                     0
                 </strong>
 
@@ -582,6 +700,29 @@
 
             </div>
 
+            <div class="status-filter-pills">
+                <a th:href="@{'/admin/branches/view/' + ${branch.id} + '#quotations'}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus == null ? 'active' : ''}">
+                    All (<span th:text="${totalQuotationCount}">0</span>)
+                </a>
+                <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/SENT'}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus != null and selectedStatus.name() == 'SENT' ? 'active' : ''}">
+                    Sent (<span th:text="${sentCount}">0</span>)
+                </a>
+                <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/PENDING'}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus != null and selectedStatus.name() == 'PENDING' ? 'active' : ''}">
+                    Pending (<span th:text="${pendingCount}">0</span>)
+                </a>
+                <a th:href="@{'/admin/branches/' + ${branch.id} + '/quotations/status/WORKING'}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus != null and selectedStatus.name() == 'WORKING' ? 'active' : ''}">
+                    Working (<span th:text="${workingCount}">0</span>)
+                </a>
+            </div>
+
         </div>
 
 
@@ -743,10 +884,10 @@
 
                         <td>
 
-                            <span class="quotation-status draft"
+                            <span class="quotation-status pending"
                                   th:if="${quotation.status == null}">
 
-                                DRAFT
+                                PENDING
 
                             </span>
 
@@ -789,12 +930,39 @@
 
                         <td>
 
-                            <a th:href="@{'/admin/quotations/view/' + ${quotation.id}}"
-                               class="table-view-button">
+                            <div class="table-actions">
 
-                                View
+                                <a th:href="@{'/admin/quotations/view/' + ${quotation.id}}"
+                                   class="action-btn view-btn"
+                                   title="View">
+                                    View
+                                </a>
 
-                            </a>
+                                <a th:href="@{'/admin/quotations/builder?quotationId=' + ${quotation.id}}"
+                                   class="action-btn edit-btn"
+                                   title="Edit">
+                                    Edit
+                                </a>
+
+                                <form th:action="@{'/admin/quotations/delete/' + ${quotation.id}}"
+                                      method="post"
+                                      style="display: inline; margin: 0;"
+                                      th:data-quotation-number="${quotation.quotationNumber}"
+                                      onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}">
+                                    <input type="hidden"
+                                           name="returnUrl"
+                                           th:value="@{'/admin/branches/view/' + ${branch.id}}">
+                                    <button type="submit"
+                                            class="action-btn delete-btn"
+                                            title="Delete">
+                                        Delete
+                                    </button>
+                                </form>
+
+                            </div>
 
                         </td>
 
@@ -1371,12 +1539,39 @@
 
                         <td>
 
-                            <a th:href="@{'/admin/quotations/view/' + ${quotation.id}}"
-                               class="table-view-button">
+                            <div class="table-actions">
 
-                                View
+                                <a th:href="@{'/admin/quotations/view/' + ${quotation.id}}"
+                                   class="action-btn view-btn"
+                                   title="View">
+                                    View
+                                </a>
 
-                            </a>
+                                <a th:href="@{'/admin/quotations/builder?quotationId=' + ${quotation.id}}"
+                                   class="action-btn edit-btn"
+                                   title="Edit">
+                                    Edit
+                                </a>
+
+                                <form th:action="@{'/admin/quotations/delete/' + ${quotation.id}}"
+                                      method="post"
+                                      style="display: inline; margin: 0;"
+                                      th:data-quotation-number="${quotation.quotationNumber}"
+                                      onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
+                                    <input type="hidden"
+                                           th:name="${_csrf.parameterName}"
+                                           th:value="${_csrf.token}">
+                                    <input type="hidden"
+                                           name="returnUrl"
+                                           th:value="@{'/admin/branches/view/' + ${branch.id}}">
+                                    <button type="submit"
+                                            class="action-btn delete-btn"
+                                            title="Delete">
+                                        Delete
+                                    </button>
+                                </form>
+
+                            </div>
 
                         </td>
 
@@ -1418,23 +1613,6 @@
         </div>
 
     </section>
-
-
-    <!-- =================================================
-         BOTTOM ACTIONS
-    ================================================== -->
-
-    <div class="bottom-actions">
-
-        <a th:href="@{'/admin/branches/edit/' + ${branch.id}}"
-           class="bottom-edit-button">
-
-            Edit District
-
-        </a>
-
-    </div>
-
 
 </div>
 
