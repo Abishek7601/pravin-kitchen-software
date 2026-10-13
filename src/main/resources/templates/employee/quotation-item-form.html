@@ -450,18 +450,10 @@
 
       </div>
 
-      <!-- DIMENSION UNIT SELECTOR -->
-      <div style="display: flex; gap: 16px; align-items: flex-end; margin-bottom: 20px; flex-wrap: wrap;">
-        <div class="form-group" style="margin-bottom: 0;">
-          <label for="dimensionUnit" style="font-weight: 600; color: #1e293b; font-size: 13px; margin-bottom: 6px; display: block;">Dimension Unit</label>
-          <select id="dimensionUnit" name="dimensionUnit" style="padding: 8px 14px; border: 1px solid #c8dad6; border-radius: 8px; font-weight: 600; color: #0f172a; background: #f8fafc; font-size: 14px;">
-            <option value="ft" selected>Feet (ft)</option>
-            <option value="in">Inches (in)</option>
-          </select>
-        </div>
-        <div style="font-size: 13px; color: #64748b; padding-bottom: 6px;">
-          Dimensions in feet calculate directly; dimensions in inches convert to feet first (÷ 12).
-        </div>
+      <!-- DIMENSION UNIT (INCHES CONVERTED TO SQFT) -->
+      <input type="hidden" id="dimensionUnit" name="dimensionUnit" value="in">
+      <div style="font-size: 13px; color: #334155; margin-bottom: 20px; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 10px 14px; border-radius: 8px;">
+        Enter dimensions (Length, Width, Height) in <strong>inches</strong>. Calculated area is automatically converted to <strong>Sq. Ft.</strong> (÷ 144).
       </div>
 
       <div class="form-grid three-columns">
@@ -774,20 +766,30 @@
           return (typeof res === 'number' && !isNaN(res)) ? res : 0;
       }
 
-      function calculateItemMeasurement(formula, unit, L, W, H) {
-          const expr = formula || '(L + W) * H';
-          const raw = evaluateExpressionSafely(expr, L, W, H);
-          const u = (unit || 'SQFT').toUpperCase();
-          if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
-              return raw;
-          }
-          const isLinear = !expr.includes('*') && !expr.includes('×') && !expr.includes('x') && !expr.includes('/');
-          return isLinear ? (raw / 12.0) : (raw / 144.0);
-      }
-
       function normalizeFormula(f) {
           if (!f) return "(L + W) × H";
-          return f;
+          const upper = f.toUpperCase().replace(/X/g, "×").replace(/\*/g, "×");
+          if (upper.includes("+") || upper.includes("(L + W)")) {
+              return "(L + W) × H";
+          } else if (upper.includes("H")) {
+              return "L × H";
+          } else {
+              return "L × W";
+          }
+      }
+
+      function calculateItemMeasurement(formula, unit, L, W, H) {
+          const l = Number(L) || 0;
+          const w = Number(W) || 0;
+          const h = Number(H) || 0;
+          const norm = normalizeFormula(formula);
+          if (norm === "(L + W) × H") {
+              return ((l + w) * h) / 144.0;
+          } else if (norm === "L × H") {
+              return (l * h) / 144.0;
+          } else {
+              return (l * w) / 144.0;
+          }
       }
 
       let currentFormula = normalizeFormula(formulaInput ? formulaInput.value : "(L + W) × H");
@@ -806,15 +808,15 @@
       function updateDimensionFields() {
           const widthGroup = document.querySelector(".width-field");
           const heightGroup = document.querySelector(".height-field");
-          const unit = dimensionUnitSelect ? dimensionUnitSelect.value : "ft";
+          const unit = "in";
 
           document.querySelectorAll(".unit-label").forEach(function (el) {
               el.textContent = unit;
           });
 
-          const f = currentFormula;
-          const hasW = f.includes("W") || f.includes("w");
-          const hasH = f.includes("H") || f.includes("h");
+          const norm = normalizeFormula(currentFormula);
+          const hasW = (norm === "L × W" || norm === "(L + W) × H");
+          const hasH = (norm === "(L + W) × H" || norm === "L × H");
 
           if (widthGroup) widthGroup.style.display = hasW ? "" : "none";
           if (widthInput) widthInput.required = hasW;
@@ -849,14 +851,9 @@
           let height = getNumber(heightInput);
           const rate = getNumber(rateInput);
 
-          const isInch = !dimensionUnitSelect || dimensionUnitSelect.value === "in";
-          let rawL = isInch ? length : (length * 12);
-          let rawW = isInch ? width : (width * 12);
-          let rawH = isInch ? height : (height * 12);
-
           let sqft = 0;
-          if (rawL > 0 || rawW > 0 || rawH > 0) {
-              sqft = calculateItemMeasurement(currentFormula, "SQFT", rawL, rawW, rawH);
+          if (length > 0 || width > 0 || height > 0) {
+              sqft = calculateItemMeasurement(currentFormula, "SQFT", length, width, height);
           }
 
           sqft = Math.round(sqft * 100) / 100;

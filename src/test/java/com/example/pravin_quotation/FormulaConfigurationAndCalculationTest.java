@@ -50,42 +50,43 @@ public class FormulaConfigurationAndCalculationTest {
         assertThat(sqftFormulas).anyMatch(f -> f.getExpression().contains("(L + W) * H"));
         assertThat(sqftFormulas).anyMatch(f -> f.getExpression().contains("L * W"));
         assertThat(sqftFormulas).anyMatch(f -> f.getExpression().contains("L * H"));
+        assertThat(sqftFormulas).noneMatch(f -> f.getExpression().contains("W * H"));
 
         List<FormulaConfig> inchesFormulas = formulaConfigService.getFormulasByType("INCHES");
-        assertThat(inchesFormulas).isNotEmpty();
-        assertThat(inchesFormulas).anyMatch(f -> f.getExpression().equals("L"));
+        assertThat(inchesFormulas).isEmpty();
     }
 
     @Test
-    @DisplayName("Admin can create, update, toggle, and delete custom formulas")
+    @DisplayName("Admin can create, update, toggle, and delete custom formulas with SQFT; rejects inches and non-canonical formulas")
     void testFormulaCrudOperations() {
         FormulaConfig created = formulaConfigService.createFormula(
-                "Test Custom Perimeter",
-                "2 * (L + W)",
-                "INCHES",
-                "LINEAR",
-                "INCH",
-                "₹ / INCH",
-                "Linear perimeter in inches",
+                "Custom L × W Profile",
+                "L * W",
+                "SQFT",
+                "AREA",
+                "SQFT",
+                "₹ / SQFT",
+                "Custom surface formula",
                 99
         );
         assertThat(created.getId()).isNotNull();
         assertThat(created.getIsSystem()).isFalse();
         assertThat(created.getActive()).isTrue();
+        assertThat(created.getCalculationType()).isEqualTo("SQFT");
 
         // Update
         FormulaConfig updated = formulaConfigService.updateFormula(
                 created.getId(),
-                "Test Custom Perimeter Updated",
-                "2 * (L + W)",
-                "INCHES",
-                "LINEAR",
-                "INCH",
-                "₹ / INCH",
+                "Custom L × W Profile Updated",
+                "L * W",
+                "SQFT",
+                "AREA",
+                "SQFT",
+                "₹ / SQFT",
                 "Updated description",
                 100
         );
-        assertThat(updated.getName()).isEqualTo("Test Custom Perimeter Updated");
+        assertThat(updated.getName()).isEqualTo("Custom L × W Profile Updated");
         assertThat(updated.getDescription()).isEqualTo("Updated description");
 
         // Toggle Status
@@ -96,6 +97,32 @@ public class FormulaConfigurationAndCalculationTest {
         // Delete
         formulaConfigService.deleteFormula(created.getId());
         assertThat(formulaConfigRepository.findById(created.getId())).isEmpty();
+
+        // Reject Inches as calculation type
+        assertThatThrownBy(() -> formulaConfigService.createFormula(
+                "Invalid Inches Formula",
+                "L * W",
+                "INCHES",
+                "AREA",
+                "INCH",
+                "₹ / INCH",
+                "Should fail",
+                101
+        )).isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Inches is no longer supported");
+
+        // Reject non-3 formulas
+        assertThatThrownBy(() -> formulaConfigService.createFormula(
+                "Invalid Formula",
+                "2 * (L + W)",
+                "SQFT",
+                "AREA",
+                "SQFT",
+                "₹ / SQFT",
+                "Should fail",
+                102
+        )).isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Only the three standard formulas are supported");
     }
 
     @Test
@@ -169,43 +196,49 @@ public class FormulaConfigurationAndCalculationTest {
     }
 
     @Test
-    @DisplayName("Formula Evaluator computes Inches calculations without dividing by 144")
-    void testInchesCalculation() {
-        // Area in sq.in: (L + W) * H with L=72, W=24, H=36 -> 96 * 36 = 3456.00 sq.in
-        FormulaEvaluator.EvaluationResult res1 = FormulaEvaluator.evaluate(
+    @DisplayName("Formula Evaluator converts inch measurements to Sq. Ft. by dividing by 144")
+    void testInchesToSqftConversionRule() {
+        // Example from requirements: Length = 120 inches, Height = 96 inches -> Area = (120 × 96) / 144 = 80 Sq. Ft.
+        FormulaEvaluator.EvaluationResult resExample = FormulaEvaluator.evaluate(
+                "L * H",
+                "SQFT",
+                null,
+                new BigDecimal("120"),
+                BigDecimal.ZERO,
+                new BigDecimal("96")
+        );
+        assertThat(resExample.finalMeasurement()).isEqualByComparingTo(new BigDecimal("80.00"));
+        assertThat(resExample.measurementUnit()).isEqualTo("SQFT");
+        assertThat(resExample.pricingUnit()).isEqualTo("₹ / SQFT");
+
+        // Pricing check: 80 Sq. Ft. * ₹1,200.00 = ₹96,000.00
+        BigDecimal rate = new BigDecimal("1200.00");
+        BigDecimal itemAmount = CalculationFormula.calculateItemAmount(resExample.finalMeasurement(), rate);
+        assertThat(itemAmount).isEqualByComparingTo(new BigDecimal("96000.00"));
+
+        // Formula L × W: Length = 72, Width = 96 -> (72 * 96) / 144 = 48.00 Sq. Ft.
+        FormulaEvaluator.EvaluationResult resLW = FormulaEvaluator.evaluate(
+                "L * W",
+                "SQFT",
+                null,
+                new BigDecimal("72"),
+                new BigDecimal("96"),
+                BigDecimal.ZERO
+        );
+        assertThat(resLW.finalMeasurement()).isEqualByComparingTo(new BigDecimal("48.00"));
+        assertThat(resLW.measurementUnit()).isEqualTo("SQFT");
+
+        // Formula (L + W) × H: Length = 72, Width = 24, Height = 36 -> (96 * 36) / 144 = 24.00 Sq. Ft.
+        FormulaEvaluator.EvaluationResult resLWH = FormulaEvaluator.evaluate(
                 "(L + W) * H",
-                "INCHES",
+                "SQFT",
                 null,
                 new BigDecimal("72"),
                 new BigDecimal("24"),
                 new BigDecimal("36")
         );
-        assertThat(res1.finalMeasurement()).isEqualByComparingTo(new BigDecimal("3456.00"));
-        assertThat(res1.measurementUnit()).isEqualTo("SQIN");
-
-        // Linear inches: L with L=48 -> 48.00 in
-        FormulaEvaluator.EvaluationResult res2 = FormulaEvaluator.evaluate(
-                "L",
-                "INCHES",
-                null,
-                new BigDecimal("48"),
-                BigDecimal.ZERO,
-                BigDecimal.ZERO
-        );
-        assertThat(res2.finalMeasurement()).isEqualByComparingTo(new BigDecimal("48.00"));
-        assertThat(res2.measurementUnit()).isEqualTo("INCH");
-
-        // Perimeter in linear inches: 2 * (L + W) with L=30, W=18 -> 2 * 48 = 96.00 in
-        FormulaEvaluator.EvaluationResult res3 = FormulaEvaluator.evaluate(
-                "2 * (L + W)",
-                "INCHES",
-                null,
-                new BigDecimal("30"),
-                new BigDecimal("18"),
-                BigDecimal.ZERO
-        );
-        assertThat(res3.finalMeasurement()).isEqualByComparingTo(new BigDecimal("96.00"));
-        assertThat(res3.measurementUnit()).isEqualTo("INCH");
+        assertThat(resLWH.finalMeasurement()).isEqualByComparingTo(new BigDecimal("24.00"));
+        assertThat(resLWH.measurementUnit()).isEqualTo("SQFT");
     }
 
     @Test
@@ -261,7 +294,7 @@ public class FormulaConfigurationAndCalculationTest {
     }
 
     @Test
-    @DisplayName("Configure Master Data saves with configured formula and unit (Sqft / Inches)")
+    @DisplayName("Configure Master Data saves with configured formula and SQFT unit, rejects INCHES")
     void testSaveMasterDataWithConfiguredFormula() {
         var pricing = pricingService.saveUnifiedMasterData(
                 null,
@@ -282,7 +315,26 @@ public class FormulaConfigurationAndCalculationTest {
 
         assertThat(pricing.getId()).isNotNull();
         assertThat(pricing.getUnit()).isEqualTo("SQFT");
-        assertThat(pricing.getFormula()).isEqualTo("L * W");
+        assertThat(pricing.getFormula()).isEqualTo(CalculationFormula.FORMULA_L_X_W);
         assertThat(pricing.getRate()).isEqualByComparingTo(new BigDecimal("450.00"));
+
+        // Inches unit must be rejected
+        assertThatThrownBy(() -> pricingService.saveUnifiedMasterData(
+                null,
+                null,
+                "Living Room Inches",
+                null,
+                "TV Unit Inches",
+                null,
+                "HDF Board Inches",
+                null,
+                "High Gloss Inches",
+                PricingMode.PREMIUM,
+                new BigDecimal("450.00"),
+                "INCHES",
+                "L * W",
+                "Should fail because inches unit is not permitted"
+        )).isInstanceOf(IllegalArgumentException.class)
+          .hasMessageContaining("Inches is not a permitted calculation unit");
     }
 }

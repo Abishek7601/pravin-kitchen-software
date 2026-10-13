@@ -161,7 +161,7 @@ public class QuotationItemController {
             @RequestParam(required = false)
             String formula,
 
-            @RequestParam(required = false, defaultValue = "ft")
+            @RequestParam(required = false, defaultValue = "in")
             String dimensionUnit,
 
             Model model) {
@@ -485,7 +485,7 @@ public class QuotationItemController {
             @RequestParam(required = false)
             String formula,
 
-            @RequestParam(required = false, defaultValue = "ft")
+            @RequestParam(required = false, defaultValue = "in")
             String dimensionUnit,
 
             Model model) {
@@ -836,7 +836,7 @@ public class QuotationItemController {
             @RequestParam BigDecimal length,
             @RequestParam(required = false) BigDecimal width,
             @RequestParam(required = false) BigDecimal height,
-            @RequestParam(required = false, defaultValue = "ft") String unit) {
+            @RequestParam(required = false, defaultValue = "in") String unit) {
 
         return quotationItemSizeService.calculateSqft(
                 formula,
@@ -1045,7 +1045,7 @@ public class QuotationItemController {
             List<BigDecimal> lengths,
             List<BigDecimal> widths,
             List<BigDecimal> heights) {
-        return calculateTotalSqft(null, "ft", lengths, widths, heights);
+        return calculateTotalSqft(null, "in", lengths, widths, heights);
     }
 
     // =========================================================

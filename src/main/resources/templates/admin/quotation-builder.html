@@ -229,22 +229,20 @@
   }
 
   function calculateItemMeasurement(formula, unit, L, W, H) {
-      const expr = formula || '(L + W) * H';
-      const raw = evaluateExpressionSafely(expr, L, W, H);
-      const u = (unit || 'SQFT').toUpperCase();
-      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
-          return raw;
+      const l = Number(L) || 0;
+      const w = Number(W) || 0;
+      const h = Number(H) || 0;
+      const f = (formula || '').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+      if (f.includes('+') || f.includes('(L + W)')) {
+          return ((l + w) * h) / 144.0;
+      } else if (f.includes('H')) {
+          return (l * h) / 144.0;
+      } else {
+          return (l * w) / 144.0;
       }
-      const isLinear = !expr.includes('*') && !expr.includes('×') && !expr.includes('x') && !expr.includes('/');
-      return isLinear ? (raw / 12.0) : (raw / 144.0);
   }
 
   function getItemUnitLabel(formula, unit) {
-      const u = (unit || 'SQFT').toUpperCase();
-      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
-          const expr = formula || '';
-          return (expr.includes('*') || expr.includes('×') || expr.includes('x')) ? 'sq.in' : 'in';
-      }
       return 'sq.ft';
   }
 
@@ -399,10 +397,10 @@
       try {
           const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&pricingMode=${state.pricingMode}`);
           state.draft.rate = Number(data.rate || 0);
-          state.draft.formula = data.formula || '(L + W) * H';
-          state.draft.unit = data.unit || 'SQFT';
-          state.draft.measurementUnit = data.measurementUnit || (state.draft.unit === 'INCHES' ? 'sq.in' : 'sq.ft');
-          state.draft.pricingUnit = data.pricingUnit || ('₹ / ' + (state.draft.unit === 'INCHES' ? 'SQIN' : 'SQFT'));
+          state.draft.formula = data.formula || '(L + W) × H';
+          state.draft.unit = 'SQFT';
+          state.draft.measurementUnit = 'sq.ft';
+          state.draft.pricingUnit = '₹ / SQFT';
           $('pricingMessage').textContent = '';
       } catch (e) {
           state.draft.rate = 0;
@@ -439,13 +437,14 @@
   function calculateDraft() {
       if (!state.draft) return;
       let totalMeas=0, amount=0;
-      const uLabel = getItemUnitLabel(state.draft.formula, state.draft.unit);
+      const uLabel = 'sq.ft';
       readSizes().forEach(s => {
-          const value = (s.length > 0 || s.width > 0 || s.height > 0)
+          const rawVal = (s.length > 0 || s.width > 0 || s.height > 0)
               ? calculateItemMeasurement(state.draft.formula, state.draft.unit, s.length, s.width, s.height)
               : 0;
+          const value = Math.round(rawVal * 100) / 100;
           totalMeas += value;
-          const lineAmount = value * Number(state.draft.rate || 0);
+          const lineAmount = Math.round(value * Number(state.draft.rate || 0) * 100) / 100;
           amount += lineAmount;
           const sqftEl = s.row.querySelector('.sqft');
           if (sqftEl) sqftEl.textContent = value.toFixed(2) + ' ' + uLabel;
@@ -475,8 +474,8 @@
 
       roomsWithItems.forEach((room, ri) => {
           const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
-              const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
-              return s + (meas * Number(item.rate || 0));
+              const meas = Math.round(calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height) * 100) / 100;
+              return s + Math.round(meas * Number(item.rate || 0) * 100) / 100;
           }, 0), 0);
           total += roomTotal;
           const block = document.createElement('div');
@@ -495,10 +494,11 @@
           const table = document.createElement('div');
           table.className = 'summary-table';
           room.items.forEach((item, ii) => {
-              const uLabel = getItemUnitLabel(item.formula, item.unit);
+              const uLabel = 'sq.ft';
               item.sizes.forEach((z, si) => {
-                  const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
-                  const amount = meas * Number(item.rate || 0);
+                  const rawMeas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+                  const meas = Math.round(rawMeas * 100) / 100;
+                  const amount = Math.round(meas * Number(item.rate || 0) * 100) / 100;
                   const row = document.createElement('div');
                   row.className = 'summary-row';
                   row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;

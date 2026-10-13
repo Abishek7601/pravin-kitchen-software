@@ -513,7 +513,7 @@
           Calculation Formulas Configuration
         </h2>
         <p class="page-desc">
-          Configure, validate, and manage dynamic measurement formulas for both Sqft and Inches. Selected formulas are automatically applied in Master Data Pricing and Quotation Builders.
+          Configure, validate, and manage measurement formulas for Sqft. Supported formulas (L × W, (L + W) × H, L × H) are automatically applied in Master Data Pricing and Quotation Builders.
         </p>
       </div>
 
@@ -566,11 +566,8 @@
                 <code class="px-2 py-1 bg-light rounded text-dark fw-bold" th:text="${f.expression}">(L + W) * H</code>
               </td>
               <td>
-                <span th:if="${f.calculationType == 'SQFT'}" class="badge-sqft">
+                <span class="badge-sqft">
                   <i class="bi bi-aspect-ratio"></i> SQFT
-                </span>
-                <span th:if="${f.calculationType == 'INCHES'}" class="badge-inches">
-                  <i class="bi bi-rulers"></i> INCHES
                 </span>
               </td>
               <td>
@@ -646,8 +643,7 @@
           <div class="col-md-3">
             <label for="calcCalcType" class="form-label fw-bold small">Calculation Type</label>
             <select id="calcCalcType" class="form-select" onchange="calculateLiveSimulator()">
-              <option value="SQFT">Sqft (Square Feet)</option>
-              <option value="INCHES">Inches (Sq.in or Linear in)</option>
+              <option value="SQFT" selected>Sqft (Square Feet)</option>
             </select>
           </div>
           <div class="col-md-4">
@@ -691,7 +687,7 @@
           <div class="col-md-9 d-flex align-items-end">
             <div class="text-muted small">
               <span class="fw-semibold">Calculation Rule:</span>
-              <span id="simRuleExplanation">Sqft converts raw square inches using <code>/ 144</code>. Inches retains direct inch-based units (<code>sq.in</code> or <code>in</code>).</span>
+              <span id="simRuleExplanation">Sqft converts raw square inches to square feet using <code>/ 144</code>.</span>
             </div>
           </div>
         </div>
@@ -731,46 +727,24 @@
       </div>
     </div>
 
-    <!-- EXPLANATION CARDS: FORMULA SYSTEM ARCHITECTURE -->
+    <!-- EXPLANATION CARD: FORMULA SYSTEM ARCHITECTURE -->
     <div class="row g-4 mb-4">
-      <div class="col-lg-6">
+      <div class="col-12">
         <div class="card-formula">
           <div class="formula-badge">
-            <i class="bi bi-aspect-ratio"></i> Sqft Calculation Rules
+            <i class="bi bi-aspect-ratio"></i> Supported Sqft Calculation Formulas
           </div>
-          <h3 class="card-title-custom">Square Feet Multiplier</h3>
+          <h3 class="card-title-custom">Square Feet (Sq. Ft.) Calculation Rules</h3>
           <p class="card-desc">
-            Used when prices are configured in <strong>₹ / SQFT</strong>. Input dimensions are measured in inches and converted into square feet:
+            All input dimensions (Length, Width, Height) are entered in inches and automatically converted to square feet (÷ 144) using only these three formulas:
           </p>
           <div class="formula-expression">
-            Sq.Ft = Expression(L, W, H) / 144
+            Sq. Ft. = Expression(L, W, H) / 144
           </div>
           <ul class="text-muted small ps-3 mb-0">
-            <li><strong>(Length + Width) × Height / 144:</strong> Standard 3D cabinetry perimeter formula: (Length + Width) × Height / 144.</li>
-            <li><strong>(L × W) / 144:</strong> 2D horizontal surface area (countertops, shutters).</li>
-            <li><strong>(L × H) / 144:</strong> Vertical elevation area (partitions, dados).</li>
-            <li><strong>L / 12:</strong> Linear feet running length.</li>
-          </ul>
-        </div>
-      </div>
-
-      <div class="col-lg-6">
-        <div class="card-formula">
-          <div class="formula-badge" style="background: #fef3c7; color: #b45309;">
-            <i class="bi bi-rulers"></i> Inches Calculation Rules
-          </div>
-          <h3 class="card-title-custom">Inch-Based Multiplier</h3>
-          <p class="card-desc">
-            Used when prices are configured per <strong>Square Inch (₹ / SQIN)</strong> or <strong>Linear Inch (₹ / INCH)</strong>:
-          </p>
-          <div class="formula-expression" style="border-left-color: #b45309;">
-            Measurement = Expression(L, W, H)
-          </div>
-          <ul class="text-muted small ps-3 mb-0">
-            <li><strong>(L + W) × H:</strong> Evaluates to total square inches (no division by 144).</li>
-            <li><strong>L × W:</strong> Evaluates to horizontal square inches.</li>
-            <li><strong>L:</strong> Evaluates to linear inches for edge banding, profiles, or beadings.</li>
-            <li><strong>2 × (L + W):</strong> Full perimeter in linear inches.</li>
+            <li><strong>L × W:</strong> Standard 2D surface area (e.g. countertop, shutter). Evaluates as <code>(L × W) / 144</code>.</li>
+            <li><strong>(L + W) × H:</strong> Standard cabinetry / 3D perimeter formula: (Length + Width) × Height / 144.</li>
+            <li><strong>L × H:</strong> Vertical elevation area (e.g. back panel, partition). Evaluates as <code>(L × H) / 144</code>.</li>
           </ul>
         </div>
       </div>
@@ -804,8 +778,7 @@
               <div class="col-md-4">
                 <label for="addCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
                 <select class="form-select" id="addCalcType" name="calculationType" required onchange="syncAddUnits()">
-                  <option value="SQFT">Sqft (Square Feet)</option>
-                  <option value="INCHES">Inches (Inch-based)</option>
+                  <option value="SQFT" selected>Sqft (Square Feet)</option>
                 </select>
               </div>
 
@@ -873,8 +846,7 @@
               <div class="col-md-4">
                 <label for="editCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
                 <select class="form-select" id="editCalcType" name="calculationType" required onchange="syncEditUnits()">
-                  <option value="SQFT">Sqft (Square Feet)</option>
-                  <option value="INCHES">Inches (Inch-based)</option>
+                  <option value="SQFT" selected>Sqft (Square Feet)</option>
                 </select>
               </div>
 
@@ -994,33 +966,17 @@
 
     // Dynamic UI Synchronization
     function syncAddUnits() {
-      const calcType = document.getElementById('addCalcType').value;
-      const unitType = document.getElementById('addUnitType').value;
       const measInput = document.getElementById('addMeasurementUnit');
       const priceInput = document.getElementById('addPricingUnit');
-
-      if (calcType === 'SQFT') {
-        measInput.value = (unitType === 'LINEAR') ? 'RFT' : 'SQFT';
-        priceInput.value = '₹ / SQFT';
-      } else {
-        measInput.value = (unitType === 'LINEAR') ? 'INCH' : 'SQIN';
-        priceInput.value = (unitType === 'LINEAR') ? '₹ / INCH' : '₹ / SQIN';
-      }
+      measInput.value = 'SQFT';
+      priceInput.value = '₹ / SQFT';
     }
 
     function syncEditUnits() {
-      const calcType = document.getElementById('editCalcType').value;
-      const unitType = document.getElementById('editUnitType').value;
       const measInput = document.getElementById('editMeasurementUnit');
       const priceInput = document.getElementById('editPricingUnit');
-
-      if (calcType === 'SQFT') {
-        measInput.value = (unitType === 'LINEAR') ? 'RFT' : 'SQFT';
-        priceInput.value = '₹ / SQFT';
-      } else {
-        measInput.value = (unitType === 'LINEAR') ? 'INCH' : 'SQIN';
-        priceInput.value = (unitType === 'LINEAR') ? '₹ / INCH' : '₹ / SQIN';
-      }
+      measInput.value = 'SQFT';
+      priceInput.value = '₹ / SQFT';
     }
 
     function openEditModal(button) {
@@ -1030,10 +986,10 @@
 
       document.getElementById('editName').value = button.getAttribute('data-name') || '';
       document.getElementById('editExpression').value = button.getAttribute('data-expression') || '';
-      document.getElementById('editCalcType').value = button.getAttribute('data-type') || 'SQFT';
-      document.getElementById('editUnitType').value = button.getAttribute('data-unittype') || 'AREA';
-      document.getElementById('editMeasurementUnit').value = button.getAttribute('data-measurement') || 'SQFT';
-      document.getElementById('editPricingUnit').value = button.getAttribute('data-pricing') || '₹ / SQFT';
+      document.getElementById('editCalcType').value = 'SQFT';
+      document.getElementById('editUnitType').value = 'AREA';
+      document.getElementById('editMeasurementUnit').value = 'SQFT';
+      document.getElementById('editPricingUnit').value = '₹ / SQFT';
       document.getElementById('editDescription').value = button.getAttribute('data-desc') || '';
       document.getElementById('editDisplayOrder').value = button.getAttribute('data-order') || '0';
 
@@ -1047,11 +1003,8 @@
       if (!opt) return;
 
       document.getElementById('calcCustomExpression').value = opt.value;
-      const calcType = opt.getAttribute('data-calc-type') || 'SQFT';
-      document.getElementById('calcCalcType').value = calcType;
-      
-      const pricingUnit = opt.getAttribute('data-pricing-unit') || '₹ / SQFT';
-      document.getElementById('calcRateUnitLabel').innerText = pricingUnit;
+      document.getElementById('calcCalcType').value = 'SQFT';
+      document.getElementById('calcRateUnitLabel').innerText = '₹ / SQFT';
 
       calculateLiveSimulator();
     }
@@ -1062,33 +1015,14 @@
       const height = parseFloat(document.getElementById('calcHeight').value) || 0;
       const rate = parseFloat(document.getElementById('calcRate').value) || 0;
       const gstPercent = parseFloat(document.getElementById('calcGst').value) || 0;
-      const calcType = document.getElementById('calcCalcType').value;
       const expression = document.getElementById('calcCustomExpression').value;
 
-      // Update rate unit label based on calcType
-      const select = document.getElementById('calcFormulaSelect');
-      const opt = select.options[select.selectedIndex];
-      let pricingUnitText = (calcType === 'SQFT') ? '₹ / SQFT' : '₹ / SQIN or ₹ / INCH';
-      if (opt && opt.value === expression && opt.getAttribute('data-pricing-unit')) {
-        pricingUnitText = opt.getAttribute('data-pricing-unit');
-      }
-      document.getElementById('calcRateUnitLabel').innerText = pricingUnitText;
+      document.getElementById('calcRateUnitLabel').innerText = '₹ / SQFT';
 
       const rawInches = evaluateExpressionSafely(expression, length, width, height);
-
-      let measurement = 0;
-      let unitLabel = 'sq.ft';
-
-      if (calcType === 'SQFT') {
-        // Area formula converts using / 144
-        measurement = rawInches / 144.0;
-        unitLabel = 'sq.ft';
-        document.getElementById('simRuleExplanation').innerHTML = 'Sqft formula: <code>(' + expression + ') / 144</code> converts square inches to square feet.';
-      } else {
-        measurement = rawInches;
-        unitLabel = (expression.includes('*') || expression.includes('×')) ? 'sq.in' : 'in';
-        document.getElementById('simRuleExplanation').innerHTML = 'Inches formula: <code>' + expression + '</code> calculates directly in inches without sqft conversion.';
-      }
+      const measurement = rawInches / 144.0;
+      const unitLabel = 'sq.ft';
+      document.getElementById('simRuleExplanation').innerHTML = 'Sqft formula: <code>(' + expression + ') / 144</code> converts square inches to square feet.';
 
       const amount = measurement * rate;
       const gst = (amount * gstPercent) / 100.0;

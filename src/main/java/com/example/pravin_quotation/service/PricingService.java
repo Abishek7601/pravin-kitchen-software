@@ -345,6 +345,7 @@ public class PricingService {
             pricingMode = PricingMode.MIDDLE;
         }
         String cleanUnit = (unit == null || unit.isBlank()) ? "SQFT" : unit.trim().toUpperCase();
+        validateUnit(cleanUnit);
 
         // 6. Pricing record create or update
         Pricing pricing;
@@ -450,46 +451,24 @@ public class PricingService {
     }
 
     private void validateUnit(String unit) {
-
         if (unit == null || unit.trim().isEmpty()) {
-
-            throw new IllegalArgumentException(
-                    "Unit is required"
-            );
+            throw new IllegalArgumentException("Unit is required");
+        }
+        String u = unit.trim().toUpperCase();
+        if ("INCHES".equals(u) || "INCH".equals(u) || "IN".equals(u)) {
+            throw new IllegalArgumentException("Inches is not a permitted calculation unit. Only Sq Ft is allowed.");
         }
     }
 
     private String cleanValue(String value) {
-
         if (value == null) {
-
             return null;
         }
-
         String cleaned = value.trim();
-
         return cleaned.isEmpty() ? null : cleaned;
     }
 
     private String resolveFormula(String formula) {
-        if (formula == null || formula.isBlank()) {
-            return CalculationFormula.FORMULA_L_PLUS_W_X_H;
-        }
-        String trimmed = formula.trim();
-        if (trimmed.equalsIgnoreCase("L x W") || trimmed.equalsIgnoreCase("L × W")) {
-            return CalculationFormula.FORMULA_L_X_W;
-        }
-        if (trimmed.equalsIgnoreCase("L x H") || trimmed.equalsIgnoreCase("L × H")) {
-            return CalculationFormula.FORMULA_L_X_H;
-        }
-        if (trimmed.contains("+") && (trimmed.contains("W × H") || trimmed.contains("W x H") || trimmed.contains("L + W"))) {
-            return CalculationFormula.FORMULA_L_PLUS_W_X_H;
-        }
-        com.example.pravin_quotation.util.FormulaEvaluator.ValidationResult val =
-                com.example.pravin_quotation.util.FormulaEvaluator.validateExpression(trimmed);
-        if (val.valid()) {
-            return trimmed;
-        }
-        return CalculationFormula.normalizeFormula(trimmed);
+        return CalculationFormula.normalizeFormula(formula);
     }
 }

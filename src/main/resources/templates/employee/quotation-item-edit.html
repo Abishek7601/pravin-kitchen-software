@@ -478,13 +478,19 @@
           const width = numberValue(widthInput);
           const height = numberValue(heightInput);
           const rate = numberValue(rateInput);
+          const currentFormula = (formulaInput && formulaInput.value) ? formulaInput.value : "(L + W) × H";
 
-          let sqft = 0;
-
-          if (length > 0 && width > 0 && height > 0) {
-              sqft = ((length + width) * height) / 144;
+          let raw = 0;
+          const f = currentFormula.toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+          if (f.includes("+") || f.includes("(L + W)")) {
+              raw = (length + width) * height;
+          } else if (f.includes("H")) {
+              raw = length * height;
+          } else {
+              raw = length * width;
           }
 
+          let sqft = (length > 0 || width > 0 || height > 0) ? (raw / 144) : 0;
           sqft = Number(sqft.toFixed(2));
 
           const baseAmount = Number((sqft * rate).toFixed(2));
@@ -496,7 +502,6 @@
 
           calculatedSqftInput.value = sqft.toFixed(2);
           amountInput.value = baseAmount.toFixed(2);
-          formulaInput.value = "(L + W) × H / 144";
 
           calculationNote.textContent =
               "Preview uses calculated Sq.Ft × Rate. The server determines the saved quotation amount.";

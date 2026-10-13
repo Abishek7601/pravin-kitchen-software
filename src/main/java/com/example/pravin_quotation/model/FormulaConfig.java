@@ -108,10 +108,10 @@ public class FormulaConfig {
             unitType = "AREA";
         }
         if (measurementUnit == null) {
-            measurementUnit = "SQFT".equalsIgnoreCase(calculationType) ? "SQFT" : "SQIN";
+            measurementUnit = "SQFT";
         }
         if (pricingUnit == null) {
-            pricingUnit = "₹ / " + measurementUnit;
+            pricingUnit = "₹ / SQFT";
         }
     }
 

@@ -118,9 +118,9 @@ public class AdminQuotationBuilderController {
             Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null);
             String formula = (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
                     ? pricing.getFormula() : "(L + W) × H";
-            String unit = (pricing != null && pricing.getUnit() != null) ? pricing.getUnit() : "SQFT";
-            String measurementUnit = ("INCH".equalsIgnoreCase(unit) || "INCHES".equalsIgnoreCase(unit) || "SQIN".equalsIgnoreCase(unit)) ? "SQIN" : "SQFT";
-            String pricingUnit = "₹ / " + measurementUnit;
+            String unit = "SQFT";
+            String measurementUnit = "SQFT";
+            String pricingUnit = "₹ / SQFT";
 
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("rate", rate);

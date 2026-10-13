@@ -115,7 +115,6 @@ public final class FormulaEvaluator {
             rawVal = BigDecimal.ZERO;
         }
 
-        boolean isSqft = calculationType == null || "SQFT".equalsIgnoreCase(calculationType);
         boolean isExplicitlyDividedBy144 = cleaned.contains("/144") || cleaned.contains("/ 144");
 
         // Determine unit type if not provided
@@ -124,33 +123,17 @@ public final class FormulaEvaluator {
         }
 
         BigDecimal finalMeasurement;
-        String measurementUnit;
-        String pricingUnit;
+        String measurementUnit = "SQFT";
+        String pricingUnit = "₹ / SQFT";
 
-        if (isSqft) {
-            measurementUnit = "SQFT";
-            pricingUnit = "₹ / SQFT";
-
-            if (isExplicitlyDividedBy144) {
-                finalMeasurement = rawVal;
-            } else if ("LINEAR".equalsIgnoreCase(unitType)) {
-                // Linear inches converted to linear feet (or sqft equivalent)
-                finalMeasurement = rawVal.divide(LINEAR_FOOT_DIVISOR, 6, RoundingMode.HALF_UP);
-            } else {
-                // Area in square inches converted to square feet
-                finalMeasurement = rawVal.divide(SQFT_DIVISOR, 6, RoundingMode.HALF_UP);
-            }
+        if (isExplicitlyDividedBy144) {
+            finalMeasurement = rawVal;
+        } else if ("LINEAR".equalsIgnoreCase(unitType)) {
+            // Linear inches converted to linear feet (or sqft equivalent)
+            finalMeasurement = rawVal.divide(LINEAR_FOOT_DIVISOR, 6, RoundingMode.HALF_UP);
         } else {
-            // INCHES
-            if ("LINEAR".equalsIgnoreCase(unitType)) {
-                measurementUnit = "INCH";
-                pricingUnit = "₹ / INCH";
-                finalMeasurement = rawVal;
-            } else {
-                measurementUnit = "SQIN";
-                pricingUnit = "₹ / SQIN";
-                finalMeasurement = rawVal;
-            }
+            // Area in square inches converted to square feet (÷ 144)
+            finalMeasurement = rawVal.divide(SQFT_DIVISOR, 6, RoundingMode.HALF_UP);
         }
 
         finalMeasurement = finalMeasurement.setScale(2, RoundingMode.HALF_UP);

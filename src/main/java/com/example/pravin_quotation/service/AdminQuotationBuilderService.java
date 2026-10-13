@@ -419,7 +419,7 @@ public class AdminQuotationBuilderService {
                                             length,
                                             width,
                                             height,
-                                            itemUnit
+                                            "in"
                                     );
 
                     BigDecimal amount =
@@ -525,7 +525,7 @@ public class AdminQuotationBuilderService {
                                             length,
                                             width,
                                             height,
-                                            itemUnit
+                                            "in"
                                     );
 
                     BigDecimal amount =

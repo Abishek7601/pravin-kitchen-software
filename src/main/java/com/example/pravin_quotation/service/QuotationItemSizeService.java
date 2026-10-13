@@ -93,7 +93,7 @@ public class QuotationItemSizeService {
             BigDecimal width,
             BigDecimal height) {
 
-        return calculateSqft(formula, length, width, height, "ft");
+        return calculateSqft(formula, length, width, height, "in");
     }
 
     public BigDecimal calculateSqft(

@@ -339,7 +339,7 @@
         <!-- FORMULA CALCULATION NOTICE -->
         <div id="formulaAlert" class="formula-alert">
           <strong>ℹ️ Calculation Rule:</strong>
-          <span id="formulaAlertText">When dimensions are entered in inches, Sqft formulas divide by 144 to convert to square feet. Inches formulas keep raw dimensions in inches.</span>
+          <span id="formulaAlertText">Length, Width, and Height are entered in inches and automatically converted into Square Feet (Sq Ft) by dividing by 144.</span>
         </div>
 
       </div>
@@ -394,16 +394,15 @@
 
       <div class="form-row">
 
-        <!-- UNIT (ONLY SQFT AND INCHES) -->
+        <!-- UNIT (ONLY SQFT) -->
         <div class="form-group">
           <label for="unit">
             Calculation Type / Unit <span class="required">*</span>
           </label>
           <select id="unit" name="unit" required onchange="onUnitChanged()">
-            <option value="SQFT" th:selected="${pricing.unit == null || pricing.unit == 'SQFT'}">Sqft (Square Feet)</option>
-            <option value="INCHES" th:selected="${pricing.unit == 'INCHES' || pricing.unit == 'INCH' || pricing.unit == 'SQIN'}">Inches (Inch-based)</option>
+            <option value="SQFT" selected>Sqft (Square Feet)</option>
           </select>
-          <small>Calculation unit applied to quotation line items (Sqft or Inches only).</small>
+          <small>Calculation unit applied to quotation line items (Sqft).</small>
         </div>
 
         <!-- DESCRIPTION -->
@@ -443,34 +442,21 @@
 
 <script>
   function onUnitChanged() {
-    const unitSelect = document.getElementById('unit');
-    const selectedUnit = unitSelect.value;
     const cards = document.querySelectorAll('.formula-radio-card');
     const rateLabel = document.getElementById('rateLabelText');
     const rateHelp = document.getElementById('rateHelpText');
 
-    if (selectedUnit === 'INCHES') {
-      if (rateLabel) rateLabel.textContent = 'Price / Rate per Inch / Sq. Inch';
-      if (rateHelp) rateHelp.textContent = 'Configured rate per inch unit (₹/sq.in or ₹/in). Must be greater than zero.';
-    } else {
-      if (rateLabel) rateLabel.textContent = 'Price / Rate per Sq. Ft.';
-      if (rateHelp) rateHelp.textContent = 'Configured rate per square foot. Must be greater than zero.';
-    }
+    if (rateLabel) rateLabel.textContent = 'Price / Rate per Sq. Ft.';
+    if (rateHelp) rateHelp.textContent = 'Configured rate per square foot. Must be greater than zero.';
 
     let hasVisibleChecked = false;
     let firstVisibleRadio = null;
 
     cards.forEach(card => {
-      const cardType = card.getAttribute('data-calc-type');
       const radio = card.querySelector('input[type="radio"]');
-      if (!cardType || cardType === selectedUnit) {
-        card.style.display = 'flex';
-        if (!firstVisibleRadio && radio) firstVisibleRadio = radio;
-        if (radio && radio.checked) hasVisibleChecked = true;
-      } else {
-        card.style.display = 'none';
-        if (radio && radio.checked) radio.checked = false;
-      }
+      card.style.display = 'flex';
+      if (!firstVisibleRadio && radio) firstVisibleRadio = radio;
+      if (radio && radio.checked) hasVisibleChecked = true;
     });
 
     if (!hasVisibleChecked && firstVisibleRadio) {
@@ -494,16 +480,10 @@
 
     const alertBox = document.getElementById('formulaAlert');
     const alertText = document.getElementById('formulaAlertText');
-    const unitSelect = document.getElementById('unit');
-    const selectedUnit = unitSelect ? unitSelect.value : 'SQFT';
 
     if (alertBox && alertText) {
       if (selectedVal) {
-        if (selectedUnit === 'SQFT') {
-          alertText.innerHTML = 'Selected formula <code>' + selectedVal + '</code> evaluates with conversion divisor <code>/ 144</code> for square footage.';
-        } else {
-          alertText.innerHTML = 'Selected formula <code>' + selectedVal + '</code> evaluates directly in inch-based units without sqft division.';
-        }
+        alertText.innerHTML = 'Selected formula <code>' + selectedVal + '</code> evaluates with conversion divisor <code>/ 144</code> to calculate Sq. Ft.';
         alertBox.style.display = 'block';
       } else {
         alertBox.style.display = 'none';

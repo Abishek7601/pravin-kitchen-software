@@ -488,7 +488,7 @@ public class QuotationItemService {
             BigDecimal widthValue,
             BigDecimal heightValue
     ) {
-        return calculateSqft(formula, lengthValue, widthValue, heightValue, "ft");
+        return calculateSqft(formula, lengthValue, widthValue, heightValue, "in");
     }
 
     public BigDecimal calculateSqft(

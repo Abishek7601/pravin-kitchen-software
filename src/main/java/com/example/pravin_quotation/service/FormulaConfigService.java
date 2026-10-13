@@ -20,15 +20,28 @@ public class FormulaConfigService {
     }
 
     @PostConstruct
+    @Transactional
     public void initDefaultFormulas() {
-        if (formulaConfigRepository.count() == 0) {
-            seedDefaults();
+        seedDefaults();
+        // Deactivate any formula that is not one of the 3 canonical formulas
+        List<FormulaConfig> existing = formulaConfigRepository.findAll();
+        for (FormulaConfig fc : existing) {
+            String expr = FormulaEvaluator.cleanExpression(fc.getExpression());
+            if (!"(L+W)*H".equalsIgnoreCase(expr) && !"L*W".equalsIgnoreCase(expr) && !"L*H".equalsIgnoreCase(expr)) {
+                fc.setActive(false);
+                formulaConfigRepository.save(fc);
+            } else {
+                fc.setCalculationType("SQFT");
+                fc.setMeasurementUnit("SQFT");
+                fc.setPricingUnit("₹ / SQFT");
+                formulaConfigRepository.save(fc);
+            }
         }
     }
 
     @Transactional
     public void seedDefaults() {
-        // Standard Sqft Formulas
+        // Standard Sqft Formulas: only the 3 canonical formulas
         saveIfNotExists(new FormulaConfig(
                 "(L + W) × H (Sqft)",
                 "(L + W) * H",
@@ -64,67 +77,6 @@ public class FormulaConfigService {
                 3,
                 true
         ));
-
-        // Standard Inches Formulas (Square Inches & Linear Inches)
-        saveIfNotExists(new FormulaConfig(
-                "(L + W) × H (Sq. Inches)",
-                "(L + W) * H",
-                "INCHES",
-                "AREA",
-                "SQIN",
-                "₹ / SQIN",
-                "Perimeter and height area in square inches (no sqft conversion).",
-                4,
-                true
-        ));
-
-        saveIfNotExists(new FormulaConfig(
-                "L × W (Sq. Inches)",
-                "L * W",
-                "INCHES",
-                "AREA",
-                "SQIN",
-                "₹ / SQIN",
-                "Standard 2D surface in square inches (no sqft conversion).",
-                5,
-                true
-        ));
-
-        saveIfNotExists(new FormulaConfig(
-                "L × H (Sq. Inches)",
-                "L * H",
-                "INCHES",
-                "AREA",
-                "SQIN",
-                "₹ / SQIN",
-                "Vertical panel area in square inches (no sqft conversion).",
-                6,
-                true
-        ));
-
-        saveIfNotExists(new FormulaConfig(
-                "L (Linear Inches)",
-                "L",
-                "INCHES",
-                "LINEAR",
-                "INCH",
-                "₹ / INCH",
-                "Linear edge or running dimension in inches.",
-                7,
-                false
-        ));
-
-        saveIfNotExists(new FormulaConfig(
-                "2 × (L + W) (Perimeter Inches)",
-                "2 * (L + W)",
-                "INCHES",
-                "LINEAR",
-                "INCH",
-                "₹ / INCH",
-                "Full perimeter dimension in linear inches.",
-                8,
-                false
-        ));
     }
 
     private void saveIfNotExists(FormulaConfig config) {
@@ -142,10 +94,10 @@ public class FormulaConfigService {
     }
 
     public List<FormulaConfig> getFormulasByType(String calculationType) {
-        if (calculationType == null || calculationType.isBlank()) {
-            return getActiveFormulas();
+        if ("INCHES".equalsIgnoreCase(calculationType)) {
+            return List.of();
         }
-        return formulaConfigRepository.findByCalculationTypeAndActiveTrueOrderByDisplayOrderAscIdAsc(calculationType.toUpperCase());
+        return formulaConfigRepository.findByCalculationTypeAndActiveTrueOrderByDisplayOrderAscIdAsc("SQFT");
     }
 
     public FormulaConfig getFormulaById(Long id) {
@@ -177,22 +129,19 @@ public class FormulaConfigService {
             throw new IllegalArgumentException(validation.errorMessage());
         }
 
-        String cleanCalcType = (calculationType != null && !calculationType.isBlank())
-                ? calculationType.trim().toUpperCase() : "SQFT";
-        if (!"SQFT".equals(cleanCalcType) && !"INCHES".equals(cleanCalcType)) {
-            throw new IllegalArgumentException("Calculation type must be either 'SQFT' or 'INCHES'.");
+        if ("INCHES".equalsIgnoreCase(calculationType) || "INCH".equalsIgnoreCase(calculationType)) {
+            throw new IllegalArgumentException("Inches is no longer supported as a calculation type. Only 'SQFT' is supported.");
         }
 
-        String cleanUnitType = (unitType != null && !unitType.isBlank())
-                ? unitType.trim().toUpperCase() : validation.inferredUnitType();
+        String cleanedExpr = FormulaEvaluator.cleanExpression(expression);
+        if (!"(L+W)*H".equalsIgnoreCase(cleanedExpr) && !"L*W".equalsIgnoreCase(cleanedExpr) && !"L*H".equalsIgnoreCase(cleanedExpr)) {
+            throw new IllegalArgumentException("Only the three standard formulas are supported: L × W, (L + W) × H, and L × H.");
+        }
 
-        String cleanMeasUnit = (measurementUnit != null && !measurementUnit.isBlank())
-                ? measurementUnit.trim().toUpperCase()
-                : ("SQFT".equals(cleanCalcType) ? "SQFT" : ("LINEAR".equals(cleanUnitType) ? "INCH" : "SQIN"));
-
-        String cleanPriceUnit = (pricingUnit != null && !pricingUnit.isBlank())
-                ? pricingUnit.trim()
-                : "₹ / " + cleanMeasUnit;
+        String cleanCalcType = "SQFT";
+        String cleanUnitType = "AREA";
+        String cleanMeasUnit = "SQFT";
+        String cleanPriceUnit = "₹ / SQFT";
 
         FormulaConfig config = new FormulaConfig();
         config.setName(cleanName);
@@ -236,16 +185,19 @@ public class FormulaConfigService {
             throw new IllegalArgumentException(validation.errorMessage());
         }
 
-        String cleanCalcType = (calculationType != null && !calculationType.isBlank())
-                ? calculationType.trim().toUpperCase() : "SQFT";
-        String cleanUnitType = (unitType != null && !unitType.isBlank())
-                ? unitType.trim().toUpperCase() : validation.inferredUnitType();
-        String cleanMeasUnit = (measurementUnit != null && !measurementUnit.isBlank())
-                ? measurementUnit.trim().toUpperCase()
-                : ("SQFT".equals(cleanCalcType) ? "SQFT" : ("LINEAR".equals(cleanUnitType) ? "INCH" : "SQIN"));
-        String cleanPriceUnit = (pricingUnit != null && !pricingUnit.isBlank())
-                ? pricingUnit.trim()
-                : "₹ / " + cleanMeasUnit;
+        if ("INCHES".equalsIgnoreCase(calculationType) || "INCH".equalsIgnoreCase(calculationType)) {
+            throw new IllegalArgumentException("Inches is no longer supported as a calculation type. Only 'SQFT' is supported.");
+        }
+
+        String cleanedExpr = FormulaEvaluator.cleanExpression(expression);
+        if (!"(L+W)*H".equalsIgnoreCase(cleanedExpr) && !"L*W".equalsIgnoreCase(cleanedExpr) && !"L*H".equalsIgnoreCase(cleanedExpr)) {
+            throw new IllegalArgumentException("Only the three standard formulas are supported: L × W, (L + W) × H, and L × H.");
+        }
+
+        String cleanCalcType = "SQFT";
+        String cleanUnitType = "AREA";
+        String cleanMeasUnit = "SQFT";
+        String cleanPriceUnit = "₹ / SQFT";
 
         config.setName(cleanName);
         config.setExpression(expression.trim());
