@@ -2,16 +2,14 @@ package com.example.pravin_quotation.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Entity
 @Table(
-        name = "materials",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uk_material_item_name",
-                        columnNames = {"item_id", "name"}
-                )
-        }
+        name = "materials"
 )
 public class Material {
 
@@ -25,9 +23,26 @@ public class Material {
     @Column(length = 500)
     private String description;
 
+    @Column(name = "formula", length = 50)
+    private String formula = "(L + W) × H";
+
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "item_id", nullable = false)
+    @JoinColumn(name = "item_id", nullable = true)
     private Item item;
+
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "division_materials",
+            joinColumns = @JoinColumn(name = "material_id"),
+            inverseJoinColumns = @JoinColumn(name = "division_id"),
+            uniqueConstraints = {
+                    @UniqueConstraint(
+                            name = "uk_division_material",
+                            columnNames = {"division_id", "material_id"}
+                    )
+            }
+    )
+    private Set<Division> divisions = new HashSet<>();
 
     @Column(nullable = false)
     private Boolean active = true;
@@ -57,6 +72,7 @@ public class Material {
         this.active = active;
         this.displayOrder = displayOrder;
         this.createdAt = createdAt;
+        this.formula = "(L + W) × H";
     }
 
     @PrePersist
@@ -69,6 +85,17 @@ public class Material {
 
         if (displayOrder == null) {
             displayOrder = 0;
+        }
+
+        if (formula == null || formula.isBlank()) {
+            formula = "(L + W) × H";
+        }
+    }
+
+    @PreUpdate
+    protected void onUpdate() {
+        if (formula == null || formula.isBlank()) {
+            formula = "(L + W) × H";
         }
     }
 
@@ -96,12 +123,71 @@ public class Material {
         this.description = description;
     }
 
+    public String getFormula() {
+        return (formula != null && !formula.isBlank()) ? formula : "(L + W) × H";
+    }
+
+    public void setFormula(String formula) {
+        this.formula = formula;
+    }
+
     public Item getItem() {
         return item;
     }
 
     public void setItem(Item item) {
         this.item = item;
+    }
+
+    public Set<Division> getDivisions() {
+        return divisions;
+    }
+
+    public void setDivisions(Set<Division> divisions) {
+        this.divisions = divisions;
+    }
+
+    public void addDivision(Division division) {
+        if (division != null) {
+            this.divisions.add(division);
+        }
+    }
+
+    public void removeDivision(Division division) {
+        if (division != null) {
+            this.divisions.remove(division);
+        }
+    }
+
+    public List<String> getDivisionNames() {
+        if (divisions == null || divisions.isEmpty()) {
+            if (item != null && item.getDivision() != null) {
+                return List.of(item.getDivision().getName());
+            }
+            return Collections.emptyList();
+        }
+        return divisions.stream().map(Division::getName).sorted().toList();
+    }
+
+    public String getDivisionNamesString() {
+        List<String> names = getDivisionNames();
+        if (names == null || names.isEmpty()) return "-";
+        return String.join(", ", names);
+    }
+
+    public boolean hasDivision(Long divisionId) {
+        if (divisionId == null) return false;
+        if (divisions != null) {
+            for (Division d : divisions) {
+                if (d != null && divisionId.equals(d.getId())) {
+                    return true;
+                }
+            }
+        }
+        if (item != null && item.getDivision() != null && divisionId.equals(item.getDivision().getId())) {
+            return true;
+        }
+        return false;
     }
 
     public Boolean getActive() {

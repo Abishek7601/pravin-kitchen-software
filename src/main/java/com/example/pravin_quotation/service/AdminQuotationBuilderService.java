@@ -261,17 +261,6 @@ public class AdminQuotationBuilderService {
                                         )
                                 );
 
-                Item item =
-                        itemRepository
-                                .findById(
-                                        itemRequest.itemId()
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalArgumentException(
-                                                "Item not found."
-                                        )
-                                );
-
                 Material material =
                         materialRepository
                                 .findById(
@@ -282,6 +271,30 @@ public class AdminQuotationBuilderService {
                                                 "Material not found."
                                         )
                                 );
+
+                Item item = null;
+                if (itemRequest.itemId() != null) {
+                    item = itemRepository
+                            .findById(itemRequest.itemId())
+                            .orElse(null);
+                }
+                if (item == null && material.getItem() != null) {
+                    item = material.getItem();
+                }
+                if (item == null) {
+                    item = itemRepository
+                            .findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(division.getId())
+                            .stream()
+                            .findFirst()
+                            .orElse(null);
+                    if (item == null) {
+                        Item defaultItem = new Item();
+                        defaultItem.setName(division.getName());
+                        defaultItem.setDivision(division);
+                        defaultItem.setActive(true);
+                        item = itemRepository.save(defaultItem);
+                    }
+                }
 
                 MaterialOption option =
                         materialOptionRepository
@@ -304,24 +317,6 @@ public class AdminQuotationBuilderService {
 
                     throw new IllegalArgumentException(
                             "Material option does not belong to the selected material."
-                    );
-                }
-
-                if (!material.getItem()
-                        .getId()
-                        .equals(item.getId())) {
-
-                    throw new IllegalArgumentException(
-                            "Material does not belong to the selected item."
-                    );
-                }
-
-                if (!item.getDivision()
-                        .getId()
-                        .equals(division.getId())) {
-
-                    throw new IllegalArgumentException(
-                            "Item does not belong to the selected division."
                     );
                 }
 
@@ -349,9 +344,11 @@ public class AdminQuotationBuilderService {
                         .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())
                         .orElse(null);
 
-                String itemFormula = (itemPricing != null && itemPricing.getFormula() != null && !itemPricing.getFormula().isBlank())
-                        ? itemPricing.getFormula()
-                        : (option.getFormula() != null && !option.getFormula().isBlank() ? option.getFormula() : "(L + W) × H");
+                String itemFormula = (material.getFormula() != null && !material.getFormula().isBlank())
+                        ? material.getFormula()
+                        : ((itemPricing != null && itemPricing.getFormula() != null && !itemPricing.getFormula().isBlank())
+                                ? itemPricing.getFormula()
+                                : (option.getFormula() != null && !option.getFormula().isBlank() ? option.getFormula() : "(L + W) × H"));
 
                 String itemUnit = (itemPricing != null && itemPricing.getUnit() != null) ? itemPricing.getUnit() : "SQFT";
 
@@ -386,23 +383,14 @@ public class AdminQuotationBuilderService {
                             itemRequest.sizes()
                                     .get(sizeIndex);
 
-                    BigDecimal length =
-                            positive(
-                                    size.length(),
-                                    "Length"
-                            );
+                    String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
+                    boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
+                    boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                    BigDecimal width =
-                            positive(
-                                    size.width(),
-                                    "Width"
-                            );
-
-                    BigDecimal height =
-                            positive(
-                                    size.height(),
-                                    "Height"
-                            );
+                    BigDecimal length = positive(size.length(), "Length");
+                    BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                    BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                    com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
 
                     // Save first size in parent item
                     // for backward compatibility.
@@ -500,23 +488,14 @@ public class AdminQuotationBuilderService {
                             itemRequest.sizes()
                                     .get(sizeIndex);
 
-                    BigDecimal length =
-                            positive(
-                                    size.length(),
-                                    "Length"
-                            );
+                    String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
+                    boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
+                    boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                    BigDecimal width =
-                            positive(
-                                    size.width(),
-                                    "Width"
-                            );
-
-                    BigDecimal height =
-                            positive(
-                                    size.height(),
-                                    "Height"
-                            );
+                    BigDecimal length = positive(size.length(), "Length");
+                    BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                    BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                    com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
 
                     BigDecimal sqft =
                             quotationItemSizeService

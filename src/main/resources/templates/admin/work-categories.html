@@ -92,8 +92,14 @@
                 <div class="card-top">
 
                     <div class="category-icon"
-                         th:text="${category.icon != null ? category.icon : '▦'}">
-                        ▦
+                         th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
+                         th:text="${category.icon}">
+                        📁
+                    </div>
+                    <div class="category-icon"
+                         th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}"
+                         style="background: #f1f5f9; color: #94a3b8; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
+                        📁
                     </div>
 
                     <span class="status-badge active"
@@ -112,7 +118,7 @@
                 <!-- CONTENT -->
                 <div class="category-content">
 
-                    <h2 th:text="${category.name}">
+                    <h2 th:text="${category.displayName}">
                         Modular Kitchen
                     </h2>
 

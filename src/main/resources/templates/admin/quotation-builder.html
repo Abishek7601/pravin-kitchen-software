@@ -88,7 +88,7 @@
       <div id="categoryGrid" class="choice-grid">
         <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name}">
           <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
-          <strong th:text="${category.name}">FOYER</strong>
+          <strong th:text="${category.displayName}">FOYER</strong>
           <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
         </button>
       </div>
@@ -97,16 +97,17 @@
     </section>
 
     <section id="itemBuilder" class="card item-builder hidden">
-      <div class="section-heading"><span class="step">05</span><div><h2>Material & Size</h2><p id="selectedItemLabel">Select an item first.</p></div></div>
+      <div class="section-heading"><span class="step">05</span><div><h2>Material &amp; Size</h2><p id="selectedItemLabel">Select a division first.</p></div></div>
       <div class="selection-path" id="selectionPath"></div>
+      <div id="materialFormulaBadge" style="display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; color: #166534; font-size: 13px;"></div>
       <div class="grid two">
         <label class="field">Material <span>*</span><select id="materialId"><option value="">Select material</option></select></label>
-        <label class="field">Material Option <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
+        <label class="field">Material Option / Specification <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
       </div>
       <div id="materialDetails" class="material-details hidden"></div>
       <div class="grid two">
         <label class="field">Item Description<textarea id="itemDescription" rows="2" placeholder="Optional item description"></textarea></label>
-        <label class="field">Specification<textarea id="specification" rows="2" placeholder="Material/specification details"></textarea></label>
+        <label class="field">Custom Specification<textarea id="specification" rows="2" placeholder="Custom material/specification details"></textarea></label>
       </div>
       <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
       <div id="sizeRows" class="size-list"></div>
@@ -350,37 +351,75 @@
       const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
       showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Division</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select division')}</small></button>`).join('')}</div>`);
       hide('itemArea'); hide('itemBuilder');
-      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => loadItems(btn.dataset.id, btn.dataset.name, categoryId, categoryName)));
+      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => selectDivision(Number(btn.dataset.id), btn.dataset.name, categoryId, categoryName)));
   }
 
-  async function loadItems(divisionId, divisionName, categoryId, categoryName) {
-      const data = await getJson(`${API_BASE}/items?divisionId=${divisionId}`);
-      showArea('itemArea', `<div class="dynamic-title">${esc(categoryName)} / ${esc(divisionName)} — Choose Item</div><div class="choice-grid compact">${data.map(i => `<button type="button" class="choice-card item-choice" data-id="${i.id}" data-name="${esc(i.name)}"><strong>${esc(i.name)}</strong><small>${esc(i.description || 'Available item')}</small><span class="click-me">Click Me</span></button>`).join('')}</div>`);
-      document.querySelectorAll('.item-choice').forEach(btn => btn.addEventListener('click', () => openItemBuilder({categoryId, categoryName, divisionId, divisionName, itemId: Number(btn.dataset.id), itemName: btn.dataset.name})));
-  }
+  async function selectDivision(divisionId, divisionName, categoryId, categoryName) {
+      state.draft = {
+          categoryId,
+          categoryName,
+          divisionId,
+          divisionName,
+          itemId: null,
+          itemName: divisionName,
+          materialId: null,
+          materialName: '',
+          materialOptionId: null,
+          materialOptionName: '',
+          rate: 0,
+          formula: '(L + W) × H',
+          sizes: []
+      };
+      $('selectedItemLabel').textContent = `${categoryName} → ${divisionName}`;
+      $('selectionPath').textContent = `${categoryName} / ${divisionName}`;
 
-  async function openItemBuilder(info) {
-      state.draft = {...info, materialId:null, materialName:'', materialOptionId:null, materialOptionName:'', rate:0, sizes:[]};
-      $('selectedItemLabel').textContent = `${info.categoryName} → ${info.itemName}`;
-      $('selectionPath').textContent = `${info.categoryName} / ${info.divisionName} / ${info.itemName}`;
-      const materials = await getJson(`${API_BASE}/materials?itemId=${info.itemId}`);
-      $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
+      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}`);
+      if (!materials || materials.length === 0) {
+          $('materialId').innerHTML = '<option value="" disabled selected>No materials available for this division</option>';
+      } else {
+          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
+      }
       $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
       $('materialDetails').classList.add('hidden');
+      if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       $('sizeRows').innerHTML = '';
       addSizeRow();
       $('itemBuilder').classList.remove('hidden');
       $('itemBuilder').scrollIntoView({behavior:'smooth', block:'start'});
   }
 
+  async function loadItems(divisionId, divisionName, categoryId, categoryName) {
+      return selectDivision(divisionId, divisionName, categoryId, categoryName);
+  }
+
+  async function openItemBuilder(info) {
+      return selectDivision(info.divisionId, info.divisionName || info.itemName, info.categoryId, info.categoryName);
+  }
+
   $('materialId').addEventListener('change', async e => {
       state.draft.materialId = Number(e.target.value) || null;
       const selected = e.target.selectedOptions[0];
       state.draft.materialName = selected?.textContent || '';
+      state.draft.formula = selected?.dataset?.formula || '(L + W) × H';
+      const badge = $('materialFormulaBadge');
+      if (badge) {
+          if (state.draft.materialId) {
+              badge.innerHTML = `<span>Configured Formula:</span> <strong>${esc(state.draft.formula)}</strong>`;
+              badge.style.display = 'inline-flex';
+          } else {
+              badge.style.display = 'none';
+          }
+      }
+      applyFormulaToAllRows();
       const options = state.draft.materialId ? await getJson(`${API_BASE}/material-options?materialId=${state.draft.materialId}`) : [];
-      $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+      if (!options || options.length === 0) {
+          $('materialOptionId').innerHTML = '<option value="">No predefined options (enter custom specification below)</option>';
+      } else {
+          $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+      }
       state.draft.materialOptionId = null; state.draft.materialOptionName = ''; state.draft.rate = 0;
       renderMaterialDetails();
+      calculateDraft();
   });
 
   $('materialOptionId').addEventListener('change', async e => {
@@ -418,13 +457,41 @@
       showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Formula</span><strong>${esc(formulaDisp)}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)} <small style="font-size:0.75rem; color:#64748b;">(${esc(pUnit)})</small></strong></div>`);
   }
 
+  function applyFormulaToRow(row) {
+      const formula = (state.draft?.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+      const wField = row.querySelector('.field-width');
+      const hField = row.querySelector('.field-height');
+      const wInput = row.querySelector('.width');
+      const hInput = row.querySelector('.height');
+
+      if (formula.includes('+') || formula.includes('(L + W)')) {
+          if (wField) wField.style.display = '';
+          if (hField) hField.style.display = '';
+      } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
+          if (wField) wField.style.display = 'none';
+          if (wInput) wInput.value = '0';
+          if (hField) hField.style.display = '';
+      } else {
+          // L × W
+          if (wField) wField.style.display = '';
+          if (hField) hField.style.display = 'none';
+          if (hInput) hInput.value = '0';
+      }
+  }
+
+  function applyFormulaToAllRows() {
+      document.querySelectorAll('.size-row').forEach(applyFormulaToRow);
+      calculateDraft();
+  }
+
   function addSizeRow(size = {}) {
       const row = document.createElement('div'); row.className='size-row';
-      const uLabel = getItemUnitLabel(state.draft?.formula, state.draft?.unit);
-      row.innerHTML = `<div><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
+      const uLabel = 'sq.ft';
+      row.innerHTML = `<div class="size-field field-length"><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div class="size-field field-width"><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div class="size-field field-height"><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
       $('sizeRows').appendChild(row);
       row.querySelectorAll('input').forEach(i => i.addEventListener('input', calculateDraft));
       row.querySelector('.remove-size').addEventListener('click', () => { if ($('sizeRows').children.length > 1) { row.remove(); calculateDraft(); } });
+      applyFormulaToRow(row);
       calculateDraft();
   }
 
@@ -457,11 +524,38 @@
   function addDraftToRoom() {
       if (!state.draft || !state.draft.materialOptionId) return alert('Select a material option.');
       const sizes=readSizes();
-      if (sizes.some(s => !(s.length>0 || s.width>0 || s.height>0))) return alert('Enter dimensions (Length, Width, or Height) for every size.');
+      if (sizes.length === 0) return alert('Add at least one size.');
+      const formula = (state.draft.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+
+      let invalid = false;
+      let invalidMsg = '';
+      sizes.forEach(s => {
+          if (formula.includes('+') || formula.includes('(L + W)')) {
+              if (s.length <= 0 || s.width <= 0 || s.height <= 0) {
+                  invalid = true;
+                  invalidMsg = 'Enter positive Length, Width, and Height for all sizes.';
+              }
+          } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
+              if (s.length <= 0 || s.height <= 0) {
+                  invalid = true;
+                  invalidMsg = 'Enter positive Length and Height for all sizes.';
+              }
+              s.width = 0;
+          } else {
+              // L × W
+              if (s.length <= 0 || s.width <= 0) {
+                  invalid = true;
+                  invalidMsg = 'Enter positive Length and Width for all sizes.';
+              }
+              s.height = 0;
+          }
+      });
+      if (invalid) return alert(invalidMsg);
       const room=ensureRoom(); if (!room) return alert('Select Floor and Room Number first.');
       state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
       room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
+      if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       renderRoomPills();
       $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
   }
@@ -499,9 +593,18 @@
                   const rawMeas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
                   const meas = Math.round(rawMeas * 100) / 100;
                   const amount = Math.round(meas * Number(item.rate || 0) * 100) / 100;
+                  const formula = (item.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+                  let dimStr;
+                  if (formula === 'L × W' || (formula.includes('L') && formula.includes('W') && !formula.includes('H'))) {
+                      dimStr = `${z.length} × ${z.width} (L × W)`;
+                  } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
+                      dimStr = `${z.length} × ${z.height} (L × H)`;
+                  } else {
+                      dimStr = `${z.length} × ${z.width} × ${z.height}`;
+                  }
                   const row = document.createElement('div');
                   row.className = 'summary-row';
-                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
+                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName || item.divisionName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${dimStr}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
                   table.appendChild(row);
               });
           });

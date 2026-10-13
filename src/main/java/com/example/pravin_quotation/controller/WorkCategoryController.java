@@ -48,12 +48,14 @@ public class WorkCategoryController {
             @RequestParam String name,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String icon,
+            @RequestParam(required = false) String emoji,
             @RequestParam(required = false) Integer displayOrder) {
 
+        String effectiveIcon = (icon != null && !icon.isBlank()) ? icon : emoji;
         workCategoryService.createCategory(
                 name,
                 description,
-                icon,
+                effectiveIcon,
                 displayOrder
         );
 
@@ -81,13 +83,15 @@ public class WorkCategoryController {
             @RequestParam String name,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String icon,
+            @RequestParam(required = false) String emoji,
             @RequestParam(required = false) Integer displayOrder) {
 
+        String effectiveIcon = (icon != null && !icon.isBlank()) ? icon : emoji;
         workCategoryService.updateCategory(
                 id,
                 name,
                 description,
-                icon,
+                effectiveIcon,
                 displayOrder
         );
 

@@ -111,6 +111,21 @@ public class WorkCategory {
         this.icon = icon;
     }
 
+    public String getEmoji() {
+        return icon;
+    }
+
+    public void setEmoji(String emoji) {
+        this.icon = emoji;
+    }
+
+    public String getDisplayName() {
+        if (icon != null && !icon.trim().isEmpty()) {
+            return icon.trim() + " " + name;
+        }
+        return name;
+    }
+
 
     public Boolean getActive() {
         return active;

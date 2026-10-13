@@ -99,11 +99,9 @@
 
                     <th>Material</th>
 
-                    <th>Item</th>
+                    <th>Formula</th>
 
-                    <th>Division</th>
-
-                    <th>Work Category</th>
+                    <th>Mapped Divisions</th>
 
                     <th>Order</th>
 
@@ -153,21 +151,18 @@
                     </td>
 
 
-                    <td
-                            th:text="${material.item.name}">
-                        Base Cabinet
+                    <td>
+                        <span style="display: inline-block; padding: 4px 10px; background: #e0f2fe; color: #0284c7; border-radius: 6px; font-weight: 700; font-size: 12px; font-family: monospace;"
+                              th:text="${material.formula != null ? material.formula : '(L + W) × H'}">
+                            (L + W) × H
+                        </span>
                     </td>
 
 
-                    <td
-                            th:text="${material.item.division.name}">
-                        L-Shape Kitchen
-                    </td>
-
-
-                    <td
-                            th:text="${material.item.division.workCategory.name}">
-                        Modular Kitchen
+                    <td>
+                        <span th:text="${material.divisionNamesString}">
+                            Kitchen Base
+                        </span>
                     </td>
 
 
@@ -243,7 +238,7 @@
                 <tr th:if="${#lists.isEmpty(materials)}">
 
                     <td
-                            colspan="8"
+                            colspan="7"
                             class="empty-state">
 
                         <div class="empty-icon">

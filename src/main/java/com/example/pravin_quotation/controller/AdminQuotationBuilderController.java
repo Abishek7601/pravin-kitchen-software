@@ -93,10 +93,27 @@ public class AdminQuotationBuilderController {
 
     @GetMapping("/builder/materials")
     @ResponseBody
-    public List<Map<String, Object>> materials(@RequestParam Long itemId) {
-        return materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId)
-                .stream().map(m -> map("id", m.getId(), "name", m.getName(), "description", m.getDescription()))
-                .toList();
+    public List<Map<String, Object>> materials(
+            @RequestParam(required = false) Long divisionId,
+            @RequestParam(required = false) Long itemId) {
+        List<Material> list;
+        if (divisionId != null) {
+            list = materialRepository.findActiveByDivisionId(divisionId);
+        } else if (itemId != null) {
+            list = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId);
+        } else {
+            list = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
+        }
+        return list.stream().map(m -> map(
+                "id", m.getId(),
+                "name", m.getName(),
+                "description", m.getDescription(),
+                "formula", m.getFormula()
+        )).toList();
+    }
+
+    public List<Map<String, Object>> materials(Long itemId) {
+        return materials(null, itemId);
     }
 
     @GetMapping("/builder/material-options")
@@ -115,9 +132,19 @@ public class AdminQuotationBuilderController {
             @RequestParam PricingMode pricingMode) {
         try {
             BigDecimal rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
+            MaterialOption option = materialOptionRepository.findById(materialOptionId).orElse(null);
             Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null);
-            String formula = (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
-                    ? pricing.getFormula() : "(L + W) × H";
+
+            String formula;
+            if (option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null && !option.getMaterial().getFormula().isBlank() && !"(L + W) × H".equals(option.getMaterial().getFormula())) {
+                formula = option.getMaterial().getFormula();
+            } else if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank()) {
+                formula = pricing.getFormula();
+            } else if (option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null && !option.getMaterial().getFormula().isBlank()) {
+                formula = option.getMaterial().getFormula();
+            } else {
+                formula = "(L + W) × H";
+            }
             String unit = "SQFT";
             String measurementUnit = "SQFT";
             String pricingUnit = "₹ / SQFT";

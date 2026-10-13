@@ -43,4 +43,15 @@ public class DataInitializer {
             }
         };
     }
+
+    @Bean
+    CommandLineRunner ensureSchemaCompatibility(org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+        return args -> {
+            try {
+                jdbcTemplate.execute("ALTER TABLE materials MODIFY COLUMN item_id BIGINT NULL");
+            } catch (Exception e) {
+                // Table might not exist yet or already altered
+            }
+        };
+    }
 }

@@ -85,43 +85,71 @@
             </div>
 
 
-            <!-- ITEM -->
-
+            <!-- FORMULA CONFIGURATION -->
             <div class="form-group">
-
-                <label for="itemId">
-                    Item
+                <label for="formula">
+                    Measurement Calculation Formula
                     <span>*</span>
                 </label>
-
-                <select
-                        id="itemId"
-                        name="itemId"
-                        required>
-
-                    <option value="">
-                        Select Item
+                <select id="formula"
+                        name="formula"
+                        required
+                        style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; background: #ffffff;">
+                    <option value="(L + W) × H"
+                            th:selected="${material.formula == '(L + W) × H'}">
+                        (L + W) × H — Length, Width &amp; Height
                     </option>
-
-                    <option
-                            th:each="item : ${items}"
-                            th:value="${item.id}"
-                            th:text="${item.name + ' — '
-                            + item.division.name + ' — '
-                            + item.division.workCategory.name}"
-                            th:selected="${material.item != null
-                            and material.item.id == item.id}">
-
-                        Base Cabinet
-
+                    <option value="L × W"
+                            th:selected="${material.formula == 'L × W'}">
+                        L × W — Length &amp; Width
                     </option>
-
+                    <option value="L × H"
+                            th:selected="${material.formula == 'L × H'}">
+                        L × H — Length &amp; Height
+                    </option>
                 </select>
-
                 <small>
-                    Select the quotation item this material belongs to.
+                    Measurement calculation formula configured for this material.
                 </small>
+            </div>
 
+            <!-- DIVISION MAPPINGS -->
+            <div class="form-group">
+                <label>
+                    Mapped Divisions
+                    <span>*</span>
+                </label>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 12px; background: #f8fafc; display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 8px;">
+                    <label th:each="division : ${divisions}"
+                           style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; background: #ffffff; padding: 6px 10px; border-radius: 6px; border: 1px solid #e2e8f0; margin: 0;">
+                        <input type="checkbox"
+                               name="divisionIds"
+                               th:value="${division.id}"
+                               th:checked="${material.hasDivision(division.id)}"
+                               style="width: 16px; height: 16px; cursor: pointer;">
+                        <span th:text="${(division.workCategory.icon != null ? division.workCategory.icon + ' ' : '') + division.name + ' (' + division.workCategory.name + ')'}">
+                            Kitchen Base (Kitchen)
+                        </span>
+                    </label>
+                </div>
+                <small>
+                    Select which division(s) this material belongs to. An existing material can be mapped to multiple divisions.
+                </small>
+            </div>
+
+            <!-- OPTIONAL ITEM (LEGACY COMPATIBILITY) -->
+            <div class="form-group" style="display: none;">
+                <label for="itemId">
+                    Item (Optional)
+                </label>
+                <select id="itemId" name="itemId">
+                    <option value="">None / Direct Division Mapping</option>
+                    <option th:each="item : ${items}"
+                            th:value="${item.id}"
+                            th:text="${item.name + ' — ' + item.division.name + ' — ' + item.division.workCategory.name}"
+                            th:selected="${material.item != null and material.item.id == item.id}">
+                    </option>
+                </select>
             </div>
 
 

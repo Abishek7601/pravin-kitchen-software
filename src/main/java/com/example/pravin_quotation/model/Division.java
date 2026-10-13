@@ -29,6 +29,9 @@ public class Division {
     @JoinColumn(name = "work_category_id", nullable = false)
     private WorkCategory workCategory;
 
+    @ManyToMany(mappedBy = "divisions", fetch = FetchType.LAZY)
+    private java.util.Set<Material> materials = new java.util.HashSet<>();
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -126,5 +129,13 @@ public class Division {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public java.util.Set<Material> getMaterials() {
+        return materials;
+    }
+
+    public void setMaterials(java.util.Set<Material> materials) {
+        this.materials = materials;
     }
 }

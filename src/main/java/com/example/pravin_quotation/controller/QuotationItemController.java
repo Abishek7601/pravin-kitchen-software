@@ -887,7 +887,8 @@ public class QuotationItemController {
                     materialOptionId
             );
 
-            // Resolve formula from Pricing or MaterialOption
+            // Resolve formula from Material, Pricing, or MaterialOption
+            MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
             Pricing pricing = pricingRepository
                     .findByMaterialOptionIdAndPricingMode(
                             materialOptionId,
@@ -895,13 +896,14 @@ public class QuotationItemController {
                     ).orElse(null);
 
             String formula = null;
-            if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().trim().isEmpty()) {
+            if (mo != null && mo.getMaterial() != null && mo.getMaterial().getFormula() != null && !mo.getMaterial().getFormula().isBlank() && !"(L + W) × H".equals(mo.getMaterial().getFormula())) {
+                formula = CalculationFormula.normalizeFormula(mo.getMaterial().getFormula());
+            } else if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().trim().isEmpty()) {
                 formula = CalculationFormula.normalizeFormula(pricing.getFormula());
-            } else {
-                MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
-                if (mo != null && mo.getFormula() != null && !mo.getFormula().trim().isEmpty()) {
-                    formula = CalculationFormula.normalizeFormula(mo.getFormula());
-                }
+            } else if (mo != null && mo.getFormula() != null && !mo.getFormula().trim().isEmpty()) {
+                formula = CalculationFormula.normalizeFormula(mo.getFormula());
+            } else if (mo != null && mo.getMaterial() != null && mo.getMaterial().getFormula() != null && !mo.getMaterial().getFormula().isBlank()) {
+                formula = CalculationFormula.normalizeFormula(mo.getMaterial().getFormula());
             }
             if (formula == null || formula.trim().isEmpty()) {
                 formula = CalculationFormula.FORMULA_L_X_W;
