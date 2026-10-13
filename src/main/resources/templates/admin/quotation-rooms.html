@@ -179,7 +179,6 @@
             <th>Room / Area</th>
             <th>Work Description</th>
             <th>Subtotal</th>
-            <th>Offer Price</th>
             <th>Status</th>
             <th>Actions</th>
 
@@ -247,17 +246,6 @@
             </td>
 
 
-            <!-- Offer Price -->
-            <td>
-
-                            <span class="amount"
-                                  th:text="${room.offerPrice != null
-                                    ? '₹ ' + room.offerPrice
-                                    : '₹ 0.00'}">
-                                ₹ 0.00
-                            </span>
-
-            </td>
 
 
             <!-- Status -->

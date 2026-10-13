@@ -1,1778 +1,629 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title th:text="${quotation != null and quotation.quotationNumber != null ? quotation.quotationNumber + ' | Quotation Builder' : 'Create Quotation | Quotation Builder'}">
-    Quotation Builder
-  </title>
-
-  <link rel="stylesheet"
-        th:href="@{/css/employee-quotation-builder.css}">
+  <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+  <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}">
+  <title>Create Quotation | Pravin KITCHENS &amp; INTERIORS</title>
+  <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
 </head>
-
 <body>
-
 <div class="builder-page">
-
   <header class="builder-header">
-
-    <div class="brand-area">
-      <div class="brand-logo">
-        <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: 8px;">
-      </div>
-
-      <div>
-        <span class="brand-kicker">Pravin KITCHENS & INTERIORS</span>
-        <h1>Quotation Builder</h1>
-      </div>
+    <div>
+      <span class="eyebrow" style="display: flex; align-items: center; gap: 8px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="builder-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 3px; border-radius: 6px;"> Pravin KITCHENS &amp; INTERIORS</span>
+      <h1>Create Quotation</h1>
+      <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
     </div>
-
     <div class="header-actions">
-
-      <div class="quote-number">
-        <span>QT NO</span>
-        <strong th:text="${quotation != null and quotation.quotationNumber != null ? quotation.quotationNumber : 'QT-AUTO'}">
-          QT-00001
-        </strong>
-      </div>
-
-      <div class="nav-header-actions">
-          <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }">
+      <span class="quote-number-preview">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
               <span>← Back</span>
           </button>
-          <a th:href="@{/employee/dashboard}" class="nav-dashboard-btn">
+          <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
               <span>⌂ Dashboard</span>
           </a>
       </div>
-
     </div>
-
   </header>
 
-
-  <main class="builder-main">
-
-    <!-- =====================================================
-         CUSTOMER + QUOTATION SUMMARY
-    ====================================================== -->
-
-    <section class="customer-bar">
-
-      <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/customer' : '/employee/quotations/save'}"
-            method="post"
-            class="customer-form">
-
-        <input type="hidden"
-               th:name="${_csrf.parameterName}"
-               th:value="${_csrf.token}">
-
-        <div class="customer-heading">
-          <span class="section-kicker">CUSTOMER DETAILS</span>
-          <h2>Quotation Information</h2>
-        </div>
-
-        <div class="customer-fields">
-
-          <div class="field">
-            <label for="customerName">Customer Name</label>
-            <input id="customerName"
-                   name="customerName"
-                   type="text"
-                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.name : ''}"
-                   required>
-          </div>
-
-          <div class="field">
-            <label for="phone">Phone</label>
-            <input id="phone"
-                   name="phone"
-                   type="tel"
-                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.phone : ''}"
-                   required>
-          </div>
-
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email"
-                   name="email"
-                   type="email"
-                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.email : ''}">
-          </div>
-
-          <div class="field">
-            <label for="quotationDate">Date</label>
-            <input id="quotationDate"
-                   name="quotationDate"
-                   type="date"
-                   th:value="${quotation != null and quotation.quotationDate != null ? quotation.quotationDate : today}"
-                   required>
-          </div>
-
-          <div class="field field-wide">
-            <label for="address">Address / Area</label>
-            <input id="address"
-                   name="address"
-                   type="text"
-                   th:value="${quotation != null and quotation.customer != null ? quotation.customer.address : ''}">
-          </div>
-
-          <div class="field branch-field">
-            <label>Branch</label>
-            <div class="readonly-field"
-                 th:text="${quotation != null and quotation.branch != null ? quotation.branch.name : (employee != null and employee.branch != null ? employee.branch.name : 'Not Assigned')}">
-              Branch
-            </div>
-          </div>
-
-        </div>
-
-        <div class="customer-footer">
-
-          <div class="requirements-inline">
-            <label for="customerRequirements">Requirements</label>
-            <input id="customerRequirements"
-                   name="customerRequirements"
-                   type="text"
-                   th:value="${quotation != null ? quotation.customerRequirements : ''}"
-                   placeholder="Customer requirements">
-          </div>
-
-          <div class="requirements-inline">
-            <label for="notes">Notes</label>
-            <input id="notes"
-                   name="notes"
-                   type="text"
-                   th:value="${quotation != null ? quotation.notes : ''}"
-                   placeholder="Internal notes">
-          </div>
-
-          <button type="submit" class="small-save-btn">
-            Save Details
-          </button>
-
-        </div>
-
-      </form>
-
+  <main>
+    <section class="card customer-card">
+      <div class="section-heading"><span class="step">01</span><div><h2>Customer Details</h2><p>These details will also be saved in the existing Customer module.</p></div></div>
+      <div class="grid two">
+        <label class="field">Customer Name <span>*</span><input id="customerName" type="text" placeholder="Enter customer name"></label>
+        <label class="field">Phone Number <span>*</span><input id="customerPhone" type="tel" inputmode="numeric" placeholder="Enter phone number"></label>
+        <label class="field">Email<input id="customerEmail" type="email" placeholder="customer@email.com"></label>
+        <label class="field">Address / Area<textarea id="customerAddress" rows="2" placeholder="House / area / location"></textarea></label>
+        <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
+        <label class="field">Branch / District <span>*</span>
+          <select id="branchId">
+            <option value="">Select branch / district</option>
+            <option th:each="branch : ${branches}"
+                    th:value="${branch.id}"
+                    th:text="${branch.name}"
+                    th:selected="${selectedBranchId != null and selectedBranchId == branch.id}"></option>
+          </select>
+        </label>
+      </div>
     </section>
 
-
-    <!-- =====================================================
-         PRICING MODE
-    ====================================================== -->
-
-    <section class="pricing-card">
-
-      <div class="pricing-title">
-        <span>PRICING MODE</span>
-        <small>
-          Changing this recalculates existing items without
-          removing their measurements.
-        </small>
+    <section class="card pricing-card">
+      <div class="section-heading"><span class="step">02</span><div><h2>Pricing Mode</h2><p>Changing the mode keeps the sizes and items and recalculates their prices.</p></div></div>
+      <div class="pricing-options" id="pricingModes">
+        <label class="pricing-option premium"><input type="radio" name="pricingMode" value="PREMIUM"><span><b>Premium</b><small>Highest material rate</small></span></label>
+        <label class="pricing-option middle"><input type="radio" name="pricingMode" value="MIDDLE" checked><span><b>Middle / Standard</b><small>Standard material rate</small></span></label>
+        <label class="pricing-option economy"><input type="radio" name="pricingMode" value="ECONOMY"><span><b>Economy</b><small>Economy material rate</small></span></label>
       </div>
-
-      <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/pricing-mode' : '/employee/quotations/save'}"
-            method="post"
-            id="pricingModeForm"
-            class="pricing-mode-form">
-
-        <input type="hidden"
-               th:name="${_csrf.parameterName}"
-               th:value="${_csrf.token}">
-
-        <button type="submit"
-                name="pricingMode"
-                value="PREMIUM"
-                class="mode-button premium"
-                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'PREMIUM'} ? ' selected' : ''">
-          <strong>Premium</strong>
-          <span>Premium</span>
-        </button>
-
-        <button type="submit"
-                name="pricingMode"
-                value="MIDDLE"
-                class="mode-button middle"
-                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'MIDDLE'} ? ' selected' : ''">
-          <strong>Middle / Standard</strong>
-          <span>Balanced</span>
-        </button>
-
-        <button type="submit"
-                name="pricingMode"
-                value="ECONOMY"
-                class="mode-button economy"
-                th:classappend="${quotation != null and quotation.pricingMode != null and quotation.pricingMode.name() == 'ECONOMY'} ? ' selected' : ''">
-          <strong>Economy</strong>
-          <span>Cost effective</span>
-        </button>
-
-      </form>
-
+      <div id="pricingMessage" class="inline-message"></div>
     </section>
 
-
-    <!-- =====================================================
-         WORK BUILDER
-    ====================================================== -->
-
-    <section class="work-builder" id="workLocationSection">
-
-      <div class="builder-section-heading">
-
+    <section class="card room-setup-card" id="roomSetupSection">
+      <div class="section-heading">
+        <span class="step">03</span>
         <div>
-          <span class="section-kicker">WORK LOCATION</span>
-          <h2>Which room are you working on?</h2>
+          <h2>Floor &amp; Room</h2>
+          <p>Select where the work is being done or add another room.</p>
         </div>
-
-        <div class="location-controls" style="display: flex; gap: 12px; align-items: flex-end; flex-wrap: wrap;">
-
-          <label>
-            <span>Floor</span>
-            <select id="floor">
-              <option>Ground Floor</option>
-              <option>First Floor</option>
-              <option>Second Floor</option>
-              <option>Third Floor</option>
-              <option>Terrace</option>
-              <option>Other</option>
-            </select>
-          </label>
-
-          <label>
-            <span>Room No.</span>
-            <select id="room">
-              <option value="1">1</option>
-              <option value="2">2</option>
-              <option value="3">3</option>
-              <option value="4">4</option>
-              <option value="5">5</option>
-              <option value="6">6</option>
-              <option value="7">7</option>
-              <option value="8">8</option>
-              <option value="9">9</option>
-              <option value="10">10</option>
-            </select>
-          </label>
-
-          <button type="button" id="addAnotherRoomBtnHeader" class="small-save-btn" style="background: #006b63; color: #ffffff; cursor: pointer; height: 38px;">
-            + Add Another Room
-          </button>
-
-        </div>
-
-      </div>
-
-      <!-- Quick Room Switcher Tabs for existing rooms -->
-      <div id="employeeRoomPills" style="margin: 10px 0 14px 0; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;" th:if="${!#lists.isEmpty(rooms)}">
-        <span style="font-size: 12px; font-weight: 600; color: #475569;">Configured Rooms:</span>
-        <button type="button" class="btn-employee-room-pill" th:each="r : ${rooms}"
-                th:attr="data-floor=${r.floor},data-room=${r.room}"
-                style="padding: 4px 10px; font-size: 12px; border-radius: 16px; border: 1px solid #cbd5e1; background: #ffffff; cursor: pointer; color: #1e293b;">
-          <span th:text="${r.floor + ' - Room ' + r.room}">Ground Floor - Room 1</span>
-          (<b th:text="${'₹' + #numbers.formatDecimal(r.subtotal, 1, 2)}" style="color: #006b63;">₹0.00</b>)
+        <button type="button" id="addAnotherRoomBtnStep3" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+          + Add Another Room
         </button>
       </div>
-
-      <div id="roomAlertMsgEmployee" style="display: none; padding: 10px 14px; background: #f0faf5; color: #006b63; border-radius: 6px; border: 1px solid #c8dad6; margin-bottom: 14px; font-size: 13px; font-weight: 600;"></div>
-
-
-      <div class="category-strip">
-
-        <div id="categoryList" class="category-list">
-
-          <button type="button"
-                  class="category-chip"
-                  th:each="category : ${workCategories}"
-                  th:attr="data-category-id=${category.id}">
-                        <span th:text="${category.icon != null ? category.icon : '◈'}">
-                            ◈
-                        </span>
-            <strong th:text="${category.name}">
-              Foyer
-            </strong>
-          </button>
-
-        </div>
-
+      <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #006b63; font-weight: 600;"></div>
+      <div class="grid two">
+        <label class="field">Floor <span>*</span>
+          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Terrace</option><option>Other</option></select>
+        </label>
+        <label class="field">Room Number <span>*</span>
+          <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+        </label>
       </div>
-
-
-      <!-- ITEM PANEL -->
-      <div class="item-panel">
-
-        <div class="panel-title">
-          <div>
-            <span class="section-kicker">ITEMS</span>
-            <h3 id="selectedCategoryTitle">
-              Select a room category
-            </h3>
-          </div>
-
-          <span id="itemLoading"
-                class="loading-text"
-                hidden>
-                        Loading...
-                    </span>
-        </div>
-
-        <div id="itemList"
-             class="item-list">
-
-          <div class="empty-panel">
-            Select Foyer / Kitchen / Bedroom / another category
-            above to see the available items.
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- MATERIAL PANEL -->
-      <div id="materialPanel"
-           class="material-panel"
-           hidden>
-
-        <div class="panel-title">
-
-          <div>
-            <span class="section-kicker">MATERIAL</span>
-            <h3 id="selectedItemTitle">
-              Select an item
-            </h3>
-          </div>
-
-          <button type="button"
-                  class="close-panel"
-                  id="closeMaterialPanel">
-            ×
-          </button>
-
-        </div>
-
-        <div class="material-layout">
-
-          <div class="material-column">
-
-            <h4>Choose Material</h4>
-
-            <div id="materialList"
-                 class="material-list">
-            </div>
-
-          </div>
-
-          <div class="option-column">
-
-            <h4>Material Options</h4>
-
-            <div id="optionList"
-                 class="option-list">
-
-              <div class="empty-panel">
-                Select a material to see its options.
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </div>
-
-
-      <!-- SIZE + ADD ITEM -->
-      <div id="sizePanel"
-           class="size-panel"
-           hidden>
-
-        <div class="panel-title">
-
-          <div>
-            <span class="section-kicker">SIZE &amp; PRICE</span>
-            <h3 id="selectedOptionTitle">
-              Material details
-            </h3>
-          </div>
-
-          <div class="current-rate">
-            <span>Current Rate</span>
-            <strong id="currentRate">₹0.00</strong>
-            <small id="currentUnit">SQFT</small>
-          </div>
-
-        </div>
-
-
-        <div class="material-detail-box">
-
-          <div>
-            <span>Specification</span>
-            <p id="materialSpecification">
-              Select a material option.
-            </p>
-          </div>
-
-          <div>
-            <span>Calculation</span>
-            <strong>(L + W) × H / 144</strong>
-          </div>
-
-        </div>
-
-
-        <form th:action="${quotation != null and quotation.id != null ? '/employee/quotations/builder/' + quotation.id + '/items' : '/employee/quotations/save'}"
-              method="post"
-              id="builderItemForm">
-
-          <input type="hidden"
-                 th:name="${_csrf.parameterName}"
-                 th:value="${_csrf.token}">
-
-          <input type="hidden"
-                 name="floor"
-                 id="formFloor">
-
-          <input type="hidden"
-                 name="room"
-                 id="formRoom">
-
-          <input type="hidden"
-                 name="workCategoryId"
-                 id="formCategoryId">
-
-          <input type="hidden"
-                 name="itemId"
-                 id="formItemId">
-
-          <input type="hidden"
-                 name="materialId"
-                 id="formMaterialId">
-
-          <input type="hidden"
-                 name="materialOptionId"
-                 id="formOptionId">
-
-          <input type="hidden"
-                 name="specification"
-                 id="formSpecification">
-
-          <input type="hidden"
-                 name="formula"
-                 id="formFormula">
-
-
-          <div class="dimension-grid">
-
-            <div class="dimension-field">
-              <label for="lengthInput">Length (IN)</label>
-              <input id="lengthInput"
-                     type="number"
-                     min="0.01"
-                     step="0.01"
-                     placeholder="36">
-            </div>
-
-            <div class="dimension-field">
-              <label for="widthInput">Width (IN)</label>
-              <input id="widthInput"
-                     type="number"
-                     min="0.01"
-                     step="0.01"
-                     placeholder="67">
-            </div>
-
-            <div class="dimension-field">
-              <label for="heightInput">Height (IN)</label>
-              <input id="heightInput"
-                     type="number"
-                     min="0.01"
-                     step="0.01"
-                     placeholder="23">
-            </div>
-
-            <div class="dimension-field">
-              <label for="offerInput">Offer Price</label>
-              <input id="offerInput"
-                     type="number"
-                     min="0"
-                     step="0.01"
-                     placeholder="Optional">
-            </div>
-
-          </div>
-
-
-          <div class="live-calculation">
-
-            <div>
-              <span>SQ.FT</span>
-              <strong id="previewSqft">0.00</strong>
-            </div>
-
-            <div>
-              <span>RATE</span>
-              <strong id="previewRate">₹0.00</strong>
-            </div>
-
-            <div>
-              <span>AMOUNT</span>
-              <strong id="previewAmount">₹0.00</strong>
-            </div>
-
-          </div>
-
-
-          <button type="button"
-                  class="add-size-btn"
-                  id="addSizeBtn">
-            + Add Size
-          </button>
-
-
-          <div id="pendingSizes"
-               class="pending-sizes"
-               hidden>
-
-            <div class="pending-heading">
-              <span>Pending Sizes</span>
-              <small>These will be added to the quotation together.</small>
-            </div>
-
-            <div id="pendingRows"></div>
-
-          </div>
-
-
-          <div class="builder-form-actions">
-
-            <button type="button"
-                    class="secondary-btn"
-                    id="clearSizeBtn">
-              Clear Size
-            </button>
-
-            <button type="submit"
-                    class="primary-btn">
-              Add Item to Quote →
-            </button>
-
-          </div>
-
-        </form>
-
-      </div>
-
+      <label class="field full">Work Description<textarea id="workDescription" rows="2" placeholder="Optional room-level description"></textarea></label>
     </section>
 
-
-    <!-- =====================================================
-         QUOTE SUMMARY
-    ====================================================== -->
-
-    <section class="summary-section">
-
-      <div class="summary-heading">
-
-        <div>
-          <span class="section-kicker">QUOTE SUMMARY</span>
-          <h2>Rooms, Materials &amp; Pricing</h2>
-        </div>
-
-        <div style="display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
-          <button type="button" id="addAnotherRoomBtnSummary" style="padding: 8px 14px; background: #ffffff; color: #006b63; border: 1.5px solid #006b63; border-radius: 6px; font-weight: 600; font-size: 13px; cursor: pointer;">
-            + Add Another Room
-          </button>
-
-          <div class="summary-total">
-            <span>Grand Total</span>
-            <strong>
-              ₹<span th:text="${#numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
-                              0.00
-                          </span>
-            </strong>
-          </div>
-        </div>
-
-      </div>
-
-
-      <div th:if="${#lists.isEmpty(rooms)}"
-           class="summary-empty">
-
-        <div class="empty-icon">⌁</div>
-
-        <h3>No quotation items yet</h3>
-
-        <p>
-          Select a room category, item and material above,
-          enter dimensions, then click Add Item to Quote.
-        </p>
-
-      </div>
-
-
-      <div th:each="room : ${rooms}"
-           class="room-summary-card">
-
-        <div class="room-summary-header">
-
-          <div>
-                        <span class="room-floor"
-                              th:text="${room.floor}">
-                            Ground Floor
-                        </span>
-
-            <h3>
-              ROOM
-              <span th:text="${room.room}">
-                                1
-                            </span>
-            </h3>
-          </div>
-
-          <div class="room-total">
-            <span>Room Total</span>
-            <strong>
-              ₹<span th:text="${#numbers.formatDecimal(room.subtotal, 1, 2)}">
-                                0.00
-                            </span>
-            </strong>
-          </div>
-
-        </div>
-
-
-        <div class="room-category-label"
-             th:text="${room.workDescription != null
-                        ? room.workDescription
-                        : 'WORK ITEMS'}">
-          FOYER
-        </div>
-
-
-        <div class="summary-table-wrapper">
-
-          <table class="summary-table">
-
-            <thead>
-            <tr>
-              <th>#</th>
-              <th>Item</th>
-              <th>Material</th>
-              <th>Size</th>
-              <th>SQ.FT</th>
-              <th>Amount</th>
-              <th>Offer Price</th>
-              <th></th>
-            </tr>
-            </thead>
-
-            <tbody>
-
-            <tr th:each="item, stat : ${roomItems[room.id]}">
-
-              <td th:text="${stat.count}">
-                1
-              </td>
-
-              <td>
-                <strong th:text="${item.item != null
-                                    ? item.item.name : 'Item'}">
-                  Shoe Rack Unit
-                </strong>
-
-                <small th:text="${item.workCategory != null
-                                    ? item.workCategory.name : ''}">
-                  Foyer
-                </small>
-              </td>
-
-              <td>
-
-                <strong th:text="${item.material != null
-                                    ? item.material.name : 'Material'}">
-                  Engineering Wood
-                </strong>
-
-                <small th:if="${item.materialOption != null}"
-                       th:text="${'(' + item.materialOption.name + ')'}">
-                  (Box Type)
-                </small>
-
-              </td>
-
-              <td class="size-cell">
-
-                                <span>
-                                    L:
-                                    <b th:text="${item.lengthValue}">36</b>
-                                </span>
-
-                <span>
-                                    W:
-                                    <b th:text="${item.widthValue}">67</b>
-                                </span>
-
-                <span>
-                                    H:
-                                    <b th:text="${item.heightValue}">23</b>
-                                </span>
-
-              </td>
-
-              <td>
-                <strong th:text="${item.calculatedSqft}">
-                  16.45
-                </strong>
-              </td>
-
-              <td>
-                <strong class="amount"
-                        th:text="${'₹' + #numbers.formatDecimal(item.amount, 1, 2)}">
-                  ₹3136.00
-                </strong>
-
-                <small th:text="${'₹' + #numbers.formatDecimal(item.rate, 1, 2) + ' / SQFT'}">
-                  ₹196.00 / SQFT
-                </small>
-              </td>
-
-              <td>
-                <strong class="offer"
-                        th:text="${'₹' + #numbers.formatDecimal(item.offerPrice, 1, 2)}">
-                  ₹3136.00
-                </strong>
-              </td>
-
-              <td>
-
-                <form th:action="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/{itemId}/delete(
-                                            quotationId=${quotation.id},
-                                            roomId=${room.id},
-                                            itemId=${item.id})}"
-                      method="post"
-                      onsubmit="return confirm('Remove this item from the quotation?');">
-
-                  <input type="hidden"
-                         th:name="${_csrf.parameterName}"
-                         th:value="${_csrf.token}">
-
-                  <button type="submit"
-                          class="delete-btn"
-                          title="Remove">
-                    ×
-                  </button>
-
-                </form>
-
-              </td>
-
-            </tr>
-
-            </tbody>
-
-          </table>
-
-        </div>
-
-      </div>
-
-
-      <div class="financial-summary">
-
-        <div>
-          <span>Subtotal</span>
-          <strong>
-            ₹<span th:text="${quotation != null and quotation.subtotal != null ? #numbers.formatDecimal(quotation.subtotal, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-          </strong>
-        </div>
-
-        <div>
-          <span>Travel Charge</span>
-          <strong>
-            ₹<span th:text="${quotation != null and quotation.travelCharge != null ? #numbers.formatDecimal(quotation.travelCharge, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-          </strong>
-        </div>
-
-        <div>
-          <span>GST</span>
-          <strong>
-            ₹<span th:text="${quotation != null and quotation.gstAmount != null ? #numbers.formatDecimal(quotation.gstAmount, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-          </strong>
-        </div>
-
-        <div class="grand-total-row">
-          <span>Grand Total</span>
-          <strong>
-            ₹<span th:text="${quotation != null and quotation.grandTotal != null ? #numbers.formatDecimal(quotation.grandTotal, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-          </strong>
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- =====================================================
-         BOTTOM ACTIONS
-    ====================================================== -->
-
-    <div class="bottom-actions">
-
-      <form th:if="${quotation != null and quotation.id != null}"
-            th:action="@{/employee/quotations/builder/{id}/save(id=${quotation.id})}"
-            method="post"
-            id="finishQuotationForm"
-            style="display: inline-block;">
-        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
-        <input type="hidden" name="customerName" id="saveCustName">
-        <input type="hidden" name="phone" id="saveCustPhone">
-        <input type="hidden" name="email" id="saveCustEmail">
-        <input type="hidden" name="address" id="saveCustAddress">
-        <input type="hidden" name="quotationDate" id="saveCustDate">
-        <input type="hidden" name="customerRequirements" id="saveCustReq">
-        <input type="hidden" name="notes" id="saveCustNotes">
-        <button type="submit" class="primary-btn" id="saveQuotationBtnEmployee" style="background: #006b63; color: #ffffff; font-weight: 700; cursor: pointer;">
-          ✓ Save Quotation
+    <section class="card work-card">
+      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Work categories are loaded from your existing database.</p></div></div>
+      <div id="categoryGrid" class="choice-grid">
+        <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name}">
+          <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
+          <strong th:text="${category.name}">FOYER</strong>
+          <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
         </button>
-      </form>
+      </div>
+      <div id="divisionArea" class="dynamic-area hidden"></div>
+      <div id="itemArea" class="dynamic-area hidden"></div>
+    </section>
 
-      <a th:if="${quotation != null and quotation.id != null}"
-         th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-         class="secondary-btn">
-        ↓ Download PDF
-      </a>
+    <section id="itemBuilder" class="card item-builder hidden">
+      <div class="section-heading"><span class="step">05</span><div><h2>Material &amp; Size</h2><p id="selectedItemLabel">Select an item first.</p></div></div>
+      <div class="selection-path" id="selectionPath"></div>
+      <div class="grid two">
+        <label class="field">Material <span>*</span><select id="materialId"><option value="">Select material</option></select></label>
+        <label class="field">Material Option <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
+      </div>
+      <div id="materialDetails" class="material-details hidden"></div>
+      <div class="grid two">
+        <label class="field">Item Description<textarea id="itemDescription" rows="2" placeholder="Optional item description"></textarea></label>
+        <label class="field">Specification<textarea id="specification" rows="2" placeholder="Material/specification details"></textarea></label>
+      </div>
+      <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
+      <div id="sizeRows" class="size-list"></div>
+      <div class="item-calculation">
+        <div><span>Current Rate</span><strong id="currentRate">&#8377;0.00</strong></div>
+        <div><span>Total SQ.FT</span><strong id="currentSqft">0.00</strong></div>
+        <div><span>Total Amount</span><strong id="currentAmount">&#8377;0.00</strong></div>
+      </div>
+      <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
+    </section>
 
-      <a th:if="${quotation != null and quotation.id != null}"
-         th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
-         class="secondary-btn">
-        Open Full View
-      </a>
+    <section class="card summary-card" id="summaryCard">
+      <div class="section-heading">
+        <span class="step">06</span>
+        <div>
+          <h2>Quote Summary</h2>
+          <p>Items and individual subtotals grouped by floor and room.</p>
+        </div>
+        <button type="button" id="addAnotherRoomBtnSummary" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+          + Add Another Room
+        </button>
+      </div>
+      <div id="summaryEmpty" class="summary-empty"><div class="empty-icon">&#9638;</div><h3>No items added yet</h3><p>Select a room, item, material and size to build the quotation.</p></div>
+      <div id="roomsSummary"></div>
+      <div id="addAnotherRoomBottomArea" style="margin-top: 14px; display: none; justify-content: flex-end;">
+        <button type="button" id="addAnotherRoomBtnBottom" class="btn btn-outline-primary btn-sm">
+          + Add Another Room to Quotation
+        </button>
+      </div>
+    </section>
 
-      <button type="button"
-              class="secondary-btn"
-              onclick="window.print()">
-        Print
-      </button>
-
-    </div>
-
+    <section class="card notes-card">
+      <div class="section-heading"><span class="step">07</span><div><h2>Final Details</h2><p>Optional notes for the quotation.</p></div></div>
+      <div class="grid two">
+        <label class="field">Customer Requirements<textarea id="customerRequirements" rows="3"></textarea></label>
+        <label class="field">Notes<textarea id="notes" rows="3"></textarea></label>
+      </div>
+      <div id="saveMessage" class="save-message"></div>
+      <div class="final-actions"><a th:href="@{/employee/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
+    </section>
   </main>
-
 </div>
 
-
 <script th:inline="javascript">
-  document.addEventListener("DOMContentLoaded", function () {
+  const csrfToken = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
+  const API_BASE = /*[[@{/employee/quotations/builder}]]*/ '/employee/quotations/builder';
+  const editQuotationId = /*[[${editQuotationId}]]*/ '';
+  const state = {
+      quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
+      rooms: [],
+      draft: null,
+      pricingMode: 'MIDDLE'
+  };
 
-      const quotationId = /*[[${quotation != null and quotation.id != null ? quotation.id : 0}]]*/ 0;
-      const csrfName = /*[[${_csrf.parameterName}]]*/ "_csrf";
-      const csrfToken = /*[[${_csrf.token}]]*/ "";
+  const $ = id => document.getElementById(id);
+  const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const currentRoomKey = () => `${$('floor').value}||${$('roomNumber').value}`;
+  const currentRoom = () => state.rooms.find(r => r.key === currentRoomKey());
 
-      const pricingModeForm = document.getElementById("pricingModeForm");
-      if (pricingModeForm && quotationId === 0) {
-          pricingModeForm.addEventListener("submit", function (e) {
-              const custName = document.getElementById("customerName")?.value || "";
-              const custPhone = document.getElementById("phone")?.value || "";
-              const custEmail = document.getElementById("email")?.value || "";
-              const custDate = document.getElementById("quotationDate")?.value || "";
-              const custAddress = document.getElementById("address")?.value || "";
-              const custReq = document.getElementById("customerRequirements")?.value || "";
-              const custNotes = document.getElementById("notes")?.value || "";
-
-              const fields = [
-                  { name: "customerName", value: custName },
-                  { name: "phone", value: custPhone },
-                  { name: "email", value: custEmail },
-                  { name: "quotationDate", value: custDate },
-                  { name: "address", value: custAddress },
-                  { name: "customerRequirements", value: custReq },
-                  { name: "notes", value: custNotes }
-              ];
-
-              fields.forEach(function (f) {
-                  let input = pricingModeForm.querySelector(`input[name="${f.name}"]`);
-                  if (!input) {
-                      input = document.createElement("input");
-                      input.type = "hidden";
-                      input.name = f.name;
-                      pricingModeForm.appendChild(input);
-                  }
-                  input.value = f.value;
-              });
-          });
-      }
-
-      const categoryButtons =
-          Array.from(document.querySelectorAll(".category-chip"));
-
-      const categoryTitle =
-          document.getElementById("selectedCategoryTitle");
-
-      const itemList =
-          document.getElementById("itemList");
-
-      const itemLoading =
-          document.getElementById("itemLoading");
-
-      const materialPanel =
-          document.getElementById("materialPanel");
-
-      const materialList =
-          document.getElementById("materialList");
-
-      const optionList =
-          document.getElementById("optionList");
-
-      const selectedItemTitle =
-          document.getElementById("selectedItemTitle");
-
-      const selectedOptionTitle =
-          document.getElementById("selectedOptionTitle");
-
-      const sizePanel =
-          document.getElementById("sizePanel");
-
-      const currentRate =
-          document.getElementById("currentRate");
-
-      const currentUnit =
-          document.getElementById("currentUnit");
-
-      const materialSpecification =
-          document.getElementById("materialSpecification");
-
-      const lengthInput =
-          document.getElementById("lengthInput");
-
-      const widthInput =
-          document.getElementById("widthInput");
-
-      const heightInput =
-          document.getElementById("heightInput");
-
-      const offerInput =
-          document.getElementById("offerInput");
-
-      const previewSqft =
-          document.getElementById("previewSqft");
-
-      const previewRate =
-          document.getElementById("previewRate");
-
-      const previewAmount =
-          document.getElementById("previewAmount");
-
-      const pendingSizes =
-          document.getElementById("pendingSizes");
-
-      const pendingRows =
-          document.getElementById("pendingRows");
-
-      const builderItemForm =
-          document.getElementById("builderItemForm");
-
-      let selectedCategoryId = null;
-      let selectedItemId = null;
-      let selectedMaterialId = null;
-      let selectedOptionId = null;
-      let selectedRate = 0;
-      let selectedUnit = "SQFT";
-      let selectedFormula = "L × W";
-      let selectedSpecification = "";
-      let pending = [];
-
-      function normalizeFormula(f) {
-          if (!f) return "L × W";
-          const clean = f.replace(/\s+/g, "").toLowerCase();
-          if (clean === "l+w*h" || clean === "l+(w*h)" || clean.includes("(l+w)") || clean.includes("l+w") || clean.includes("+")) return "(L + W) × H";
-          if (clean === "l*h" || clean === "lxh") return "L × H";
-          return "L × W";
-      }
-
-      function money(value) {
-          return Number(value || 0).toLocaleString("en-IN", {
-              style: "currency",
-              currency: "INR",
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-          });
-      }
-
-
-      function numberValue(input) {
-          const value = Number.parseFloat(input.value);
-          return Number.isFinite(value) ? value : 0;
-      }
-
-
-      function calculatePreview() {
-
-          const length = numberValue(lengthInput);
-          const width = numberValue(widthInput);
-          const height = numberValue(heightInput);
-
-          const l_ft = length / 12;
-          const w_ft = width / 12;
-          const h_ft = height / 12;
-
-          let sqft = 0;
-          const f = normalizeFormula(selectedFormula);
-          if (f === "L × W") {
-              if (length > 0 && width > 0) {
-                  sqft = l_ft * w_ft;
-              }
-          } else if (f === "L × H") {
-              if (length > 0 && height > 0) {
-                  sqft = l_ft * h_ft;
-              }
-          } else if (f === "(L + W) × H" || f === "L + (W × H)") {
-              if (length > 0 && width > 0 && height > 0) {
-                  sqft = ((length + width) * height) / 144;
-              }
-          } else {
-              if (length > 0 && width > 0) {
-                  sqft = l_ft * w_ft;
-              }
+  function evaluateExpressionSafely(expression, L, W, H) {
+      if (!expression) return 0;
+      let expr = String(expression).replace(/×/g, '*').replace(/x/g, '*').trim();
+      const tokens = [];
+      let i = 0;
+      while (i < expr.length) {
+          let ch = expr[i];
+          if (/\s/.test(ch)) { i++; continue; }
+          if (/[0-9.]/.test(ch)) {
+              let num = '';
+              while (i < expr.length && /[0-9.]/.test(expr[i])) { num += expr[i++]; }
+              tokens.push(parseFloat(num));
+              continue;
           }
-
-          sqft = Math.round(sqft * 100) / 100;
-
-          const amount =
-              Math.round(sqft * selectedRate * 100) / 100;
-
-          previewSqft.textContent = sqft.toFixed(2);
-          previewRate.textContent = money(selectedRate);
-          previewAmount.textContent = money(amount);
-
-          return {
-              length,
-              width,
-              height,
-              sqft,
-              amount
-          };
+          if (ch === 'L' || ch === 'l') { tokens.push(Number(L || 0)); i++; continue; }
+          if (ch === 'W' || ch === 'w') { tokens.push(Number(W || 0)); i++; continue; }
+          if (ch === 'H' || ch === 'h') { tokens.push(Number(H || 0)); i++; continue; }
+          if ('+-*/()'.includes(ch)) { tokens.push(ch); i++; continue; }
+          return 0;
       }
-
-
-      function resetSizeInputs() {
-          lengthInput.value = "";
-          widthInput.value = "";
-          heightInput.value = "";
-          offerInput.value = "";
-          calculatePreview();
-      }
-
-
-      function renderPending() {
-
-          pendingRows.innerHTML = "";
-
-          pendingSizes.hidden = pending.length === 0;
-
-          pending.forEach(function (size, index) {
-
-              const row = document.createElement("div");
-              row.className = "pending-row";
-
-              row.innerHTML = `
-                  <span>#${index + 1}</span>
-                  <span>L ${size.length} × W ${size.width} × H ${size.height}</span>
-                  <span>${size.sqft.toFixed(2)} SQ.FT</span>
-                  <span>${money(size.amount)}</span>
-                  <button type="button"
-                          data-index="${index}"
-                          class="remove-pending">
-                      ×
-                  </button>
-              `;
-
-              pendingRows.appendChild(row);
-          });
-
-          pendingRows.querySelectorAll(".remove-pending")
-              .forEach(function (button) {
-
-                  button.addEventListener("click", function () {
-
-                      const index =
-                          Number(this.dataset.index);
-
-                      pending.splice(index, 1);
-
-                      renderPending();
-                  });
-
-              });
-      }
-
-
-      function setActiveCategory(button) {
-
-          categoryButtons.forEach(function (item) {
-              item.classList.remove("selected");
-          });
-
-          button.classList.add("selected");
-      }
-
-
-      async function loadItems(categoryId, categoryName, button) {
-
-          selectedCategoryId = categoryId;
-
-          setActiveCategory(button);
-
-          categoryTitle.textContent = categoryName;
-
-          itemLoading.hidden = false;
-
-          itemList.innerHTML = "";
-
-          materialPanel.hidden = true;
-          sizePanel.hidden = true;
-
-          try {
-
-              const response =
-                  await fetch(
-                      `/employee/quotations/builder/${quotationId}/items-by-category/${categoryId}`
-                  );
-
-              if (!response.ok) {
-                  throw new Error("Unable to load items.");
-              }
-
-              const items = await response.json();
-
-              itemLoading.hidden = true;
-
-              if (!items.length) {
-
-                  itemList.innerHTML = `
-                      <div class="empty-panel">
-                          No active items are configured for this category.
-                      </div>
-                  `;
-
-                  return;
-              }
-
-              items.forEach(function (item) {
-
-                  const card =
-                      document.createElement("div");
-
-                  card.className = "item-card";
-
-                  card.innerHTML = `
-                      <div class="item-card-number">#</div>
-                      <div class="item-card-copy">
-                          <strong>${escapeHtml(item.name)}</strong>
-                          <small>${escapeHtml(item.description || "Configured quotation item")}</small>
-                      </div>
-                      <button type="button"
-                              class="click-me">
-                          Click Me
-                      </button>
-                  `;
-
-                  card.querySelector(".click-me")
-                      .addEventListener("click", function () {
-                          loadMaterials(item);
-                      });
-
-                  itemList.appendChild(card);
-              });
-
-          } catch (error) {
-
-              itemLoading.hidden = true;
-
-              itemList.innerHTML = `
-                  <div class="error-panel">
-                      ${escapeHtml(error.message)}
-                  </div>
-              `;
+      let pos = 0;
+      function parseExpr() {
+          let left = parseTerm();
+          while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+              let op = tokens[pos++];
+              let right = parseTerm();
+              left = (op === '+') ? (left + right) : (left - right);
           }
+          return left;
       }
-
-
-      async function loadMaterials(item) {
-
-          selectedItemId = item.id;
-
-          selectedItemTitle.textContent = item.name;
-
-          materialPanel.hidden = false;
-          sizePanel.hidden = true;
-
-          materialList.innerHTML =
-              `<div class="loading-box">Loading materials...</div>`;
-
-          optionList.innerHTML =
-              `<div class="empty-panel">Select a material to see its options.</div>`;
-
-          try {
-
-              const response =
-                  await fetch(
-                      `/employee/quotations/builder/${quotationId}/materials/${item.id}`
-                  );
-
-              if (!response.ok) {
-                  throw new Error("Unable to load materials.");
-              }
-
-              const materials = await response.json();
-
-              materialList.innerHTML = "";
-
-              if (!materials.length) {
-
-                  materialList.innerHTML =
-                      `<div class="empty-panel">No active materials configured for this item.</div>`;
-
-                  return;
-              }
-
-              materials.forEach(function (material) {
-
-                  const button =
-                      document.createElement("button");
-
-                  button.type = "button";
-                  button.className = "material-button";
-
-                  button.innerHTML = `
-                      <strong>${escapeHtml(material.name)}</strong>
-                      <small>${escapeHtml(material.description || "")}</small>
-                  `;
-
-                  button.addEventListener("click", function () {
-
-                      materialList
-                          .querySelectorAll(".material-button")
-                          .forEach(function (b) {
-                              b.classList.remove("selected");
-                          });
-
-                      button.classList.add("selected");
-
-                      loadOptions(material);
-                  });
-
-                  materialList.appendChild(button);
-              });
-
-          } catch (error) {
-
-              materialList.innerHTML =
-                  `<div class="error-panel">${escapeHtml(error.message)}</div>`;
-          }
-      }
-
-
-      async function loadOptions(material) {
-
-          selectedMaterialId = material.id;
-
-          optionList.innerHTML =
-              `<div class="loading-box">Loading material options...</div>`;
-
-          sizePanel.hidden = true;
-
-          try {
-
-              const response =
-                  await fetch(
-                      `/employee/quotations/builder/${quotationId}/options/${material.id}`
-                  );
-
-              if (!response.ok) {
-                  throw new Error("Unable to load material options.");
-              }
-
-              const options = await response.json();
-
-              optionList.innerHTML = "";
-
-              if (!options.length) {
-
-                  optionList.innerHTML =
-                      `<div class="empty-panel">No active options configured for this material.</div>`;
-
-                  return;
-              }
-
-              options.forEach(function (option) {
-
-                  const button =
-                      document.createElement("button");
-
-                  button.type = "button";
-                  button.className = "option-button";
-
-                  button.innerHTML = `
-                      <strong>${escapeHtml(material.name)} (${escapeHtml(option.name)})</strong>
-                      <small>${escapeHtml(option.description || "Select this material option")}</small>
-                  `;
-
-                  button.addEventListener("click", function () {
-
-                      optionList
-                          .querySelectorAll(".option-button")
-                          .forEach(function (b) {
-                              b.classList.remove("selected");
-                          });
-
-                      button.classList.add("selected");
-
-                      loadPrice(material, option);
-                  });
-
-                  optionList.appendChild(button);
-              });
-
-          } catch (error) {
-
-              optionList.innerHTML =
-                  `<div class="error-panel">${escapeHtml(error.message)}</div>`;
-          }
-      }
-
-
-      async function loadPrice(material, option) {
-
-          selectedOptionId = option.id;
-
-          const mode =
-              document.querySelector(
-                  ".mode-button.selected"
-              )?.value || "ECONOMY";
-
-          selectedOptionTitle.textContent =
-              material.name + " (" + option.name + ")";
-
-          materialSpecification.textContent =
-              option.description || "No specification available.";
-
-          currentRate.textContent = "Loading...";
-          currentUnit.textContent = "";
-          sizePanel.hidden = false;
-
-          try {
-
-              const response =
-                  await fetch(
-                      `/employee/quotations/builder/${quotationId}/price?materialOptionId=${option.id}&mode=${mode}`
-                  );
-
-              if (!response.ok) {
-
-                  const text = await response.text();
-
-                  throw new Error(
-                      text || "Pricing is not configured for this material option."
-                  );
-              }
-
-              const data = await response.json();
-
-              selectedRate = Number(data.rate || 0);
-              selectedUnit = data.unit || "SQFT";
-              selectedFormula = normalizeFormula(data.formula);
-              selectedSpecification =
-                  data.description || option.description || "";
-
-              currentRate.textContent =
-                  money(selectedRate);
-
-              currentUnit.textContent =
-                  selectedUnit;
-
-              materialSpecification.textContent =
-                  selectedSpecification ||
-                  "No specification available.";
-
-              calculatePreview();
-
-          } catch (error) {
-
-              selectedRate = 0;
-
-              currentRate.textContent = "Not configured";
-
-              currentUnit.textContent = "";
-
-              materialSpecification.textContent =
-                  error.message;
-
-              calculatePreview();
-          }
-      }
-
-
-      document
-          .getElementById("addSizeBtn")
-          .addEventListener("click", function () {
-
-              const calculation =
-                  calculatePreview();
-
-              const f = normalizeFormula(selectedFormula);
-              let dimInvalid = false;
-              if (f === "L × W") {
-                  if (calculation.length <= 0 || calculation.width <= 0) dimInvalid = true;
-              } else if (f === "L × H") {
-                  if (calculation.length <= 0 || calculation.height <= 0) dimInvalid = true;
-              } else if (f === "(L + W) × H" || f === "L + (W × H)") {
-                  if (calculation.length <= 0 || calculation.width <= 0 || calculation.height <= 0) dimInvalid = true;
+      function parseTerm() {
+          let left = parseFactor();
+          while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+              let op = tokens[pos++];
+              let right = parseFactor();
+              if (op === '/') {
+                  if (right === 0) return 0;
+                  left = left / right;
               } else {
-                  if (calculation.length <= 0 || calculation.width <= 0) dimInvalid = true;
+                  left = left * right;
               }
-
-              if (dimInvalid) {
-                  if (f === "L × W") alert("Please enter valid positive Length and Width.");
-                  else if (f === "L × H") alert("Please enter valid positive Length and Height.");
-                  else alert("Please enter valid positive Length, Width and Height.");
-                  return;
-              }
-
-              if (!selectedOptionId) {
-
-                  alert(
-                      "Please select a material option first."
-                  );
-
-                  return;
-              }
-
-              if (selectedRate <= 0) {
-
-                  alert(
-                      "A valid admin rate is required before adding a size."
-                  );
-
-                  return;
-              }
-
-              const offer =
-                  offerInput.value.trim() === ""
-                      ? calculation.amount
-                      : Number.parseFloat(offerInput.value);
-
-              if (!Number.isFinite(offer) || offer < 0) {
-
-                  alert("Offer Price cannot be negative.");
-
-                  return;
-              }
-
-              pending.push({
-                  length: calculation.length,
-                  width: calculation.width,
-                  height: calculation.height,
-                  sqft: calculation.sqft,
-                  amount: calculation.amount,
-                  offer: offer
-              });
-
-              renderPending();
-              resetSizeInputs();
-
-          });
-
-
-      document
-          .getElementById("clearSizeBtn")
-          .addEventListener("click", function () {
-
-              resetSizeInputs();
-          });
-
-
-      document
-          .getElementById("closeMaterialPanel")
-          .addEventListener("click", function () {
-
-              materialPanel.hidden = true;
-              sizePanel.hidden = true;
-
-              pending = [];
-              renderPending();
-              resetSizeInputs();
-          });
-
-
-      [lengthInput, widthInput, heightInput, offerInput]
-          .forEach(function (input) {
-
-              input.addEventListener(
-                  "input",
-                  calculatePreview
-              );
-
-          });
-
-
-      builderItemForm
-          .addEventListener("submit", function (event) {
-
-              if (!selectedCategoryId
-                  || !selectedItemId
-                  || !selectedMaterialId
-                  || !selectedOptionId) {
-
-                  event.preventDefault();
-
-                  alert(
-                      "Please select room category, item, material and material option."
-                  );
-
-                  return;
-              }
-
-              if (pending.length === 0) {
-
-                  event.preventDefault();
-
-                  alert(
-                      "Please click Add Size at least once."
-                  );
-
-                  return;
-              }
-
-              document.getElementById("formFloor").value =
-                  document.getElementById("floor").value;
-
-              document.getElementById("formRoom").value =
-                  document.getElementById("room").value;
-
-              document.getElementById("formCategoryId").value =
-                  selectedCategoryId;
-
-              document.getElementById("formItemId").value =
-                  selectedItemId;
-
-              document.getElementById("formMaterialId").value =
-                  selectedMaterialId;
-
-              document.getElementById("formOptionId").value =
-                  selectedOptionId;
-
-              document.getElementById("formSpecification").value =
-                  selectedSpecification;
-
-              const formFormula = document.getElementById("formFormula");
-              if (formFormula) {
-                  formFormula.value = selectedFormula;
-              }
-
-              /*
-               * Create repeated hidden fields for every pending size.
-               */
-              builderItemForm
-                  .querySelectorAll(".generated-size-field")
-                  .forEach(function (element) {
-                      element.remove();
-                  });
-
-              pending.forEach(function (size) {
-
-                  addHidden("lengthValue", size.length);
-                  addHidden("widthValue", size.width);
-                  addHidden("heightValue", size.height);
-                  addHidden("offerPrice", size.offer);
-
-              });
-
-          });
-
-
-      function addHidden(name, value) {
-
-          const input =
-              document.createElement("input");
-
-          input.type = "hidden";
-          input.name = name;
-          input.value = value;
-          input.className = "generated-size-field";
-
-          builderItemForm.appendChild(input);
-      }
-
-
-      function escapeHtml(value) {
-
-          return String(value ?? "")
-              .replaceAll("&", "&amp;")
-              .replaceAll("<", "&lt;")
-              .replaceAll(">", "&gt;")
-              .replaceAll('"', "&quot;")
-              .replaceAll("'", "&#039;");
-      }
-
-      // =====================================================
-// CATEGORY CLICK HANDLER
-// =====================================================
-
-categoryButtons.forEach(function (button) {
-
-    button.addEventListener("click", function () {
-
-        const categoryId =
-            this.dataset.categoryId;
-
-        const categoryName =
-            this.querySelector("strong")?.textContent.trim()
-            || "Selected Category";
-
-        if (!categoryId) {
-            console.error("Category ID is missing.");
-            return;
-        }
-
-        loadItems(
-            categoryId,
-            categoryName,
-            this
-        );
-    });
-
-});
-
-
-      /*
-       * Select the first category automatically so the employee
-       * immediately sees the existing item database.
-       */
-      if (categoryButtons.length > 0) {
-
-          categoryButtons[0].click();
-      }
-
-      // =====================================================
-      // ADD ANOTHER ROOM & ROOM SWITCHER
-      // =====================================================
-
-      function triggerAddAnotherRoomEmployee() {
-          const floorEl = document.getElementById("floor");
-          const roomEl = document.getElementById("room");
-          const alertMsg = document.getElementById("roomAlertMsgEmployee");
-
-          const currentFloor = floorEl ? floorEl.value : "Ground Floor";
-          const usedNums = [];
-          document.querySelectorAll(".room-summary-card").forEach(function (card) {
-              const f = card.querySelector(".room-floor")?.textContent.trim();
-              const r = card.querySelector(".room-summary-header h3 span")?.textContent.trim();
-              if (f === currentFloor && r) {
-                  usedNums.push(Number(r));
-              }
-          });
-
-          let nextNum = 1;
-          while (usedNums.includes(nextNum) && nextNum <= 10) {
-              nextNum++;
           }
-          if (roomEl && nextNum <= 10) {
-              roomEl.value = String(nextNum);
-          }
-
-          if (materialPanel) materialPanel.hidden = true;
-          if (sizePanel) sizePanel.hidden = true;
-          pending = [];
-          renderPending();
-          resetSizeInputs();
-
-          if (alertMsg) {
-              alertMsg.textContent = `Ready to add items for ${currentFloor} - Room ${roomEl ? roomEl.value : '?'}. Choose a category and items below.`;
-              alertMsg.style.display = "block";
-              setTimeout(function () { alertMsg.style.display = "none"; }, 6000);
-          }
-
-          const targetSection = document.getElementById("workLocationSection");
-          if (targetSection) {
-              targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
-          }
+          return left;
       }
-
-      const btnHeader = document.getElementById("addAnotherRoomBtnHeader");
-      if (btnHeader) {
-          btnHeader.addEventListener("click", triggerAddAnotherRoomEmployee);
+      function parseFactor() {
+          if (pos >= tokens.length) return 0;
+          let tok = tokens[pos++];
+          if (tok === '+') return parseFactor();
+          if (tok === '-') return -parseFactor();
+          if (tok === '(') {
+              let val = parseExpr();
+              if (pos < tokens.length && tokens[pos] === ')') pos++;
+              return val;
+          }
+          if (typeof tok === 'number') return tok;
+          return 0;
       }
+      let res = parseExpr();
+      return (typeof res === 'number' && !isNaN(res)) ? res : 0;
+  }
 
-      const btnSummary = document.getElementById("addAnotherRoomBtnSummary");
-      if (btnSummary) {
-          btnSummary.addEventListener("click", triggerAddAnotherRoomEmployee);
+  function calculateItemMeasurement(formula, unit, L, W, H) {
+      const expr = formula || '(L + W) * H';
+      const raw = evaluateExpressionSafely(expr, L, W, H);
+      const u = (unit || 'SQFT').toUpperCase();
+      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+          return raw;
       }
+      const isLinear = !expr.includes('*') && !expr.includes('×') && !expr.includes('x') && !expr.includes('/');
+      return isLinear ? (raw / 12.0) : (raw / 144.0);
+  }
 
-      document.querySelectorAll(".btn-employee-room-pill").forEach(function (pill) {
-          pill.addEventListener("click", function () {
-              const f = this.dataset.floor;
-              const r = this.dataset.room;
-              const floorEl = document.getElementById("floor");
-              const roomEl = document.getElementById("room");
-              if (floorEl && f) floorEl.value = f;
-              if (roomEl && r) roomEl.value = r;
+  function getItemUnitLabel(formula, unit) {
+      const u = (unit || 'SQFT').toUpperCase();
+      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+          const expr = formula || '';
+          return (expr.includes('*') || expr.includes('×') || expr.includes('x')) ? 'sq.in' : 'in';
+      }
+      return 'sq.ft';
+  }
 
-              const alertMsg = document.getElementById("roomAlertMsgEmployee");
-              if (alertMsg) {
-                  alertMsg.textContent = `Switched to ${f} - Room ${r}. You can configure more items below or click "+ Add Another Room".`;
-                  alertMsg.style.display = "block";
-                  setTimeout(function () { alertMsg.style.display = "none"; }, 6000);
-              }
+  function ensureRoom() {
+      const floor = $('floor').value, room = $('roomNumber').value;
+      if (!floor || !room) return null;
+      let existing = currentRoom();
+      if (!existing) {
+          existing = {key: currentRoomKey(), floor, room, workDescription: $('workDescription').value, items: []};
+          state.rooms.push(existing);
+      } else {
+          existing.workDescription = $('workDescription').value;
+      }
+      renderRoomPills();
+      return existing;
+  }
 
-              const targetSection = document.getElementById("workLocationSection");
-              if (targetSection) {
-                  targetSection.scrollIntoView({ behavior: "smooth", block: "start" });
-              }
+  function renderRoomPills() {
+      const container = $('roomPillsContainer');
+      if (!container) return;
+      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
+      if (roomsWithItems.length === 0) {
+          container.style.display = 'none';
+          container.innerHTML = '';
+          return;
+      }
+      container.style.display = 'flex';
+      const currentKey = currentRoomKey();
+      let html = '<span style="font-size: 12px; font-weight: 600; color: #475569; margin-right: 4px;">Configured Rooms:</span>';
+      roomsWithItems.forEach(r => {
+          const isActive = r.key === currentKey;
+          const roomTotal = r.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
+              const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+              return s + (meas * Number(item.rate || 0));
+          }, 0), 0);
+          html += `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'}" data-floor="${esc(r.floor)}" data-room="${esc(r.room)}" style="padding: 4px 10px; font-size: 12px; border-radius: 16px;">
+            ${esc(r.floor)} - Room ${esc(r.room)} (${money(roomTotal)})
+          </button>`;
+      });
+      html += `<button type="button" id="pillAddRoomBtn" class="btn btn-sm btn-outline-success" style="padding: 4px 10px; font-size: 12px; border-radius: 16px; font-weight: 600;">
+        + Add New Room
+      </button>`;
+      container.innerHTML = html;
+
+      container.querySelectorAll('button[data-floor]').forEach(btn => {
+          btn.addEventListener('click', () => {
+              $('floor').value = btn.dataset.floor;
+              $('roomNumber').value = btn.dataset.room;
+              const r = currentRoom();
+              $('workDescription').value = r && r.workDescription ? r.workDescription : '';
+              renderRoomPills();
+              showRoomNotice(`Switched to ${btn.dataset.floor} / Room ${btn.dataset.room}. You can add more items below.`);
           });
       });
+      const pillAdd = $('pillAddRoomBtn');
+      if (pillAdd) pillAdd.addEventListener('click', triggerAddAnotherRoom);
+  }
 
-      // =====================================================
-      // FINISH & SAVE QUOTATION SYNC
-      // =====================================================
-
-      const finishForm = document.getElementById("finishQuotationForm");
-      if (finishForm) {
-          finishForm.addEventListener("submit", function () {
-              const cName = document.getElementById("customerName")?.value || "";
-              const cPhone = document.getElementById("phone")?.value || "";
-              const cEmail = document.getElementById("email")?.value || "";
-              const cAddress = document.getElementById("address")?.value || "";
-              const cDate = document.getElementById("quotationDate")?.value || "";
-              const cReq = document.getElementById("customerRequirements")?.value || "";
-              const cNotes = document.getElementById("notes")?.value || "";
-
-              document.getElementById("saveCustName").value = cName;
-              document.getElementById("saveCustPhone").value = cPhone;
-              document.getElementById("saveCustEmail").value = cEmail;
-              document.getElementById("saveCustAddress").value = cAddress;
-              document.getElementById("saveCustDate").value = cDate;
-              document.getElementById("saveCustReq").value = cReq;
-              document.getElementById("saveCustNotes").value = cNotes;
-          });
+  function showRoomNotice(msg) {
+      const notice = $('roomNotice');
+      if (notice) {
+          notice.textContent = msg;
+          notice.style.display = 'block';
+          setTimeout(() => { notice.style.display = 'none'; }, 6000);
       }
+  }
 
+  function triggerAddAnotherRoom() {
+      const currentFloor = $('floor').value || 'Ground Floor';
+      const usedNumbers = state.rooms.filter(r => r.floor === currentFloor).map(r => Number(r.room));
+      let nextNum = 1;
+      while (usedNumbers.includes(nextNum) && nextNum <= 10) {
+          nextNum++;
+      }
+      $('floor').value = currentFloor;
+      if (nextNum <= 10) {
+          $('roomNumber').value = String(nextNum);
+      } else {
+          $('roomNumber').value = '';
+      }
+      $('workDescription').value = '';
+      hide('itemBuilder');
+      hide('itemArea');
+      hide('divisionArea');
+      state.draft = null;
+      renderRoomPills();
+      showRoomNotice(`Ready to configure another room (${currentFloor} - Room ${$('roomNumber').value || '?'}). Select items below.`);
+      $('roomSetupSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function getJson(url) {
+      const response = await fetch(url, {headers: {'Accept':'application/json'}});
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Unable to load data.');
+      return data;
+  }
+
+  function showArea(id, html) { $(id).classList.remove('hidden'); $(id).innerHTML = html; }
+  function hide(id) { $(id).classList.add('hidden'); }
+
+  async function loadDivisions(categoryId, categoryName) {
+      if (!$('floor').value || !$('roomNumber').value) { alert('Select Floor and Room Number first.'); return; }
+      ensureRoom();
+      const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
+      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Division</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select division')}</small></button>`).join('')}</div>`);
+      hide('itemArea'); hide('itemBuilder');
+      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => loadItems(btn.dataset.id, btn.dataset.name, categoryId, categoryName)));
+  }
+
+  async function loadItems(divisionId, divisionName, categoryId, categoryName) {
+      const data = await getJson(`${API_BASE}/items?divisionId=${divisionId}`);
+      showArea('itemArea', `<div class="dynamic-title">${esc(categoryName)} / ${esc(divisionName)} — Choose Item</div><div class="choice-grid compact">${data.map(i => `<button type="button" class="choice-card item-choice" data-id="${i.id}" data-name="${esc(i.name)}"><strong>${esc(i.name)}</strong><small>${esc(i.description || 'Available item')}</small><span class="click-me">Click Me</span></button>`).join('')}</div>`);
+      document.querySelectorAll('.item-choice').forEach(btn => btn.addEventListener('click', () => openItemBuilder({categoryId, categoryName, divisionId, divisionName, itemId: Number(btn.dataset.id), itemName: btn.dataset.name})));
+  }
+
+  async function openItemBuilder(info) {
+      state.draft = {...info, materialId:null, materialName:'', materialOptionId:null, materialOptionName:'', rate:0, sizes:[]};
+      $('selectedItemLabel').textContent = `${info.categoryName} → ${info.itemName}`;
+      $('selectionPath').textContent = `${info.categoryName} / ${info.divisionName} / ${info.itemName}`;
+      const materials = await getJson(`${API_BASE}/materials?itemId=${info.itemId}`);
+      $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
+      $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
+      $('materialDetails').classList.add('hidden');
+      $('sizeRows').innerHTML = '';
+      addSizeRow();
+      $('itemBuilder').classList.remove('hidden');
+      $('itemBuilder').scrollIntoView({behavior:'smooth', block:'start'});
+  }
+
+  $('materialId').addEventListener('change', async e => {
+      state.draft.materialId = Number(e.target.value) || null;
+      const selected = e.target.selectedOptions[0];
+      state.draft.materialName = selected?.textContent || '';
+      const options = state.draft.materialId ? await getJson(`${API_BASE}/material-options?materialId=${state.draft.materialId}`) : [];
+      $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+      state.draft.materialOptionId = null; state.draft.materialOptionName = ''; state.draft.rate = 0;
+      renderMaterialDetails();
   });
-</script>
 
+  $('materialOptionId').addEventListener('change', async e => {
+      state.draft.materialOptionId = Number(e.target.value) || null;
+      const selected = e.target.selectedOptions[0];
+      state.draft.materialOptionName = selected?.textContent || '';
+      await refreshDraftRate();
+      renderMaterialDetails();
+      calculateDraft();
+  });
+
+  async function refreshDraftRate() {
+      if (!state.draft?.materialOptionId || !$('branchId').value) { state.draft.rate = 0; calculateDraft(); return; }
+      try {
+          const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&pricingMode=${state.pricingMode}`);
+          state.draft.rate = Number(data.rate || 0);
+          state.draft.formula = data.formula || '(L + W) * H';
+          state.draft.unit = data.unit || 'SQFT';
+          state.draft.measurementUnit = data.measurementUnit || (state.draft.unit === 'INCHES' ? 'sq.in' : 'sq.ft');
+          state.draft.pricingUnit = data.pricingUnit || ('₹ / ' + (state.draft.unit === 'INCHES' ? 'SQIN' : 'SQFT'));
+          $('pricingMessage').textContent = '';
+      } catch (e) {
+          state.draft.rate = 0;
+          $('pricingMessage').textContent = e.message;
+      }
+      calculateDraft();
+  }
+
+  function renderMaterialDetails() {
+      if (!state.draft?.materialOptionId) { hide('materialDetails'); return; }
+      const option = $('materialOptionId').selectedOptions[0];
+      const material = $('materialId').selectedOptions[0];
+      const formulaDisp = state.draft.formula || '(L + W) × H';
+      const pUnit = state.draft.pricingUnit || '₹ / SQFT';
+      showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Formula</span><strong>${esc(formulaDisp)}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)} <small style="font-size:0.75rem; color:#64748b;">(${esc(pUnit)})</small></strong></div>`);
+  }
+
+  function addSizeRow(size = {}) {
+      const row = document.createElement('div'); row.className='size-row';
+      const uLabel = getItemUnitLabel(state.draft?.formula, state.draft?.unit);
+      row.innerHTML = `<div><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
+      $('sizeRows').appendChild(row);
+      row.querySelectorAll('input').forEach(i => i.addEventListener('input', calculateDraft));
+      row.querySelector('.remove-size').addEventListener('click', () => { if ($('sizeRows').children.length > 1) { row.remove(); calculateDraft(); } });
+      calculateDraft();
+  }
+
+  function readSizes() {
+      return [...document.querySelectorAll('.size-row')].map(row => ({
+          length:Number(row.querySelector('.length').value || 0), width:Number(row.querySelector('.width').value || 0), height:Number(row.querySelector('.height').value || 0), offerPrice: null, row
+      }));
+  }
+
+  function calculateDraft() {
+      if (!state.draft) return;
+      let totalMeas=0, amount=0;
+      const uLabel = getItemUnitLabel(state.draft.formula, state.draft.unit);
+      readSizes().forEach(s => {
+          const value = (s.length > 0 || s.width > 0 || s.height > 0)
+              ? calculateItemMeasurement(state.draft.formula, state.draft.unit, s.length, s.width, s.height)
+              : 0;
+          totalMeas += value;
+          const lineAmount = value * Number(state.draft.rate || 0);
+          amount += lineAmount;
+          const sqftEl = s.row.querySelector('.sqft');
+          if (sqftEl) sqftEl.textContent = value.toFixed(2) + ' ' + uLabel;
+      });
+      $('currentRate').textContent = money(state.draft.rate);
+      $('currentSqft').textContent = totalMeas.toFixed(2) + ' ' + uLabel;
+      $('currentAmount').textContent = money(amount);
+  }
+
+  function addDraftToRoom() {
+      if (!state.draft || !state.draft.materialOptionId) return alert('Select a material option.');
+      const sizes=readSizes();
+      if (sizes.some(s => !(s.length>0 || s.width>0 || s.height>0))) return alert('Enter dimensions (Length, Width, or Height) for every size.');
+      const room=ensureRoom(); if (!room) return alert('Select Floor and Room Number first.');
+      state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
+      room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
+      $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
+      renderRoomPills();
+      $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+
+  function renderSummary() {
+      const container=$('roomsSummary'); container.innerHTML=''; let total=0;
+      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
+      $('summaryEmpty').classList.toggle('hidden', roomsWithItems.length > 0);
+      $('addAnotherRoomBottomArea').style.display = roomsWithItems.length > 0 ? 'flex' : 'none';
+
+      roomsWithItems.forEach((room, ri) => {
+          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
+              const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+              return s + (meas * Number(item.rate || 0));
+          }, 0), 0);
+          total += roomTotal;
+          const block = document.createElement('div');
+          block.className = 'summary-room';
+          block.innerHTML = `<div class="summary-room-head">
+            <div>
+              <span>${esc(room.floor)} · ROOM ${esc(room.room)}</span>
+              <h3>${esc(room.floor)} / Room ${esc(room.room)}</h3>
+              ${room.workDescription ? `<small style="color: #64748b; display: block; margin-top: 2px;">${esc(room.workDescription)}</small>` : ''}
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 11px; color: #64748b; display: block;">Room Subtotal</span>
+              <strong style="color: #006b63; font-size: 1.15rem;">${money(roomTotal)}</strong>
+            </div>
+          </div>`;
+          const table = document.createElement('div');
+          table.className = 'summary-table';
+          room.items.forEach((item, ii) => {
+              const uLabel = getItemUnitLabel(item.formula, item.unit);
+              item.sizes.forEach((z, si) => {
+                  const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+                  const amount = meas * Number(item.rate || 0);
+                  const row = document.createElement('div');
+                  row.className = 'summary-row';
+                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
+                  table.appendChild(row);
+              });
+          });
+          block.appendChild(table);
+          container.appendChild(block);
+      });
+
+      if ($('combinedSubtotal')) $('combinedSubtotal').textContent = money(total);
+      if ($('grandTotal')) $('grandTotal').textContent = money(total);
+
+      document.querySelectorAll('.summary-delete').forEach(btn => {
+          btn.addEventListener('click', () => {
+              const r = state.rooms.find(rm => rm.key === btn.dataset.roomKey);
+              if (!r) return;
+              const itemIndex = Number(btn.dataset.item);
+              const sizeIndex = Number(btn.dataset.size);
+              r.items[itemIndex].sizes.splice(sizeIndex, 1);
+              if (!r.items[itemIndex].sizes.length) r.items.splice(itemIndex, 1);
+              renderSummary();
+              renderRoomPills();
+          });
+      });
+  }
+
+  async function recalculateAll() {
+      state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
+      if (!state.rooms.some(r=>r.items.length)) return;
+      const requests=[];
+      state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{
+          if(!$('branchId').value)return;
+          const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId}&pricingMode=${state.pricingMode}`);
+          item.rate=Number(data.rate||0);
+          if (data.formula) item.formula = data.formula;
+          if (data.unit) item.unit = data.unit;
+      })())));
+      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message;}
+  }
+
+  async function saveQuotation() {
+      const name=$('customerName').value.trim(), phone=$('customerPhone').value.trim(), branchId=Number($('branchId').value||0);
+      if(!name||!phone||!branchId||!$('quotationDate').value)return alert('Customer Name, Phone, Branch and Date are required.');
+      if(!state.rooms.some(r=>r.items.length))return alert('Add at least one item to the quotation.');
+      const payload={quotationId:state.quotationId, customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},branchId,quotationDate:$('quotationDate').value,pricingMode:state.pricingMode,customerRequirements:$('customerRequirements').value.trim(),notes:$('notes').value.trim(),rooms:state.rooms.filter(r=>r.items.length).map(r=>({floor:r.floor,room:r.room,workDescription:r.workDescription,items:r.items.map(i=>({workCategoryId:i.categoryId,divisionId:i.divisionId,itemId:i.itemId,materialId:i.materialId,materialOptionId:i.materialOptionId,itemDescription:i.itemDescription,specification:i.specification,sizes:i.sizes}))}))};
+      const button=$('saveQuotationBtn'); button.disabled=true; button.textContent='Saving Quotation...'; $('saveMessage').textContent='Saving customer, rooms, items and pricing...';
+      try { const response=await fetch(`${API_BASE}/save`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify(payload)}); if(response.redirected){window.location.href=response.url;return;} const text=await response.text(); throw new Error(text||'Unable to save quotation.'); } catch(e){ $('saveMessage').textContent=e.message; button.disabled=false; button.textContent='Save Quotation'; }
+  }
+
+  // Event Listeners
+  document.querySelectorAll('.category-choice').forEach(btn=>btn.addEventListener('click',()=>loadDivisions(Number(btn.dataset.id),btn.dataset.name)));
+  $('addSizeBtn').addEventListener('click',()=>addSizeRow());
+  $('addItemBtn').addEventListener('click',addDraftToRoom);
+  $('cancelItemBtn').addEventListener('click',()=>hide('itemBuilder'));
+  document.querySelectorAll('input[name="pricingMode"]').forEach(r=>r.addEventListener('change',recalculateAll));
+  $('branchId').addEventListener('change',()=>{if(state.draft)refreshDraftRate();});
+  $('floor').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
+  $('roomNumber').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
+  $('workDescription').addEventListener('input',()=>{const r=currentRoom();if(r)r.workDescription=$('workDescription').value;});
+  $('saveQuotationBtn').addEventListener('click',saveQuotation);
+
+  // Add Another Room buttons
+  $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
+  $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
+  $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
+
+  $('quoteNumberPreview').textContent='AUTO';
+  addSizeRow();
+
+  // Load existing quotation if editing
+  if (state.quotationId) {
+      getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
+          if (!data) return;
+          if (data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
+          if (data.customerName) $('customerName').value = data.customerName;
+          if (data.phone) $('customerPhone').value = data.phone;
+          if (data.email) $('customerEmail').value = data.email;
+          if (data.address) $('customerAddress').value = data.address;
+          if (data.quotationDate) $('quotationDate').value = data.quotationDate;
+          if (data.branchId) $('branchId').value = data.branchId;
+          if (data.customerRequirements) $('customerRequirements').value = data.customerRequirements;
+          if (data.notes) $('notes').value = data.notes;
+          if (data.pricingMode) {
+              const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
+              if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
+          }
+          if (data.rooms && data.rooms.length > 0) {
+              state.rooms = data.rooms.map(r => ({
+                  key: `${r.floor}||${r.room}`,
+                  floor: r.floor,
+                  room: r.room,
+                  workDescription: r.workDescription || '',
+                  items: (r.items || []).map(i => ({
+                      categoryId: i.categoryId,
+                      categoryName: i.categoryName,
+                      divisionId: i.divisionId,
+                      divisionName: i.divisionName,
+                      itemId: i.itemId,
+                      itemName: i.itemName,
+                      materialId: i.materialId,
+                      materialName: i.materialName,
+                      materialOptionId: i.materialOptionId,
+                      materialOptionName: i.materialOptionName,
+                      rate: Number(i.rate || 0),
+                      itemDescription: i.itemDescription || '',
+                      specification: i.specification || '',
+                      sizes: (i.sizes || []).map(s => ({
+                          length: Number(s.length || 0),
+                          width: Number(s.width || 0),
+                          height: Number(s.height || 0),
+                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null
+                      }))
+                  }))
+              }));
+              $('floor').value = state.rooms[0].floor;
+              $('roomNumber').value = state.rooms[0].room;
+              $('workDescription').value = state.rooms[0].workDescription || '';
+              renderSummary();
+              renderRoomPills();
+          }
+      }).catch(err => {
+          console.error("Failed to load quotation", err);
+      });
+  }
+</script>
 </body>
 </html>

@@ -3,6 +3,7 @@ package com.example.pravin_quotation.util;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Calculation formulas for quotation item area/sizing:
@@ -64,33 +65,53 @@ public final class CalculationFormula {
 
         String norm = normalizeFormula(formula);
 
-        if (length == null || length.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new IllegalArgumentException("Length must be greater than zero.");
-        }
-
         if (FORMULA_L_X_W.equals(norm)) {
+            if (length == null || length.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Length must be greater than zero.");
+            }
             if (width == null || width.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Width must be greater than zero for formula 'L × W'.");
             }
+            return;
         } else if (FORMULA_L_X_H.equals(norm)) {
+            if (length == null || length.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Length must be greater than zero.");
+            }
             if (height == null || height.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Height must be greater than zero for formula 'L × H'.");
             }
+            return;
         } else if (FORMULA_L_PLUS_W_X_H.equals(norm)) {
+            if (length == null || length.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Length must be greater than zero.");
+            }
             if (width == null || width.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Width must be greater than zero for formula '(L + W) × H'.");
             }
             if (height == null || height.compareTo(BigDecimal.ZERO) <= 0) {
                 throw new IllegalArgumentException("Height must be greater than zero for formula '(L + W) × H'.");
             }
+            return;
+        }
+
+        // For any custom configurable formula, validate variables present in expression
+        Set<String> vars = FormulaEvaluator.detectVariables(formula != null ? formula : "");
+        if (vars.contains("L") && (length == null || length.compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new IllegalArgumentException("Length must be greater than zero for formula '" + formula + "'.");
+        }
+        if (vars.contains("W") && (width == null || width.compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new IllegalArgumentException("Width must be greater than zero for formula '" + formula + "'.");
+        }
+        if (vars.contains("H") && (height == null || height.compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new IllegalArgumentException("Height must be greater than zero for formula '" + formula + "'.");
+        }
+        if (vars.isEmpty() && (length == null || length.compareTo(BigDecimal.ZERO) <= 0)) {
+            throw new IllegalArgumentException("Length must be greater than zero.");
         }
     }
 
     /**
-     * Calculates the area in square feet.
-     * If dimensions are in inches ("in" or default), converts them to feet first before calculating,
-     * or for Formula 2 calculates ((Length + Width) * Height) / 144.
-     * If dimensions are in feet ("ft"), calculates directly.
+     * Calculates the area or measurement using either canonical formula rules or custom expression.
      */
     public static BigDecimal calculateArea(
             String formula,
@@ -99,49 +120,118 @@ public final class CalculationFormula {
             BigDecimal height,
             String unit) {
 
-        BigDecimal l = length != null ? length : BigDecimal.ZERO;
-        BigDecimal w = width != null ? width : BigDecimal.ZERO;
-        BigDecimal h = height != null ? height : BigDecimal.ZERO;
-
-        boolean isInches = unit == null
-                || unit.isBlank()
-                || "in".equalsIgnoreCase(unit)
-                || "inch".equalsIgnoreCase(unit)
-                || "inches".equalsIgnoreCase(unit);
-
-        if (isInches) {
-            BigDecimal twelve = new BigDecimal("12");
-            l = l.divide(twelve, 6, RoundingMode.HALF_UP);
-            w = w.divide(twelve, 6, RoundingMode.HALF_UP);
-            h = h.divide(twelve, 6, RoundingMode.HALF_UP);
-        }
-
         String norm = normalizeFormula(formula);
-        BigDecimal area;
 
-        if (FORMULA_L_PLUS_W_X_H.equals(norm)) {
-            // Formula 2: (Length + Width) × Height
-            // When dimensions are in inches: ((Length + Width) * Height) / 144
-            if (isInches) {
-                area = (length != null ? length : BigDecimal.ZERO)
-                        .add(width != null ? width : BigDecimal.ZERO)
-                        .multiply(height != null ? height : BigDecimal.ZERO)
-                        .divide(new BigDecimal("144"), 6, RoundingMode.HALF_UP);
+        // If it matches one of the canonical 3 formulas, use precise existing logic
+        if (isCanonical(formula) || isCanonical(norm)) {
+            BigDecimal l = length != null ? length : BigDecimal.ZERO;
+            BigDecimal w = width != null ? width : BigDecimal.ZERO;
+            BigDecimal h = height != null ? height : BigDecimal.ZERO;
+
+            boolean isInches = unit == null
+                    || unit.isBlank()
+                    || "in".equalsIgnoreCase(unit)
+                    || "inch".equalsIgnoreCase(unit)
+                    || "inches".equalsIgnoreCase(unit);
+
+            if (FORMULA_L_PLUS_W_X_H.equals(norm)) {
+                // Formula 2: (Length + Width) × Height
+                // When dimensions are in inches: ((Length + Width) * Height) / 144
+                if (isInches) {
+                    return (length != null ? length : BigDecimal.ZERO)
+                            .add(width != null ? width : BigDecimal.ZERO)
+                            .multiply(height != null ? height : BigDecimal.ZERO)
+                            .divide(new BigDecimal("144"), 6, RoundingMode.HALF_UP)
+                            .setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    return l.add(w).multiply(h).setScale(2, RoundingMode.HALF_UP);
+                }
+            } else if (FORMULA_L_X_H.equals(norm)) {
+                if (isInches) {
+                    BigDecimal twelve = new BigDecimal("12");
+                    BigDecimal l_ft = l.divide(twelve, 6, RoundingMode.HALF_UP);
+                    BigDecimal h_ft = h.divide(twelve, 6, RoundingMode.HALF_UP);
+                    return l_ft.multiply(h_ft).setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    return l.multiply(h).setScale(2, RoundingMode.HALF_UP);
+                }
             } else {
-                area = l.add(w).multiply(h);
+                // Default "L × W"
+                if (isInches) {
+                    BigDecimal twelve = new BigDecimal("12");
+                    BigDecimal l_ft = l.divide(twelve, 6, RoundingMode.HALF_UP);
+                    BigDecimal w_ft = w.divide(twelve, 6, RoundingMode.HALF_UP);
+                    return l_ft.multiply(w_ft).setScale(2, RoundingMode.HALF_UP);
+                } else {
+                    return l.multiply(w).setScale(2, RoundingMode.HALF_UP);
+                }
             }
-        } else if (FORMULA_L_X_H.equals(norm)) {
-            area = l.multiply(h);
-        } else {
-            // Default "L × W"
-            area = l.multiply(w);
         }
 
-        return area.setScale(2, RoundingMode.HALF_UP);
+        // Custom configurable formula
+        String calcType = isInchUnit(unit) ? "INCHES" : "SQFT";
+        FormulaEvaluator.EvaluationResult res = FormulaEvaluator.evaluate(
+                formula,
+                calcType,
+                null,
+                length,
+                width,
+                height
+        );
+        return res.finalMeasurement();
+    }
+
+    public static BigDecimal calculateArea(
+            String formula,
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height) {
+        return calculateArea(formula, length, width, height, "in");
     }
 
     /**
-     * Calculates item amount: Area × Rate.
+     * Flexible measurement evaluation supporting Sqft and Inches calculation types.
+     */
+    public static FormulaEvaluator.EvaluationResult calculateMeasurement(
+            String formula,
+            String calculationType,
+            String unitType,
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height
+    ) {
+        return FormulaEvaluator.evaluate(formula, calculationType, unitType, length, width, height);
+    }
+
+    public static FormulaEvaluator.EvaluationResult calculateMeasurement(
+            String formula,
+            String calculationType,
+            BigDecimal length,
+            BigDecimal width,
+            BigDecimal height
+    ) {
+        return FormulaEvaluator.evaluate(formula, calculationType, null, length, width, height);
+    }
+
+    private static boolean isCanonical(String formula) {
+        if (formula == null) return false;
+        String f = formula.trim();
+        return FORMULA_L_X_W.equals(f)
+                || FORMULA_L_PLUS_W_X_H.equals(f)
+                || FORMULA_L_X_H.equals(f)
+                || "L x W".equalsIgnoreCase(f)
+                || "(L + W) x H".equalsIgnoreCase(f)
+                || "L x H".equalsIgnoreCase(f);
+    }
+
+    private static boolean isInchUnit(String unit) {
+        if (unit == null) return false;
+        String u = unit.trim().toUpperCase();
+        return "INCH".equals(u) || "INCHES".equals(u) || "SQIN".equals(u);
+    }
+
+    /**
+     * Calculates item amount: Area / Measurement × Rate.
      */
     public static BigDecimal calculateItemAmount(BigDecimal area, BigDecimal rate) {
         if (area == null) area = BigDecimal.ZERO;

@@ -809,6 +809,50 @@ a {
     outline-offset: 2px;
 }
 
+/* =========================================================
+   FILTER TABS / STATUS BAR
+   ========================================================= */
+
+.filter-bar {
+    width: min(1400px, 100%);
+    margin: 18px auto 14px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filter-tab {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 15px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--peacock-deep);
+    background: #ffffff;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.filter-tab:hover {
+    background: var(--peacock-pale);
+    border-color: #b9ddd0;
+}
+
+.filter-tab.active {
+    background: var(--peacock-green);
+    color: #ffffff;
+    border-color: var(--peacock-green);
+    box-shadow: var(--shadow-sm);
+}
+
+.filter-tab.active span {
+    color: #ffffff;
+}
+
 
 /* =========================================================
    REDUCED MOTION

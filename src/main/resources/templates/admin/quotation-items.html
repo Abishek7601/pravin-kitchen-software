@@ -235,7 +235,7 @@
                 <strong
                         th:text="${#numbers.formatDecimal(
                         #aggregates.sum(
-                            items.?[active].![offerPrice]
+                            items.?[active].![amount]
                         ),
                         2,
                         2
@@ -347,9 +347,6 @@
                         AMOUNT
                     </th>
 
-                    <th>
-                        OFFER PRICE
-                    </th>
 
                     <th>
                         STATUS
@@ -558,25 +555,6 @@
                     </td>
 
 
-                    <!-- OFFER PRICE -->
-
-                    <td class="numeric-cell offer-price">
-
-                        <strong>
-                            ₹
-                            <span
-                                    th:text="${item.offerPrice != null
-                                    ? #numbers.formatDecimal(
-                                        item.offerPrice,
-                                        2,
-                                        2
-                                      )
-                                    : '0.00'}">
-                                0.00
-                            </span>
-                        </strong>
-
-                    </td>
 
 
                     <!-- STATUS -->

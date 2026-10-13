@@ -32,6 +32,7 @@ public class AdminQuotationBuilderController {
     private final QuotationRoomRepository quotationRoomRepository;
     private final QuotationItemRepository quotationItemRepository;
     private final QuotationItemSizeRepository quotationItemSizeRepository;
+    private final PricingRepository pricingRepository;
 
     public AdminQuotationBuilderController(
             BranchRepository branchRepository,
@@ -44,7 +45,8 @@ public class AdminQuotationBuilderController {
             QuotationRepository quotationRepository,
             QuotationRoomRepository quotationRoomRepository,
             QuotationItemRepository quotationItemRepository,
-            QuotationItemSizeRepository quotationItemSizeRepository) {
+            QuotationItemSizeRepository quotationItemSizeRepository,
+            PricingRepository pricingRepository) {
         this.branchRepository = branchRepository;
         this.workCategoryRepository = workCategoryRepository;
         this.divisionRepository = divisionRepository;
@@ -56,6 +58,7 @@ public class AdminQuotationBuilderController {
         this.quotationRoomRepository = quotationRoomRepository;
         this.quotationItemRepository = quotationItemRepository;
         this.quotationItemSizeRepository = quotationItemSizeRepository;
+        this.pricingRepository = pricingRepository;
     }
 
     @GetMapping("/builder")
@@ -107,12 +110,26 @@ public class AdminQuotationBuilderController {
     @GetMapping("/builder/rate")
     @ResponseBody
     public ResponseEntity<?> rate(
-            @RequestParam Long branchId,
+            @RequestParam(required = false) Long branchId,
             @RequestParam Long materialOptionId,
             @RequestParam PricingMode pricingMode) {
         try {
             BigDecimal rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
-            return ResponseEntity.ok(map("rate", rate, "pricingMode", pricingMode.name()));
+            Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null);
+            String formula = (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
+                    ? pricing.getFormula() : "(L + W) × H";
+            String unit = (pricing != null && pricing.getUnit() != null) ? pricing.getUnit() : "SQFT";
+            String measurementUnit = ("INCH".equalsIgnoreCase(unit) || "INCHES".equalsIgnoreCase(unit) || "SQIN".equalsIgnoreCase(unit)) ? "SQIN" : "SQFT";
+            String pricingUnit = "₹ / " + measurementUnit;
+
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("rate", rate);
+            resp.put("pricingMode", pricingMode.name());
+            resp.put("formula", formula);
+            resp.put("unit", unit);
+            resp.put("measurementUnit", measurementUnit);
+            resp.put("pricingUnit", pricingUnit);
+            return ResponseEntity.ok(resp);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(map("message", e.getMessage()));
         }

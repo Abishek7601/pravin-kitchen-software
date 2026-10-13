@@ -1,17 +1,16 @@
 package com.example.pravin_quotation.controller;
 
 import com.example.pravin_quotation.model.Quotation;
-import com.example.pravin_quotation.model.QuotationStatus;
 import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
+import com.example.pravin_quotation.service.EmployeeDashboardService;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import java.math.BigDecimal;
 import java.util.List;
 
 @Controller
@@ -20,13 +19,16 @@ public class EmployeeDashboardController {
 
     private final UserRepository userRepository;
     private final QuotationRepository quotationRepository;
+    private final EmployeeDashboardService employeeDashboardService;
 
     public EmployeeDashboardController(
             UserRepository userRepository,
-            QuotationRepository quotationRepository
+            QuotationRepository quotationRepository,
+            EmployeeDashboardService employeeDashboardService
     ) {
         this.userRepository = userRepository;
         this.quotationRepository = quotationRepository;
+        this.employeeDashboardService = employeeDashboardService;
     }
 
     @GetMapping("/dashboard")
@@ -60,50 +62,26 @@ public class EmployeeDashboardController {
                         );
 
         // =====================================================
-        // QUOTATION COUNTS
+        // QUOTATION SUMMARY COUNTS (SCOPED TO LOGGED-IN EMPLOYEE)
         // =====================================================
+
+        long last60DaysQuotations =
+                employeeDashboardService.getLast60DaysQuotationCount(employee.getId());
+
+        long oneYearQuotations =
+                employeeDashboardService.getOneYearQuotationCount(employee.getId());
+
+        long pendingQuotations =
+                employeeDashboardService.getPendingQuotationCount(employee.getId());
+
+        long workingQuotations =
+                employeeDashboardService.getWorkingQuotationCount(employee.getId());
+
+        long sentQuotations =
+                employeeDashboardService.getSentQuotationCount(employee.getId());
 
         long totalQuotations =
                 quotations.size();
-
-        long pendingQuotations =
-                quotations.stream()
-                        .filter(q ->
-                                q.getStatus()
-                                        == QuotationStatus.PENDING
-                        )
-                        .count();
-
-        long sentQuotations =
-                quotations.stream()
-                        .filter(q ->
-                                q.getStatus()
-                                        == QuotationStatus.SENT
-                        )
-                        .count();
-
-        long workingQuotations =
-                quotations.stream()
-                        .filter(q ->
-                                q.getStatus()
-                                        == QuotationStatus.WORKING
-                        )
-                        .count();
-
-        // =====================================================
-        // TOTAL QUOTED VALUE
-        // =====================================================
-
-        BigDecimal totalQuotedValue =
-                quotations.stream()
-                        .map(Quotation::getGrandTotal)
-                        .filter(value ->
-                                value != null
-                        )
-                        .reduce(
-                                BigDecimal.ZERO,
-                                BigDecimal::add
-                        );
 
         // =====================================================
         // RECENT QUOTATIONS
@@ -139,6 +117,21 @@ public class EmployeeDashboardController {
         );
 
         model.addAttribute(
+                "last60DaysQuotations",
+                last60DaysQuotations
+        );
+
+        model.addAttribute(
+                "oneYearQuotations",
+                oneYearQuotations
+        );
+
+        model.addAttribute(
+                "totalOneYearQuotations",
+                oneYearQuotations
+        );
+
+        model.addAttribute(
                 "pendingQuotations",
                 pendingQuotations
         );
@@ -156,11 +149,6 @@ public class EmployeeDashboardController {
         model.addAttribute(
                 "approvedQuotations",
                 workingQuotations
-        );
-
-        model.addAttribute(
-                "totalQuotedValue",
-                totalQuotedValue
         );
 
         return "employee/dashboard";

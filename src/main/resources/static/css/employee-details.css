@@ -182,101 +182,112 @@ body {
    ========================================================= */
 
 .header-actions {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-
     gap: 10px;
-
     flex-shrink: 0;
 }
 
+.nav-header-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
 
+.nav-back-btn,
+.nav-dashboard-btn,
 .edit-button,
 .back-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-
-    min-height: 43px;
-
-    padding: 10px 17px;
-
+    gap: 6px;
+    height: 42px;
+    min-height: 42px;
+    max-height: 42px;
+    padding: 0 16px;
     border-radius: 10px;
-
-    font-size: 12px;
-    font-weight: 750;
-
+    font-size: 13px;
+    font-weight: 700;
+    line-height: 1;
     text-decoration: none;
-
+    box-sizing: border-box;
     white-space: nowrap;
-
-    transition:
-        transform 0.2s ease,
-        background 0.2s ease,
-        border-color 0.2s ease,
-        color 0.2s ease,
-        box-shadow 0.2s ease;
+    transition: all 0.2s ease;
 }
 
+.nav-back-btn {
+    background: #ffffff;
+    border: 1px solid #c8dad6;
+    color: var(--peacock-deep);
+    cursor: pointer;
+    box-shadow: var(--shadow-sm);
+}
+
+.nav-back-btn:hover {
+    color: var(--peacock-dark);
+    border-color: #bddbce;
+    background: var(--peacock-pale);
+    transform: translateY(-1px);
+}
+
+.nav-dashboard-btn {
+    background: #006b63;
+    color: #ffffff;
+    border: 1px solid #006b63;
+    box-shadow: 0 4px 12px rgba(0, 107, 99, 0.15);
+}
+
+.nav-dashboard-btn:hover {
+    background: var(--peacock-dark);
+    border-color: var(--peacock-dark);
+    transform: translateY(-1px);
+}
 
 /* Edit */
 
 .edit-button {
     border: 1px solid var(--peacock-green);
-
     color: #ffffff;
-
     background:
         linear-gradient(
             135deg,
             var(--peacock-deep),
             var(--peacock-green)
         );
-
     box-shadow:
-        0 5px 15px rgba(8, 127, 105, 0.16);
+        0 4px 12px rgba(8, 127, 105, 0.16);
 }
-
 
 .edit-button:hover {
     color: #ffffff;
-
     background:
         linear-gradient(
             135deg,
             var(--peacock-dark),
             var(--peacock-deep)
         );
-
     transform: translateY(-1px);
-
     box-shadow:
-        0 8px 20px rgba(6, 59, 53, 0.20);
+        0 6px 16px rgba(6, 59, 53, 0.20);
 }
-
 
 /* Back */
 
 .back-button {
     border: 1px solid var(--border);
-
     color: var(--peacock-deep);
-
     background: #ffffff;
-
     box-shadow: var(--shadow-sm);
 }
 
-
 .back-button:hover {
     color: var(--peacock-dark);
-
     border-color: #bddbce;
-
     background: var(--peacock-pale);
-
     transform: translateY(-1px);
 }
+
 
 
 /* =========================================================
@@ -538,109 +549,201 @@ body {
 
 
 /* =========================================================
-   SUMMARY GRID
+   SUMMARY GRIDS (ROW 1 & ROW 2)
    ========================================================= */
 
-.summary-grid {
+.summary-grid,
+.quotation-status-grid {
     display: grid;
-
-    grid-template-columns:
-        repeat(4, minmax(0, 1fr));
-
+    grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 16px;
-
     margin-bottom: 24px;
 }
 
 
 /* =========================================================
-   SUMMARY CARD
+   SUMMARY CARDS (DISPLAY-ONLY)
    ========================================================= */
 
 .summary-card {
+    position: relative;
     display: flex;
     align-items: center;
-
-    gap: 14px;
-
-    min-height: 105px;
-
-    padding: 19px;
-
-    border: 1px solid var(--border);
-
-    border-radius: 15px;
-
+    gap: 16px;
+    min-height: 108px;
+    padding: 20px 22px;
+    overflow: hidden;
     background: #ffffff;
-
+    border: 1px solid var(--border);
+    border-radius: 15px;
     box-shadow: var(--shadow-sm);
+    box-sizing: border-box;
+    cursor: default;
+}
 
-    transition:
-        transform 0.2s ease,
-        box-shadow 0.2s ease,
-        border-color 0.2s ease;
+/* Left accent bar */
+.summary-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--peacock-green);
+    opacity: 0.85;
+}
+
+/* Row 1 Card Accents */
+.summary-card.total-card::before {
+    background: var(--peacock-deep);
+}
+
+.summary-card.recent-card::before {
+    background: #1976d2;
+}
+
+.summary-card.value-card::before {
+    background: #c5a15c;
+}
+
+/* Row 2 Card Accents */
+.summary-card.sent-card::before {
+    background: #16845d;
+}
+
+.summary-card.pending-card::before {
+    background: #c5861b;
+}
+
+.summary-card.working-card::before {
+    background: #1b6890;
 }
 
 
-.summary-card:hover {
-    border-color: #c7e3d7;
-
-    box-shadow: var(--shadow-md);
-
-    transform: translateY(-2px);
-}
-
+/* =========================================================
+   CARD ICONS
+   ========================================================= */
 
 .summary-icon {
     display: flex;
     align-items: center;
     justify-content: center;
-
     width: 52px;
     height: 52px;
-
-    flex-shrink: 0;
-
+    flex: 0 0 52px;
     border-radius: 14px;
-
     color: var(--peacock-deep);
-
     font-size: 22px;
     font-weight: 800;
+    background: linear-gradient(135deg, #d9f5eb, #edf9f5);
+    border: 1px solid #d5ece4;
+}
 
-    background:
-        linear-gradient(
-            135deg,
-            #d9f5eb,
-            #edf9f5
-        );
+/* Row 1 Icons */
+.summary-icon.total-icon {
+    color: var(--peacock-dark);
+    background: #eaf6f2;
+    border: 1px solid #d5ece4;
+}
+
+.summary-icon.recent-icon {
+    color: #1565c0;
+    background: #eef5fc;
+    border: 1px solid #d2e4f7;
+}
+
+.summary-icon.value-icon {
+    color: #8a6914;
+    background: #fdf8eb;
+    border: 1px solid #faeecd;
+}
+
+/* Row 2 Icons */
+.summary-icon.sent-icon {
+    color: #16845d;
+    background: #e9f8f0;
+    border: 1px solid #c7eed9;
+}
+
+.summary-icon.pending-icon {
+    color: #a96f12;
+    background: #fff6df;
+    border: 1px solid #fae7b5;
+}
+
+.summary-icon.working-icon {
+    color: #1b6890;
+    background: #edf6fb;
+    border: 1px solid #cde4f2;
 }
 
 
-.summary-card > div:last-child span {
+/* =========================================================
+   CARD CONTENT & TYPOGRAPHY
+   ========================================================= */
+
+.summary-content {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summary-label {
     display: block;
-
-    margin-bottom: 4px;
-
     color: var(--text-muted);
-
     font-size: 11px;
     font-weight: 700;
-
     line-height: 1.3;
+    letter-spacing: 0.2px;
 }
 
-
+.summary-content strong,
 .summary-card strong {
     display: block;
-
     color: var(--peacock-dark);
-
     font-size: 22px;
     font-weight: 800;
-
     line-height: 1.2;
+    overflow-wrap: anywhere;
 }
+
+
+/* =========================================================
+   ACTIVITY FILTER PILLS
+   ========================================================= */
+
+.status-filter-pills {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: #edf6f3;
+    padding: 4px;
+    border-radius: 9px;
+}
+
+.filter-pill {
+    padding: 5px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--peacock-dark);
+    text-decoration: none;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.filter-pill:hover {
+    background: #ffffff;
+    color: var(--peacock-green);
+}
+
+.filter-pill.active {
+    background: var(--peacock-green);
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(8, 127, 105, 0.2);
+}
+
+
 
 
 /* =========================================================
@@ -1017,6 +1120,16 @@ body {
 }
 
 
+/* Working */
+
+.quotation-status.status-working {
+    color: #1b6890;
+
+    background: #edf6fb;
+}
+
+
+
 /* =========================================================
    QUOTATION VIEW BUTTON
    ========================================================= */
@@ -1274,10 +1387,13 @@ body {
     }
 
 
-    .summary-grid {
+    .summary-grid,
+    .quotation-status-grid {
         grid-template-columns:
-            repeat(2, minmax(0, 1fr));
+            repeat(3, minmax(0, 1fr));
+        gap: 14px;
     }
+
 
 
     .details-grid {
@@ -1331,18 +1447,26 @@ body {
 
     .header-actions {
         width: 100%;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
+    .nav-header-actions {
+        display: flex;
+        flex: 1;
+        gap: 8px;
+    }
 
+    .nav-back-btn,
+    .nav-dashboard-btn,
     .edit-button,
     .back-button {
         flex: 1;
-
-        min-height: 43px;
-
-        padding: 10px 12px;
-
-        font-size: 11px;
+        height: 40px;
+        min-height: 40px;
+        max-height: 40px;
+        padding: 0 12px;
+        font-size: 12px;
     }
 
 
@@ -1383,9 +1507,14 @@ body {
     }
 
 
-    .summary-grid {
+    .summary-grid,
+    .quotation-status-grid {
+        grid-template-columns: 1fr;
+
         gap: 12px;
     }
+
+
 
 
     .summary-card {
@@ -1501,15 +1630,37 @@ body {
 
 
     .header-actions {
+        width: 100%;
+        flex-direction: column;
         gap: 8px;
     }
 
+    .nav-header-actions {
+        width: 100%;
+        display: flex;
+        gap: 6px;
+    }
+
+    .nav-back-btn,
+    .nav-dashboard-btn {
+        flex: 1;
+        height: 38px;
+        min-height: 38px;
+        max-height: 38px;
+        padding: 0 10px;
+        font-size: 11px;
+        border-radius: 8px;
+    }
 
     .edit-button,
     .back-button {
-        font-size: 10px;
-
-        padding: 9px 7px;
+        width: 100%;
+        height: 38px;
+        min-height: 38px;
+        max-height: 38px;
+        font-size: 11px;
+        padding: 0 10px;
+        border-radius: 8px;
     }
 
 
@@ -1584,40 +1735,48 @@ body {
     }
 
 
-    .summary-grid {
-        grid-template-columns: 1fr 1fr;
+    .summary-grid,
+    .quotation-status-grid {
+        grid-template-columns: 1fr;
 
-        gap: 9px;
+        gap: 10px;
     }
 
 
+
     .summary-card {
-        gap: 9px;
+        gap: 12px;
 
-        min-height: 82px;
+        min-height: 84px;
 
-        padding: 11px;
+        padding: 14px 16px;
+
+        border-radius: 12px;
     }
 
 
     .summary-icon {
-        width: 39px;
-        height: 39px;
+        width: 44px;
+        height: 44px;
+        flex: 0 0 44px;
 
-        border-radius: 11px;
+        border-radius: 12px;
 
-        font-size: 16px;
+        font-size: 18px;
     }
 
 
+    .summary-label,
     .summary-card > div:last-child span {
-        font-size: 9px;
+        font-size: 10px;
     }
 
 
+    .summary-content strong,
     .summary-card strong {
-        font-size: 17px;
+        font-size: 18px;
     }
+
 
 
     .content-card {

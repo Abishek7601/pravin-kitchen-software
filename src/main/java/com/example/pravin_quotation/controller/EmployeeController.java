@@ -159,13 +159,17 @@ public class EmployeeController {
     // VIEW EMPLOYEE
     // =========================
 
-    @GetMapping("/view/{id}")
+    @GetMapping({"/view/{id}", "/view/{id}/status/{status}"})
     public String viewEmployee(
             @PathVariable Long id,
+            @PathVariable(required = false) QuotationStatus status,
+            @RequestParam(name = "status", required = false) QuotationStatus paramStatus,
             Model model) {
 
         User employee =
                 employeeService.getEmployeeById(id);
+
+        QuotationStatus activeStatus = status != null ? status : paramStatus;
 
         /*
          * Get all quotations created/managed
@@ -216,15 +220,26 @@ public class EmployeeController {
                         );
 
         /*
-         * Approved quotations
+         * Dynamically calculated employee-specific quotation counts:
+         * 1. Sent Quotations
+         * 2. Pending Quotations
+         * 3. Working Quotations
          */
-        long approvedCount =
-                quotations.stream()
-                        .filter(q ->
-                                q.getStatus() ==
-                                        QuotationStatus.SENT
-                        )
-                        .count();
+        long sentCount =
+                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.SENT);
+
+        long pendingCount =
+                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.PENDING);
+
+        long workingCount =
+                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.WORKING);
+
+        /*
+         * Filter quotations if status is selected
+         */
+        List<Quotation> displayedQuotations = (activeStatus != null)
+                ? quotations.stream().filter(q -> q.getStatus() == activeStatus).toList()
+                : quotations;
 
         /*
          * Send employee details
@@ -239,7 +254,7 @@ public class EmployeeController {
          */
         model.addAttribute(
                 "quotations",
-                quotations
+                displayedQuotations
         );
 
         /*
@@ -261,8 +276,28 @@ public class EmployeeController {
         );
 
         model.addAttribute(
+                "sentCount",
+                sentCount
+        );
+
+        model.addAttribute(
+                "pendingCount",
+                pendingCount
+        );
+
+        model.addAttribute(
+                "workingCount",
+                workingCount
+        );
+
+        model.addAttribute(
                 "approvedCount",
-                approvedCount
+                sentCount
+        );
+
+        model.addAttribute(
+                "selectedStatus",
+                activeStatus != null ? activeStatus.name() : null
         );
 
         return "admin/employee-details";

@@ -6,6 +6,8 @@ import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.security.OtpEmailService;
 import com.example.pravin_quotation.security.OtpService;
 import jakarta.servlet.http.HttpSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -17,6 +19,8 @@ import java.time.LocalDateTime;
 @Controller
 @RequestMapping("/employee")
 public class OtpController {
+
+    private static final Logger log = LoggerFactory.getLogger(OtpController.class);
 
     private final UserRepository userRepository;
     private final OtpService otpService;
@@ -38,6 +42,7 @@ public class OtpController {
 
     @GetMapping("/otp")
     public String otpPage(
+            @RequestParam(name = "mailError", required = false) String mailError,
             HttpSession session,
             Model model
     ) {
@@ -87,9 +92,16 @@ public class OtpController {
                 employee.getName()
         );
 
+        String adminEmail = null;
+        try {
+            adminEmail = getAdminEmail();
+        } catch (Exception e) {
+            log.warn("Super Admin email could not be determined: {}", e.getMessage());
+        }
+
         model.addAttribute(
                 "adminEmail",
-                getAdminEmail()
+                adminEmail != null ? adminEmail : "Administrator"
         );
 
         model.addAttribute(
@@ -103,7 +115,9 @@ public class OtpController {
          * -----------------------------------------------------
          *
          * If this login session has never requested an OTP,
-         * automatically send one when the OTP page opens.
+         * automatically attempt to send one when the OTP page opens.
+         * If delivery previously failed (mailError parameter present),
+         * do not trigger an immediate retry loop.
          */
 
         String existingOtp =
@@ -114,16 +128,20 @@ public class OtpController {
                         "OTP_EXPIRY"
                 );
 
-        if (existingOtp == null
+        if (mailError == null && (existingOtp == null
                 || existingExpiry == null
-                || otpService.isExpired(existingExpiry)) {
+                || otpService.isExpired(existingExpiry))) {
 
-            sendOtpAutomatically(
+            boolean sent = sendOtpToEmployee(
                     employee,
                     session
             );
 
-            return "redirect:/employee/otp?sent";
+            if (sent) {
+                return "redirect:/employee/otp?sent";
+            } else {
+                return "redirect:/employee/otp?mailError";
+            }
         }
 
         return "auth/employee-otp";
@@ -131,10 +149,10 @@ public class OtpController {
 
 
     // =========================================================
-    // AUTOMATIC OTP SENDING
+    // AUTOMATIC OTP SENDING WITH SAFE EXCEPTION HANDLING
     // =========================================================
 
-    private void sendOtpAutomatically(
+    private boolean sendOtpToEmployee(
             User employee,
             HttpSession session
     ) {
@@ -144,31 +162,6 @@ public class OtpController {
 
         LocalDateTime expiry =
                 otpService.getExpiryTime();
-
-        session.setAttribute(
-                "OTP_CODE",
-                otp
-        );
-
-        session.setAttribute(
-                "OTP_EXPIRY",
-                expiry
-        );
-
-        session.setAttribute(
-                "OTP_ATTEMPTS",
-                0
-        );
-
-        session.setAttribute(
-                "OTP_LAST_SENT",
-                LocalDateTime.now()
-        );
-
-        session.setAttribute(
-                "OTP_VERIFIED",
-                false
-        );
 
         try {
 
@@ -181,9 +174,38 @@ public class OtpController {
                     otp
             );
 
+            // Persist OTP in session ONLY after successful delivery
+            session.setAttribute(
+                    "OTP_CODE",
+                    otp
+            );
+
+            session.setAttribute(
+                    "OTP_EXPIRY",
+                    expiry
+            );
+
+            session.setAttribute(
+                    "OTP_ATTEMPTS",
+                    0
+            );
+
+            session.setAttribute(
+                    "OTP_LAST_SENT",
+                    LocalDateTime.now()
+            );
+
+            session.setAttribute(
+                    "OTP_VERIFIED",
+                    false
+            );
+
+            return true;
+
         } catch (Exception e) {
 
-            e.printStackTrace();
+            log.error("Failed to send employee login OTP to Super Admin for employee [{}]: {}",
+                    employee.getName(), e.getMessage(), e);
 
             session.removeAttribute(
                     "OTP_CODE"
@@ -197,10 +219,7 @@ public class OtpController {
                     "OTP_ATTEMPTS"
             );
 
-            throw new IllegalStateException(
-                    "Unable to send employee OTP email.",
-                    e
-            );
+            return false;
         }
     }
 
@@ -254,27 +273,24 @@ public class OtpController {
 
         /*
          * Prevent OTP spam.
-         * User must wait 60 seconds before resend.
+         * User must wait 60 seconds before resend, only if OTP was previously successfully sent.
          */
 
-        if (!otpService.isResendAllowed(lastSent)) {
+        if (session.getAttribute("OTP_CODE") != null && !otpService.isResendAllowed(lastSent)) {
 
             return "redirect:/employee/otp?cooldown";
         }
 
-        try {
+        boolean sent = sendOtpToEmployee(
+                employee,
+                session
+        );
 
-            sendOtpAutomatically(
-                    employee,
-                    session
-            );
-
-        } catch (Exception e) {
-
+        if (sent) {
+            return "redirect:/employee/otp?sent";
+        } else {
             return "redirect:/employee/otp?mailError";
         }
-
-        return "redirect:/employee/otp?sent";
     }
 
 

@@ -23,7 +23,6 @@ public class AdminQuotationBuilderService {
     private final MaterialRepository materialRepository;
     private final MaterialOptionRepository materialOptionRepository;
     private final PricingRepository pricingRepository;
-    private final DistrictPricingRepository districtPricingRepository;
     private final QuotationRoomService quotationRoomService;
     private final QuotationItemService quotationItemService;
     private final QuotationItemSizeService quotationItemSizeService;
@@ -40,7 +39,6 @@ public class AdminQuotationBuilderService {
             MaterialRepository materialRepository,
             MaterialOptionRepository materialOptionRepository,
             PricingRepository pricingRepository,
-            DistrictPricingRepository districtPricingRepository,
             QuotationRoomService quotationRoomService,
             QuotationItemService quotationItemService,
             QuotationItemSizeService quotationItemSizeService,
@@ -56,7 +54,6 @@ public class AdminQuotationBuilderService {
         this.materialRepository = materialRepository;
         this.materialOptionRepository = materialOptionRepository;
         this.pricingRepository = pricingRepository;
-        this.districtPricingRepository = districtPricingRepository;
         this.quotationRoomService = quotationRoomService;
         this.quotationItemService = quotationItemService;
         this.quotationItemSizeService = quotationItemSizeService;
@@ -73,12 +70,9 @@ public class AdminQuotationBuilderService {
             Long materialOptionId,
             PricingMode mode) {
 
-        if (branchId == null
-                || materialOptionId == null
-                || mode == null) {
-
+        if (materialOptionId == null || mode == null) {
             throw new IllegalArgumentException(
-                    "Branch, material option and pricing mode are required."
+                    "Material option and pricing mode are required."
             );
         }
 
@@ -98,22 +92,6 @@ public class AdminQuotationBuilderService {
             throw new IllegalArgumentException(
                     "The selected pricing is inactive."
             );
-        }
-
-        DistrictPricing districtPricing =
-                districtPricingRepository
-                        .findByBranchIdAndPricingId(
-                                branchId,
-                                pricing.getId()
-                        )
-                        .orElse(null);
-
-        if (districtPricing != null
-                && Boolean.TRUE.equals(districtPricing.getActive())
-                && districtPricing.getRate() != null
-                && districtPricing.getRate().compareTo(BigDecimal.ZERO) > 0) {
-
-            return money(districtPricing.getRate());
         }
 
         return money(pricing.getRate());
@@ -367,9 +345,17 @@ public class AdminQuotationBuilderService {
                                 request.pricingMode()
                         );
 
+                Pricing itemPricing = pricingRepository
+                        .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())
+                        .orElse(null);
+
+                String itemFormula = (itemPricing != null && itemPricing.getFormula() != null && !itemPricing.getFormula().isBlank())
+                        ? itemPricing.getFormula()
+                        : (option.getFormula() != null && !option.getFormula().isBlank() ? option.getFormula() : "(L + W) × H");
+
+                String itemUnit = (itemPricing != null && itemPricing.getUnit() != null) ? itemPricing.getUnit() : "SQFT";
+
                 // =================================================
-                // IMPORTANT
-                //
                 // ONE QuotationItem
                 // MANY QuotationItemSize
                 // =================================================
@@ -429,11 +415,11 @@ public class AdminQuotationBuilderService {
                     BigDecimal sqft =
                             quotationItemSizeService
                                     .calculateSqft(
-                                            com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_PLUS_W_X_H,
+                                            itemFormula,
                                             length,
                                             width,
                                             height,
-                                            "in"
+                                            itemUnit
                                     );
 
                     BigDecimal amount =
@@ -497,7 +483,7 @@ public class AdminQuotationBuilderService {
                                 totalAmount,
                                 totalOfferPrice,
 
-                                "((L + W) × H) / 144",
+                                itemFormula,
 
                                 itemRequest.specification()
                         );
@@ -535,11 +521,11 @@ public class AdminQuotationBuilderService {
                     BigDecimal sqft =
                             quotationItemSizeService
                                     .calculateSqft(
-                                            com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_PLUS_W_X_H,
+                                            itemFormula,
                                             length,
                                             width,
                                             height,
-                                            "in"
+                                            itemUnit
                                     );
 
                     BigDecimal amount =

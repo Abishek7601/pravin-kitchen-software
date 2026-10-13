@@ -816,35 +816,6 @@
                 </div>
 
 
-                <!-- OFFER PRICE -->
-
-                <div class="form-group">
-
-                    <label for="offerPrice">
-                        Offer Price
-                    </label>
-
-                    <div class="currency-input">
-
-                        <span>
-                            ₹
-                        </span>
-
-                        <input type="number"
-                               id="offerPrice"
-                               name="offerPrice"
-                               min="0"
-                               step="0.01"
-                               placeholder="Use calculated amount"
-                               th:value="${quotationItem?.offerPrice}">
-
-                    </div>
-
-                    <small>
-                        Leave empty to use the calculated amount.
-                    </small>
-
-                </div>
 
             </div>
 
@@ -960,8 +931,6 @@
         const amountDisplay =
             document.getElementById("amountDisplay");
 
-        const offerPriceInput =
-            document.getElementById("offerPrice");
 
         const form =
             document.getElementById("quotationItemForm");
@@ -990,16 +959,94 @@
            FORMULA & UNIT HELPERS
         ========================================================== */
 
+        function evaluateExpressionSafely(expression, L, W, H) {
+            if (!expression) return 0;
+            let expr = String(expression).replace(/×/g, '*').replace(/x/g, '*').trim();
+            const tokens = [];
+            let i = 0;
+            while (i < expr.length) {
+                let ch = expr[i];
+                if (/\s/.test(ch)) { i++; continue; }
+                if (/[0-9.]/.test(ch)) {
+                    let num = '';
+                    while (i < expr.length && /[0-9.]/.test(expr[i])) { num += expr[i++]; }
+                    tokens.push(parseFloat(num));
+                    continue;
+                }
+                if (ch === 'L' || ch === 'l') { tokens.push(Number(L || 0)); i++; continue; }
+                if (ch === 'W' || ch === 'w') { tokens.push(Number(W || 0)); i++; continue; }
+                if (ch === 'H' || ch === 'h') { tokens.push(Number(H || 0)); i++; continue; }
+                if ('+-*/()'.includes(ch)) { tokens.push(ch); i++; continue; }
+                return 0;
+            }
+            let pos = 0;
+            function parseExpr() {
+                let left = parseTerm();
+                while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+                    let op = tokens[pos++];
+                    let right = parseTerm();
+                    left = (op === '+') ? (left + right) : (left - right);
+                }
+                return left;
+            }
+            function parseTerm() {
+                let left = parseFactor();
+                while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+                    let op = tokens[pos++];
+                    let right = parseFactor();
+                    if (op === '/') {
+                        if (right === 0) return 0;
+                        left = left / right;
+                    } else {
+                        left = left * right;
+                    }
+                }
+                return left;
+            }
+            function parseFactor() {
+                if (pos >= tokens.length) return 0;
+                let tok = tokens[pos++];
+                if (tok === '+') return parseFactor();
+                if (tok === '-') return -parseFactor();
+                if (tok === '(') {
+                    let val = parseExpr();
+                    if (pos < tokens.length && tokens[pos] === ')') pos++;
+                    return val;
+                }
+                if (typeof tok === 'number') return tok;
+                return 0;
+            }
+            let res = parseExpr();
+            return (typeof res === 'number' && !isNaN(res)) ? res : 0;
+        }
+
+        function calculateItemMeasurement(formula, unit, L, W, H) {
+            const expr = formula || '(L + W) * H';
+            const raw = evaluateExpressionSafely(expr, L, W, H);
+            const u = (unit || 'SQFT').toUpperCase();
+            if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+                return raw;
+            }
+            const isLinear = !expr.includes('*') && !expr.includes('×') && !expr.includes('x') && !expr.includes('/');
+            return isLinear ? (raw / 12.0) : (raw / 144.0);
+        }
+
+        function getItemUnitLabel(formula, unit) {
+            const u = (unit || 'SQFT').toUpperCase();
+            if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+                const expr = formula || '';
+                return (expr.includes('*') || expr.includes('×') || expr.includes('x')) ? 'sq.in' : 'in';
+            }
+            return 'sq.ft';
+        }
+
         function normalizeFormula(f) {
-            if (!f) return "L × W";
-            const clean = f.replace(/\s+/g, "").toLowerCase();
-            if (clean === "l+w*h" || clean === "l+(w*h)" || clean.includes("(l+w)") || clean.includes("l+w") || clean.includes("+")) return "(L + W) × H";
-            if (clean === "l*h" || clean === "lxh") return "L × H";
-            return "L × W";
+            if (!f) return "(L + W) × H";
+            return f;
         }
 
         let currentFormula = normalizeFormula(
-            document.getElementById("formulaInput") ? document.getElementById("formulaInput").value : "L × W"
+            document.getElementById("formulaInput") ? document.getElementById("formulaInput").value : "(L + W) × H"
         );
 
         function applyFormula(formula) {
@@ -1010,7 +1057,7 @@
             if (formulaDisplay) formulaDisplay.textContent = currentFormula;
             const notice = document.getElementById("formulaNotice");
             if (notice) {
-                notice.style.display = (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") ? "block" : "none";
+                notice.style.display = (currentFormula.includes("+") && currentFormula.includes("H")) ? "block" : "none";
             }
             updateAllRowsFields();
             calculateAll();
@@ -1028,22 +1075,14 @@
                 el.textContent = unit;
             });
 
-            if (currentFormula === "L × W") {
-                if (widthField) widthField.style.display = "";
-                if (widthInput) widthInput.required = true;
-                if (heightField) heightField.style.display = "none";
-                if (heightInput) heightInput.required = false;
-            } else if (currentFormula === "L × H") {
-                if (widthField) widthField.style.display = "none";
-                if (widthInput) widthInput.required = false;
-                if (heightField) heightField.style.display = "";
-                if (heightInput) heightInput.required = true;
-            } else { // "L + (W × H)"
-                if (widthField) widthField.style.display = "";
-                if (widthInput) widthInput.required = true;
-                if (heightField) heightField.style.display = "";
-                if (heightInput) heightInput.required = true;
-            }
+            const f = currentFormula;
+            const hasW = f.includes("W") || f.includes("w");
+            const hasH = f.includes("H") || f.includes("h");
+
+            if (widthField) widthField.style.display = hasW ? "" : "none";
+            if (widthInput) widthInput.required = hasW;
+            if (heightField) heightField.style.display = hasH ? "" : "none";
+            if (heightInput) heightInput.required = hasH;
         }
 
         function updateAllRowsFields() {
@@ -1082,34 +1121,15 @@
 
             const unitSelect =
                 document.getElementById("dimensionUnit");
-            const isInch = unitSelect && unitSelect.value === "in";
-            if (isInch) {
-                length = length / 12;
-                width = width / 12;
-                height = height / 12;
-            }
+            const isInch = !unitSelect || unitSelect.value === "in";
+            // Dimensions entered in inches: calculateItemMeasurement handles conversion to sq.ft
+            let rawL = isInch ? length : (length * 12);
+            let rawW = isInch ? width : (width * 12);
+            let rawH = isInch ? height : (height * 12);
 
             let sqft = 0;
-
-            if (currentFormula === "L × W") {
-                if (length > 0 && width > 0) {
-                    sqft = length * width;
-                }
-            } else if (currentFormula === "L × H") {
-                if (length > 0 && height > 0) {
-                    sqft = length * height;
-            } else if (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") {
-                if (length > 0 && width > 0 && height > 0) {
-                    if (isInch) {
-                        sqft = ((numberValue(lengthInput) + numberValue(widthInput)) * numberValue(heightInput)) / 144;
-                    } else {
-                        sqft = (length + width) * height;
-                    }
-                }
-            } else {
-                if (length > 0 && width > 0) {
-                    sqft = length * width;
-                }
+            if (rawL > 0 || rawW > 0 || rawH > 0) {
+                sqft = calculateItemMeasurement(currentFormula, "SQFT", rawL, rawW, rawH);
             }
 
             sqft =
@@ -1175,13 +1195,6 @@
                 amount.toFixed(2);
 
 
-            if (!offerPriceInput.value.trim()) {
-
-                offerPriceInput.placeholder =
-                    "Calculated: ₹ " +
-                    amount.toFixed(2);
-
-            }
 
         }
 
@@ -1593,35 +1606,26 @@
                     const width = numberValue(widthInput);
                     const height = numberValue(heightInput);
 
-                    if (currentFormula === "L × W") {
-                        if (length <= 0 || width <= 0) invalid = true;
-                        if (heightInput && (!heightInput.value || heightInput.value.trim() === "")) {
-                            heightInput.value = "0";
-                        }
-                    } else if (currentFormula === "L × H") {
-                        if (length <= 0 || height <= 0) invalid = true;
-                        if (widthInput && (!widthInput.value || widthInput.value.trim() === "")) {
-                            widthInput.value = "0";
-                        }
-                    } else if (currentFormula === "(L + W) × H" || currentFormula === "L + (W × H)") {
-                        if (length <= 0 || width <= 0 || height <= 0) invalid = true;
-                    } else {
-                        if (length <= 0 || width <= 0) invalid = true;
-                        if (heightInput && (!heightInput.value || heightInput.value.trim() === "")) {
-                            heightInput.value = "0";
-                        }
+                    const f = currentFormula;
+                    const reqL = f.includes("L") || f.includes("l");
+                    const reqW = f.includes("W") || f.includes("w");
+                    const reqH = f.includes("H") || f.includes("h");
+
+                    if (reqL && length <= 0) invalid = true;
+                    if (reqW && width <= 0) invalid = true;
+                    if (reqH && height <= 0) invalid = true;
+
+                    if (!reqW && widthInput && (!widthInput.value || widthInput.value.trim() === "")) {
+                        widthInput.value = "0";
+                    }
+                    if (!reqH && heightInput && (!heightInput.value || heightInput.value.trim() === "")) {
+                        heightInput.value = "0";
                     }
                 });
 
                 if (invalid) {
                     event.preventDefault();
-                    if (currentFormula === "L × W") {
-                        alert("Please enter valid positive Length and Width for every size.");
-                    } else if (currentFormula === "L × H") {
-                        alert("Please enter valid positive Length and Height for every size.");
-                    } else {
-                        alert("Please enter valid positive Length, Width and Height for every size.");
-                    }
+                    alert("Please enter positive dimension values for all dimensions required by the formula (" + currentFormula + ").");
                     return;
                 }
 

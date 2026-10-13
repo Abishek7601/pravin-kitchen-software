@@ -540,14 +540,14 @@
                     <div class="room-total">
 
                         <span>
-                            Room Offer Price
+                            Room Total
                         </span>
 
                         <strong
                                 th:text="${'₹ ' +
                                 #numbers.formatDecimal(
-                                room.offerPrice != null
-                                ? room.offerPrice
+                                room.subtotal != null
+                                ? room.subtotal
                                 : 0,
                                 1, 2)}">
 
@@ -636,27 +636,6 @@
                                     Base Cabinet
 
                                 </h4>
-
-                            </div>
-
-
-                            <div class="item-offer-price">
-
-                                <span>
-                                    Offer Price
-                                </span>
-
-                                <strong
-                                        th:text="${'₹ ' +
-                                        #numbers.formatDecimal(
-                                        item.offerPrice != null
-                                        ? item.offerPrice
-                                        : 0,
-                                        1, 2)}">
-
-                                    ₹ 0.00
-
-                                </strong>
 
                             </div>
 
@@ -891,10 +870,6 @@
                                                 Sq.Ft
                                             </th>
 
-                                            <th>
-                                                Offer Price
-                                            </th>
-
                                         </tr>
 
                                         </thead>
@@ -953,23 +928,6 @@
                                 : '0.00'}">
 
                                                     0.00
-
-                                                </strong>
-
-                                            </td>
-
-
-                                            <td>
-
-                                                <strong
-                                                        th:text="${'₹ ' +
-                                #numbers.formatDecimal(
-                                size.offerPrice != null
-                                ? size.offerPrice
-                                : 0,
-                                1, 2)}">
-
-                                                    ₹ 0.00
 
                                                 </strong>
 
@@ -1097,27 +1055,6 @@
 
                             </div>
 
-
-                            <div class="item-final-price">
-
-                                <span>
-                                    Offer Price
-                                </span>
-
-                                <strong
-                                        th:text="${'₹ ' +
-                                        #numbers.formatDecimal(
-                                        item.offerPrice != null
-                                        ? item.offerPrice
-                                        : 0,
-                                        1, 2)}">
-
-                                    ₹ 0.00
-
-                                </strong>
-
-                            </div>
-
                         </div>
 
                     </div>
@@ -1144,27 +1081,6 @@
                                 #numbers.formatDecimal(
                                 room.subtotal != null
                                 ? room.subtotal
-                                : 0,
-                                1, 2)}">
-
-                            ₹ 0.00
-
-                        </strong>
-
-                    </div>
-
-
-                    <div>
-
-                        <span>
-                            Room Offer Price
-                        </span>
-
-                        <strong
-                                th:text="${'₹ ' +
-                                #numbers.formatDecimal(
-                                room.offerPrice != null
-                                ? room.offerPrice
                                 : 0,
                                 1, 2)}">
 

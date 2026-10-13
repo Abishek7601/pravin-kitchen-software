@@ -62,6 +62,16 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     long countByEmployeeId(Long employeeId);
 
+    long countByEmployeeIdAndStatus(
+            Long employeeId,
+            QuotationStatus status
+    );
+
+    List<Quotation> findByEmployeeIdAndStatusOrderByCreatedAtDesc(
+            Long employeeId,
+            QuotationStatus status
+    );
+
     long countByCustomerId(Long customerId);
 
     long countByBranchIdAndStatus(
@@ -76,6 +86,18 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     long countByBranchIdAndQuotationDateBetween(
             Long branchId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    long countByEmployeeIdAndQuotationDateBetween(
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<Quotation> findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+            Long employeeId,
             LocalDate startDate,
             LocalDate endDate
     );

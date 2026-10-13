@@ -8,7 +8,7 @@
     <meta name="viewport"
           content="width=device-width, initial-scale=1.0">
 
-    <title>My Quotations | Pravin KITCHENS & INTERIORS</title>
+    <title th:text="${pageTitle != null ? pageTitle + ' | Pravin KITCHENS &amp; INTERIORS' : 'My Quotations | Pravin KITCHENS &amp; INTERIORS'}">My Quotations | Pravin KITCHENS &amp; INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/employee-quotations.css}">
@@ -20,9 +20,9 @@
 <div class="page-header">
 
     <div>
-        <span class="brand-eyebrow" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #006b63; margin-bottom: 6px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;"> Pravin KITCHENS & INTERIORS &amp; INTERIORS</span>
-        <h1>My Quotations</h1>
-        <p class="subtitle">
+        <span class="brand-eyebrow" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #006b63; margin-bottom: 6px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;"> Pravin KITCHENS &amp; INTERIORS</span>
+        <h1 th:text="${pageTitle != null ? pageTitle : 'My Quotations'}">My Quotations</h1>
+        <p class="subtitle" th:text="${pageSubtitle != null ? pageSubtitle : 'View and manage your customer quotations.'}">
             View and manage your customer quotations.
         </p>
     </div>
@@ -34,7 +34,7 @@
                 <span>← Back</span>
             </button>
             <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                <span>⌂ Dashboard</span>
+                <span>⌂ Back to Dashboard</span>
             </a>
         </div>
 
@@ -56,6 +56,40 @@
 <div th:if="${errorMessage}"
      class="alert alert-error"
      th:text="${errorMessage}">
+</div>
+
+<!-- Status Filter Tabs -->
+<div class="filter-bar">
+    <a th:href="@{/employee/quotations}"
+       class="filter-tab"
+       th:classappend="${selectedStatus == null and selectedPeriod == null ? ' active' : ''}">
+        All (<span th:text="${totalCount != null ? totalCount : #lists.size(quotations)}">0</span>)
+    </a>
+    <a th:href="@{/employee/quotations(status='PENDING')}"
+       class="filter-tab"
+       th:classappend="${selectedStatus == 'PENDING' ? ' active' : ''}">
+        Pending (<span th:text="${pendingCount != null ? pendingCount : 0}">0</span>)
+    </a>
+    <a th:href="@{/employee/quotations(status='WORKING')}"
+       class="filter-tab"
+       th:classappend="${selectedStatus == 'WORKING' ? ' active' : ''}">
+        Working (<span th:text="${workingCount != null ? workingCount : 0}">0</span>)
+    </a>
+    <a th:href="@{/employee/quotations(status='SENT')}"
+       class="filter-tab"
+       th:classappend="${selectedStatus == 'SENT' ? ' active' : ''}">
+        Sent (<span th:text="${sentCount != null ? sentCount : 0}">0</span>)
+    </a>
+    <a th:href="@{/employee/quotations(period='60')}"
+       th:if="${selectedPeriod == '60'}"
+       class="filter-tab active">
+        Last 60 Days
+    </a>
+    <a th:href="@{/employee/quotations(period='year')}"
+       th:if="${selectedPeriod == 'year' or selectedPeriod == '365'}"
+       class="filter-tab active">
+        One Year
+    </a>
 </div>
 
 <div class="table-card">
@@ -139,6 +173,7 @@
                           th:data-quotation-number="${quotation.quotationNumber}"
                           onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
                         <input type="hidden"
+                               th:if="${_csrf != null}"
                                th:name="${_csrf.parameterName}"
                                th:value="${_csrf.token}">
                         <button type="submit"
@@ -153,8 +188,31 @@
         </tr>
 
         <tr th:if="${#lists.isEmpty(quotations)}">
-            <td colspan="7" class="empty-message">
-                No quotations found. Create your first quotation to get started.
+            <td colspan="7" class="empty-message-cell" style="text-align: center; padding: 48px 20px;">
+                <div style="font-size: 32px; margin-bottom: 8px;">📋</div>
+                <h3 style="font-size: 16px; font-weight: 700; color: #102c25; margin-bottom: 6px;"
+                    th:text="${emptyMessageTitle != null ? emptyMessageTitle : 'No quotations found'}">
+                    No quotations found
+                </h3>
+                <p style="font-size: 13px; color: #71847b; margin-bottom: 18px;"
+                   th:text="${emptyMessage != null ? emptyMessage : 'No quotations found matching your criteria.'}">
+                    No quotations found.
+                </p>
+                <div style="display: inline-flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap;">
+                    <a th:href="@{/employee/dashboard}"
+                       class="btn btn-secondary">
+                        ⌂ Back to Dashboard
+                    </a>
+                    <a th:href="@{/employee/quotations}"
+                       th:if="${selectedStatus != null or selectedPeriod != null}"
+                       class="btn btn-secondary">
+                        View All Quotations
+                    </a>
+                    <a th:href="@{/employee/quotations/new}"
+                       class="btn btn-primary">
+                        + Create Quotation
+                    </a>
+                </div>
             </td>
         </tr>
 

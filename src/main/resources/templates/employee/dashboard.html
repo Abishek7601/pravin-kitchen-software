@@ -210,30 +210,30 @@
 
 
     <!-- =========================
-         STAT CARDS
+         QUOTATION SUMMARY CARDS
     ========================== -->
 
     <section class="stats-grid">
 
 
-      <!-- TOTAL QUOTATIONS -->
+      <!-- 1. 60 DAYS QUOTATIONS -->
 
-      <a th:href="@{/employee/quotations}"
-         class="stat-card">
+      <a th:href="@{/employee/quotations(period='60')}"
+         class="stat-card sixty-day-card">
 
-        <div class="stat-icon quotation-icon">
-          Q
+        <div class="stat-icon sixty-day-icon">
+          📅
         </div>
 
 
         <div class="stat-content">
 
-                    <span>
-                        Total Quotations
-                    </span>
+          <span>
+            60 Days Quotations
+          </span>
 
           <strong
-                  th:text="${totalQuotations}">
+                  th:text="${last60DaysQuotations}">
             0
           </strong>
 
@@ -241,56 +241,58 @@
 
 
         <span class="stat-arrow">
-                    →
-                </span>
+          →
+        </span>
 
       </a>
 
 
-      <!-- TOTAL QUOTED VALUE -->
+      <!-- 2. TOTAL ONE YEAR QUOTATIONS -->
 
-      <div class="stat-card">
+      <a th:href="@{/employee/quotations(period='year')}"
+         class="stat-card one-year-card">
 
-        <div class="stat-icon value-icon">
-          ₹
+        <div class="stat-icon one-year-icon">
+          🗓
         </div>
 
 
         <div class="stat-content">
 
-                    <span>
-                        Total Quoted Value
-                    </span>
+          <span>
+            Total One Year Quotations
+          </span>
 
-          <strong>
-
-            ₹<span
-                  th:text="${#numbers.formatDecimal(totalQuotedValue, 1, 2)}">
-                            0.00
-                        </span>
-
+          <strong
+                  th:text="${oneYearQuotations}">
+            0
           </strong>
 
         </div>
 
-      </div>
+
+        <span class="stat-arrow">
+          →
+        </span>
+
+      </a>
 
 
-      <!-- PENDING -->
+      <!-- 3. PENDING QUOTATIONS -->
 
-      <a th:href="@{/employee/quotations}"
-         class="stat-card">
+      <a th:href="@{/employee/quotations(status='PENDING')}"
+         class="stat-card pending-card">
 
         <div class="stat-icon pending-icon">
-          P
+          ⏳
         </div>
 
 
         <div class="stat-content">
 
-                    <span>
-                        Pending
-                    </span>
+          <span>
+            Pending Quotations
+          </span>
 
           <strong
                   th:text="${pendingQuotations}">
@@ -301,27 +303,27 @@
 
 
         <span class="stat-arrow">
-                    →
-                </span>
+          →
+        </span>
 
       </a>
 
 
-      <!-- WORKING -->
+      <!-- 4. WORKING QUOTATIONS -->
 
-      <a th:href="@{/employee/quotations}"
-         class="stat-card">
+      <a th:href="@{/employee/quotations(status='WORKING')}"
+         class="stat-card working-card">
 
-        <div class="stat-icon working-icon" style="background: #e6f4fa; color: #1a6f8f; border-color: #b8e2f2;">
+        <div class="stat-icon working-icon">
           ⚙
         </div>
 
 
         <div class="stat-content">
 
-                    <span>
-                        Working
-                    </span>
+          <span>
+            Working Quotations
+          </span>
 
           <strong
                   th:text="${workingQuotations}">
@@ -332,32 +334,27 @@
 
 
         <span class="stat-arrow">
-                    →
-                </span>
+          →
+        </span>
 
       </a>
 
-    </section>
 
+      <!-- 5. SENT QUOTATIONS -->
 
-    <!-- =========================
-         SECONDARY STATS
-    ========================== -->
+      <a th:href="@{/employee/quotations(status='SENT')}"
+         class="stat-card sent-card">
 
-    <section class="secondary-stats">
-
-
-      <div class="mini-stat">
-
-        <div class="mini-stat-icon">
-          S
+        <div class="stat-icon sent-icon">
+          ↗
         </div>
 
-        <div>
 
-                    <span>
-                        Sent Quotations
-                    </span>
+        <div class="stat-content">
+
+          <span>
+            Sent Quotations
+          </span>
 
           <strong
                   th:text="${sentQuotations}">
@@ -366,31 +363,12 @@
 
         </div>
 
-      </div>
 
+        <span class="stat-arrow">
+          →
+        </span>
 
-      <div class="mini-stat">
-
-        <div class="mini-stat-icon">
-          B
-        </div>
-
-        <div>
-
-                    <span>
-                        My Branch
-                    </span>
-
-          <strong
-                  th:text="${employee.branch != null
-                            ? employee.branch.name
-                            : 'Not Assigned'}">
-            Not Assigned
-          </strong>
-
-        </div>
-
-      </div>
+      </a>
 
 
     </section>
@@ -426,92 +404,44 @@
       <div class="quick-actions">
 
 
-        <!-- CREATE QUOTATION -->
+        <!-- CREATE QUOTATION (PRIMARY ACTION) -->
 
         <a th:href="@{/employee/quotations/new}"
-           class="quick-action">
+           class="quick-action primary-action">
 
-                    <span class="action-icon">
-                        +
-                    </span>
+          <div class="action-icon">
+            +
+          </div>
 
 
           <div class="action-content">
+
+            <div class="action-badge">
+              Primary Action
+            </div>
 
             <strong>
               Create Quotation
             </strong>
 
             <small>
-              Create a new customer quotation
+              Start a new customer quotation with room configurations, materials, and automated price calculations
             </small>
 
           </div>
 
 
-          <span class="action-arrow">
-                        →
-                    </span>
+          <div class="action-cta">
 
-        </a>
+            <span class="action-cta-text">
+              Create Now
+            </span>
 
-
-        <!-- VIEW QUOTATIONS -->
-
-        <a th:href="@{/employee/quotations}"
-           class="quick-action">
-
-                    <span class="action-icon">
-                        Q
-                    </span>
-
-
-          <div class="action-content">
-
-            <strong>
-              View Quotations
-            </strong>
-
-            <small>
-              View and manage your quotations
-            </small>
+            <span class="action-arrow">
+              →
+            </span>
 
           </div>
-
-
-          <span class="action-arrow">
-                        →
-                    </span>
-
-        </a>
-
-
-        <!-- CUSTOMERS -->
-
-        <a th:href="@{/employee/customers}"
-           class="quick-action">
-
-                    <span class="action-icon">
-                        C
-                    </span>
-
-
-          <div class="action-content">
-
-            <strong>
-              Customers
-            </strong>
-
-            <small>
-              View customer information
-            </small>
-
-          </div>
-
-
-          <span class="action-arrow">
-                        →
-                    </span>
 
         </a>
 

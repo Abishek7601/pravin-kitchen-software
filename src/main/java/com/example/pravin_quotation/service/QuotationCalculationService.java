@@ -15,7 +15,6 @@ public class QuotationCalculationService {
     private final QuotationRepository quotationRepository;
     private final QuotationRoomRepository quotationRoomRepository;
     private final QuotationItemRepository quotationItemRepository;
-    private final DistrictPricingRepository districtPricingRepository;
     private final PricingRepository pricingRepository;
     private final TravelChargeRepository travelChargeRepository;
     private final QuotationItemSizeService quotationItemSizeService;
@@ -24,7 +23,6 @@ public class QuotationCalculationService {
             QuotationRepository quotationRepository,
             QuotationRoomRepository quotationRoomRepository,
             QuotationItemRepository quotationItemRepository,
-            DistrictPricingRepository districtPricingRepository,
             PricingRepository pricingRepository,
             TravelChargeRepository travelChargeRepository,
             QuotationItemSizeService quotationItemSizeService) {
@@ -32,7 +30,6 @@ public class QuotationCalculationService {
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
         this.quotationItemRepository = quotationItemRepository;
-        this.districtPricingRepository = districtPricingRepository;
         this.pricingRepository = pricingRepository;
         this.travelChargeRepository = travelChargeRepository;
         this.quotationItemSizeService = quotationItemSizeService;
@@ -601,13 +598,6 @@ public class QuotationCalculationService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("Quotation not found."));
 
-        Branch branch = quotation.getBranch();
-
-        if (branch == null || branch.getId() == null) {
-            throw new IllegalArgumentException(
-                    "Please assign a district to this quotation.");
-        }
-
         if (pricingMode == null) {
             throw new IllegalArgumentException(
                     "Quotation pricing mode is required.");
@@ -625,21 +615,6 @@ public class QuotationCalculationService {
         if (!Boolean.TRUE.equals(pricing.getActive())) {
             throw new IllegalArgumentException(
                     "The selected standard pricing is inactive.");
-        }
-
-        DistrictPricing districtPricing =
-                districtPricingRepository
-                        .findByBranchIdAndPricingId(
-                                branch.getId(),
-                                pricing.getId())
-                        .orElse(null);
-
-        if (districtPricing != null
-                && Boolean.TRUE.equals(districtPricing.getActive())
-                && districtPricing.getRate() != null
-                && districtPricing.getRate().compareTo(BigDecimal.ZERO) > 0) {
-
-            return money(districtPricing.getRate());
         }
 
         return money(pricing.getRate());

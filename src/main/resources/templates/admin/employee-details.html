@@ -45,12 +45,12 @@
         </div>
 
 
-        <div class="header-actions" style="display: flex; align-items: center; gap: 8px;">
-            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+        <div class="header-actions">
+            <div class="nav-header-actions">
+                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }">
                     <span>← Back</span>
                 </button>
-                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">
                     <span>⌂ Dashboard</span>
                 </a>
             </div>
@@ -191,7 +191,7 @@
 
 
     <!-- ===================================================== -->
-    <!-- SUMMARY -->
+    <!-- GENERAL SUMMARY -->
     <!-- ===================================================== -->
 
     <section class="summary-grid">
@@ -199,16 +199,16 @@
 
         <!-- TOTAL QUOTATIONS -->
 
-        <div class="summary-card">
+        <div class="summary-card total-card">
 
-            <div class="summary-icon">
+            <div class="summary-icon total-icon">
                 📄
             </div>
 
 
-            <div>
+            <div class="summary-content">
 
-                <span>
+                <span class="summary-label">
                     Total Quotations
                 </span>
 
@@ -225,16 +225,16 @@
 
         <!-- LAST 60 DAYS -->
 
-        <div class="summary-card">
+        <div class="summary-card recent-card">
 
-            <div class="summary-icon">
+            <div class="summary-icon recent-icon">
                 📅
             </div>
 
 
-            <div>
+            <div class="summary-content">
 
-                <span>
+                <span class="summary-label">
                     Last 60 Days
                 </span>
 
@@ -251,16 +251,16 @@
 
         <!-- QUOTED VALUE -->
 
-        <div class="summary-card">
+        <div class="summary-card value-card">
 
-            <div class="summary-icon">
+            <div class="summary-icon value-icon">
                 ₹
             </div>
 
 
-            <div>
+            <div class="summary-content">
 
-                <span>
+                <span class="summary-label">
                     Quoted Value
                 </span>
 
@@ -281,24 +281,31 @@
         </div>
 
 
+    </section>
 
-        <!-- APPROVED -->
 
-        <div class="summary-card">
 
-            <div class="summary-icon">
-                ✓
+    <!-- ===================================================== -->
+    <!-- EMPLOYEE QUOTATION SUMMARY CARDS -->
+    <!-- ===================================================== -->
+
+    <section class="quotation-status-grid">
+
+        <!-- 1. SENT QUOTATIONS -->
+
+        <div class="summary-card sent-card">
+
+            <div class="summary-icon sent-icon">
+                ↗
             </div>
 
+            <div class="summary-content">
 
-            <div>
-
-                <span>
-                    Sent
+                <span class="summary-label">
+                    Sent Quotations
                 </span>
 
-
-                <strong th:text="${approvedCount}">
+                <strong th:text="${sentCount}">
                     0
                 </strong>
 
@@ -306,6 +313,51 @@
 
         </div>
 
+
+        <!-- 2. PENDING QUOTATIONS -->
+
+        <div class="summary-card pending-card">
+
+            <div class="summary-icon pending-icon">
+                ⏳
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Pending Quotations
+                </span>
+
+                <strong th:text="${pendingCount}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
+
+
+        <!-- 3. WORKING QUOTATIONS -->
+
+        <div class="summary-card working-card">
+
+            <div class="summary-icon working-icon">
+                ⚙
+            </div>
+
+            <div class="summary-content">
+
+                <span class="summary-label">
+                    Working Quotations
+                </span>
+
+                <strong th:text="${workingCount}">
+                    0
+                </strong>
+
+            </div>
+
+        </div>
 
     </section>
 
@@ -472,7 +524,7 @@
     <section class="content-card">
 
 
-        <div class="section-header quotation-header">
+        <div class="section-header quotation-header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
 
             <div>
 
@@ -486,13 +538,28 @@
 
             </div>
 
-
-            <span class="coming-label"
-                  th:text="${totalQuotations + ' Quotations'}">
-
-                0 Quotations
-
-            </span>
+            <div class="status-filter-pills" style="display: inline-flex; align-items: center; gap: 8px;">
+                <a th:href="@{'/admin/employees/view/' + ${employee.id}}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus == null ? ' active' : ''}">
+                    All (<span th:text="${totalQuotations}">0</span>)
+                </a>
+                <a th:href="@{'/admin/employees/view/' + ${employee.id}(status='SENT')}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus == 'SENT' ? ' active' : ''}">
+                    Sent (<span th:text="${sentCount}">0</span>)
+                </a>
+                <a th:href="@{'/admin/employees/view/' + ${employee.id}(status='PENDING')}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus == 'PENDING' ? ' active' : ''}">
+                    Pending (<span th:text="${pendingCount}">0</span>)
+                </a>
+                <a th:href="@{'/admin/employees/view/' + ${employee.id}(status='WORKING')}"
+                   class="filter-pill"
+                   th:classappend="${selectedStatus == 'WORKING' ? ' active' : ''}">
+                    Working (<span th:text="${workingCount}">0</span>)
+                </a>
+            </div>
 
         </div>
 
@@ -787,15 +854,6 @@
 
         <div class="account-actions">
 
-
-            <!-- EDIT -->
-
-            <a th:href="@{'/admin/employees/edit/' + ${employee.id}}"
-               class="action-edit">
-
-                Edit Employee
-
-            </a>
 
 
 

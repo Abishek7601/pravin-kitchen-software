@@ -260,17 +260,17 @@ public class DistrictQuotationActivityTest {
         assertFalse(branchDetailsHtml.contains("APPROVED BUSINESS"), "Approved Business section should be removed");
         assertFalse(branchDetailsHtml.contains("id=\"approved\""), "id='approved' section should be removed");
 
-        // Verify Expected Section Order: 1. Quoted Value -> 2. Customers -> 3. Quotations
+        // Verify Customers section is removed
+        assertFalse(branchDetailsHtml.contains("CUSTOMER ACTIVITY"), "Customers section should be removed");
+
+        // Verify Quoted Value and Quotations sections exist and Quoted Value appears above Quotations
         assertTrue(branchDetailsHtml.contains("id=\"quotation-value\""), "Quoted Value section should exist");
-        assertTrue(branchDetailsHtml.contains("CUSTOMER ACTIVITY"), "Customers section should exist");
         assertTrue(branchDetailsHtml.contains("id=\"quotations\""), "Quotations section should exist");
 
         int quotedValueIndex = branchDetailsHtml.indexOf("id=\"quotation-value\"");
-        int customersIndex = branchDetailsHtml.indexOf("CUSTOMER ACTIVITY");
         int quotationsIndex = branchDetailsHtml.indexOf("id=\"quotations\"");
 
-        assertTrue(quotedValueIndex < customersIndex, "Quoted Value must appear above Customers section");
-        assertTrue(customersIndex < quotationsIndex, "Customers must appear immediately above Quotations section");
+        assertTrue(quotedValueIndex < quotationsIndex, "Quoted Value must appear above Quotations section");
     }
 
     private WebContext createWebContext() {

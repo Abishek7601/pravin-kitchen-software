@@ -588,7 +588,6 @@
                                 <th>SQ.FT</th>
                                 <th>RATE</th>
                                 <th>AMOUNT</th>
-                                <th>OFFER PRICE</th>
                                 <th>ACTION</th>
 
                             </tr>
@@ -698,17 +697,6 @@
 
                                     ₹<span th:text="${item.amount}">
                                         1560
-                                    </span>
-
-                                </td>
-
-
-                                <!-- OFFER PRICE -->
-
-                                <td class="offer-cell">
-
-                                    ₹<span th:text="${item.offerPrice}">
-                                        1500
                                     </span>
 
                                 </td>
@@ -1086,25 +1074,6 @@
                     <strong>
 
                         − ₹<span th:text="${quotation.discountAmount}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- TAXABLE AMOUNT -->
-
-                <div class="total-row">
-
-                    <span>
-                        Taxable Amount
-                    </span>
-
-                    <strong>
-
-                        ₹<span th:text="${quotation.taxableAmount}">
                             0.00
                         </span>
 

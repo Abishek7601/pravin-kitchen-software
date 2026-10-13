@@ -170,14 +170,19 @@
 
     /* MAIN CONTAINER */
     .content-container {
-      max-width: 1200px;
+      max-width: 1240px;
       margin: 0 auto;
       padding: 2rem 1.5rem 4rem;
       width: 100%;
     }
 
     .page-title-box {
-      margin-bottom: 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
     }
 
     .page-title {
@@ -232,12 +237,12 @@
       border: 1px dashed #cbd5e1;
       border-left: 4px solid var(--primary);
       border-radius: 8px;
-      padding: 0.85rem 1.25rem;
+      padding: 0.75rem 1.15rem;
       font-family: "Courier New", Courier, monospace;
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       color: #0f172a;
-      margin: 0.85rem 0;
+      margin: 0.65rem 0;
     }
 
     .card-title-custom {
@@ -251,6 +256,102 @@
       color: var(--text-muted);
       font-size: 0.875rem;
       line-height: 1.5;
+    }
+
+    /* FORMULA TABLE */
+    .table-card {
+      background: #ffffff;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 2rem;
+    }
+
+    .table-card-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #ffffff;
+    }
+
+    .table-card-header h4 {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .table-responsive {
+      margin: 0;
+    }
+
+    .custom-table {
+      margin-bottom: 0;
+      vertical-align: middle;
+    }
+
+    .custom-table th {
+      background: #f8fafc;
+      color: #475569;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--border);
+      padding: 0.9rem 1rem;
+      white-space: nowrap;
+    }
+
+    .custom-table td {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid #f1f5f9;
+      font-size: 0.9rem;
+    }
+
+    .custom-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge-sqft {
+      background-color: #e0f2fe;
+      color: #0369a1;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .badge-inches {
+      background-color: #fef3c7;
+      color: #b45309;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .badge-active {
+      background-color: #dcfce7;
+      color: #15803d;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .badge-inactive {
+      background-color: #f1f5f9;
+      color: #64748b;
+      font-weight: 700;
+      font-size: 0.75rem;
+      padding: 4px 8px;
+      border-radius: 6px;
     }
 
     /* CALCULATOR BOX */
@@ -289,6 +390,7 @@
       border-radius: 10px;
       border: 1px solid #e2e8f0;
       padding: 1.25rem;
+      height: 100%;
     }
 
     .result-label {
@@ -390,139 +492,196 @@
   <!-- CONTENT CONTAINER -->
   <main class="content-container">
 
+    <!-- FLASH MESSAGES -->
+    <div th:if="${success}" class="alert alert-success alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+      <div th:text="${success}">Success message</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <div th:if="${error}" class="alert alert-danger alert-dismissible fade show d-flex align-items-center" role="alert">
+      <i class="bi bi-exclamation-triangle-fill me-2 fs-5"></i>
+      <div th:text="${error}">Error message</div>
+      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+
+    <!-- TITLE & ACTION BAR -->
     <div class="page-title-box">
-      <h2 class="page-title">
-        <i class="bi bi-calculator-fill text-primary" style="color: var(--primary) !important;"></i>
-        Formula Calculation
-      </h2>
-      <p class="page-desc">
-        Overview and verification of measurement sizing, pricing multipliers, and quotation calculation rules applied across the system.
-      </p>
-    </div>
-
-    <!-- SECTION: ACTIVE FORMULAS -->
-    <div class="row g-4 mb-4">
-      <div class="col-lg-6">
-        <div class="card-formula">
-          <div class="formula-badge">
-            <i class="bi bi-check-circle-fill"></i> Primary Dimension Formula
-          </div>
-          <h3 class="card-title-custom">Measurement &amp; SQ.FT Calculation</h3>
-          <p class="card-desc">
-            Applied to standard modular items (wardrobes, kitchen cabinets, overhead units) where Length, Width, and Height dimensions are specified in inches.
-          </p>
-          <div class="formula-expression">
-            SQ.FT = (Length + Width) × Height / 144
-          </div>
-          <ul class="text-muted small ps-3 mb-0">
-            <li><strong>Length &amp; Width:</strong> Horizontal dimension components (inches).</li>
-            <li><strong>Height:</strong> Vertical dimension component (inches).</li>
-            <li><strong>Divisor (144):</strong> Converts total square inches into square feet.</li>
-          </ul>
-        </div>
+      <div>
+        <h2 class="page-title">
+          <i class="bi bi-calculator-fill text-primary" style="color: var(--primary) !important;"></i>
+          Calculation Formulas Configuration
+        </h2>
+        <p class="page-desc">
+          Configure, validate, and manage dynamic measurement formulas for both Sqft and Inches. Selected formulas are automatically applied in Master Data Pricing and Quotation Builders.
+        </p>
       </div>
 
-      <div class="col-lg-6">
-        <div class="card-formula">
-          <div class="formula-badge">
-            <i class="bi bi-currency-rupee"></i> Item Pricing Formula
-          </div>
-          <h3 class="card-title-custom">Material &amp; Rate Application</h3>
-          <p class="card-desc">
-            Calculates line-item amounts by multiplying calculated square footage with the unit rate resolved from the active Material, Material Option, and Pricing Mode.
-          </p>
-          <div class="formula-expression">
-            Item Amount = Calculated SQ.FT × Unit Rate
-          </div>
-          <ul class="text-muted small ps-3 mb-0">
-            <li><strong>Unit Rate:</strong> Resolved from Division, Material Option, &amp; Pricing Mode (Economy / Standard / Premium).</li>
-            <li><strong>Offer Price:</strong> Optional manual override per item or room when applicable.</li>
-          </ul>
-        </div>
+      <div>
+        <button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2" data-bs-toggle="modal" data-bs-target="#addFormulaModal" style="background: var(--primary); border-color: var(--primary);">
+          <i class="bi bi-plus-circle"></i>
+          <span>Add New Formula</span>
+        </button>
       </div>
     </div>
 
-    <!-- SECTION: QUOTATION TOTALS RULES -->
-    <div class="row g-4 mb-5">
-      <div class="col-lg-4">
-        <div class="card-formula">
-          <div class="formula-badge">
-            <i class="bi bi-grid-fill"></i> Subtotal Calculation
-          </div>
-          <h4 class="card-title-custom">Room &amp; Item Subtotal</h4>
-          <div class="formula-expression" style="font-size: 0.95rem;">
-            Subtotal = Σ(Item Amounts)
-          </div>
-          <p class="card-desc mb-0">
-            Aggregates all active items across configured rooms. Discount amount is subtracted from the taxable base.
-          </p>
-        </div>
+    <!-- CONFIGURABLE FORMULAS TABLE -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <h4>
+          <i class="bi bi-gear-wide-connected text-primary" style="color: var(--primary) !important;"></i>
+          Configured Formulas (MySQL Master Data)
+        </h4>
+        <span class="badge bg-secondary" th:text="${formulas != null ? formulas.size() + ' Formulas' : '0 Formulas'}">0 Formulas</span>
       </div>
 
-      <div class="col-lg-4">
-        <div class="card-formula">
-          <div class="formula-badge">
-            <i class="bi bi-percent"></i> GST Calculation
-          </div>
-          <h4 class="card-title-custom">Tax Computation</h4>
-          <div class="formula-expression" style="font-size: 0.95rem;">
-            GST = Taxable Amount × (GST% / 100)
-          </div>
-          <p class="card-desc mb-0">
-            Calculated on the net taxable amount (including other charges, accessories, and travel charge).
-          </p>
-        </div>
-      </div>
+      <div class="table-responsive">
+        <table class="table custom-table table-hover">
+          <thead>
+            <tr>
+              <th style="width: 50px;">#</th>
+              <th>Formula Name</th>
+              <th>Expression</th>
+              <th>Calculation Type</th>
+              <th>Measurement Unit</th>
+              <th>Pricing Unit</th>
+              <th>Status</th>
+              <th style="width: 160px; text-align: right;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr th:if="${formulas == null or formulas.isEmpty()}">
+              <td colspan="8" class="text-center text-muted py-4">
+                No calculation formulas configured yet. Click "Add New Formula" above to create one.
+              </td>
+            </tr>
+            <tr th:each="f, stat : ${formulas}">
+              <td class="text-muted fw-bold" th:text="${f.displayOrder != null ? f.displayOrder : stat.count}">1</td>
+              <td>
+                <span class="fw-bold text-dark" th:text="${f.name}">(L + W) × H</span>
+                <span th:if="${f.isSystem}" class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">Default</span>
+                <div th:if="${f.description != null and !f.description.isEmpty()}" class="text-muted small" th:text="${f.description}" style="max-width: 300px; font-size: 0.8rem;"></div>
+              </td>
+              <td>
+                <code class="px-2 py-1 bg-light rounded text-dark fw-bold" th:text="${f.expression}">(L + W) * H</code>
+              </td>
+              <td>
+                <span th:if="${f.calculationType == 'SQFT'}" class="badge-sqft">
+                  <i class="bi bi-aspect-ratio"></i> SQFT
+                </span>
+                <span th:if="${f.calculationType == 'INCHES'}" class="badge-inches">
+                  <i class="bi bi-rulers"></i> INCHES
+                </span>
+              </td>
+              <td>
+                <span class="fw-semibold" th:text="${f.measurementUnit}">SQFT</span>
+                <span class="text-muted small ms-1" th:text="'(' + ${f.unitType} + ')'"></span>
+              </td>
+              <td>
+                <span class="badge bg-light text-dark border" th:text="${f.pricingUnit}">₹ / SQFT</span>
+              </td>
+              <td>
+                <span th:if="${f.active}" class="badge-active">
+                  <i class="bi bi-check-circle"></i> Active
+                </span>
+                <span th:unless="${f.active}" class="badge-inactive">
+                  <i class="bi bi-dash-circle"></i> Disabled
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div class="d-inline-flex gap-1 align-items-center">
+                  <!-- Edit Button -->
+                  <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit Formula"
+                          th:attr="data-id=${f.id}, data-name=${f.name}, data-expression=${f.expression}, data-type=${f.calculationType}, data-unittype=${f.unitType}, data-measurement=${f.measurementUnit}, data-pricing=${f.pricingUnit}, data-desc=${f.description}, data-order=${f.displayOrder}"
+                          onclick="openEditModal(this)">
+                    <i class="bi bi-pencil"></i>
+                  </button>
 
-      <div class="col-lg-4">
-        <div class="card-formula">
-          <div class="formula-badge">
-            <i class="bi bi-cash-stack"></i> Grand Total
-          </div>
-          <h4 class="card-title-custom">Quotation Grand Total</h4>
-          <div class="formula-expression" style="font-size: 0.95rem;">
-            Grand Total = Subtotal + GST
-          </div>
-          <p class="card-desc mb-0">
-            Final payable amount presented on customer PDF quotations, WhatsApp notifications, and administrative dashboards.
-          </p>
-        </div>
+                  <!-- Toggle Active Status -->
+                  <form th:action="@{/admin/formula-calculation/toggle/{id}(id=${f.id})}" method="post" style="display: inline;">
+                    <button type="submit" class="btn btn-sm" th:classappend="${f.active ? 'btn-outline-warning' : 'btn-outline-success'}"
+                            th:title="${f.active ? 'Disable Formula' : 'Enable Formula'}">
+                      <i th:class="${f.active ? 'bi bi-toggle-on' : 'bi bi-toggle-off'}"></i>
+                    </button>
+                  </form>
+
+                  <!-- Delete Button (Only for custom formulas) -->
+                  <form th:if="${!f.isSystem}" th:action="@{/admin/formula-calculation/delete/{id}(id=${f.id})}" method="post" style="display: inline;"
+                        onsubmit="return confirm('Are you sure you want to delete this custom formula?');">
+                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete Formula">
+                      <i class="bi bi-trash"></i>
+                    </button>
+                  </form>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
-    <!-- SECTION: INTERACTIVE FORMULA CALCULATOR -->
+    <!-- INTERACTIVE FORMULA VERIFICATION & LIVE CALCULATOR -->
     <div class="calculator-card mb-5">
       <div class="calculator-header">
         <h4>
           <i class="bi bi-sliders"></i>
           Formula Verification &amp; Live Calculator
         </h4>
-        <span class="badge bg-light text-dark">Live Simulator</span>
+        <span class="badge bg-light text-dark">Interactive Test Simulator</span>
       </div>
       <div class="calculator-body">
-        <div class="row g-4">
-          <div class="col-md-3">
-            <label for="calcLength" class="form-label fw-bold small">Length (inches)</label>
-            <input type="number" id="calcLength" class="form-control" value="72" min="0" step="0.1" oninput="calculateLiveFormula()">
+        <div class="row g-3 mb-3">
+          <div class="col-md-5">
+            <label for="calcFormulaSelect" class="form-label fw-bold small">Select Configured Formula</label>
+            <select id="calcFormulaSelect" class="form-select" onchange="onSimulatorFormulaChanged()">
+              <option th:each="f : ${formulas}"
+                      th:value="${f.expression}"
+                      th:attr="data-calc-type=${f.calculationType}, data-unit-type=${f.unitType}, data-meas-unit=${f.measurementUnit}, data-pricing-unit=${f.pricingUnit}"
+                      th:selected="${f.expression == '(L + W) * H' and f.calculationType == 'SQFT'}"
+                      th:text="${f.name + ' [' + f.expression + '] — ' + f.calculationType}">
+                (L + W) × H (Sqft)
+              </option>
+            </select>
           </div>
           <div class="col-md-3">
-            <label for="calcWidth" class="form-label fw-bold small">Width (inches)</label>
-            <input type="number" id="calcWidth" class="form-control" value="24" min="0" step="0.1" oninput="calculateLiveFormula()">
+            <label for="calcCalcType" class="form-label fw-bold small">Calculation Type</label>
+            <select id="calcCalcType" class="form-select" onchange="calculateLiveSimulator()">
+              <option value="SQFT">Sqft (Square Feet)</option>
+              <option value="INCHES">Inches (Sq.in or Linear in)</option>
+            </select>
           </div>
-          <div class="col-md-3">
-            <label for="calcHeight" class="form-label fw-bold small">Height (inches)</label>
-            <input type="number" id="calcHeight" class="form-control" value="36" min="0" step="0.1" oninput="calculateLiveFormula()">
-          </div>
-          <div class="col-md-3">
-            <label for="calcRate" class="form-label fw-bold small">Rate / SQ.FT (₹)</label>
-            <input type="number" id="calcRate" class="form-control" value="1250" min="0" step="1" oninput="calculateLiveFormula()">
+          <div class="col-md-4">
+            <label for="calcCustomExpression" class="form-label fw-bold small">Formula Expression</label>
+            <input type="text" id="calcCustomExpression" class="form-control" value="(L + W) * H" oninput="calculateLiveSimulator()">
+            <div id="simValidationHint" class="small mt-1 text-success"><i class="bi bi-check-circle"></i> Valid mathematical expression</div>
           </div>
         </div>
 
-        <div class="row g-4 mt-2">
+        <div class="row g-3">
+          <div class="col-md-3">
+            <label for="calcLength" class="form-label fw-bold small">Length (L) in inches</label>
+            <input type="number" id="calcLength" class="form-control" value="72" min="0" step="0.1" oninput="calculateLiveSimulator()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcWidth" class="form-label fw-bold small">Width (W) in inches</label>
+            <input type="number" id="calcWidth" class="form-control" value="24" min="0" step="0.1" oninput="calculateLiveSimulator()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcHeight" class="form-label fw-bold small">Height (H) in inches</label>
+            <input type="number" id="calcHeight" class="form-control" value="36" min="0" step="0.1" oninput="calculateLiveSimulator()">
+          </div>
+          <div class="col-md-3">
+            <label for="calcRate" class="form-label fw-bold small">
+              Unit Rate (<span id="calcRateUnitLabel">₹ / SQFT</span>)
+            </label>
+            <input type="number" id="calcRate" class="form-control" value="1250" min="0" step="1" oninput="calculateLiveSimulator()">
+          </div>
+        </div>
+
+        <div class="row g-3 mt-1">
           <div class="col-md-3">
             <label for="calcGst" class="form-label fw-bold small">GST Percentage (%)</label>
-            <select id="calcGst" class="form-select" onchange="calculateLiveFormula()">
+            <select id="calcGst" class="form-select" onchange="calculateLiveSimulator()">
               <option value="18" selected>18% (Standard GST)</option>
               <option value="12">12%</option>
               <option value="5">5%</option>
@@ -531,7 +690,8 @@
           </div>
           <div class="col-md-9 d-flex align-items-end">
             <div class="text-muted small">
-              Formula applied: <code>((Length + Width) × Height) / 144</code>. Updates live as you change dimension values.
+              <span class="fw-semibold">Calculation Rule:</span>
+              <span id="simRuleExplanation">Sqft converts raw square inches using <code>/ 144</code>. Inches retains direct inch-based units (<code>sq.in</code> or <code>in</code>).</span>
             </div>
           </div>
         </div>
@@ -541,73 +701,410 @@
         <div class="row g-3">
           <div class="col-sm-6 col-lg-3">
             <div class="result-display">
-              <div class="result-label">Calculated SQ.FT</div>
-              <div class="result-value" id="resSqft">24.00</div>
-              <small class="text-muted">sq.ft</small>
+              <div class="result-label">Calculated Measurement</div>
+              <div class="result-value" id="resMeasurement">24.00</div>
+              <small class="text-muted" id="resMeasUnit">sq.ft</small>
             </div>
           </div>
           <div class="col-sm-6 col-lg-3">
             <div class="result-display">
               <div class="result-label">Base Item Total</div>
-              <div class="result-value" id="resAmount">₹ 30,000</div>
-              <small class="text-muted">SQ.FT × Rate</small>
+              <div class="result-value" id="resAmount">₹ 30,000.00</div>
+              <small class="text-muted">Measurement × Unit Rate</small>
             </div>
           </div>
           <div class="col-sm-6 col-lg-3">
             <div class="result-display">
               <div class="result-label">GST Tax Amount</div>
-              <div class="result-value" id="resGst">₹ 5,400</div>
+              <div class="result-value" id="resGst">₹ 5,400.00</div>
               <small class="text-muted">at selected %</small>
             </div>
           </div>
           <div class="col-sm-6 col-lg-3">
             <div class="result-display" style="border-color: var(--border-accent); background: var(--primary-light);">
               <div class="result-label" style="color: var(--primary-dark);">Grand Total</div>
-              <div class="result-value" id="resTotal" style="color: var(--primary-dark);">₹ 35,400</div>
-              <small class="text-muted">Amount + Tax</small>
+              <div class="result-value" id="resTotal" style="color: var(--primary-dark);">₹ 35,400.00</div>
+              <small class="text-muted">Item Amount + Tax</small>
             </div>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- EXPLANATION CARDS: FORMULA SYSTEM ARCHITECTURE -->
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <div class="card-formula">
+          <div class="formula-badge">
+            <i class="bi bi-aspect-ratio"></i> Sqft Calculation Rules
+          </div>
+          <h3 class="card-title-custom">Square Feet Multiplier</h3>
+          <p class="card-desc">
+            Used when prices are configured in <strong>₹ / SQFT</strong>. Input dimensions are measured in inches and converted into square feet:
+          </p>
+          <div class="formula-expression">
+            Sq.Ft = Expression(L, W, H) / 144
+          </div>
+          <ul class="text-muted small ps-3 mb-0">
+            <li><strong>(Length + Width) × Height / 144:</strong> Standard 3D cabinetry perimeter formula: (Length + Width) × Height / 144.</li>
+            <li><strong>(L × W) / 144:</strong> 2D horizontal surface area (countertops, shutters).</li>
+            <li><strong>(L × H) / 144:</strong> Vertical elevation area (partitions, dados).</li>
+            <li><strong>L / 12:</strong> Linear feet running length.</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="col-lg-6">
+        <div class="card-formula">
+          <div class="formula-badge" style="background: #fef3c7; color: #b45309;">
+            <i class="bi bi-rulers"></i> Inches Calculation Rules
+          </div>
+          <h3 class="card-title-custom">Inch-Based Multiplier</h3>
+          <p class="card-desc">
+            Used when prices are configured per <strong>Square Inch (₹ / SQIN)</strong> or <strong>Linear Inch (₹ / INCH)</strong>:
+          </p>
+          <div class="formula-expression" style="border-left-color: #b45309;">
+            Measurement = Expression(L, W, H)
+          </div>
+          <ul class="text-muted small ps-3 mb-0">
+            <li><strong>(L + W) × H:</strong> Evaluates to total square inches (no division by 144).</li>
+            <li><strong>L × W:</strong> Evaluates to horizontal square inches.</li>
+            <li><strong>L:</strong> Evaluates to linear inches for edge banding, profiles, or beadings.</li>
+            <li><strong>2 × (L + W):</strong> Full perimeter in linear inches.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
   </main>
+
+  <!-- ADD FORMULA MODAL -->
+  <div class="modal fade" id="addFormulaModal" tabindex="-1" aria-labelledby="addFormulaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form th:action="@{/admin/formula-calculation/save}" method="post" id="addFormulaForm">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="addFormulaModalLabel">
+              <i class="bi bi-plus-circle text-primary me-2"></i>Add New Calculation Formula
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="addName" class="form-label fw-bold">Formula Display Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="addName" name="name" required placeholder="e.g. (L + W) × H (Sqft)">
+              </div>
+              <div class="col-md-6">
+                <label for="addExpression" class="form-label fw-bold">Formula Expression <span class="text-danger">*</span></label>
+                <input type="text" class="form-control font-monospace" id="addExpression" name="expression" required placeholder="e.g. (L + W) * H" oninput="validateAddFormula()">
+                <div id="addValidationFeedback" class="small mt-1 text-muted">Variables supported: L, W, H. Operators: +, -, *, /, ()</div>
+              </div>
+
+              <div class="col-md-4">
+                <label for="addCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="addCalcType" name="calculationType" required onchange="syncAddUnits()">
+                  <option value="SQFT">Sqft (Square Feet)</option>
+                  <option value="INCHES">Inches (Inch-based)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="addUnitType" class="form-label fw-bold">Unit Type</label>
+                <select class="form-select" id="addUnitType" name="unitType" onchange="syncAddUnits()">
+                  <option value="AREA">AREA (2D / 3D Area)</option>
+                  <option value="LINEAR">LINEAR (1D Length / Perimeter)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="addDisplayOrder" class="form-label fw-bold">Display Order</label>
+                <input type="number" class="form-control" id="addDisplayOrder" name="displayOrder" value="10" min="0">
+              </div>
+
+              <div class="col-md-6">
+                <label for="addMeasurementUnit" class="form-label fw-bold">Measurement Unit</label>
+                <input type="text" class="form-control" id="addMeasurementUnit" name="measurementUnit" value="SQFT" readonly>
+              </div>
+
+              <div class="col-md-6">
+                <label for="addPricingUnit" class="form-label fw-bold">Pricing Unit</label>
+                <input type="text" class="form-control" id="addPricingUnit" name="pricingUnit" value="₹ / SQFT" readonly>
+              </div>
+
+              <div class="col-12">
+                <label for="addDescription" class="form-label fw-bold">Description / Purpose</label>
+                <textarea class="form-control" id="addDescription" name="description" rows="2" placeholder="Optional notes on where this formula applies (e.g. wardrobes, shutters, profiles)"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="background: var(--primary); border-color: var(--primary);">Save Formula</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- EDIT FORMULA MODAL -->
+  <div class="modal fade" id="editFormulaModal" tabindex="-1" aria-labelledby="editFormulaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content">
+        <form method="post" id="editFormulaForm">
+          <div class="modal-header">
+            <h5 class="modal-title fw-bold" id="editFormulaModalLabel">
+              <i class="bi bi-pencil-square text-primary me-2"></i>Edit Calculation Formula
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label for="editName" class="form-label fw-bold">Formula Display Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="editName" name="name" required>
+              </div>
+              <div class="col-md-6">
+                <label for="editExpression" class="form-label fw-bold">Formula Expression <span class="text-danger">*</span></label>
+                <input type="text" class="form-control font-monospace" id="editExpression" name="expression" required oninput="validateEditFormula()">
+                <div id="editValidationFeedback" class="small mt-1 text-muted">Variables supported: L, W, H. Operators: +, -, *, /, ()</div>
+              </div>
+
+              <div class="col-md-4">
+                <label for="editCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
+                <select class="form-select" id="editCalcType" name="calculationType" required onchange="syncEditUnits()">
+                  <option value="SQFT">Sqft (Square Feet)</option>
+                  <option value="INCHES">Inches (Inch-based)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="editUnitType" class="form-label fw-bold">Unit Type</label>
+                <select class="form-select" id="editUnitType" name="unitType" onchange="syncEditUnits()">
+                  <option value="AREA">AREA (2D / 3D Area)</option>
+                  <option value="LINEAR">LINEAR (1D Length / Perimeter)</option>
+                </select>
+              </div>
+
+              <div class="col-md-4">
+                <label for="editDisplayOrder" class="form-label fw-bold">Display Order</label>
+                <input type="number" class="form-control" id="editDisplayOrder" name="displayOrder" min="0">
+              </div>
+
+              <div class="col-md-6">
+                <label for="editMeasurementUnit" class="form-label fw-bold">Measurement Unit</label>
+                <input type="text" class="form-control" id="editMeasurementUnit" name="measurementUnit" readonly>
+              </div>
+
+              <div class="col-md-6">
+                <label for="editPricingUnit" class="form-label fw-bold">Pricing Unit</label>
+                <input type="text" class="form-control" id="editPricingUnit" name="pricingUnit" readonly>
+              </div>
+
+              <div class="col-12">
+                <label for="editDescription" class="form-label fw-bold">Description / Purpose</label>
+                <textarea class="form-control" id="editDescription" name="description" rows="2"></textarea>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+            <button type="submit" class="btn btn-primary" style="background: var(--primary); border-color: var(--primary);">Update Formula</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <!-- FOOTER -->
   <footer class="app-footer">
-    <div>&copy; Pravin KITCHENS & INTERIORS. Quotation Calculation Management System.</div>
+    <div>&copy; Pravin KITCHENS & INTERIORS. Configurable Formula Calculation Management System.</div>
   </footer>
 
+  <!-- Bootstrap JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
   <script>
-    function calculateLiveFormula() {
+    // Safe expression evaluator for live client-side preview
+    function evaluateExpressionSafely(expression, L, W, H) {
+      if (!expression) return 0;
+      let expr = expression.replace(/×/g, '*').replace(/x/g, '*').trim();
+      
+      // Tokenize safely
+      const tokens = [];
+      let i = 0;
+      while (i < expr.length) {
+        let ch = expr[i];
+        if (/\s/.test(ch)) { i++; continue; }
+        if (/[0-9.]/.test(ch)) {
+          let num = '';
+          while (i < expr.length && /[0-9.]/.test(expr[i])) { num += expr[i++]; }
+          tokens.push(parseFloat(num));
+          continue;
+        }
+        if (ch === 'L' || ch === 'l') { tokens.push(L); i++; continue; }
+        if (ch === 'W' || ch === 'w') { tokens.push(W); i++; continue; }
+        if (ch === 'H' || ch === 'h') { tokens.push(H); i++; continue; }
+        if ('+-*/()'.includes(ch)) { tokens.push(ch); i++; continue; }
+        return NaN; // Invalid character
+      }
+
+      // Recursive descent parser
+      let pos = 0;
+      function parseExpr() {
+        let left = parseTerm();
+        while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+          let op = tokens[pos++];
+          let right = parseTerm();
+          left = (op === '+') ? (left + right) : (left - right);
+        }
+        return left;
+      }
+      function parseTerm() {
+        let left = parseFactor();
+        while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+          let op = tokens[pos++];
+          let right = parseFactor();
+          if (op === '/') {
+            if (right === 0) return NaN;
+            left = left / right;
+          } else {
+            left = left * right;
+          }
+        }
+        return left;
+      }
+      function parseFactor() {
+        if (pos >= tokens.length) return 0;
+        let tok = tokens[pos++];
+        if (tok === '+') return parseFactor();
+        if (tok === '-') return -parseFactor();
+        if (tok === '(') {
+          let val = parseExpr();
+          if (pos < tokens.length && tokens[pos] === ')') pos++;
+          return val;
+        }
+        if (typeof tok === 'number') return tok;
+        return 0;
+      }
+
+      let res = parseExpr();
+      return (typeof res === 'number' && !isNaN(res)) ? res : 0;
+    }
+
+    // Dynamic UI Synchronization
+    function syncAddUnits() {
+      const calcType = document.getElementById('addCalcType').value;
+      const unitType = document.getElementById('addUnitType').value;
+      const measInput = document.getElementById('addMeasurementUnit');
+      const priceInput = document.getElementById('addPricingUnit');
+
+      if (calcType === 'SQFT') {
+        measInput.value = (unitType === 'LINEAR') ? 'RFT' : 'SQFT';
+        priceInput.value = '₹ / SQFT';
+      } else {
+        measInput.value = (unitType === 'LINEAR') ? 'INCH' : 'SQIN';
+        priceInput.value = (unitType === 'LINEAR') ? '₹ / INCH' : '₹ / SQIN';
+      }
+    }
+
+    function syncEditUnits() {
+      const calcType = document.getElementById('editCalcType').value;
+      const unitType = document.getElementById('editUnitType').value;
+      const measInput = document.getElementById('editMeasurementUnit');
+      const priceInput = document.getElementById('editPricingUnit');
+
+      if (calcType === 'SQFT') {
+        measInput.value = (unitType === 'LINEAR') ? 'RFT' : 'SQFT';
+        priceInput.value = '₹ / SQFT';
+      } else {
+        measInput.value = (unitType === 'LINEAR') ? 'INCH' : 'SQIN';
+        priceInput.value = (unitType === 'LINEAR') ? '₹ / INCH' : '₹ / SQIN';
+      }
+    }
+
+    function openEditModal(button) {
+      const id = button.getAttribute('data-id');
+      const form = document.getElementById('editFormulaForm');
+      form.action = '/admin/formula-calculation/update/' + id;
+
+      document.getElementById('editName').value = button.getAttribute('data-name') || '';
+      document.getElementById('editExpression').value = button.getAttribute('data-expression') || '';
+      document.getElementById('editCalcType').value = button.getAttribute('data-type') || 'SQFT';
+      document.getElementById('editUnitType').value = button.getAttribute('data-unittype') || 'AREA';
+      document.getElementById('editMeasurementUnit').value = button.getAttribute('data-measurement') || 'SQFT';
+      document.getElementById('editPricingUnit').value = button.getAttribute('data-pricing') || '₹ / SQFT';
+      document.getElementById('editDescription').value = button.getAttribute('data-desc') || '';
+      document.getElementById('editDisplayOrder').value = button.getAttribute('data-order') || '0';
+
+      const modal = new bootstrap.Modal(document.getElementById('editFormulaModal'));
+      modal.show();
+    }
+
+    function onSimulatorFormulaChanged() {
+      const select = document.getElementById('calcFormulaSelect');
+      const opt = select.options[select.selectedIndex];
+      if (!opt) return;
+
+      document.getElementById('calcCustomExpression').value = opt.value;
+      const calcType = opt.getAttribute('data-calc-type') || 'SQFT';
+      document.getElementById('calcCalcType').value = calcType;
+      
+      const pricingUnit = opt.getAttribute('data-pricing-unit') || '₹ / SQFT';
+      document.getElementById('calcRateUnitLabel').innerText = pricingUnit;
+
+      calculateLiveSimulator();
+    }
+
+    function calculateLiveSimulator() {
       const length = parseFloat(document.getElementById('calcLength').value) || 0;
       const width = parseFloat(document.getElementById('calcWidth').value) || 0;
       const height = parseFloat(document.getElementById('calcHeight').value) || 0;
       const rate = parseFloat(document.getElementById('calcRate').value) || 0;
       const gstPercent = parseFloat(document.getElementById('calcGst').value) || 0;
+      const calcType = document.getElementById('calcCalcType').value;
+      const expression = document.getElementById('calcCustomExpression').value;
 
-      // Project measurement formula: (Length + Width) * Height / 144
-      const sqft = ((length + width) * height) / 144;
-      const amount = sqft * rate;
-      const gst = (amount * gstPercent) / 100;
+      // Update rate unit label based on calcType
+      const select = document.getElementById('calcFormulaSelect');
+      const opt = select.options[select.selectedIndex];
+      let pricingUnitText = (calcType === 'SQFT') ? '₹ / SQFT' : '₹ / SQIN or ₹ / INCH';
+      if (opt && opt.value === expression && opt.getAttribute('data-pricing-unit')) {
+        pricingUnitText = opt.getAttribute('data-pricing-unit');
+      }
+      document.getElementById('calcRateUnitLabel').innerText = pricingUnitText;
+
+      const rawInches = evaluateExpressionSafely(expression, length, width, height);
+
+      let measurement = 0;
+      let unitLabel = 'sq.ft';
+
+      if (calcType === 'SQFT') {
+        // Area formula converts using / 144
+        measurement = rawInches / 144.0;
+        unitLabel = 'sq.ft';
+        document.getElementById('simRuleExplanation').innerHTML = 'Sqft formula: <code>(' + expression + ') / 144</code> converts square inches to square feet.';
+      } else {
+        measurement = rawInches;
+        unitLabel = (expression.includes('*') || expression.includes('×')) ? 'sq.in' : 'in';
+        document.getElementById('simRuleExplanation').innerHTML = 'Inches formula: <code>' + expression + '</code> calculates directly in inches without sqft conversion.';
+      }
+
+      const amount = measurement * rate;
+      const gst = (amount * gstPercent) / 100.0;
       const total = amount + gst;
 
-      document.getElementById('resSqft').innerText = sqft.toFixed(2);
-      document.getElementById('resAmount').innerText = '₹ ' + amount.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-      document.getElementById('resGst').innerText = '₹ ' + gst.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-      document.getElementById('resTotal').innerText = '₹ ' + total.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
+      document.getElementById('resMeasurement').innerText = measurement.toFixed(2);
+      document.getElementById('resMeasUnit').innerText = unitLabel;
+      document.getElementById('resAmount').innerText = '₹ ' + amount.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('resGst').innerText = '₹ ' + gst.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      document.getElementById('resTotal').innerText = '₹ ' + total.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    document.addEventListener('DOMContentLoaded', calculateLiveFormula);
+    document.addEventListener('DOMContentLoaded', function() {
+      syncAddUnits();
+      calculateLiveSimulator();
+    });
   </script>
 
 </body>

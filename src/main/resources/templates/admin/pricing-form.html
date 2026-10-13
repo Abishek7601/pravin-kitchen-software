@@ -171,7 +171,7 @@
         <h2 th:text="(${isEdit != null and isEdit} ? 'Edit Master Data &amp; Pricing' : 'Add New Master Data &amp; Pricing')">
           Master Data &amp; Pricing Configuration
         </h2>
-        <p th:text="(${isEdit != null and isEdit} ? 'Update existing master data names, calculation formula, or pricing rate.' : 'Enter master data directly. Formulated items and pricing are automatically made available to quotation builders.')">
+        <p th:text="(${isEdit != null and isEdit} ? 'Update existing master data names, calculation formula, or pricing rate.' : 'Enter master data directly. Configured materials and pricing are automatically made available to quotation builders.')">
           Enter master data directly. Configured formulas and prices are automatically reused by quotation builders.
         </p>
       </div>
@@ -270,7 +270,7 @@
       </div>
 
       <!-- =========================================================
-           SECTION 2: CALCULATION FORMULA (THE 3 CANONICAL FORMULAS)
+           SECTION 2: CALCULATION FORMULA
       ========================================================== -->
       <div class="form-section-title">
         <span>📐 2. Calculation Formula</span>
@@ -278,50 +278,68 @@
 
       <div class="form-group" style="margin-bottom: 20px;">
         <p style="margin: 0 0 10px; font-size: 13px; color: #71847b;">
-          Select the calculation formula applied when computing area in quotation builders:
+          Select the calculation formula applied when computing measurement in quotation builders:
         </p>
 
-        <div class="formula-radio-group">
+        <div class="formula-radio-group" id="formulaRadioGroup">
 
-          <!-- FORMULA 1: L × W -->
-          <label class="formula-radio-card" id="cardF1">
-            <input type="radio" name="formula" value="L × W"
-                   th:checked="${pricing.formula == null || pricing.formula == 'L × W' || pricing.formula == 'L x W'}"
-                   onchange="updateFormulaSelection()">
-            <div>
-              <div class="formula-title">Formula 1: Length × Width ("L × W")</div>
-              <div class="formula-sub">Evaluates as (L × W) / 144 for inches. Standard 2D surface area (e.g. shutter, countertop).</div>
-            </div>
-          </label>
+          <!-- Configured Formulas (from MySQL) -->
+          <th:block th:if="${configuredFormulas != null and !configuredFormulas.isEmpty()}">
+            <label th:each="f : ${configuredFormulas}"
+                   class="formula-radio-card"
+                   th:attr="data-calc-type=${f.calculationType}, data-pricing-unit=${f.pricingUnit}">
+              <input type="radio" name="formula" th:value="${f.expression}"
+                     th:checked="${pricing.formula != null ? (pricing.formula == f.expression || pricing.formula == f.name) : (f.expression == '(L + W) * H' and f.calculationType == 'SQFT')}"
+                     onchange="updateFormulaSelection()">
+              <div>
+                <div class="formula-title">
+                  <span th:text="${f.name}">(L + W) × H</span>
+                  <span style="font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; margin-left: 4px;"
+                        th:styleappend="${f.calculationType == 'SQFT' ? 'background: #e0f2fe; color: #0369a1;' : 'background: #fef3c7; color: #b45309;'}"
+                        th:text="${f.calculationType}">SQFT</span>
+                </div>
+                <div class="formula-sub" th:text="${f.description != null ? f.description : f.expression + ' (' + f.pricingUnit + ')'}">Formula description</div>
+              </div>
+            </label>
+          </th:block>
 
-          <!-- FORMULA 2: (L + W) × H -->
-          <label class="formula-radio-card" id="cardF2">
-            <input type="radio" name="formula" value="(L + W) × H"
-                   th:checked="${pricing.formula != null && (pricing.formula.contains('+') || pricing.formula.contains('W × H') || pricing.formula.contains('W x H'))}"
-                   onchange="updateFormulaSelection()">
-            <div>
-              <div class="formula-title">Formula 2: (Length + Width) × Height ("(L + W) × H")</div>
-              <div class="formula-sub">Evaluates as ((L + W) × H) / 144 for inches. Three-dimensional cabinetry or perimeter calculation.</div>
-            </div>
-          </label>
-
-          <!-- FORMULA 3: L × H -->
-          <label class="formula-radio-card" id="cardF3">
-            <input type="radio" name="formula" value="L × H"
-                   th:checked="${pricing.formula != null && (pricing.formula == 'L × H' || pricing.formula == 'L x H')}"
-                   onchange="updateFormulaSelection()">
-            <div>
-              <div class="formula-title">Formula 3: Length × Height ("L × H")</div>
-              <div class="formula-sub">Evaluates as (L × H) / 144 for inches. Vertical panel, backboard, or elevation area.</div>
-            </div>
-          </label>
+          <!-- Fallback Canonical Formulas if no database records loaded -->
+          <th:block th:if="${configuredFormulas == null or configuredFormulas.isEmpty()}">
+            <label class="formula-radio-card" data-calc-type="SQFT">
+              <input type="radio" name="formula" value="(L + W) * H"
+                     th:checked="${pricing.formula == null || pricing.formula.contains('+')}"
+                     onchange="updateFormulaSelection()">
+              <div>
+                <div class="formula-title">Formula 2: (Length + Width) × Height ("(L + W) × H")</div>
+                <div class="formula-sub">Evaluates as ((L + W) × H) / 144 for inches. Modular cabinetry & perimeter.</div>
+              </div>
+            </label>
+            <label class="formula-radio-card" data-calc-type="SQFT">
+              <input type="radio" name="formula" value="L * W"
+                     th:checked="${pricing.formula == 'L * W' || pricing.formula == 'L × W'}"
+                     onchange="updateFormulaSelection()">
+              <div>
+                <div class="formula-title">Formula 1: Length × Width ("L × W")</div>
+                <div class="formula-sub">Evaluates as (L × W) / 144 for inches. Standard 2D surface area.</div>
+              </div>
+            </label>
+            <label class="formula-radio-card" data-calc-type="SQFT">
+              <input type="radio" name="formula" value="L * H"
+                     th:checked="${pricing.formula == 'L * H' || pricing.formula == 'L × H'}"
+                     onchange="updateFormulaSelection()">
+              <div>
+                <div class="formula-title">Formula 3: Length × Height ("L × H")</div>
+                <div class="formula-sub">Evaluates as (L × H) / 144 for inches. Vertical panel & elevation area.</div>
+              </div>
+            </label>
+          </th:block>
 
         </div>
 
-        <!-- FORMULA 2 CALCULATION NOTICE -->
-        <div id="formula2Alert" class="formula-alert">
-          <strong>ℹ️ Formula 2 Calculation Rule:</strong>
-          Formula 2 evaluates as <code>(Length + Width) × Height</code>. When dimensions are entered in inches, square feet is calculated using <code>((Length + Width) × Height) / 144</code>.
+        <!-- FORMULA CALCULATION NOTICE -->
+        <div id="formulaAlert" class="formula-alert">
+          <strong>ℹ️ Calculation Rule:</strong>
+          <span id="formulaAlertText">When dimensions are entered in inches, Sqft formulas divide by 144 to convert to square feet. Inches formulas keep raw dimensions in inches.</span>
         </div>
 
       </div>
@@ -354,7 +372,7 @@
         <!-- RATE -->
         <div class="form-group">
           <label for="rate">
-            Price / Rate per Sq. Ft. (₹) <span class="required">*</span>
+            <span id="rateLabelText">Price / Rate per Sq. Ft.</span> (₹) <span class="required">*</span>
           </label>
           <div class="input-with-prefix">
             <span class="input-prefix">₹</span>
@@ -368,7 +386,7 @@
                    th:value="${pricing.rate}"
                    required>
           </div>
-          <small>Configured rate per square foot. Must be greater than zero.</small>
+          <small id="rateHelpText">Configured rate per square foot. Must be greater than zero.</small>
           <div id="hintRate" class="validation-hint">Please enter a valid rate greater than zero.</div>
         </div>
 
@@ -376,18 +394,16 @@
 
       <div class="form-row">
 
-        <!-- UNIT -->
+        <!-- UNIT (ONLY SQFT AND INCHES) -->
         <div class="form-group">
           <label for="unit">
-            Unit <span class="required">*</span>
+            Calculation Type / Unit <span class="required">*</span>
           </label>
-          <select id="unit" name="unit" required>
-            <option value="SQFT" th:selected="${pricing.unit == null || pricing.unit == 'SQFT'}">SQFT (Square Feet)</option>
-            <option value="NOS" th:selected="${pricing.unit == 'NOS'}">NOS (Numbers)</option>
-            <option value="RUNNING_FEET" th:selected="${pricing.unit == 'RUNNING_FEET'}">Running Feet</option>
-            <option value="LUMP_SUM" th:selected="${pricing.unit == 'LUMP_SUM'}">Lump Sum</option>
+          <select id="unit" name="unit" required onchange="onUnitChanged()">
+            <option value="SQFT" th:selected="${pricing.unit == null || pricing.unit == 'SQFT'}">Sqft (Square Feet)</option>
+            <option value="INCHES" th:selected="${pricing.unit == 'INCHES' || pricing.unit == 'INCH' || pricing.unit == 'SQIN'}">Inches (Inch-based)</option>
           </select>
-          <small>Standard measurement unit (Default: SQFT).</small>
+          <small>Calculation unit applied to quotation line items (Sqft or Inches only).</small>
         </div>
 
         <!-- DESCRIPTION -->
@@ -426,9 +442,46 @@
 </div>
 
 <script>
+  function onUnitChanged() {
+    const unitSelect = document.getElementById('unit');
+    const selectedUnit = unitSelect.value;
+    const cards = document.querySelectorAll('.formula-radio-card');
+    const rateLabel = document.getElementById('rateLabelText');
+    const rateHelp = document.getElementById('rateHelpText');
+
+    if (selectedUnit === 'INCHES') {
+      if (rateLabel) rateLabel.textContent = 'Price / Rate per Inch / Sq. Inch';
+      if (rateHelp) rateHelp.textContent = 'Configured rate per inch unit (₹/sq.in or ₹/in). Must be greater than zero.';
+    } else {
+      if (rateLabel) rateLabel.textContent = 'Price / Rate per Sq. Ft.';
+      if (rateHelp) rateHelp.textContent = 'Configured rate per square foot. Must be greater than zero.';
+    }
+
+    let hasVisibleChecked = false;
+    let firstVisibleRadio = null;
+
+    cards.forEach(card => {
+      const cardType = card.getAttribute('data-calc-type');
+      const radio = card.querySelector('input[type="radio"]');
+      if (!cardType || cardType === selectedUnit) {
+        card.style.display = 'flex';
+        if (!firstVisibleRadio && radio) firstVisibleRadio = radio;
+        if (radio && radio.checked) hasVisibleChecked = true;
+      } else {
+        card.style.display = 'none';
+        if (radio && radio.checked) radio.checked = false;
+      }
+    });
+
+    if (!hasVisibleChecked && firstVisibleRadio) {
+      firstVisibleRadio.checked = true;
+    }
+    updateFormulaSelection();
+  }
+
   function updateFormulaSelection() {
     const radios = document.querySelectorAll('input[name="formula"]');
-    let selectedVal = 'L × W';
+    let selectedVal = '';
     radios.forEach(r => {
       const card = r.closest('.formula-radio-card');
       if (r.checked) {
@@ -439,9 +492,18 @@
       }
     });
 
-    const alertBox = document.getElementById('formula2Alert');
-    if (alertBox) {
-      if (selectedVal.includes('+') || selectedVal.includes('W × H')) {
+    const alertBox = document.getElementById('formulaAlert');
+    const alertText = document.getElementById('formulaAlertText');
+    const unitSelect = document.getElementById('unit');
+    const selectedUnit = unitSelect ? unitSelect.value : 'SQFT';
+
+    if (alertBox && alertText) {
+      if (selectedVal) {
+        if (selectedUnit === 'SQFT') {
+          alertText.innerHTML = 'Selected formula <code>' + selectedVal + '</code> evaluates with conversion divisor <code>/ 144</code> for square footage.';
+        } else {
+          alertText.innerHTML = 'Selected formula <code>' + selectedVal + '</code> evaluates directly in inch-based units without sqft division.';
+        }
         alertBox.style.display = 'block';
       } else {
         alertBox.style.display = 'none';
@@ -507,7 +569,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function() {
-    updateFormulaSelection();
+    onUnitChanged();
   });
 </script>
 

@@ -312,10 +312,6 @@
           </th>
 
           <th>
-            Item
-          </th>
-
-          <th>
             Division
           </th>
 
@@ -428,21 +424,6 @@
                                 : 'N/A'}">
 
             Marine Ply
-
-          </td>
-
-
-
-          <!-- ITEM -->
-
-          <td
-                  th:text="${pricing.materialOption != null
-                                and pricing.materialOption.material != null
-                                and pricing.materialOption.material.item != null
-                                ? pricing.materialOption.material.item.name
-                                : 'N/A'}">
-
-            Base Cabinet
 
           </td>
 
@@ -662,6 +643,7 @@
                 <!-- CSRF -->
 
                 <input
+                        th:if="${_csrf != null}"
                         type="hidden"
                         th:name="${_csrf.parameterName}"
                         th:value="${_csrf.token}">
@@ -702,6 +684,7 @@
                 <!-- CSRF -->
 
                 <input
+                        th:if="${_csrf != null}"
                         type="hidden"
                         th:name="${_csrf.parameterName}"
                         th:value="${_csrf.token}">
@@ -931,10 +914,7 @@
 
       return confirm(
 
-          "Are you sure you want to delete this pricing record?\n\n" +
-
-          "If this pricing is already used in District Pricing, " +
-          "it cannot be deleted and will remain safely stored."
+          "Are you sure you want to delete this pricing record?"
 
       );
 

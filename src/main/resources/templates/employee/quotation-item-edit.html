@@ -333,11 +333,11 @@
         <span class="section-number">04</span>
         <div>
           <h2>Pricing</h2>
-          <p>Enter the rate and optional offer price for this item.</p>
+          <p>Enter the rate for this item.</p>
         </div>
       </div>
 
-      <div class="form-grid three-columns">
+      <div class="form-grid two-columns">
 
         <!-- RATE -->
         <div class="form-group">
@@ -355,24 +355,6 @@
                    required
                    placeholder="1000"
                    th:value="${quotationItem.rate}">
-          </div>
-        </div>
-
-        <!-- OFFER PRICE -->
-        <div class="form-group">
-          <label for="offerPrice">Offer Price (Optional)</label>
-
-          <div class="input-with-symbol">
-            <span>₹</span>
-
-            <input type="number"
-                   id="offerPrice"
-                   name="offerPrice"
-                   min="0"
-                   max="100000000"
-                   step="0.01"
-                   placeholder="Leave blank for calculated amount"
-                   th:value="${quotationItem.offerPrice}">
           </div>
         </div>
 
@@ -464,7 +446,6 @@
       const widthInput = document.getElementById("widthValue");
       const heightInput = document.getElementById("heightValue");
       const rateInput = document.getElementById("rate");
-      const offerPriceInput = document.getElementById("offerPrice");
 
       const sqftDisplay = document.getElementById("calculatedSqftDisplay");
       const calculatedSqftInput = document.getElementById("calculatedSqft");
@@ -498,9 +479,6 @@
           const height = numberValue(heightInput);
           const rate = numberValue(rateInput);
 
-          const offerEntered = offerPriceInput.value.trim() !== "";
-          const offerPrice = numberValue(offerPriceInput);
-
           let sqft = 0;
 
           if (length > 0 && width > 0 && height > 0) {
@@ -511,31 +489,24 @@
 
           const baseAmount = Number((sqft * rate).toFixed(2));
 
-          const finalPreviewAmount =
-              offerEntered && offerPrice >= 0
-                  ? offerPrice
-                  : baseAmount;
-
           sqftDisplay.value = sqft.toFixed(2);
           previewSqft.textContent = sqft.toFixed(2);
           previewRate.textContent = rate.toFixed(2);
-          previewAmount.textContent = finalPreviewAmount.toFixed(2);
+          previewAmount.textContent = baseAmount.toFixed(2);
 
           calculatedSqftInput.value = sqft.toFixed(2);
-          amountInput.value = finalPreviewAmount.toFixed(2);
+          amountInput.value = baseAmount.toFixed(2);
           formulaInput.value = "(L + W) × H / 144";
 
-          calculationNote.textContent = offerEntered
-              ? "Preview uses the entered offer price. The server determines the saved quotation amount."
-              : "Preview uses calculated Sq.Ft × Rate. The server determines the saved quotation amount.";
+          calculationNote.textContent =
+              "Preview uses calculated Sq.Ft × Rate. The server determines the saved quotation amount.";
       }
 
       [
           lengthInput,
           widthInput,
           heightInput,
-          rateInput,
-          offerPriceInput
+          rateInput
       ].forEach(function (input) {
           input.addEventListener("input", calculateItem);
           input.addEventListener("change", calculateItem);
@@ -577,12 +548,6 @@
               event.preventDefault();
               alert("Rate cannot be negative.");
               return;
-          }
-
-          if (offerPriceInput.value.trim() !== "" &&
-              numberValue(offerPriceInput) < 0) {
-              event.preventDefault();
-              alert("Offer price cannot be negative.");
           }
       });
 

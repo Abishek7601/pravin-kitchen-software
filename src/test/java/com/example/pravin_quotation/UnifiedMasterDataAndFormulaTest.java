@@ -20,6 +20,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.mock.web.MockServletContext;
+import org.springframework.security.web.csrf.DefaultCsrfToken;
 import org.thymeleaf.context.WebContext;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 import org.thymeleaf.web.servlet.JakartaServletWebApplication;
@@ -756,5 +757,44 @@ public class UnifiedMasterDataAndFormulaTest {
         assertTrue(htmlEdit.contains(category.getName()));
         assertTrue(htmlEdit.contains(division.getName()));
         assertTrue(htmlEdit.contains(material.getName()));
+    }
+
+    @Test
+    public void testPricingListTemplateDoesNotRenderItemColumn() {
+        var application = JakartaServletWebApplication.buildApplication(new MockServletContext());
+
+        // Ensure at least one pricing record exists
+        Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), PricingMode.MIDDLE)
+                .orElseGet(() -> {
+                    Pricing p = new Pricing();
+                    p.setMaterialOption(option);
+                    p.setPricingMode(PricingMode.MIDDLE);
+                    p.setRate(new BigDecimal("1850.00"));
+                    p.setUnit("SQFT");
+                    p.setFormula(CalculationFormula.FORMULA_L_X_W);
+                    return pricingRepository.save(p);
+                });
+
+        Model model = new ConcurrentModel();
+        model.addAttribute("_csrf", new DefaultCsrfToken("X-CSRF-TOKEN", "_csrf", "test-token"));
+        String view = pricingController.pricing(null, model);
+        assertEquals("admin/pricing", view);
+
+        var exchange = application.buildExchange(new MockHttpServletRequest(), new MockHttpServletResponse());
+        WebContext context = new WebContext(exchange, Locale.getDefault(), model.asMap());
+        String html = templateEngine.process("admin/pricing", context);
+
+        assertNotNull(html);
+        assertTrue(html.contains("Pricing List"));
+        assertTrue(html.contains("Material Option"));
+        assertTrue(html.contains("Material"));
+        assertTrue(html.contains("Division"));
+        assertTrue(html.contains("Work Category"));
+        assertTrue(html.contains("Pricing Mode"));
+        assertTrue(html.contains("Rate"));
+        assertTrue(html.contains("Formula"));
+
+        // Verify Item column is removed from table header
+        assertFalse(html.matches("(?s).*<th>\\s*Item\\s*</th>.*"), "Pricing table should not have an Item column header");
     }
 }

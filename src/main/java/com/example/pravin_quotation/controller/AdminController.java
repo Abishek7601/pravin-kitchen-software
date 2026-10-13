@@ -111,10 +111,4 @@ public class AdminController {
     public String masterDataConfigure() {
         return "redirect:/admin/pricing/new";
     }
-
-    // FORMULA CALCULATION REFERENCE PAGE
-    @GetMapping("/formula-calculation")
-    public String formulaCalculation(Model model) {
-        return "admin/formula-calculation";
-    }
 }

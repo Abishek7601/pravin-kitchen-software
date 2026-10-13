@@ -20,7 +20,6 @@ import com.example.pravin_quotation.model.WorkCategory;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.DivisionRepository;
-import com.example.pravin_quotation.repository.DistrictPricingRepository;
 import com.example.pravin_quotation.repository.ItemRepository;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.MaterialRepository;
@@ -60,7 +59,6 @@ public class EmployeeQuotationController {
     private final BranchRepository branchRepository;
     private final DivisionRepository divisionRepository;
     private final PricingRepository pricingRepository;
-    private final DistrictPricingRepository districtPricingRepository;
     private final WorkCategoryRepository workCategoryRepository;
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
@@ -104,8 +102,6 @@ public class EmployeeQuotationController {
             DivisionRepository divisionRepository,
 
             PricingRepository pricingRepository,
-
-            DistrictPricingRepository districtPricingRepository,
 
             WorkCategoryRepository workCategoryRepository,
 
@@ -165,9 +161,6 @@ public class EmployeeQuotationController {
 
         this.pricingRepository =
                 pricingRepository;
-
-        this.districtPricingRepository =
-                districtPricingRepository;
 
         this.workCategoryRepository =
                 workCategoryRepository;
@@ -235,8 +228,11 @@ public class EmployeeQuotationController {
     // EMPLOYEE QUOTATION LIST
     // ============================================================
 
-    @GetMapping
+    @GetMapping({"", "/status/{status}"})
     public String quotations(
+            @PathVariable(required = false) String status,
+            @RequestParam(name = "status", required = false) String paramStatus,
+            @RequestParam(name = "period", required = false) String period,
             Authentication authentication,
             Model model
     ) {
@@ -244,23 +240,106 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        List<Quotation> quotations =
-                quotationRepository
-                        .findByEmployeeIdOrderByCreatedAtDesc(
-                                employee.getId()
-                        );
+        String rawStatus = (status != null && !status.trim().isEmpty()) ? status : paramStatus;
+        QuotationStatus activeStatus = parseStatus(rawStatus);
 
-        model.addAttribute(
-                "employee",
-                employee
-        );
+        List<Quotation> quotations;
+        String pageTitle = "My Quotations";
+        String pageSubtitle = "View and manage your customer quotations.";
+        String emptyTitle = "No quotations found";
+        String emptyMsg = "No quotations found. Create your first quotation to get started.";
 
-        model.addAttribute(
-                "quotations",
-                quotations
-        );
+        if (activeStatus != null) {
+            quotations = quotationRepository
+                    .findByEmployeeIdAndStatusOrderByCreatedAtDesc(
+                            employee.getId(),
+                            activeStatus
+                    );
+
+            switch (activeStatus) {
+                case PENDING -> {
+                    pageTitle = "Pending Quotations";
+                    pageSubtitle = "Quotations awaiting review, approval, or client response.";
+                    emptyTitle = "No pending quotations";
+                    emptyMsg = "You currently have no quotations with Pending status.";
+                }
+                case WORKING -> {
+                    pageTitle = "Working Quotations";
+                    pageSubtitle = "Quotations currently in progress or being worked on.";
+                    emptyTitle = "No working quotations";
+                    emptyMsg = "You currently have no quotations with Working status.";
+                }
+                case SENT -> {
+                    pageTitle = "Sent Quotations";
+                    pageSubtitle = "Quotations that have been successfully sent to customers.";
+                    emptyTitle = "No sent quotations";
+                    emptyMsg = "You currently have no quotations with Sent status.";
+                }
+            }
+        } else if ("60".equals(period)) {
+            LocalDate today = LocalDate.now();
+            LocalDate sixtyDaysAgo = today.minusDays(59);
+            quotations = quotationRepository
+                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+                            employee.getId(),
+                            sixtyDaysAgo,
+                            today
+                    );
+            pageTitle = "60 Days Quotations";
+            pageSubtitle = "Quotations created in the last 60 days.";
+            emptyTitle = "No quotations in the last 60 days";
+            emptyMsg = "You have not created any quotations in the last 60 days.";
+        } else if ("365".equals(period) || "year".equalsIgnoreCase(period) || "1year".equalsIgnoreCase(period)) {
+            LocalDate today = LocalDate.now();
+            LocalDate oneYearAgo = today.minusYears(1);
+            quotations = quotationRepository
+                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+                            employee.getId(),
+                            oneYearAgo,
+                            today
+                    );
+            pageTitle = "Total One Year Quotations";
+            pageSubtitle = "Quotations created during the last one year.";
+            emptyTitle = "No quotations in the last one year";
+            emptyMsg = "You have not created any quotations in the last one year.";
+        } else {
+            quotations = quotationRepository
+                    .findByEmployeeIdOrderByCreatedAtDesc(
+                            employee.getId()
+                    );
+        }
+
+        long totalCount = quotationRepository.countByEmployeeId(employee.getId());
+        long pendingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.PENDING);
+        long workingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.WORKING);
+        long sentCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.SENT);
+
+        model.addAttribute("employee", employee);
+        model.addAttribute("quotations", quotations);
+        model.addAttribute("selectedStatus", activeStatus != null ? activeStatus.name() : null);
+        model.addAttribute("selectedPeriod", period);
+        model.addAttribute("pageTitle", pageTitle);
+        model.addAttribute("pageSubtitle", pageSubtitle);
+        model.addAttribute("emptyMessageTitle", emptyTitle);
+        model.addAttribute("emptyMessage", emptyMsg);
+        model.addAttribute("totalCount", totalCount);
+        model.addAttribute("pendingCount", pendingCount);
+        model.addAttribute("workingCount", workingCount);
+        model.addAttribute("sentCount", sentCount);
 
         return "employee/quotations";
+    }
+
+    private QuotationStatus parseStatus(String statusStr) {
+        if (statusStr == null || statusStr.trim().isEmpty()) {
+            return null;
+        }
+        String clean = statusStr.trim().toUpperCase();
+        try {
+            return QuotationStatus.valueOf(clean);
+        } catch (IllegalArgumentException ex) {
+            return null;
+        }
     }
 
 
@@ -270,6 +349,8 @@ public class EmployeeQuotationController {
 
     @GetMapping({"/new", "/builder"})
     public String builder(
+            @RequestParam(required = false) Long quotationId,
+            @RequestParam(required = false) Long branchId,
             Authentication authentication,
             Model model
     ) {
@@ -277,10 +358,19 @@ public class EmployeeQuotationController {
         User employee =
                 getLoggedInEmployee(authentication);
 
+        if (quotationId != null) {
+            getQuotationAndCheckOwnership(quotationId, employee);
+        }
+
+        Long effectiveBranchId = branchId;
+        if (effectiveBranchId == null && employee.getBranch() != null) {
+            effectiveBranchId = employee.getBranch().getId();
+        }
+
         Quotation quotation = new Quotation();
         quotation.setQuotationNumber(previewQuotationNumber());
         quotation.setQuotationDate(LocalDate.now());
-        quotation.setPricingMode(PricingMode.ECONOMY);
+        quotation.setPricingMode(PricingMode.MIDDLE);
         quotation.setBranch(employee.getBranch());
         quotation.setSubtotal(BigDecimal.ZERO);
         quotation.setGstAmount(BigDecimal.ZERO);
@@ -293,12 +383,17 @@ public class EmployeeQuotationController {
         model.addAttribute("rooms", Collections.emptyList());
         model.addAttribute("roomItems", Collections.emptyMap());
         model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
-        model.addAttribute("workCategories", workCategoryService.getActiveCategories());
+        model.addAttribute("workCategories", workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc());
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
-        model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : null);
+        model.addAttribute("editQuotationId", quotationId != null ? quotationId : "");
+        model.addAttribute("selectedBranchId", effectiveBranchId != null ? effectiveBranchId : "");
 
         return "employee/quotation-builder";
+    }
+
+    public String builder(Authentication authentication, Model model) {
+        return builder(null, null, authentication, model);
     }
 
     @GetMapping("/builder/divisions")
@@ -336,12 +431,26 @@ public class EmployeeQuotationController {
     @GetMapping("/builder/rate")
     @ResponseBody
     public ResponseEntity<?> builderRate(
-            @RequestParam Long branchId,
+            @RequestParam(required = false) Long branchId,
             @RequestParam Long materialOptionId,
             @RequestParam PricingMode pricingMode) {
         try {
             BigDecimal rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
-            return ResponseEntity.ok(mapData("rate", rate, "pricingMode", pricingMode.name()));
+            Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null);
+            String formula = (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
+                    ? pricing.getFormula() : "(L + W) × H";
+            String unit = (pricing != null && pricing.getUnit() != null) ? pricing.getUnit() : "SQFT";
+            String measurementUnit = ("INCH".equalsIgnoreCase(unit) || "INCHES".equalsIgnoreCase(unit) || "SQIN".equalsIgnoreCase(unit)) ? "SQIN" : "SQFT";
+            String pricingUnit = "₹ / " + measurementUnit;
+
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("rate", rate);
+            resp.put("pricingMode", pricingMode.name());
+            resp.put("formula", formula);
+            resp.put("unit", unit);
+            resp.put("measurementUnit", measurementUnit);
+            resp.put("pricingUnit", pricingUnit);
+            return ResponseEntity.ok(resp);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(mapData("message", e.getMessage()));
         }
@@ -353,6 +462,10 @@ public class EmployeeQuotationController {
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
         try {
+            User employee = getLoggedInEmployee(authentication);
+            if (request.quotationId() != null) {
+                getQuotationAndCheckOwnership(request.quotationId(), employee);
+            }
             Quotation quotation = builderService.save(request, authentication.getName());
             redirectAttributes.addFlashAttribute("successMessage",
                     "Quotation " + quotation.getQuotationNumber() + " created successfully.");
@@ -361,6 +474,73 @@ public class EmployeeQuotationController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/employee/quotations/builder";
         }
+    }
+
+    @GetMapping("/builder/load/{id}")
+    @ResponseBody
+    public ResponseEntity<?> builderLoadQuotation(@PathVariable Long id, Authentication authentication) {
+        User employee = getLoggedInEmployee(authentication);
+        Quotation q = getQuotationAndCheckOwnership(id, employee);
+        if (q == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", q.getId());
+        data.put("quotationNumber", q.getQuotationNumber());
+        data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
+        data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
+        data.put("email", q.getCustomer() != null ? q.getCustomer().getEmail() : "");
+        data.put("address", q.getCustomer() != null ? q.getCustomer().getAddress() : "");
+        data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
+        data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
+        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
+        data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
+        data.put("notes", q.getNotes() != null ? q.getNotes() : "");
+
+        List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(id);
+        List<Map<String, Object>> roomList = new ArrayList<>();
+        for (QuotationRoom room : rooms) {
+            Map<String, Object> rMap = new LinkedHashMap<>();
+            rMap.put("floor", room.getFloor());
+            rMap.put("room", room.getRoom());
+            rMap.put("workDescription", room.getWorkDescription());
+            List<QuotationItem> items = quotationItemService.getActiveByQuotationRoomId(room.getId());
+            List<Map<String, Object>> itemList = new ArrayList<>();
+            for (QuotationItem item : items) {
+                Map<String, Object> iMap = new LinkedHashMap<>();
+                iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
+                iMap.put("categoryName", item.getWorkCategory() != null ? item.getWorkCategory().getName() : "");
+                iMap.put("divisionId", item.getDivision() != null ? item.getDivision().getId() : null);
+                iMap.put("divisionName", item.getDivision() != null ? item.getDivision().getName() : "");
+                iMap.put("itemId", item.getItem() != null ? item.getItem().getId() : null);
+                iMap.put("itemName", item.getItem() != null ? item.getItem().getName() : "");
+                iMap.put("materialId", item.getMaterial() != null ? item.getMaterial().getId() : null);
+                iMap.put("materialName", item.getMaterial() != null ? item.getMaterial().getName() : "");
+                iMap.put("materialOptionId", item.getMaterialOption() != null ? item.getMaterialOption().getId() : null);
+                iMap.put("materialOptionName", item.getMaterialOption() != null ? item.getMaterialOption().getName() : "");
+                iMap.put("rate", item.getRate());
+                iMap.put("itemDescription", item.getItemDescription());
+                iMap.put("specification", item.getSpecification());
+
+                List<QuotationItemSize> sizes = quotationItemSizeService.getActiveSizes(item.getId());
+                List<Map<String, Object>> sizeList = new ArrayList<>();
+                for (QuotationItemSize s : sizes) {
+                    Map<String, Object> sMap = new LinkedHashMap<>();
+                    sMap.put("length", s.getLengthValue());
+                    sMap.put("width", s.getWidthValue());
+                    sMap.put("height", s.getHeightValue());
+                    sMap.put("offerPrice", s.getOfferPrice());
+                    sizeList.add(sMap);
+                }
+                iMap.put("sizes", sizeList);
+                itemList.add(iMap);
+            }
+            rMap.put("items", itemList);
+            roomList.add(rMap);
+        }
+        data.put("rooms", roomList);
+        return ResponseEntity.ok(data);
     }
 
     private Map<String, Object> mapData(Object... values) {
@@ -532,63 +712,20 @@ public class EmployeeQuotationController {
     // QUOTATION BUILDER
     // ============================================================
 
-    @GetMapping("/builder/{id}")
+    @GetMapping({"/builder/{id}", "/edit/{id}"})
     public String quotationBuilder(
             @PathVariable Long id,
             Authentication authentication,
-            Model model
+            RedirectAttributes redirectAttributes
     ) {
-
-        User employee =
-                getLoggedInEmployee(authentication);
-
-        Quotation quotation =
-                getQuotationAndCheckOwnership(
-                        id,
-                        employee
-                );
-
-        quotationCalculationService
-                .calculateQuotation(id);
-
-        quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
-
-        List<QuotationRoom> rooms =
-                quotationRoomService
-                        .getActiveByQuotationId(id);
-
-        Map<Long, List<QuotationItem>> roomItems =
-                new HashMap<>();
-
-        for (QuotationRoom room : rooms) {
-
-            roomItems.put(
-                    room.getId(),
-                    quotationItemService
-                            .getActiveByQuotationRoomId(
-                                    room.getId()
-                            )
-            );
+        try {
+            User employee = getLoggedInEmployee(authentication);
+            getQuotationAndCheckOwnership(id, employee);
+            return "redirect:/employee/quotations/builder?quotationId=" + id;
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/employee/quotations";
         }
-
-        model.addAttribute("employee", employee);
-        model.addAttribute("quotation", quotation);
-        model.addAttribute("nextQuotationNumber", quotation.getQuotationNumber());
-        model.addAttribute("rooms", rooms);
-        model.addAttribute("roomItems", roomItems);
-        model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
-        model.addAttribute("workCategories", workCategoryService.getActiveCategories());
-        model.addAttribute("pricingModes", PricingMode.values());
-        model.addAttribute("today", LocalDate.now());
-        model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : null);
-
-        return "employee/quotation-builder";
     }
 
 
@@ -1348,24 +1485,14 @@ public class EmployeeQuotationController {
         String description = "";
 
         if (id != null && id > 0) {
-            Quotation quotation =
-                    getQuotationAndCheckOwnership(
-                            id,
-                            employee
-                    );
-
-            if (quotation.getBranch() == null) {
-                throw new IllegalStateException(
-                        "Quotation branch is not assigned."
-                );
-            }
+            getQuotationAndCheckOwnership(
+                    id,
+                    employee
+            );
 
             rate = quotationCalculationService.resolveItemRate(id, materialOptionId, mode);
         } else {
             Long branchId = employee.getBranch() != null ? employee.getBranch().getId() : null;
-            if (branchId == null) {
-                throw new IllegalStateException("Employee is not assigned to a branch.");
-            }
             rate = builderService.resolveRate(branchId, materialOptionId, mode);
         }
 
@@ -1414,16 +1541,20 @@ public class EmployeeQuotationController {
                 employee.getBranch() != null ? employee.getBranch().getName() : "Not Assigned"
         );
 
-        String formula = "L × W";
+        String formula = "(L + W) × H";
         if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank()) {
-            formula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(pricing.getFormula());
+            formula = pricing.getFormula();
         } else {
             MaterialOption mo = materialOptionRepository.findById(materialOptionId).orElse(null);
             if (mo != null && mo.getFormula() != null && !mo.getFormula().isBlank()) {
-                formula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(mo.getFormula());
+                formula = mo.getFormula();
             }
         }
         result.put("formula", formula);
+
+        String measurementUnit = ("INCH".equalsIgnoreCase(unit) || "INCHES".equalsIgnoreCase(unit) || "SQIN".equalsIgnoreCase(unit)) ? "SQIN" : "SQFT";
+        result.put("measurementUnit", measurementUnit);
+        result.put("pricingUnit", "₹ / " + measurementUnit);
 
         return result;
     }

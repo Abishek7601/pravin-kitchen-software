@@ -271,7 +271,6 @@
 
                         <th>Amount</th>
 
-                        <th>Offer Price</th>
 
                     </tr>
 
@@ -395,18 +394,6 @@
 
                         </td>
 
-                        <td>
-
-                            ₹
-                            <span th:text="${item.offerPrice != null
-                                ? item.offerPrice : 0}">
-                                122
-                            </span>
-
-                        </td>
-
-                    </tr>
-
                     </tbody>
 
                 </table>
@@ -424,8 +411,8 @@
 
                         ₹
 
-                        <span th:text="${room.offerPrice != null
-                            ? room.offerPrice : 0}">
+                        <span th:text="${room.subtotal != null
+                            ? room.subtotal : 0}">
                             122
                         </span>
 

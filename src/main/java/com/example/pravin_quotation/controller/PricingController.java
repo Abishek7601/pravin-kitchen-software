@@ -23,6 +23,7 @@ public class PricingController {
     private final ItemRepository itemRepository;
     private final DivisionRepository divisionRepository;
     private final WorkCategoryRepository workCategoryRepository;
+    private final com.example.pravin_quotation.service.FormulaConfigService formulaConfigService;
 
     public PricingController(
             PricingService pricingService,
@@ -30,7 +31,8 @@ public class PricingController {
             MaterialRepository materialRepository,
             ItemRepository itemRepository,
             DivisionRepository divisionRepository,
-            WorkCategoryRepository workCategoryRepository
+            WorkCategoryRepository workCategoryRepository,
+            com.example.pravin_quotation.service.FormulaConfigService formulaConfigService
     ) {
         this.pricingService = pricingService;
         this.materialOptionRepository = materialOptionRepository;
@@ -38,6 +40,7 @@ public class PricingController {
         this.itemRepository = itemRepository;
         this.divisionRepository = divisionRepository;
         this.workCategoryRepository = workCategoryRepository;
+        this.formulaConfigService = formulaConfigService;
     }
 
     @GetMapping
@@ -369,6 +372,7 @@ public class PricingController {
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("formulaOptions", CalculationFormula.ALL_FORMULAS);
         model.addAttribute("formulas", CalculationFormula.ALL_FORMULAS);
+        model.addAttribute("configuredFormulas", formulaConfigService.getActiveFormulas());
         model.addAttribute("divisions", Collections.emptyList());
         model.addAttribute("materials", Collections.emptyList());
         model.addAttribute("materialOptions", Collections.emptyList());

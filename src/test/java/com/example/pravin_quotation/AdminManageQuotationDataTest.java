@@ -1,6 +1,7 @@
 package com.example.pravin_quotation;
 
 import com.example.pravin_quotation.controller.AdminController;
+import com.example.pravin_quotation.controller.AdminFormulaController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,12 +21,12 @@ import static org.junit.jupiter.api.Assertions.*;
 public class AdminManageQuotationDataTest {
 
     @Autowired
-    private AdminController adminController;
+    private AdminFormulaController adminFormulaController;
 
     @Test
     public void testFormulaCalculationEndpoint() {
         Model model = new ConcurrentModel();
-        String viewName = adminController.formulaCalculation(model);
+        String viewName = adminFormulaController.formulaCalculation(model);
         assertEquals("admin/formula-calculation", viewName);
     }
 

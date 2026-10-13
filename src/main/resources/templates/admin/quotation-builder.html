@@ -136,14 +136,6 @@
           + Add Another Room to Quotation
         </button>
       </div>
-      <div class="grand-summary" style="display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; font-size: 0.95rem; color: #475569;">
-          <span>Combined Rooms Subtotal</span><strong id="combinedSubtotal">₹0.00</strong>
-        </div>
-        <div style="display: flex; justify-content: space-between; font-size: 1.25rem; font-weight: 700; color: #006b63;">
-          <span>Grand Total</span><strong id="grandTotal">₹0.00</strong>
-        </div>
-      </div>
     </section>
 
     <section class="card notes-card">
@@ -175,6 +167,87 @@
   const currentRoomKey = () => `${$('floor').value}||${$('roomNumber').value}`;
   const currentRoom = () => state.rooms.find(r => r.key === currentRoomKey());
 
+  function evaluateExpressionSafely(expression, L, W, H) {
+      if (!expression) return 0;
+      let expr = String(expression).replace(/×/g, '*').replace(/x/g, '*').trim();
+      const tokens = [];
+      let i = 0;
+      while (i < expr.length) {
+          let ch = expr[i];
+          if (/\s/.test(ch)) { i++; continue; }
+          if (/[0-9.]/.test(ch)) {
+              let num = '';
+              while (i < expr.length && /[0-9.]/.test(expr[i])) { num += expr[i++]; }
+              tokens.push(parseFloat(num));
+              continue;
+          }
+          if (ch === 'L' || ch === 'l') { tokens.push(Number(L || 0)); i++; continue; }
+          if (ch === 'W' || ch === 'w') { tokens.push(Number(W || 0)); i++; continue; }
+          if (ch === 'H' || ch === 'h') { tokens.push(Number(H || 0)); i++; continue; }
+          if ('+-*/()'.includes(ch)) { tokens.push(ch); i++; continue; }
+          return 0;
+      }
+      let pos = 0;
+      function parseExpr() {
+          let left = parseTerm();
+          while (pos < tokens.length && (tokens[pos] === '+' || tokens[pos] === '-')) {
+              let op = tokens[pos++];
+              let right = parseTerm();
+              left = (op === '+') ? (left + right) : (left - right);
+          }
+          return left;
+      }
+      function parseTerm() {
+          let left = parseFactor();
+          while (pos < tokens.length && (tokens[pos] === '*' || tokens[pos] === '/')) {
+              let op = tokens[pos++];
+              let right = parseFactor();
+              if (op === '/') {
+                  if (right === 0) return 0;
+                  left = left / right;
+              } else {
+                  left = left * right;
+              }
+          }
+          return left;
+      }
+      function parseFactor() {
+          if (pos >= tokens.length) return 0;
+          let tok = tokens[pos++];
+          if (tok === '+') return parseFactor();
+          if (tok === '-') return -parseFactor();
+          if (tok === '(') {
+              let val = parseExpr();
+              if (pos < tokens.length && tokens[pos] === ')') pos++;
+              return val;
+          }
+          if (typeof tok === 'number') return tok;
+          return 0;
+      }
+      let res = parseExpr();
+      return (typeof res === 'number' && !isNaN(res)) ? res : 0;
+  }
+
+  function calculateItemMeasurement(formula, unit, L, W, H) {
+      const expr = formula || '(L + W) * H';
+      const raw = evaluateExpressionSafely(expr, L, W, H);
+      const u = (unit || 'SQFT').toUpperCase();
+      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+          return raw;
+      }
+      const isLinear = !expr.includes('*') && !expr.includes('×') && !expr.includes('x') && !expr.includes('/');
+      return isLinear ? (raw / 12.0) : (raw / 144.0);
+  }
+
+  function getItemUnitLabel(formula, unit) {
+      const u = (unit || 'SQFT').toUpperCase();
+      if (u === 'INCHES' || u === 'INCH' || u === 'SQIN') {
+          const expr = formula || '';
+          return (expr.includes('*') || expr.includes('×') || expr.includes('x')) ? 'sq.in' : 'in';
+      }
+      return 'sq.ft';
+  }
+
   function ensureRoom() {
       const floor = $('floor').value, room = $('roomNumber').value;
       if (!floor || !room) return null;
@@ -203,7 +276,10 @@
       let html = '<span style="font-size: 12px; font-weight: 600; color: #475569; margin-right: 4px;">Configured Rooms:</span>';
       roomsWithItems.forEach(r => {
           const isActive = r.key === currentKey;
-          const roomTotal = r.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => s + (((z.length + z.width) * z.height) / 144) * Number(item.rate || 0), 0), 0);
+          const roomTotal = r.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
+              const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+              return s + (meas * Number(item.rate || 0));
+          }, 0), 0);
           html += `<button type="button" class="btn btn-sm ${isActive ? 'btn-primary' : 'btn-outline-secondary'}" data-floor="${esc(r.floor)}" data-room="${esc(r.room)}" style="padding: 4px 10px; font-size: 12px; border-radius: 16px;">
             ${esc(r.floor)} - Room ${esc(r.room)} (${money(roomTotal)})
           </button>`;
@@ -323,6 +399,10 @@
       try {
           const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&pricingMode=${state.pricingMode}`);
           state.draft.rate = Number(data.rate || 0);
+          state.draft.formula = data.formula || '(L + W) * H';
+          state.draft.unit = data.unit || 'SQFT';
+          state.draft.measurementUnit = data.measurementUnit || (state.draft.unit === 'INCHES' ? 'sq.in' : 'sq.ft');
+          state.draft.pricingUnit = data.pricingUnit || ('₹ / ' + (state.draft.unit === 'INCHES' ? 'SQIN' : 'SQFT'));
           $('pricingMessage').textContent = '';
       } catch (e) {
           state.draft.rate = 0;
@@ -335,12 +415,15 @@
       if (!state.draft?.materialOptionId) { hide('materialDetails'); return; }
       const option = $('materialOptionId').selectedOptions[0];
       const material = $('materialId').selectedOptions[0];
-      showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Pricing Mode</span><strong>${state.pricingMode}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)}</strong></div>`);
+      const formulaDisp = state.draft.formula || '(L + W) × H';
+      const pUnit = state.draft.pricingUnit || '₹ / SQFT';
+      showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Formula</span><strong>${esc(formulaDisp)}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)} <small style="font-size:0.75rem; color:#64748b;">(${esc(pUnit)})</small></strong></div>`);
   }
 
   function addSizeRow(size = {}) {
       const row = document.createElement('div'); row.className='size-row';
-      row.innerHTML = `<div><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div><label>Offer Price</label><input class="offer" type="number" min="0" step="0.01" value="${size.offerPrice || ''}" placeholder="Optional"></div><div class="size-result"><span>SQ.FT</span><strong class="sqft">0.00</strong><button type="button" class="remove-size">×</button></div>`;
+      const uLabel = getItemUnitLabel(state.draft?.formula, state.draft?.unit);
+      row.innerHTML = `<div><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
       $('sizeRows').appendChild(row);
       row.querySelectorAll('input').forEach(i => i.addEventListener('input', calculateDraft));
       row.querySelector('.remove-size').addEventListener('click', () => { if ($('sizeRows').children.length > 1) { row.remove(); calculateDraft(); } });
@@ -349,23 +432,35 @@
 
   function readSizes() {
       return [...document.querySelectorAll('.size-row')].map(row => ({
-          length:Number(row.querySelector('.length').value || 0), width:Number(row.querySelector('.width').value || 0), height:Number(row.querySelector('.height').value || 0), offerPrice: row.querySelector('.offer').value === '' ? null : Number(row.querySelector('.offer').value), row
+          length:Number(row.querySelector('.length').value || 0), width:Number(row.querySelector('.width').value || 0), height:Number(row.querySelector('.height').value || 0), offerPrice: null, row
       }));
   }
 
   function calculateDraft() {
       if (!state.draft) return;
-      let sqft=0, amount=0;
-      readSizes().forEach(s => { const value = s.length>0 && s.width>0 && s.height>0 ? ((s.length+s.width)*s.height)/144 : 0; sqft += value; amount += value * Number(state.draft.rate || 0); s.row.querySelector('.sqft').textContent=value.toFixed(2); });
-      $('currentRate').textContent=money(state.draft.rate); $('currentSqft').textContent=sqft.toFixed(2); $('currentAmount').textContent=money(amount);
+      let totalMeas=0, amount=0;
+      const uLabel = getItemUnitLabel(state.draft.formula, state.draft.unit);
+      readSizes().forEach(s => {
+          const value = (s.length > 0 || s.width > 0 || s.height > 0)
+              ? calculateItemMeasurement(state.draft.formula, state.draft.unit, s.length, s.width, s.height)
+              : 0;
+          totalMeas += value;
+          const lineAmount = value * Number(state.draft.rate || 0);
+          amount += lineAmount;
+          const sqftEl = s.row.querySelector('.sqft');
+          if (sqftEl) sqftEl.textContent = value.toFixed(2) + ' ' + uLabel;
+      });
+      $('currentRate').textContent = money(state.draft.rate);
+      $('currentSqft').textContent = totalMeas.toFixed(2) + ' ' + uLabel;
+      $('currentAmount').textContent = money(amount);
   }
 
   function addDraftToRoom() {
       if (!state.draft || !state.draft.materialOptionId) return alert('Select a material option.');
       const sizes=readSizes();
-      if (sizes.some(s => !(s.length>0 && s.width>0 && s.height>0))) return alert('Enter Length, Width and Height for every size.');
+      if (sizes.some(s => !(s.length>0 || s.width>0 || s.height>0))) return alert('Enter dimensions (Length, Width, or Height) for every size.');
       const room=ensureRoom(); if (!room) return alert('Select Floor and Room Number first.');
-      state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:s.offerPrice}));
+      state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
       room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
       renderRoomPills();
@@ -379,7 +474,10 @@
       $('addAnotherRoomBottomArea').style.display = roomsWithItems.length > 0 ? 'flex' : 'none';
 
       roomsWithItems.forEach((room, ri) => {
-          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => s + (((z.length + z.width) * z.height) / 144) * Number(item.rate || 0), 0), 0);
+          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
+              const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+              return s + (meas * Number(item.rate || 0));
+          }, 0), 0);
           total += roomTotal;
           const block = document.createElement('div');
           block.className = 'summary-room';
@@ -397,13 +495,13 @@
           const table = document.createElement('div');
           table.className = 'summary-table';
           room.items.forEach((item, ii) => {
+              const uLabel = getItemUnitLabel(item.formula, item.unit);
               item.sizes.forEach((z, si) => {
-                  const sqft = ((z.length + z.width) * z.height) / 144;
-                  const amount = sqft * Number(item.rate || 0);
-                  const offer = z.offerPrice == null ? amount : Number(z.offerPrice);
+                  const meas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
+                  const amount = meas * Number(item.rate || 0);
                   const row = document.createElement('div');
                   row.className = 'summary-row';
-                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${sqft.toFixed(2)} SQ.FT</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><div>${money(offer)}</div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
+                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${z.length} × ${z.width} × ${z.height}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
                   table.appendChild(row);
               });
           });
@@ -412,7 +510,7 @@
       });
 
       if ($('combinedSubtotal')) $('combinedSubtotal').textContent = money(total);
-      $('grandTotal').textContent = money(total);
+      if ($('grandTotal')) $('grandTotal').textContent = money(total);
 
       document.querySelectorAll('.summary-delete').forEach(btn => {
           btn.addEventListener('click', () => {
@@ -432,7 +530,13 @@
       state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
       if (!state.rooms.some(r=>r.items.length)) return;
       const requests=[];
-      state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{ if(!$('branchId').value)return; const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId}&pricingMode=${state.pricingMode}`); item.rate=Number(data.rate||0); })())));
+      state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{
+          if(!$('branchId').value)return;
+          const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId}&pricingMode=${state.pricingMode}`);
+          item.rate=Number(data.rate||0);
+          if (data.formula) item.formula = data.formula;
+          if (data.unit) item.unit = data.unit;
+      })())));
       try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message;}
   }
 

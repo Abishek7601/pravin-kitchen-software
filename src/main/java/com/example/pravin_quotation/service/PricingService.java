@@ -5,6 +5,7 @@ import com.example.pravin_quotation.repository.*;
 import com.example.pravin_quotation.util.CalculationFormula;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -120,7 +121,7 @@ public class PricingService {
             );
         }
 
-        String normFormula = CalculationFormula.normalizeFormula(formula);
+        String normFormula = resolveFormula(formula);
         materialOption.setFormula(normFormula);
         materialOptionRepository.save(materialOption);
 
@@ -183,7 +184,7 @@ public class PricingService {
             );
         }
 
-        String normFormula = CalculationFormula.normalizeFormula(formula);
+        String normFormula = resolveFormula(formula);
         materialOption.setFormula(normFormula);
         materialOptionRepository.save(materialOption);
 
@@ -296,7 +297,7 @@ public class PricingService {
         }
 
         // 4. Material Option (OPTIONAL)
-        String normFormula = CalculationFormula.normalizeFormula(formula);
+        String normFormula = resolveFormula(formula);
         MaterialOption materialOption;
         if (newMaterialOptionName != null && !newMaterialOptionName.trim().isEmpty()) {
             String optName = newMaterialOptionName.trim();
@@ -384,25 +385,13 @@ public class PricingService {
         pricingRepository.save(pricing);
     }
 
+    @Transactional
     public void deletePricing(Long id) {
 
         Pricing pricing = getPricingById(id);
 
-        /*
-         * IMPORTANT:
-         * A pricing record may already be used by District Pricing.
-         *
-         * We must not delete the parent Pricing record while
-         * District Pricing records are still pointing to it.
-         */
-
-        if (districtPricingRepository.existsByPricingId(id)) {
-
-            throw new IllegalStateException(
-                    "This pricing cannot be deleted because it is already used in District Pricing. "
-                            + "Deactivate it instead or remove its District Pricing records first."
-            );
-        }
+        // Safely remove any legacy district pricing records pointing to this pricing
+        districtPricingRepository.deleteByPricingId(id);
 
         try {
 
@@ -480,5 +469,27 @@ public class PricingService {
         String cleaned = value.trim();
 
         return cleaned.isEmpty() ? null : cleaned;
+    }
+
+    private String resolveFormula(String formula) {
+        if (formula == null || formula.isBlank()) {
+            return CalculationFormula.FORMULA_L_PLUS_W_X_H;
+        }
+        String trimmed = formula.trim();
+        if (trimmed.equalsIgnoreCase("L x W") || trimmed.equalsIgnoreCase("L × W")) {
+            return CalculationFormula.FORMULA_L_X_W;
+        }
+        if (trimmed.equalsIgnoreCase("L x H") || trimmed.equalsIgnoreCase("L × H")) {
+            return CalculationFormula.FORMULA_L_X_H;
+        }
+        if (trimmed.contains("+") && (trimmed.contains("W × H") || trimmed.contains("W x H") || trimmed.contains("L + W"))) {
+            return CalculationFormula.FORMULA_L_PLUS_W_X_H;
+        }
+        com.example.pravin_quotation.util.FormulaEvaluator.ValidationResult val =
+                com.example.pravin_quotation.util.FormulaEvaluator.validateExpression(trimmed);
+        if (val.valid()) {
+            return trimmed;
+        }
+        return CalculationFormula.normalizeFormula(trimmed);
     }
 }
