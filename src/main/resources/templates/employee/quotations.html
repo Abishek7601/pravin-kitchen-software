@@ -36,6 +36,11 @@
             <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
                 <span>⌂ Back to Dashboard</span>
             </a>
+            <form th:action="@{/logout}" method="post" style="display: inline-block; margin: 0;">
+                <button type="submit" class="btn btn-outline-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #dc2626; text-decoration: none; transition: all 0.2s ease;">
+                    <span>↪ Logout</span>
+                </button>
+            </form>
         </div>
 
         <a th:href="@{/employee/quotations/new}"
@@ -222,6 +227,7 @@
 
 </div>
 
+<script th:src="@{/js/employee-session.js}"></script>
 </body>
 </html>
 

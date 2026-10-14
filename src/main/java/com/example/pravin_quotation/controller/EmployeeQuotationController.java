@@ -30,7 +30,9 @@ import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 
+import com.example.pravin_quotation.model.WhatsAppResult;
 import com.example.pravin_quotation.service.*;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.Collections;
 import org.springframework.http.HttpHeaders;
@@ -86,6 +88,7 @@ public class EmployeeQuotationController {
     private final QuotationCommunicationService quotationCommunicationService;
 
     private final QuotationStatusHistoryService quotationStatusHistoryService;
+    private final WhatsAppService whatsAppService;
 
 
     // ============================================================
@@ -146,7 +149,9 @@ public class EmployeeQuotationController {
 
             QuotationCommunicationService quotationCommunicationService,
 
-            QuotationStatusHistoryService quotationStatusHistoryService
+            QuotationStatusHistoryService quotationStatusHistoryService,
+
+            WhatsAppService whatsAppService
     ) {
 
         this.quotationRepository =
@@ -229,6 +234,9 @@ public class EmployeeQuotationController {
 
         this.quotationStatusHistoryService =
                 quotationStatusHistoryService;
+
+        this.whatsAppService =
+                whatsAppService;
     }
 
 
@@ -2681,14 +2689,21 @@ public class EmployeeQuotationController {
     // ============================================================
 
     @GetMapping("/whatsapp/{id}")
-    public String trackWhatsApp(
+    public Object trackWhatsApp(
 
             @PathVariable Long id,
 
             Authentication authentication,
 
+            HttpServletRequest request,
+
             RedirectAttributes redirectAttributes
     ) {
+
+        String accept = request.getHeader("Accept");
+        String requestedWith = request.getHeader("X-Requested-With");
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
         try {
 
@@ -2703,102 +2718,31 @@ public class EmployeeQuotationController {
                             employee
                     );
 
-            if (quotation.getCustomer() == null) {
+            String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, baseUrl);
 
-                throw new IllegalArgumentException(
-                        "Customer not found."
+            if (wantsJson) {
+                return ResponseEntity.ok(result);
+            }
+
+            if ("API".equalsIgnoreCase(result.getMethod())) {
+                redirectAttributes.addFlashAttribute(
+                        "successMessage",
+                        result.getMessage()
                 );
+                return "redirect:/employee/quotations/view/" + id;
             }
 
-            String phone =
-                    quotation
-                            .getCustomer()
-                            .getPhone();
-
-            if (phone == null
-                    || phone.isBlank()) {
-
-                throw new IllegalArgumentException(
-                        "Customer phone number is not available."
-                );
-            }
-
-            phone =
-                    phone.replaceAll(
-                            "[^0-9]",
-                            ""
-                    );
-
-            if (phone.startsWith("0")
-                    && phone.length() == 11) {
-
-                phone =
-                        phone.substring(1);
-            }
-
-            if (phone.length() == 10) {
-
-                phone =
-                        "91" + phone;
-            }
-
-            if (!phone.matches(
-                    "[1-9][0-9]{7,14}"
-            )) {
-
-                throw new IllegalArgumentException(
-                        "Customer phone number format is invalid."
-                );
-            }
-
-            String quotationNumber =
-                    quotation.getQuotationNumber();
-
-            String message =
-                    "Hello "
-                            + quotation
-                            .getCustomer()
-                            .getName()
-                            + ",\n\n"
-                            + "Your quotation has been prepared.\n\n"
-                            + "Quotation No: "
-                            + quotationNumber
-                            + "\n"
-                            + "Quotation Amount: ₹"
-                            + quotation.getGrandTotal()
-                            + "\n\n"
-                            + "Thank you,\n"
-                            + "Pravin KITCHENS & INTERIORSS & INTERIORS";
-
-            String encodedMessage =
-                    java.net.URLEncoder.encode(
-                            message,
-                            java.nio.charset.StandardCharsets.UTF_8
-                    );
-
-            quotationCommunicationService.record(
-                    quotation,
-                    QuotationCommunication.CommunicationType.WHATSAPP,
-                    phone,
-                    QuotationCommunication.CommunicationStatus.SENT,
-                    "Quotation WhatsApp message initiated."
-            );
-
-            if (quotation.getStatus() == QuotationStatus.PENDING
-                    || quotation.getStatus() == QuotationStatus.WORKING) {
-                quotation.setStatus(QuotationStatus.SENT);
-                quotationRepository.save(quotation);
-            }
-
-            String whatsappUrl =
-                    "https://wa.me/"
-                            + phone
-                            + "?text="
-                            + encodedMessage;
-
-            return "redirect:" + whatsappUrl;
+            return "redirect:" + result.getWhatsappUrl();
 
         } catch (Exception e) {
+
+            if (wantsJson) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", e.getMessage()
+                ));
+            }
 
             redirectAttributes.addFlashAttribute(
                     "errorMessage",

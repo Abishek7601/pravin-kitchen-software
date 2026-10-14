@@ -293,6 +293,19 @@ public class QuotationService {
         );
     }
 
+    public List<Quotation> getOneYearQuotations() {
+
+        LocalDate today = LocalDate.now();
+
+        LocalDate startDate =
+                today.minusYears(1);
+
+        return getByDateRange(
+                startDate,
+                today
+        );
+    }
+
     // ---------------------------------------------------------
     // Get branch 60-day quotations
     // ---------------------------------------------------------
@@ -1043,6 +1056,21 @@ public class QuotationService {
 
         LocalDate startDate =
                 today.minusDays(59);
+
+        return quotationRepository
+                .countByQuotationDateBetween(
+                        startDate,
+                        today
+                );
+    }
+
+    public long getOneYearQuotationCount() {
+
+        LocalDate today =
+                LocalDate.now();
+
+        LocalDate startDate =
+                today.minusYears(1);
 
         return quotationRepository
                 .countByQuotationDateBetween(

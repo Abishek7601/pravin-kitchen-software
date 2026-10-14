@@ -16,6 +16,12 @@ import java.util.Set;
 public class CustomAuthenticationSuccessHandler
         implements AuthenticationSuccessHandler {
 
+    private final EmployeeSessionService employeeSessionService;
+
+    public CustomAuthenticationSuccessHandler(EmployeeSessionService employeeSessionService) {
+        this.employeeSessionService = employeeSessionService;
+    }
+
     @Override
     public void onAuthenticationSuccess(
             HttpServletRequest request,
@@ -37,12 +43,22 @@ public class CustomAuthenticationSuccessHandler
 
         if (roles.contains("ROLE_SUPER_ADMIN")) {
 
-            // Admin does NOT need OTP
+            // Admin does NOT need OTP and has no 8:00 PM restriction
             session.setAttribute("OTP_VERIFIED", true);
 
             response.sendRedirect("/admin/dashboard");
 
         } else if (roles.contains("ROLE_EMPLOYEE")) {
+
+            // Check if login attempt is after 8:00 PM IST
+            if (employeeSessionService.isPast8PmIst()) {
+                employeeSessionService.invalidateEmployeeSession(request, response);
+                response.sendRedirect("/login?expired");
+                return;
+            }
+
+            // Initialize employee session with 8:00 PM IST deadline
+            employeeSessionService.initializeEmployeeSession(session);
 
             // Employee MUST verify OTP
             session.setAttribute("OTP_VERIFIED", false);

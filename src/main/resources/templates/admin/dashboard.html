@@ -332,7 +332,7 @@
 
 
       <!-- ================================================= -->
-      <!-- TOTAL EMPLOYEES -->
+      <!-- 1. TOTAL EMPLOYEES -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/employees}"
@@ -376,7 +376,7 @@
 
 
       <!-- ================================================= -->
-      <!-- TOTAL BRANCHES -->
+      <!-- 2. TOTAL BRANCHES -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/branches}"
@@ -420,7 +420,51 @@
 
 
       <!-- ================================================= -->
-      <!-- 60 DAY QUOTATIONS -->
+      <!-- 3. ONE YEAR QUOTATIONS -->
+      <!-- ================================================= -->
+
+      <a th:href="@{/admin/quotations(period='year')}"
+         class="dashboard-card one-year-card">
+
+        <div class="card-top">
+
+          <div class="card-icon">
+
+            <i class="bi bi-calendar3"></i>
+
+          </div>
+
+          <span class="card-arrow">
+
+                        <i class="bi bi-arrow-up-right"></i>
+
+                    </span>
+
+        </div>
+
+
+        <div class="card-content">
+
+                    <span class="card-label">
+                        One Year Quotations
+                    </span>
+
+          <h2 th:text="${oneYearQuotationCount}">
+            0
+          </h2>
+
+          <p>
+            Quotations created in last 365 days
+          </p>
+
+        </div>
+
+      </a>
+
+
+
+      <!-- ================================================= -->
+      <!-- 4. 60 DAYS QUOTATIONS -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/quotations(period='60')}"
@@ -446,7 +490,7 @@
         <div class="card-content">
 
                     <span class="card-label">
-                        60-Day Quotations
+                        60 Days Quotations
                     </span>
 
           <h2 th:text="${last60DaysQuotationCount}">
@@ -464,7 +508,7 @@
 
 
       <!-- ================================================= -->
-      <!-- 60 DAY QUOTED VALUE -->
+      <!-- 5. 60 DAYS QUOTED VALUE -->
       <!-- ================================================= -->
 
       <div class="dashboard-card value-card">
@@ -483,7 +527,7 @@
         <div class="card-content">
 
                     <span class="card-label">
-                        60-Day Quoted Value
+                        60 Days Quoted Value
                     </span>
 
           <h2>
@@ -508,7 +552,7 @@
 
 
       <!-- ================================================= -->
-      <!-- ONE YEAR CUSTOMERS -->
+      <!-- 6. ONE YEAR CUSTOMERS -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/customers(period='1year')}"
@@ -534,7 +578,7 @@
         <div class="card-content">
 
                     <span class="card-label">
-                        One-Year Customers
+                        One Year Customers
                     </span>
 
           <h2 th:text="${oneYearCustomerCount}">
@@ -552,7 +596,7 @@
 
 
       <!-- ================================================= -->
-      <!-- QUOTATIONS PENDING -->
+      <!-- 7. QUOTATIONS PENDING -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/quotations/status/PENDING}"
@@ -596,7 +640,7 @@
 
 
       <!-- ================================================= -->
-      <!-- QUOTATIONS WORKING -->
+      <!-- 8. QUOTATIONS WORKING -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/quotations/status/WORKING}"
@@ -640,7 +684,7 @@
 
 
       <!-- ================================================= -->
-      <!-- QUOTATIONS SENT -->
+      <!-- 9. QUOTATIONS SENT -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/quotations/status/SENT}"
@@ -684,7 +728,7 @@
 
 
       <!-- ================================================= -->
-      <!-- TOTAL PORTFOLIO -->
+      <!-- 10. TOTAL PORTFOLIO VALUE -->
       <!-- ================================================= -->
 
       <a th:href="@{/admin/portfolio}"

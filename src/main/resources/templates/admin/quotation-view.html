@@ -1971,104 +1971,85 @@
 
 <script>
 
-    function openWhatsApp(button) {
+    async function openWhatsApp(button) {
 
-        const phone =
-            button.dataset.phone;
+        const quotationId = button.dataset.id;
+        const quotationNumber = button.dataset.number;
+        const name = button.dataset.name;
+        const originalHtml = button.innerHTML;
 
-        const name =
-            button.dataset.name;
+        button.innerHTML = "⏳ Generating PDF...";
+        button.style.pointerEvents = "none";
 
-        const quotationNumber =
-            button.dataset.number;
+        try {
+            const response = await fetch("/admin/quotations/whatsapp/" + quotationId, {
+                headers: { "Accept": "application/json" }
+            });
 
-        const total =
-            button.dataset.total;
+            const data = await response.json();
 
-        const quotationId =
-            button.dataset.id;
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Failed to initiate WhatsApp sharing.");
+            }
 
+            if (data.method === "API") {
+                alert("✓ " + (data.message || "Quotation PDF document sent successfully to customer WhatsApp."));
+                window.location.reload();
+                return;
+            }
 
-        if (!phone) {
+            // Client-side WhatsApp (wa.me)
+            const pdfEndpoint = "/admin/quotations/pdf/" + quotationId;
+            try {
+                const pdfResponse = await fetch(pdfEndpoint);
+                if (pdfResponse.ok) {
+                    const blob = await pdfResponse.blob();
+                    const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + ".pdf";
+                    const file = new File([blob], fileName, { type: "application/pdf" });
 
-            alert(
-                "Customer phone number is not available."
-            );
+                    // Web Share API with files (supported on mobile/tablets to attach actual PDF document into WhatsApp)
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                title: "Quotation " + (data.quotationNumber || quotationNumber),
+                                text: "Quotation " + (data.quotationNumber || quotationNumber) + " for " + name,
+                                files: [file]
+                            });
+                            return;
+                        } catch (shareErr) {
+                            if (shareErr.name === 'AbortError') return;
+                        }
+                    }
 
-            return;
+                    // On desktop browsers: download the generated PDF document automatically
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = downloadUrl;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+
+                    // Open WhatsApp Web
+                    window.open(data.whatsappUrl, "_blank");
+
+                    alert("Quotation PDF has been generated and downloaded (" + fileName + ").\n\nWhatsApp Web (wa.me) cannot automatically attach files via URL links. Please attach the downloaded quotation PDF in the opened WhatsApp chat window.");
+                    return;
+                }
+            } catch (pdfErr) {
+                console.error("PDF download fetch error:", pdfErr);
+            }
+
+            // Fallback: open WhatsApp Web
+            window.open(data.whatsappUrl, "_blank");
+
+        } catch (err) {
+            alert("Unable to process WhatsApp sharing: " + err.message);
+        } finally {
+            button.innerHTML = originalHtml;
+            button.style.pointerEvents = "auto";
         }
-
-
-        let cleanPhone =
-            phone.replace(/\D/g, "");
-
-
-        if (cleanPhone.length === 10) {
-
-            cleanPhone =
-                "91" + cleanPhone;
-        }
-
-
-        const message =
-
-            "Hello " +
-            name +
-            ",\n\n" +
-
-            "Your quotation has been prepared.\n\n" +
-
-            "Quotation No: " +
-            quotationNumber +
-            "\n" +
-
-            "Quotation Amount: ₹" +
-            total +
-            "\n\n" +
-
-            "Thank you,\n" +
-
-            "Pravin KITCHENS & INTERIORS";
-
-
-        const whatsappUrl =
-
-            "https://wa.me/" +
-            cleanPhone +
-            "?text=" +
-            encodeURIComponent(message);
-
-
-        /*
-         * Track communication.
-         *
-         * We use a normal GET request so Spring Security
-         * CSRF does not block it.
-         */
-
-        fetch(
-            "/admin/quotations/whatsapp/" +
-            quotationId
-        )
-
-        .then(() => {
-
-            window.open(
-                whatsappUrl,
-                "_blank"
-            );
-
-        })
-
-        .catch(() => {
-
-            window.open(
-                whatsappUrl,
-                "_blank"
-            );
-
-        });
-
     }
 
 </script>

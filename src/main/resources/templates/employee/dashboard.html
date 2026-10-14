@@ -167,87 +167,13 @@
 
 
     <!-- =========================
-         WELCOME CARD
-    ========================== -->
-
-    <section class="welcome-card">
-
-      <div class="welcome-content">
-
-                <span class="welcome-label">
-                    Welcome back
-                </span>
-
-
-        <h2>
-
-          Hello,
-
-          <span th:text="${employee.name}">
-                        Employee
-                    </span>
-
-          👋
-
-        </h2>
-
-
-        <p>
-          You are successfully verified.
-          Start managing your quotations and customers.
-        </p>
-
-      </div>
-
-
-      <div class="welcome-icon">
-
-        ✓
-
-      </div>
-
-    </section>
-
-
-    <!-- =========================
          QUOTATION SUMMARY CARDS
     ========================== -->
 
     <section class="stats-grid">
 
 
-      <!-- 1. 60 DAYS QUOTATIONS -->
-
-      <a th:href="@{/employee/quotations(period='60')}"
-         class="stat-card sixty-day-card">
-
-        <div class="stat-icon sixty-day-icon">
-          📅
-        </div>
-
-
-        <div class="stat-content">
-
-          <span>
-            60 Days Quotations
-          </span>
-
-          <strong
-                  th:text="${last60DaysQuotations}">
-            0
-          </strong>
-
-        </div>
-
-
-        <span class="stat-arrow">
-          →
-        </span>
-
-      </a>
-
-
-      <!-- 2. TOTAL ONE YEAR QUOTATIONS -->
+      <!-- 1. TOTAL ONE YEAR QUOTATIONS -->
 
       <a th:href="@{/employee/quotations(period='year')}"
          class="stat-card one-year-card">
@@ -265,6 +191,37 @@
 
           <strong
                   th:text="${oneYearQuotations}">
+            0
+          </strong>
+
+        </div>
+
+
+        <span class="stat-arrow">
+          →
+        </span>
+
+      </a>
+
+
+      <!-- 2. 60 DAYS QUOTATIONS -->
+
+      <a th:href="@{/employee/quotations(period='60')}"
+         class="stat-card sixty-day-card">
+
+        <div class="stat-icon sixty-day-icon">
+          📅
+        </div>
+
+
+        <div class="stat-content">
+
+          <span>
+            60 Days Quotations
+          </span>
+
+          <strong
+                  th:text="${last60DaysQuotations}">
             0
           </strong>
 
@@ -806,7 +763,7 @@
 
 </div>
 
-
+<script th:src="@{/js/employee-session.js}"></script>
 </body>
 
 </html>

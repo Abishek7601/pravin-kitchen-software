@@ -6,6 +6,8 @@ import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.service.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +37,7 @@ public class QuotationController {
     private final QuotationEmailService quotationEmailService;
     private final QuotationCommunicationService quotationCommunicationService;
     private final QuotationCalculationService quotationCalculationService;
+    private final WhatsAppService whatsAppService;
 
 
     public QuotationController(
@@ -49,7 +52,8 @@ public class QuotationController {
             QuotationEmailService quotationEmailService,
             QuotationItemSizeService quotationItemSizeService,
             QuotationCommunicationService quotationCommunicationService,
-            QuotationCalculationService quotationCalculationService
+            QuotationCalculationService quotationCalculationService,
+            WhatsAppService whatsAppService
 
     ) {
 
@@ -74,6 +78,7 @@ public class QuotationController {
                 quotationCommunicationService;
 
         this.quotationCalculationService = quotationCalculationService;
+        this.whatsAppService = whatsAppService;
     }
 
 
@@ -82,17 +87,33 @@ public class QuotationController {
     // =========================================================
 
     @GetMapping
-    public String quotations(Model model) {
+    public String quotations(
+            @RequestParam(name = "period", required = false) String period,
+            Model model
+    ) {
+
+        List<Quotation> list;
+        if ("60".equals(period)) {
+            list = quotationService.getLast60DaysQuotations();
+            model.addAttribute("isLast60Days", true);
+        } else if ("365".equals(period) || "year".equalsIgnoreCase(period) || "1year".equalsIgnoreCase(period)) {
+            list = quotationService.getOneYearQuotations();
+            model.addAttribute("isOneYear", true);
+        } else {
+            list = quotationService.getAllQuotations();
+        }
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getAllQuotations()
+                list
         );
 
         model.addAttribute(
                 "quotationStatuses",
                 QuotationStatus.values()
         );
+
+        model.addAttribute("selectedPeriod", period);
 
         return "admin/quotations";
     }
@@ -491,62 +512,51 @@ public class QuotationController {
     // =========================================================
 
     @GetMapping("/whatsapp/{id}")
-    public String trackWhatsApp(
+    public Object trackWhatsApp(
             @PathVariable Long id,
+            HttpServletRequest request,
             RedirectAttributes redirectAttributes
     ) {
+
+        String accept = request.getHeader("Accept");
+        String requestedWith = request.getHeader("X-Requested-With");
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
         try {
 
             Quotation quotation =
                     quotationService.getById(id);
 
+            String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, baseUrl);
 
-            if (quotation.getCustomer() == null) {
+            if (wantsJson) {
+                return ResponseEntity.ok(result);
+            }
 
-                throw new IllegalArgumentException(
-                        "Customer not found."
+            if ("API".equalsIgnoreCase(result.getMethod())) {
+                redirectAttributes.addFlashAttribute(
+                        "successMessage",
+                        result.getMessage()
                 );
+                return "redirect:/admin/quotations/view/" + id;
             }
 
-
-            String phone =
-                    quotation
-                            .getCustomer()
-                            .getPhone();
-
-
-            if (phone == null
-                    || phone.isBlank()) {
-
-                throw new IllegalArgumentException(
-                        "Customer phone number is not available."
-                );
-            }
-
-
-            quotationCommunicationService.record(
-                    quotation,
-                    QuotationCommunication.CommunicationType.WHATSAPP,
-                    phone,
-                    QuotationCommunication.CommunicationStatus.SENT,
-                    "Quotation WhatsApp message initiated."
-            );
-
-            if (quotation.getStatus() == QuotationStatus.PENDING
-                    || quotation.getStatus() == QuotationStatus.WORKING) {
-                quotation.setStatus(QuotationStatus.SENT);
-                quotationService.save(quotation);
-            }
-
-
-            return "redirect:/admin/quotations/view/" + id;
+            return "redirect:" + result.getWhatsappUrl();
 
         } catch (Exception e) {
 
+            if (wantsJson) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", e.getMessage()
+                ));
+            }
+
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "WhatsApp tracking failed: "
+                    "WhatsApp sharing failed: "
                             + e.getMessage()
             );
 

@@ -25,15 +25,27 @@ public class OtpController {
     private final UserRepository userRepository;
     private final OtpService otpService;
     private final OtpEmailService otpEmailService;
+    private final com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService;
 
     public OtpController(
             UserRepository userRepository,
             OtpService otpService,
             OtpEmailService otpEmailService
     ) {
+        this(userRepository, otpService, otpEmailService, new com.example.pravin_quotation.security.EmployeeSessionService());
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public OtpController(
+            UserRepository userRepository,
+            OtpService otpService,
+            OtpEmailService otpEmailService,
+            com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService
+    ) {
         this.userRepository = userRepository;
         this.otpService = otpService;
         this.otpEmailService = otpEmailService;
+        this.employeeSessionService = employeeSessionService;
     }
 
     // =========================================================
@@ -77,6 +89,11 @@ public class OtpController {
         // Inactive employee cannot login
         if (!Boolean.TRUE.equals(employee.getActive())) {
             return "redirect:/login?error";
+        }
+
+        // Automatic 8:00 PM IST expiry check
+        if (employee.getRole() == Role.EMPLOYEE && employeeSessionService.isPast8PmIst()) {
+            return "redirect:/login?expired";
         }
 
         // Already verified
@@ -265,6 +282,10 @@ public class OtpController {
             return "redirect:/login?error";
         }
 
+        if (employeeSessionService.isPast8PmIst()) {
+            return "redirect:/login?expired";
+        }
+
         LocalDateTime lastSent =
                 (LocalDateTime)
                         session.getAttribute(
@@ -368,6 +389,14 @@ public class OtpController {
             return "redirect:/employee/otp?invalid";
         }
 
+        // Automatic 8:00 PM IST expiry check
+        if (employeeSessionService.isPast8PmIst()) {
+            session.removeAttribute("OTP_CODE");
+            session.removeAttribute("OTP_EXPIRY");
+            session.removeAttribute("OTP_ATTEMPTS");
+            return "redirect:/login?expired";
+        }
+
         // =====================================================
         // OTP VERIFIED
         // =====================================================
@@ -376,6 +405,9 @@ public class OtpController {
                 "OTP_VERIFIED",
                 true
         );
+
+        // Initialize employee session with 8:00 PM IST deadline
+        employeeSessionService.initializeEmployeeSession(session);
 
         session.removeAttribute(
                 "OTP_CODE"
@@ -390,6 +422,41 @@ public class OtpController {
         );
 
         return "redirect:/employee/dashboard";
+    }
+
+    // =========================================================
+    // SESSION STATUS API (Used by frontend auto-logout timer)
+    // =========================================================
+
+    @GetMapping("/session-status")
+    @ResponseBody
+    public java.util.Map<String, Object> getSessionStatus(HttpSession session) {
+        Authentication authentication =
+                SecurityContextHolder.getContext().getAuthentication();
+
+        boolean isEmployee = authentication != null
+                && authentication.isAuthenticated()
+                && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_EMPLOYEE"));
+
+        java.util.Map<String, Object> map = new java.util.HashMap<>();
+        if (!isEmployee) {
+            map.put("authenticated", false);
+            map.put("expired", true);
+            map.put("remainingMillis", 0L);
+            return map;
+        }
+
+        boolean expired = employeeSessionService.isSessionExpired(session);
+        long remaining = employeeSessionService.getRemainingMillis();
+
+        map.put("authenticated", true);
+        map.put("role", "EMPLOYEE");
+        map.put("expired", expired);
+        map.put("remainingMillis", remaining);
+        map.put("deadlineIst", "20:00:00 IST");
+        map.put("serverTimeIst", employeeSessionService.nowIst().toString());
+        return map;
     }
 
 

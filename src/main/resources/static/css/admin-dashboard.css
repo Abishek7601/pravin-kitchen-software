@@ -136,7 +136,7 @@ body {
     display: grid;
 
     grid-template-columns:
-        repeat(3, minmax(0, 1fr));
+        repeat(4, minmax(0, 1fr));
 
     gap: 20px;
 }
@@ -182,7 +182,7 @@ body {
 }
 
 .portfolio-card {
-    grid-column: span 3;
+    grid-column: span 1;
 }
 
 /* =========================
@@ -201,7 +201,7 @@ body {
     }
 
     .portfolio-card {
-        grid-column: span 2;
+        grid-column: span 1;
     }
 }
 

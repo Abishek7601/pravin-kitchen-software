@@ -48,17 +48,55 @@ public class AdminDashboardService {
     }
 
     // ==============================
+    // ONE YEAR QUOTATIONS
+    // ==============================
+
+    public long getOneYearQuotationCount() {
+        return getOneYearQuotationCount(LocalDate.now());
+    }
+
+    public long getOneYearQuotationCount(LocalDate today) {
+        if (today == null) {
+            return 0;
+        }
+        LocalDate startDate = today.minusYears(1);
+        return quotationRepository.countByQuotationDateBetween(
+                startDate,
+                today
+        );
+    }
+
+    public List<Quotation> getOneYearQuotations() {
+        return getOneYearQuotations(LocalDate.now());
+    }
+
+    public List<Quotation> getOneYearQuotations(LocalDate today) {
+        if (today == null) {
+            return List.of();
+        }
+        LocalDate startDate = today.minusYears(1);
+        return quotationRepository.findByQuotationDateBetweenOrderByQuotationDateDesc(
+                startDate,
+                today
+        );
+    }
+
+    // ==============================
     // LAST 60 DAYS QUOTATIONS
     // ==============================
 
     public long getLast60DaysQuotationCount() {
+        return getLast60DaysQuotationCount(LocalDate.now());
+    }
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(59);
-
+    public long getLast60DaysQuotationCount(LocalDate today) {
+        if (today == null) {
+            return 0;
+        }
+        LocalDate startDate = today.minusDays(59);
         return quotationRepository.countByQuotationDateBetween(
                 startDate,
-                endDate
+                today
         );
     }
 
@@ -67,14 +105,18 @@ public class AdminDashboardService {
     // ==============================
 
     public List<Quotation> getLast60DaysQuotations() {
+        return getLast60DaysQuotations(LocalDate.now());
+    }
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusDays(59);
-
+    public List<Quotation> getLast60DaysQuotations(LocalDate today) {
+        if (today == null) {
+            return List.of();
+        }
+        LocalDate startDate = today.minusDays(59);
         return quotationRepository
                 .findByQuotationDateBetweenOrderByQuotationDateDesc(
                         startDate,
-                        endDate
+                        today
                 );
     }
 
@@ -83,16 +125,17 @@ public class AdminDashboardService {
     // ==============================
 
     public BigDecimal getLast60DaysQuotedValue() {
+        return getLast60DaysQuotedValue(LocalDate.now());
+    }
 
-        List<Quotation> quotations = getLast60DaysQuotations();
+    public BigDecimal getLast60DaysQuotedValue(LocalDate today) {
+        List<Quotation> quotations = getLast60DaysQuotations(today);
 
         return quotations.stream()
                 .map(quotation -> {
-
                     if (quotation.getGrandTotal() == null) {
                         return BigDecimal.ZERO;
                     }
-
                     return quotation.getGrandTotal();
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
@@ -103,15 +146,20 @@ public class AdminDashboardService {
     // ==============================
 
     public long getOneYearCustomerCount() {
+        return getOneYearCustomerCount(LocalDate.now());
+    }
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusYears(1);
+    public long getOneYearCustomerCount(LocalDate today) {
+        if (today == null) {
+            return 0;
+        }
+        LocalDate startDate = today.minusYears(1);
 
         List<Quotation> quotations =
                 quotationRepository
                         .findByQuotationDateBetweenOrderByQuotationDateDesc(
                                 startDate,
-                                endDate
+                                today
                         );
 
         return quotations.stream()
@@ -127,14 +175,19 @@ public class AdminDashboardService {
     // ==============================
 
     public List<Quotation> getOneYearCustomerQuotations() {
+        return getOneYearCustomerQuotations(LocalDate.now());
+    }
 
-        LocalDate endDate = LocalDate.now();
-        LocalDate startDate = endDate.minusYears(1);
+    public List<Quotation> getOneYearCustomerQuotations(LocalDate today) {
+        if (today == null) {
+            return List.of();
+        }
+        LocalDate startDate = today.minusYears(1);
 
         return quotationRepository
                 .findByQuotationDateBetweenOrderByQuotationDateDesc(
                         startDate,
-                        endDate
+                        today
                 );
     }
 

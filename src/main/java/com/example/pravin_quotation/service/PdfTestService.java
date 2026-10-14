@@ -28,7 +28,7 @@ public class PdfTestService {
 
             document.add(
                     new Paragraph(
-                            "Pravin KITCHENS & INTERIORSS & INTERIORS"
+                            "Pravin KITCHENS & INTERIORS"
                     )
             );
 

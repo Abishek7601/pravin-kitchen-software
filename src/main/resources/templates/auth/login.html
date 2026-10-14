@@ -33,6 +33,11 @@
          You have been logged out successfully.
        </div>
 
+       <div th:if="${param.expired}"
+            class="message error">
+         Your session expired at 8:00 PM IST. Please log in again with Admin OTP.
+       </div>
+
        <form th:action="@{/login}" method="post">
 
          <div class="form-group">

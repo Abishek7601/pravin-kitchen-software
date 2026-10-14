@@ -1172,7 +1172,12 @@
             <!-- WhatsApp -->
 
             <a th:href="@{/employee/quotations/whatsapp/{id}(id=${quotation.id})}"
-               class="btn btn-success">
+               class="btn btn-success"
+               th:attr="
+               data-id=${quotation.id},
+               data-number=${quotation.quotationNumber},
+               data-name=${quotation.customer != null ? quotation.customer.name : ''}"
+               onclick="openWhatsAppEmployee(this); return false;">
 
                 WhatsApp
 
@@ -1209,7 +1214,88 @@
 
     }
 
+    async function openWhatsAppEmployee(button) {
+        const quotationId = button.dataset.id;
+        const quotationNumber = button.dataset.number;
+        const name = button.dataset.name;
+        const originalHtml = button.innerHTML;
+
+        button.innerHTML = "⏳ Generating PDF...";
+        button.style.pointerEvents = "none";
+
+        try {
+            const response = await fetch("/employee/quotations/whatsapp/" + quotationId, {
+                headers: { "Accept": "application/json" }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Failed to initiate WhatsApp sharing.");
+            }
+
+            if (data.method === "API") {
+                alert("✓ " + (data.message || "Quotation PDF document sent successfully to customer WhatsApp."));
+                window.location.reload();
+                return;
+            }
+
+            // Client-side WhatsApp (wa.me)
+            const pdfEndpoint = "/employee/quotations/pdf/" + quotationId;
+            try {
+                const pdfResponse = await fetch(pdfEndpoint);
+                if (pdfResponse.ok) {
+                    const blob = await pdfResponse.blob();
+                    const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + ".pdf";
+                    const file = new File([blob], fileName, { type: "application/pdf" });
+
+                    // Web Share API with files (supported on mobile/tablets)
+                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                        try {
+                            await navigator.share({
+                                title: "Quotation " + (data.quotationNumber || quotationNumber),
+                                text: "Quotation " + (data.quotationNumber || quotationNumber) + " for " + name,
+                                files: [file]
+                            });
+                            return;
+                        } catch (shareErr) {
+                            if (shareErr.name === 'AbortError') return;
+                        }
+                    }
+
+                    // Desktop browsers: download PDF document automatically
+                    const downloadUrl = window.URL.createObjectURL(blob);
+                    const a = document.createElement("a");
+                    a.href = downloadUrl;
+                    a.download = fileName;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
+
+                    // Open WhatsApp Web
+                    window.open(data.whatsappUrl, "_blank");
+
+                    alert("Quotation PDF has been generated and downloaded (" + fileName + ").\n\nWhatsApp Web (wa.me) cannot automatically attach files via URL links. Please attach the downloaded quotation PDF in the opened WhatsApp chat window.");
+                    return;
+                }
+            } catch (pdfErr) {
+                console.error("PDF download fetch error:", pdfErr);
+            }
+
+            // Fallback: open WhatsApp Web
+            window.open(data.whatsappUrl, "_blank");
+
+        } catch (err) {
+            alert("Unable to process WhatsApp sharing: " + err.message);
+        } finally {
+            button.innerHTML = originalHtml;
+            button.style.pointerEvents = "auto";
+        }
+    }
+
 </script>
+<script th:src="@{/js/employee-session.js}"></script>
 
 </body>
 

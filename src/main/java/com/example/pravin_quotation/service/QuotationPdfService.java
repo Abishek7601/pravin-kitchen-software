@@ -1,8 +1,10 @@
 package com.example.pravin_quotation.service;
 
+import com.example.pravin_quotation.model.Branch;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationItem;
 import com.example.pravin_quotation.model.QuotationRoom;
+import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.QuotationItemRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.QuotationRoomRepository;
@@ -39,6 +41,7 @@ public class QuotationPdfService {
     private final QuotationRoomRepository quotationRoomRepository;
     private final QuotationItemRepository quotationItemRepository;
     private final NumberToWordsService numberToWordsService;
+    private final BranchRepository branchRepository;
 
     /*
      * Design Colors matching the Reference Document
@@ -63,12 +66,14 @@ public class QuotationPdfService {
             QuotationRepository quotationRepository,
             QuotationRoomRepository quotationRoomRepository,
             QuotationItemRepository quotationItemRepository,
-            NumberToWordsService numberToWordsService
+            NumberToWordsService numberToWordsService,
+            BranchRepository branchRepository
     ) {
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
         this.quotationItemRepository = quotationItemRepository;
         this.numberToWordsService = numberToWordsService;
+        this.branchRepository = branchRepository;
 
         try {
             BaseFont rupeeBaseFont = BaseFont.createFont(
@@ -94,6 +99,12 @@ public class QuotationPdfService {
         try {
             Quotation quotation = quotationRepository.findById(quotationId)
                     .orElseThrow(() -> new RuntimeException("Quotation not found with ID: " + quotationId));
+
+            // Fetch branch dynamically from Branch Management data
+            Branch branch = quotation.getBranch();
+            if (branch != null && branch.getId() != null) {
+                branch = branchRepository.findById(branch.getId()).orElse(branch);
+            }
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
             Document document = new Document(PageSize.A4, 25, 25, 25, 25);
@@ -136,7 +147,7 @@ public class QuotationPdfService {
             nameCell.setPaddingLeft(6f);
             nameCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-            Paragraph companyName = new Paragraph("Pravin KITCHENS & INTERIORSS & INTERIORS", new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_GOLD));
+            Paragraph companyName = new Paragraph("Pravin KITCHENS & INTERIORS", new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_GOLD));
             nameCell.addElement(companyName);
 
             brandTable.addCell(logoCell);
@@ -146,10 +157,27 @@ public class QuotationPdfService {
             Paragraph addressPar = new Paragraph();
             addressPar.setSpacingBefore(5f);
             addressPar.setFont(new Font(Font.HELVETICA, 7.8f, Font.NORMAL, COLOR_TEXT_MUTED));
-            addressPar.add("Address: Pravin KITCHENS & INTERIORS,\n");
-            addressPar.add("Tvm Main Road, Azhagiamandapam,\n");
-            addressPar.add("Mulagumoodu Post - 629167, T.N.\n");
-            addressPar.add("Mobile: +91 9787769970");
+
+            String branchAddress = (branch != null && branch.getBranchAddress() != null && !branch.getBranchAddress().isBlank())
+                    ? branch.getBranchAddress().trim()
+                    : null;
+
+            if (branchAddress != null) {
+                addressPar.add(branchAddress + "\n");
+            } else if (branch != null && branch.getName() != null && !branch.getName().isBlank()) {
+                addressPar.add("Branch: " + branch.getName().trim() + "\n");
+            }
+
+            if (branch != null && branch.getWhatsapp() != null && !branch.getWhatsapp().isBlank()) {
+                addressPar.add("Mobile: " + branch.getWhatsapp().trim() + "\n");
+            } else {
+                addressPar.add("Mobile: +91 9787769970\n");
+            }
+
+            if (branch != null && branch.getEmail() != null && !branch.getEmail().isBlank()) {
+                addressPar.add("Email: " + branch.getEmail().trim());
+            }
+
             leftCell.addElement(addressPar);
 
             topHeaderTable.addCell(leftCell);
@@ -160,10 +188,7 @@ public class QuotationPdfService {
             rightCell.setPadding(0);
             rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-            String titleText = "MARKETING QUOTATION";
-            if (quotation.getDivision() != null && quotation.getDivision().getName() != null && !quotation.getDivision().getName().isBlank()) {
-                titleText = quotation.getDivision().getName().toUpperCase() + " QUOTATION";
-            }
+            String titleText = "QUOTATION";
 
             Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 14f, Font.BOLD, COLOR_NAVY));
             titlePar.setAlignment(Element.ALIGN_RIGHT);
@@ -178,9 +203,6 @@ public class QuotationPdfService {
             metaTable.setSpacingBefore(6f);
 
             addMetaRow(metaTable, "Quotation No:", safe(quotation.getQuotationNumber()));
-
-            String divName = quotation.getDivision() != null ? safe(quotation.getDivision().getName()) : "Marketing";
-            addMetaRow(metaTable, "Division:", divName);
 
             String qType = "-";
             if (quotation.getPricingMode() != null) {
@@ -204,9 +226,7 @@ public class QuotationPdfService {
             String custAddr = "—";
             if (quotation.getCustomer() != null) {
                 if (quotation.getCustomer().getAddress() != null && !quotation.getCustomer().getAddress().isBlank()) {
-                    custAddr = quotation.getCustomer().getAddress();
-                } else if (quotation.getBranch() != null && quotation.getBranch().getName() != null) {
-                    custAddr = quotation.getBranch().getName();
+                    custAddr = quotation.getCustomer().getAddress().trim();
                 }
             }
             addMetaRow(metaTable, "Address:", custAddr);
@@ -448,7 +468,7 @@ public class QuotationPdfService {
             sig1.setBorder(Rectangle.NO_BORDER);
             sig1.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-            PdfPCell sig2 = new PdfPCell(new Paragraph("\n\n________________________\nFor Pravin KITCHENS & INTERIORSS & INTERIORS", sigFont));
+            PdfPCell sig2 = new PdfPCell(new Paragraph("\n\n________________________\nFor Pravin KITCHENS & INTERIORS", sigFont));
             sig2.setBorder(Rectangle.NO_BORDER);
             sig2.setHorizontalAlignment(Element.ALIGN_CENTER);
 

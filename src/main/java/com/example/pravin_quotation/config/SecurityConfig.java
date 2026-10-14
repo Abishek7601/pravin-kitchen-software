@@ -37,9 +37,12 @@ public class SecurityConfig {
                         // Public
                         .requestMatchers(
                                 "/login",
+                                "/logout",
                                 "/css/**",
                                 "/js/**",
-                                "/images/**"
+                                "/images/**",
+                                "/employee/session-status",
+                                "/public/**"
                         ).permitAll()
 
                         // Employee OTP
@@ -74,6 +77,10 @@ public class SecurityConfig {
                         .clearAuthentication(true)
                         .deleteCookies("JSESSIONID")
                         .permitAll()
+                )
+
+                .headers(headers -> headers
+                        .cacheControl(org.springframework.security.config.Customizer.withDefaults())
                 )
 
                 .addFilterBefore(

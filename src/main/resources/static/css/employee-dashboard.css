@@ -1250,7 +1250,7 @@ button:focus-visible {
    LAPTOP / SMALL DESKTOP
 ========================================================= */
 
-@media (max-width: 1400px) {
+@media (max-width: 1100px) {
     .main-content {
         padding-right: 26px;
         padding-left: 26px;

@@ -37,6 +37,9 @@ public class AdminController {
         model.addAttribute("totalBranches",
                 adminDashboardService.getTotalBranches());
 
+        model.addAttribute("oneYearQuotationCount",
+                adminDashboardService.getOneYearQuotationCount());
+
         model.addAttribute("last60DaysQuotationCount",
                 adminDashboardService.getLast60DaysQuotationCount());
 
@@ -46,14 +49,14 @@ public class AdminController {
         model.addAttribute("oneYearCustomerCount",
                 adminDashboardService.getOneYearCustomerCount());
 
-        model.addAttribute("sentQuotationCount",
-                adminDashboardService.getSentQuotationCount());
+        model.addAttribute("pendingQuotationCount",
+                adminDashboardService.getPendingQuotationCount());
 
         model.addAttribute("workingQuotationCount",
                 adminDashboardService.getWorkingQuotationCount());
 
-        model.addAttribute("pendingQuotationCount",
-                adminDashboardService.getPendingQuotationCount());
+        model.addAttribute("sentQuotationCount",
+                adminDashboardService.getSentQuotationCount());
 
         model.addAttribute("totalPortfolioValue",
                 adminDashboardService.getTotalPortfolioValue());
