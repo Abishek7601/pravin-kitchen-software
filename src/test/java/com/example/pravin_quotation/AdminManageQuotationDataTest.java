@@ -52,30 +52,22 @@ public class AdminManageQuotationDataTest {
         assertFalse(masterDataGrid.contains("th:href=\"@{/admin/travel-charges}\""),
                 "Travel Charges card must be removed from Manage Quotation Data grid");
 
-        // Verify the 5 required cards exist in exact order
+        // Verify Divisions, Materials, and Material Options cards are removed from dashboard
+        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/divisions}\""),
+                "Divisions card must be removed from dashboard");
+        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/materials}\""),
+                "Materials card must be removed from dashboard");
+        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/material-options}\""),
+                "Material Options card must be removed from dashboard");
+
         int posWorkCategories = masterDataGrid.indexOf("th:href=\"@{/admin/work-categories}\"");
-        int posDivisions = masterDataGrid.indexOf("th:href=\"@{/admin/divisions}\"");
-        int posMaterials = masterDataGrid.indexOf("th:href=\"@{/admin/materials}\"");
-        int posMaterialOptions = masterDataGrid.indexOf("th:href=\"@{/admin/material-options}\"");
         int posFifth = masterDataGrid.indexOf("th:href=\"@{/admin/pricing}\"");
         if (posFifth == -1) {
             posFifth = masterDataGrid.indexOf("th:href=\"@{/admin/formula-calculation}\"");
         }
 
         assertTrue(posWorkCategories != -1, "Work Categories must be present");
-        assertTrue(posDivisions != -1, "Divisions must be present");
-        assertTrue(posMaterials != -1, "Materials must be present");
-        assertTrue(posMaterialOptions != -1, "Material Options must be present");
-        assertTrue(posFifth != -1, "Fifth card (Pricing / Formula Calculation) must be present");
-
-        assertTrue(posWorkCategories < posDivisions,
-                "Work Categories must appear before Divisions");
-        assertTrue(posDivisions < posMaterials,
-                "Divisions must appear before Materials");
-        assertTrue(posMaterials < posMaterialOptions,
-                "Materials must appear before Material Options");
-        assertTrue(posMaterialOptions < posFifth,
-                "Material Options must appear before Pricing");
+        assertTrue(posFifth != -1, "Pricing card must be present");
     }
 
     @Test

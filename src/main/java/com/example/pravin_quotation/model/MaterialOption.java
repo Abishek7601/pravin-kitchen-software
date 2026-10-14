@@ -2,6 +2,8 @@ package com.example.pravin_quotation.model;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -31,6 +33,14 @@ public class MaterialOption {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
+
+    @OneToMany(
+            mappedBy = "materialOption",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @OrderBy("displayOrder ASC")
+    private List<MaterialSpecification> specifications = new ArrayList<>();
 
     @Column(nullable = false)
     private Boolean active = true;
@@ -138,5 +148,13 @@ public class MaterialOption {
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public List<MaterialSpecification> getSpecifications() {
+        return specifications;
+    }
+
+    public void setSpecifications(List<MaterialSpecification> specifications) {
+        this.specifications = specifications;
     }
 }

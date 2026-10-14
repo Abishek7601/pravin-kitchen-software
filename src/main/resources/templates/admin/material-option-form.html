@@ -67,12 +67,23 @@
     </div>
 
 
+    <!-- ALERTS -->
+    <div th:if="${errorMessage}" style="background: #fee2e2; color: #b91c1c; border: 1px solid #fca5a5; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px;">
+      ⚠️ <span th:text="${errorMessage}">Error message</span>
+    </div>
+    <div th:if="${successMessage}" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px;">
+      ✅ <span th:text="${successMessage}">Success message</span>
+    </div>
+
     <form
             th:action="${option.id == null
                     ? '/admin/material-options/save'
                     : '/admin/material-options/update/' + option.id}"
             method="post">
 
+      <!-- CSRF Token -->
+      <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+      <input type="hidden" name="redirectUrl" th:value="${redirectUrl}" th:if="${redirectUrl != null}">
 
       <!-- OPTION NAME -->
 
@@ -87,8 +98,10 @@
                 type="text"
                 id="name"
                 name="name"
-                th:value="${option.name}"
+                th:value="${option.name != null ? option.name.toUpperCase() : ''}"
                 placeholder="Example: 18mm"
+                style="text-transform: uppercase;"
+                oninput="this.value = this.value.toUpperCase();"
                 required
                 maxlength="150">
 
@@ -113,7 +126,7 @@
                 rows="4"
                 maxlength="500"
                 placeholder="Example: 18mm thick marine plywood specification"
-                th:text="${option.description}"></textarea>
+                th:text="${option.description != null and !option.description.isBlank() ? option.description : (option.specifications != null and !option.specifications.isEmpty() ? option.specifications[0].name : '')}"></textarea>
 
         <small>
           Optional specification or additional information.
@@ -190,7 +203,7 @@
       <div class="form-actions">
 
         <a
-                href="/admin/material-options"
+                th:href="${redirectUrl != null and !redirectUrl.isBlank() ? redirectUrl : '/admin/material-options'}"
                 class="btn btn-secondary">
           Cancel
         </a>

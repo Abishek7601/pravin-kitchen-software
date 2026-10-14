@@ -87,9 +87,9 @@
     <section class="card work-card">
       <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Work categories are loaded from your existing database.</p></div></div>
       <div id="categoryGrid" class="choice-grid">
-        <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name}">
+        <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
           <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
-          <strong th:text="${category.displayName}">FOYER</strong>
+          <strong th:text="${category.displayName != null ? category.displayName.toUpperCase() : ''}">FOYER</strong>
           <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
         </button>
       </div>
@@ -101,14 +101,15 @@
       <div class="section-heading"><span class="step">05</span><div><h2>Material &amp; Size</h2><p id="selectedItemLabel">Select a division first.</p></div></div>
       <div class="selection-path" id="selectionPath"></div>
       <div id="materialFormulaBadge" style="display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; color: #166534; font-size: 13px;"></div>
-      <div class="grid two">
+      <div class="grid three">
         <label class="field">Material <span>*</span><select id="materialId"><option value="">Select material</option></select></label>
-        <label class="field">Material Option / Specification <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
+        <label class="field">Material Option <span>*</span><select id="materialOptionId"><option value="">Select material option</option></select></label>
+        <label class="field">Material Specification <select id="materialSpecificationId"><option value="">Select specification (optional)</option></select></label>
       </div>
       <div id="materialDetails" class="material-details hidden"></div>
       <div class="grid two">
         <label class="field">Item Description<textarea id="itemDescription" rows="2" placeholder="Optional item description"></textarea></label>
-        <label class="field">Custom Specification<textarea id="specification" rows="2" placeholder="Custom material/specification details"></textarea></label>
+        <label class="field">Custom / Detailed Specification<textarea id="specification" rows="2" placeholder="Custom material/specification details"></textarea></label>
       </div>
       <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
       <div id="sizeRows" class="size-list"></div>
@@ -366,6 +367,8 @@
           materialName: '',
           materialOptionId: null,
           materialOptionName: '',
+          materialSpecificationId: null,
+          materialSpecificationName: '',
           rate: 0,
           formula: '(L + W) × H',
           sizes: []
@@ -380,6 +383,7 @@
           $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
       }
       $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
+      $('materialSpecificationId').innerHTML = '<option value="">Select specification (optional)</option>';
       $('materialDetails').classList.add('hidden');
       if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       $('sizeRows').innerHTML = '';
@@ -394,6 +398,32 @@
 
   async function openItemBuilder(info) {
       return selectDivision(info.divisionId, info.divisionName || info.itemName, info.categoryId, info.categoryName);
+  }
+
+  async function loadSpecifications(materialOptionId, materialId) {
+      const specSelect = $('materialSpecificationId');
+      if (!specSelect) return;
+      if (!materialOptionId && !materialId) {
+          specSelect.innerHTML = '<option value="">Select specification (optional)</option>';
+          return;
+      }
+      try {
+          let url = `${API_BASE}/material-specifications?`;
+          if (materialOptionId) {
+              url += `materialOptionId=${materialOptionId}`;
+          } else {
+              url += `materialId=${materialId}`;
+          }
+          const specs = await getJson(url);
+          if (!specs || specs.length === 0) {
+              specSelect.innerHTML = '<option value="">No specifications configured</option>';
+          } else {
+              specSelect.innerHTML = '<option value="">Select specification (optional)</option>' +
+                  specs.map(s => `<option value="${s.id}" data-description="${esc(s.description || '')}">${esc(s.name)}</option>`).join('');
+          }
+      } catch (err) {
+          specSelect.innerHTML = '<option value="">Select specification (optional)</option>';
+      }
   }
 
   $('materialId').addEventListener('change', async e => {
@@ -423,6 +453,8 @@
           $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
       }
       state.draft.materialOptionId = null; state.draft.materialOptionName = ''; state.draft.rate = 0;
+      state.draft.materialSpecificationId = null; state.draft.materialSpecificationName = '';
+      await loadSpecifications(null, state.draft.materialId);
       renderMaterialDetails();
       calculateDraft();
   });
@@ -431,9 +463,23 @@
       state.draft.materialOptionId = Number(e.target.value) || null;
       const selected = e.target.selectedOptions[0];
       state.draft.materialOptionName = selected?.textContent || '';
+      state.draft.materialSpecificationId = null;
+      state.draft.materialSpecificationName = '';
+      await loadSpecifications(state.draft.materialOptionId, state.draft.materialId);
       await refreshDraftRate();
       renderMaterialDetails();
       calculateDraft();
+  });
+
+  $('materialSpecificationId').addEventListener('change', e => {
+      state.draft.materialSpecificationId = Number(e.target.value) || null;
+      const selected = e.target.selectedOptions[0];
+      state.draft.materialSpecificationName = (selected && selected.value) ? selected.textContent : '';
+      if (state.draft.materialSpecificationName && !$('specification').value.trim()) {
+          const desc = selected?.dataset?.description || '';
+          $('specification').value = desc ? `${state.draft.materialSpecificationName} - ${desc}` : state.draft.materialSpecificationName;
+      }
+      renderMaterialDetails();
   });
 
   async function refreshDraftRate() {
@@ -457,9 +503,15 @@
       if (!state.draft?.materialOptionId) { hide('materialDetails'); return; }
       const option = $('materialOptionId').selectedOptions[0];
       const material = $('materialId').selectedOptions[0];
+      const spec = $('materialSpecificationId')?.selectedOptions[0];
       const formulaDisp = state.draft.formula || '(L + W) × H';
       const pUnit = state.draft.pricingUnit || '₹ / SQFT';
-      showArea('materialDetails', `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option / Specification</span><strong>${esc(option?.textContent || '')}</strong></div><div><span>Formula</span><strong>${esc(formulaDisp)}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)} <small style="font-size:0.75rem; color:#64748b;">(${esc(pUnit)})</small></strong></div>`);
+      let html = `<div><span>Material</span><strong>${esc(material?.textContent || '')}</strong></div><div><span>Option</span><strong>${esc(option?.textContent || '')}</strong></div>`;
+      if (spec && spec.value) {
+          html += `<div><span>Specification</span><strong>${esc(spec.textContent || '')}</strong></div>`;
+      }
+      html += `<div><span>Formula</span><strong>${esc(formulaDisp)}</strong></div><div><span>Rate</span><strong>${money(state.draft.rate)} <small style="font-size:0.75rem; color:#64748b;">(${esc(pUnit)})</small></strong></div>`;
+      showArea('materialDetails', html);
   }
 
   function applyFormulaToRow(row) {
@@ -557,9 +609,18 @@
       });
       if (invalid) return alert(invalidMsg);
       const room=ensureRoom(); if (!room) return alert('Select Floor and Room Number first.');
-      state.draft.itemDescription=$('itemDescription').value.trim(); state.draft.specification=$('specification').value.trim(); state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
+      state.draft.materialSpecificationId = Number($('materialSpecificationId').value) || null;
+      const specOpt = $('materialSpecificationId').selectedOptions[0];
+      state.draft.materialSpecificationName = (specOpt && specOpt.value) ? specOpt.textContent : '';
+      state.draft.itemDescription=$('itemDescription').value.trim();
+      state.draft.specification=$('specification').value.trim();
+      if (!state.draft.specification && state.draft.materialSpecificationName) {
+          state.draft.specification = state.draft.materialSpecificationName;
+      }
+      state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
       room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
+      $('materialSpecificationId').innerHTML='<option value="">Select specification (optional)</option>';
       if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       renderRoomPills();
       $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
@@ -607,9 +668,10 @@
                   } else {
                       dimStr = `${z.length} × ${z.width} × ${z.height}`;
                   }
+                  const specText = item.materialSpecificationName ? ` — [${esc(item.materialSpecificationName)}]` : '';
                   const row = document.createElement('div');
                   row.className = 'summary-row';
-                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName || item.divisionName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${dimStr}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
+                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName || item.divisionName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}${specText} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${dimStr}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
                   table.appendChild(row);
               });
           });
@@ -652,7 +714,31 @@
       const name=$('customerName').value.trim(), phone=$('customerPhone').value.trim(), branchId=Number($('branchId').value||0);
       if(!name||!phone||!branchId||!$('quotationDate').value)return alert('Customer Name, Phone, Branch and Date are required.');
       if(!state.rooms.some(r=>r.items.length))return alert('Add at least one item to the quotation.');
-      const payload={quotationId:state.quotationId, customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},branchId,quotationDate:$('quotationDate').value,pricingMode:state.pricingMode,customerRequirements:$('customerRequirements').value.trim(),notes:$('notes').value.trim(),rooms:state.rooms.filter(r=>r.items.length).map(r=>({floor:r.floor,room:r.room,workDescription:r.workDescription,items:r.items.map(i=>({workCategoryId:i.categoryId,divisionId:i.divisionId,itemId:i.itemId,materialId:i.materialId,materialOptionId:i.materialOptionId,itemDescription:i.itemDescription,specification:i.specification,sizes:i.sizes}))}))};
+      const payload={
+          quotationId:state.quotationId,
+          customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},
+          branchId,
+          quotationDate:$('quotationDate').value,
+          pricingMode:state.pricingMode,
+          customerRequirements:$('customerRequirements').value.trim(),
+          notes:$('notes').value.trim(),
+          rooms:state.rooms.filter(r=>r.items.length).map(r=>({
+              floor:r.floor,
+              room:r.room,
+              workDescription:r.workDescription,
+              items:r.items.map(i=>({
+                  workCategoryId:i.categoryId,
+                  divisionId:i.divisionId,
+                  itemId:i.itemId,
+                  materialId:i.materialId,
+                  materialOptionId:i.materialOptionId,
+                  materialSpecificationId:i.materialSpecificationId,
+                  itemDescription:i.itemDescription,
+                  specification:i.specification,
+                  sizes:i.sizes
+              }))
+          }))
+      };
       const button=$('saveQuotationBtn'); button.disabled=true; button.textContent='Saving Quotation...'; $('saveMessage').textContent='Saving customer, rooms, items and pricing...';
       try { const response=await fetch(`${API_BASE}/save`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify(payload)}); if(response.redirected){window.location.href=response.url;return;} const text=await response.text(); throw new Error(text||'Unable to save quotation.'); } catch(e){ $('saveMessage').textContent=e.message; button.disabled=false; button.textContent='Save Quotation'; }
   }
@@ -711,6 +797,8 @@
                       materialName: i.materialName,
                       materialOptionId: i.materialOptionId,
                       materialOptionName: i.materialOptionName,
+                      materialSpecificationId: i.materialSpecificationId,
+                      materialSpecificationName: i.materialSpecificationName,
                       rate: Number(i.rate || 0),
                       itemDescription: i.itemDescription || '',
                       specification: i.specification || '',

@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+  <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
+  <title th:text="${(category.name != null ? category.name.toUpperCase() : 'WORK CATEGORY') + ' — Master Data View | Pravin Kitchens'}">Work Category View</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" th:href="@{/css/admin-common.css}">
+  <style>
+    :root {
+      --primary: #006b63;
+      --primary-dark: #004d47;
+      --primary-light: #e6f3f1;
+      --secondary: #d4a373;
+      --border-color: #e2e8f0;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+    }
+    body {
+      background-color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text-main);
+      margin: 0;
+      padding-bottom: 60px;
+    }
+    .top-navbar {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo-img {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+    .page-container {
+      max-width: 1300px;
+      margin: 28px auto;
+      padding: 0 24px;
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, #006b63 0%, #004d40 100%);
+      color: #ffffff;
+      padding: 24px 30px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .hero-title {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 0;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+    .hero-subtitle {
+      font-size: 0.9rem;
+      opacity: 0.9;
+      margin-top: 6px;
+      margin-bottom: 0;
+    }
+    .badge-active {
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .badge-inactive {
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 12px;
+      text-transform: uppercase;
+    }
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-back {
+      background: #ffffff;
+      color: var(--primary);
+      border: 1px solid #c8dad6;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-back:hover {
+      background: #f1f5f9;
+      color: var(--primary-dark);
+    }
+    .btn-edit-main {
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .btn-edit-main:hover {
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }
+    .btn-configure {
+      background: #ffffff;
+      color: #006b63;
+      border: none;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 8px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hierarchy-container {
+      background: #ffffff;
+      border-radius: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+      border: 1px solid var(--border-color);
+      overflow: hidden;
+      margin-bottom: 24px;
+    }
+    .hierarchy-header {
+      background: #f8fafc;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .hierarchy-flow-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.3px;
+    }
+    .flow-step {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      padding: 3px 8px;
+      border-radius: 6px;
+      color: var(--text-main);
+    }
+    .div-box {
+      border-left: 4px solid var(--primary);
+      background: #ffffff;
+      margin: 18px 24px;
+      padding: 18px;
+      border-radius: 0 10px 10px 0;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+      border-top: 1px solid #f1f5f9;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .div-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 1px dashed #e2e8f0;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .div-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-transform: uppercase;
+    }
+    .mat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 12px;
+    }
+    .mat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .mat-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .formula-tag {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .btn-action-sm {
+      padding: 4px 10px;
+      font-size: 11px;
+      font-weight: 600;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+    }
+    .btn-action-sm:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+    .opt-table {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      background: #ffffff;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #e2e8f0;
+      margin-top: 8px;
+    }
+    .opt-table th {
+      background: #f1f5f9;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: #475569;
+      font-weight: 700;
+      padding: 9px 12px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .opt-table td {
+      padding: 10px 12px;
+      font-size: 13px;
+      border-bottom: 1px solid #f1f5f9;
+      vertical-align: middle;
+    }
+    .opt-table tr:last-child td {
+      border-bottom: none;
+    }
+    .spec-pill {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #334155;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 2px;
+      text-transform: uppercase;
+    }
+    .pricing-pill {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #166534;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-transform: uppercase;
+    }
+    .empty-category-state {
+      padding: 48px 24px;
+      text-align: center;
+      background: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAVBAR -->
+<div class="top-navbar">
+  <div class="brand-section">
+    <a th:href="@{/admin/dashboard}" style="display:flex; align-items:center; text-decoration:none; gap:10px;">
+      <img th:src="@{/images/company-logo.png}" alt="Pravin Kitchens" class="brand-logo-img">
+      <div>
+        <div style="font-weight:800; color:#006b63; font-size:1.15rem; line-height:1.1;">Pravin KITCHENS &amp; INTERIORS</div>
+        <small style="color:#64748b; font-size:11px;">Quotation Management System</small>
+      </div>
+    </a>
+  </div>
+  <div class="nav-actions">
+    <a th:href="@{/admin/work-categories}" class="btn-back">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back to Work Categories</span>
+    </a>
+    <a th:href="@{/admin/dashboard}" class="btn-back">
+      <i class="bi bi-house"></i>
+      <span>Dashboard</span>
+    </a>
+  </div>
+</div>
+
+<div class="page-container">
+
+  <!-- ALERT MESSAGES -->
+  <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 8px; margin-bottom: 20px; font-weight: 500;">
+    <i class="bi bi-check-circle-fill me-2"></i>
+    <span th:text="${successMessage}">Option updated successfully</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+  <div th:if="${errorMessage}" class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 8px; margin-bottom: 20px; font-weight: 500;">
+    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+    <span th:text="${errorMessage}">Error updating option</span>
+    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+  </div>
+
+  <!-- HERO BANNER -->
+  <div class="hero-banner">
+    <div>
+      <h1 class="hero-title">
+        <span th:text="${category.icon != null and !category.icon.isBlank() ? category.icon : '🏠'}">🏠</span>
+        <span th:text="${category.name != null ? category.name.toUpperCase() : 'WORK CATEGORY'}">FOYER</span>
+        <span th:classappend="${category.active ? 'badge-active' : 'badge-inactive'}"
+              th:text="${category.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+      </h1>
+      <p class="hero-subtitle" th:text="${category.description != null and !category.description.isBlank() ? category.description : 'Master data hierarchy and configured components for this work category.'}">
+        Master data hierarchy and configured components for this work category.
+      </p>
+    </div>
+
+    <div class="nav-actions">
+      <a th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}" class="btn-edit-main">
+        <i class="bi bi-pencil-square"></i>
+        <span>Edit Category</span>
+      </a>
+      <a th:href="@{/admin/pricing/new(workCategoryId=${category.id})}" class="btn-configure">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>Configure More Items</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- HIERARCHY CARD -->
+  <div class="hierarchy-container">
+    <div class="hierarchy-header">
+      <div class="hierarchy-flow-badge">
+        <span class="flow-step">1. Work Category</span>
+        <span>→</span>
+        <span class="flow-step">2. Division</span>
+        <span>→</span>
+        <span class="flow-step">3. Material</span>
+        <span>→</span>
+        <span class="flow-step">4. Material Option</span>
+        <span>→</span>
+        <span class="flow-step">5. Material Specification</span>
+      </div>
+      <div style="font-size: 12px; color: var(--text-muted); font-weight: 600;">
+        Showing data strictly related to <strong style="color: var(--primary);" th:text="${category.name != null ? category.name.toUpperCase() : ''}">FOYER</strong>
+      </div>
+    </div>
+
+    <!-- EMPTY STATE IF NO DIVISIONS -->
+    <div th:if="${catDto.divisions == null or catDto.divisions.isEmpty()}" class="empty-category-state">
+      <div style="font-size: 3rem; margin-bottom: 12px;">📁</div>
+      <h4>No Divisions Configured Yet</h4>
+      <p class="text-muted" style="max-width: 500px; margin: 0 auto 18px;">
+        There are no divisions currently mapped to <strong th:text="${category.name != null ? category.name.toUpperCase() : ''}">FOYER</strong>.
+        Use Configure Master Data to add divisions, materials, and pricing under this category.
+      </p>
+      <a th:href="@{/admin/pricing/new(workCategoryId=${category.id})}" class="btn btn-primary" style="background:#006b63; border-color:#006b63;">
+        + Configure Divisions &amp; Materials
+      </a>
+    </div>
+
+    <!-- LEVEL 2: DIVISIONS LIST -->
+    <div th:each="dDto : ${catDto.divisions}" class="div-box">
+      <!-- DIVISION TITLE ROW -->
+      <div class="div-title-row">
+        <div class="div-title">
+          <span>📁</span>
+          <span th:text="${dDto.division.name != null ? dDto.division.name.toUpperCase() : ''}">SHOE CABINET</span>
+          <span th:if="${dDto.division.description != null and !dDto.division.description.isBlank()}"
+                class="text-muted" style="font-size: 12px; font-weight: normal; text-transform: none;"
+                th:text="'— ' + ${dDto.division.description}"></span>
+          <span th:classappend="${dDto.division.active ? 'badge-active' : 'badge-inactive'}"
+                th:text="${dDto.division.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <a th:href="@{/admin/divisions/edit/{id}(id=${dDto.division.id})}" class="btn-action-sm">
+            ✏️ Edit Division
+          </a>
+        </div>
+      </div>
+
+      <!-- LEVEL 3: MATERIALS UNDER DIVISION -->
+      <div th:if="${dDto.materials == null or dDto.materials.isEmpty()}" class="text-muted p-2" style="font-size: 13px;">
+        No materials mapped to this division.
+      </div>
+
+      <div th:each="mDto : ${dDto.materials}" class="mat-card">
+        <div class="mat-header">
+          <div class="mat-name">
+            <span>📦</span>
+            <span th:text="${mDto.material.name != null ? mDto.material.name.toUpperCase() : ''}">PLYWOOD</span>
+            <span class="formula-tag">
+              📐 Formula: <span th:text="${mDto.material.formula != null ? mDto.material.formula : '(L + W) × H'}">(L + W) × H</span>
+            </span>
+            <span th:classappend="${mDto.material.active ? 'badge-active' : 'badge-inactive'}"
+                  th:text="${mDto.material.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+          </div>
+
+          <div style="display: flex; gap: 6px;">
+            <a th:href="@{/admin/materials/edit/{id}(id=${mDto.material.id})}" class="btn-action-sm">
+              ✏️ Edit Material
+            </a>
+          </div>
+        </div>
+
+        <!-- LEVEL 4: MATERIAL OPTIONS & PRICING -->
+        <div th:if="${mDto.options != null and !mDto.options.isEmpty()}">
+          <table class="opt-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Material Option</th>
+                <th style="width: 31%;">Pricing &amp; Rate</th>
+                <th style="width: 32%;">Material Specifications (Level 5)</th>
+                <th style="width: 12%; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="oDto : ${mDto.options}" th:id="'option-row-' + ${oDto.option.id}">
+                <td>
+                  <strong>🏷️ <span class="option-name-label" th:text="${oDto.option.name != null ? oDto.option.name.toUpperCase() : ''}">18MM BWP</span></strong>
+                  <span th:classappend="${oDto.option.active ? 'badge-active' : 'badge-inactive'}"
+                        style="margin-left: 4px; font-size: 10px;"
+                        th:text="${oDto.option.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
+                  <div th:if="${oDto.option.description != null and !oDto.option.description.isBlank()}"
+                       class="text-muted small option-desc-label" style="font-size: 11px; margin-top: 2px;"
+                       th:text="${oDto.option.description}"></div>
+                </td>
+                <td>
+                  <div th:if="${oDto.pricingList != null and !oDto.pricingList.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <span th:each="p : ${oDto.pricingList}" class="pricing-pill">
+                      <strong th:text="${p.pricingMode}">MIDDLE</strong>:
+                      ₹<span th:text="${#numbers.formatDecimal(p.rate, 1, 2)}">1,450.00</span>
+                      <small class="text-muted" th:text="'(' + ${p.unit} + ')'"></small>
+                    </span>
+                  </div>
+                  <div th:if="${oDto.pricingList == null or oDto.pricingList.isEmpty()}" class="text-muted" style="font-size: 11px;">
+                    No pricing configured.
+                  </div>
+                </td>
+                <td>
+                  <!-- LEVEL 5: SPECIFICATIONS UNDER OPTION -->
+                  <div th:if="${oDto.specifications != null and !oDto.specifications.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <span th:each="s : ${oDto.specifications}" class="spec-pill">
+                      📋 <span th:text="${s.name != null ? s.name.toUpperCase() : ''}">1MM EDGE BANDED</span>
+                    </span>
+                  </div>
+                  <div th:if="${(oDto.specifications == null or oDto.specifications.isEmpty()) and (oDto.option.description != null and !oDto.option.description.isBlank())}" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <span class="spec-pill">
+                      📋 <span th:text="${oDto.option.description.toUpperCase()}">SPECIFICATION</span>
+                    </span>
+                  </div>
+                  <div th:if="${(oDto.specifications == null or oDto.specifications.isEmpty()) and (oDto.option.description == null or oDto.option.description.isBlank())}" class="text-muted" style="font-size: 11px;">
+                    Standard configured specifications.
+                  </div>
+                </td>
+                <td style="text-align: right; white-space: nowrap;">
+                  <button type="button" class="btn-action-sm btn-edit-option"
+                          th:data-id="${oDto.option.id}"
+                          th:data-name="${oDto.option.name != null ? oDto.option.name.toUpperCase() : ''}"
+                          th:data-desc="${oDto.option.description != null and !oDto.option.description.isBlank() ? oDto.option.description : (oDto.specifications != null and !oDto.specifications.isEmpty() ? oDto.specifications[0].name : '')}"
+                          th:data-material-id="${mDto.material.id}"
+                          th:data-material-name="${mDto.material.name != null ? mDto.material.name.toUpperCase() : ''}"
+                          th:data-order="${oDto.option.displayOrder != null ? oDto.option.displayOrder : 0}"
+                          onclick="openEditOptionModal(this)"
+                          style="cursor: pointer; background: #e6f3f1; color: #006b63; border-color: #c8dad6;">
+                    ✏️ Edit
+                  </button>
+                  <a th:href="@{/admin/material-options/edit/{id}(id=${oDto.option.id}, redirectUrl=@{/admin/work-categories/view/{catId}(catId=${category.id})})}"
+                     class="btn-action-sm" title="Edit Option on full page" style="margin-left: 4px; padding: 4px 7px;">
+                    <i class="bi bi-box-arrow-up-right" style="font-size: 10px;"></i>
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- DIRECT SPECIFICATIONS UNDER MATERIAL (IF ANY) -->
+        <div th:if="${mDto.directSpecifications != null and !mDto.directSpecifications.isEmpty()}" style="margin-top: 10px;">
+          <small style="font-weight:700; color:var(--text-muted); text-transform:uppercase; font-size:11px;">Material Specifications:</small>
+          <div style="display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px;">
+            <span th:each="s : ${mDto.directSpecifications}" class="spec-pill">
+              📋 <span th:text="${s.name != null ? s.name.toUpperCase() : ''}">MATTE FINISH</span>
+            </span>
+          </div>
+        </div>
+
+        <div th:if="${(mDto.options == null or mDto.options.isEmpty()) and (mDto.directSpecifications == null or mDto.directSpecifications.isEmpty())}"
+             class="text-muted" style="font-size: 12px; margin-top: 6px;">
+          No options configured for this material.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- BOTTOM BACK BUTTON -->
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 18px;">
+    <a th:href="@{/admin/work-categories}" class="btn-back">
+      <i class="bi bi-arrow-left"></i>
+      <span>Back to Work Categories</span>
+    </a>
+  </div>
+
+</div>
+
+<!-- EDIT MATERIAL OPTION MODAL -->
+<div class="modal fade" id="editOptionModal" tabindex="-1" aria-labelledby="editOptionModalLabel" aria-hidden="true" style="display: none;">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius: 12px; border: 1px solid #cbd5e1; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+      <form id="editOptionForm" method="post" th:action="@{/admin/material-options/update/0}">
+        <!-- CSRF Protection Token -->
+        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; padding: 16px 20px;">
+          <h5 class="modal-title" id="editOptionModalLabel" style="font-size: 1.1rem; font-weight: 700; color: #006b63; display: flex; align-items: center; gap: 8px;">
+            <span>✏️</span> Edit Material Option
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeEditOptionModal()"></button>
+        </div>
+        <div class="modal-body" style="padding: 20px;">
+          <input type="hidden" id="editOptionId" name="id">
+          <input type="hidden" id="editOptionMaterialId" name="materialId">
+          <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
+
+          <!-- Current Material context info -->
+          <div style="background: #f1f5f9; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px;">
+            <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Parent Material</div>
+            <strong id="editOptionMaterialName" style="color: #006b63;">PLYWOOD</strong>
+          </div>
+
+          <!-- Option Name -->
+          <div class="mb-3">
+            <label for="editOptionName" class="form-label" style="font-weight: 600; font-size: 13px;">
+              Option Name <span style="color: #dc2626;">*</span>
+            </label>
+            <input type="text" class="form-control" id="editOptionName" name="name" required
+                   style="text-transform: uppercase; font-weight: 600;"
+                   oninput="this.value = this.value.toUpperCase();"
+                   placeholder="e.g. 18MM BWP">
+            <small class="text-muted" style="font-size: 11px;">Option name is automatically saved in UPPERCASE.</small>
+          </div>
+
+          <!-- Description -->
+          <div class="mb-3">
+            <label for="editOptionDesc" class="form-label" style="font-weight: 600; font-size: 13px;">Description / Specification</label>
+            <textarea class="form-control" id="editOptionDesc" name="description" rows="3"
+                      placeholder="Optional description or details"></textarea>
+          </div>
+
+          <!-- Display Order -->
+          <div class="mb-3">
+            <label for="editOptionOrder" class="form-label" style="font-weight: 600; font-size: 13px;">Display Order</label>
+            <input type="number" class="form-control" id="editOptionOrder" name="displayOrder" min="0" value="0">
+          </div>
+        </div>
+        <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 12px 12px; padding: 12px 20px;">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeEditOptionModal()"
+                  style="border-radius: 8px; font-weight: 600;">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm"
+                  style="background: #006b63; border-color: #006b63; border-radius: 8px; font-weight: 600; padding: 6px 18px;">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function openEditOptionModal(btn) {
+  const id = btn.getAttribute('data-id');
+  const name = btn.getAttribute('data-name');
+  const desc = btn.getAttribute('data-desc');
+  const matId = btn.getAttribute('data-material-id');
+  const matName = btn.getAttribute('data-material-name');
+  const order = btn.getAttribute('data-order');
+
+  document.getElementById('editOptionId').value = id;
+  document.getElementById('editOptionName').value = name;
+  document.getElementById('editOptionDesc').value = desc || '';
+  document.getElementById('editOptionMaterialId').value = matId;
+  document.getElementById('editOptionMaterialName').textContent = matName || 'MATERIAL';
+  document.getElementById('editOptionOrder').value = order || 0;
+
+  const form = document.getElementById('editOptionForm');
+  form.action = '/admin/material-options/update/' + id;
+
+  const modalEl = document.getElementById('editOptionModal');
+  if (window.bootstrap && bootstrap.Modal) {
+    const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+    modal.show();
+  } else {
+    modalEl.classList.add('show');
+    modalEl.style.display = 'block';
+    document.body.classList.add('modal-open');
+  }
+}
+
+function closeEditOptionModal() {
+  const modalEl = document.getElementById('editOptionModal');
+  if (window.bootstrap && bootstrap.Modal) {
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    if (modal) modal.hide();
+  }
+  modalEl.classList.remove('show');
+  modalEl.style.display = 'none';
+  document.body.classList.remove('modal-open');
+  document.querySelectorAll('.modal-backdrop').forEach(b => b.remove());
+}
+</script>
+</body>
+</html>

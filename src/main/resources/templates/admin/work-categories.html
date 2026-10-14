@@ -70,14 +70,13 @@
 
             </div>
 
-            <a th:href="@{/admin/work-categories/new}"
-               class="add-category-btn">
-
-                <span>+</span>
-
-                Add Category
-
-            </a>
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <a th:href="@{/admin/pricing/new}"
+                   class="btn btn-primary"
+                   style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff;">
+                    <span>+ Configure Master Data</span>
+                </a>
+            </div>
 
         </section>
 
@@ -144,6 +143,11 @@
                 <!-- ACTIONS -->
                 <div class="category-actions">
 
+                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
+                       class="action-btn view-btn">
+                        View
+                    </a>
+
                     <a th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
                        class="action-btn edit-btn">
                         Edit
@@ -203,9 +207,9 @@
                     the quotation pricing structure.
                 </p>
 
-                <a th:href="@{/admin/work-categories/new}"
+                <a th:href="@{/admin/pricing/new}"
                    class="empty-add-btn">
-                    + Add Category
+                    + Configure Master Data
                 </a>
 
             </div>

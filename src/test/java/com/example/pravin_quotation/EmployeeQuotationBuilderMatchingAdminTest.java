@@ -199,22 +199,22 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
         // Verify divisions endpoint
         List<Map<String, Object>> divisions = employeeQuotationController.builderDivisions(cat.getId());
         assertFalse(divisions.isEmpty());
-        assertEquals("TestDivision", divisions.get(0).get("name"));
+        assertEquals("TESTDIVISION", divisions.get(0).get("name"));
 
         // Verify items endpoint
         List<Map<String, Object>> items = employeeQuotationController.builderItems(div.getId());
         assertFalse(items.isEmpty());
-        assertEquals("TestItem", items.get(0).get("name"));
+        assertEquals("TESTITEM", items.get(0).get("name"));
 
         // Verify materials endpoint
         List<Map<String, Object>> materials = employeeQuotationController.builderMaterials(item.getId());
         assertFalse(materials.isEmpty());
-        assertEquals("TestMaterial", materials.get(0).get("name"));
+        assertEquals("TESTMATERIAL", materials.get(0).get("name"));
 
         // Verify material options endpoint
         List<Map<String, Object>> options = employeeQuotationController.builderMaterialOptions(mat.getId());
         assertFalse(options.isEmpty());
-        assertEquals("TestOption", options.get(0).get("name"));
+        assertEquals("TESTOPTION", options.get(0).get("name"));
 
         // Verify rate endpoint
         ResponseEntity<?> rateResp = employeeQuotationController.builderRate(branch.getId(), opt.getId(), PricingMode.MIDDLE);

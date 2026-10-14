@@ -16,6 +16,7 @@ import com.example.pravin_quotation.model.QuotationStatus;
 import com.example.pravin_quotation.model.QuotationStatusHistory;
 import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.model.MaterialSpecification;
 
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
@@ -23,6 +24,7 @@ import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.ItemRepository;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.MaterialRepository;
+import com.example.pravin_quotation.repository.MaterialSpecificationRepository;
 import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
@@ -63,6 +65,7 @@ public class EmployeeQuotationController {
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
     private final MaterialOptionRepository materialOptionRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
     private final AdminQuotationBuilderService builderService;
     private final CustomerService customerService;
 
@@ -110,6 +113,8 @@ public class EmployeeQuotationController {
             MaterialRepository materialRepository,
 
             MaterialOptionRepository materialOptionRepository,
+
+            MaterialSpecificationRepository materialSpecificationRepository,
 
             AdminQuotationBuilderService builderService,
 
@@ -173,6 +178,9 @@ public class EmployeeQuotationController {
 
         this.materialOptionRepository =
                 materialOptionRepository;
+
+        this.materialSpecificationRepository =
+                materialSpecificationRepository;
 
         this.builderService =
                 builderService;
@@ -400,7 +408,7 @@ public class EmployeeQuotationController {
     @ResponseBody
     public List<Map<String, Object>> builderDivisions(@RequestParam Long workCategoryId) {
         return divisionRepository.findByWorkCategoryIdAndActiveTrueOrderByDisplayOrderAsc(workCategoryId)
-                .stream().map(d -> mapData("id", d.getId(), "name", d.getName(), "description", d.getDescription()))
+                .stream().map(d -> mapData("id", d.getId(), "name", d.getName() != null ? d.getName().toUpperCase() : "", "description", d.getDescription()))
                 .toList();
     }
 
@@ -408,7 +416,7 @@ public class EmployeeQuotationController {
     @ResponseBody
     public List<Map<String, Object>> builderItems(@RequestParam Long divisionId) {
         return itemRepository.findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(divisionId)
-                .stream().map(i -> mapData("id", i.getId(), "name", i.getName(), "description", i.getDescription()))
+                .stream().map(i -> mapData("id", i.getId(), "name", i.getName() != null ? i.getName().toUpperCase() : "", "description", i.getDescription()))
                 .toList();
     }
 
@@ -427,7 +435,7 @@ public class EmployeeQuotationController {
         }
         return list.stream().map(m -> mapData(
                 "id", m.getId(),
-                "name", m.getName(),
+                "name", m.getName() != null ? m.getName().toUpperCase() : "",
                 "description", m.getDescription(),
                 "formula", m.getFormula()
         )).toList();
@@ -441,8 +449,28 @@ public class EmployeeQuotationController {
     @ResponseBody
     public List<Map<String, Object>> builderMaterialOptions(@RequestParam Long materialId) {
         return materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId)
-                .stream().map(o -> mapData("id", o.getId(), "name", o.getName(), "description", o.getDescription()))
+                .stream().map(o -> mapData("id", o.getId(), "name", o.getName() != null ? o.getName().toUpperCase() : "", "description", o.getDescription()))
                 .toList();
+    }
+
+    @GetMapping("/builder/material-specifications")
+    @ResponseBody
+    public List<Map<String, Object>> builderMaterialSpecifications(
+            @RequestParam(required = false) Long materialOptionId,
+            @RequestParam(required = false) Long materialId) {
+        List<MaterialSpecification> specs;
+        if (materialOptionId != null) {
+            specs = materialSpecificationRepository.findByMaterialOptionIdAndActiveTrueOrderByDisplayOrderAsc(materialOptionId);
+        } else if (materialId != null) {
+            specs = materialSpecificationRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId);
+        } else {
+            specs = List.of();
+        }
+        return specs.stream().map(s -> mapData(
+                "id", s.getId(),
+                "name", s.getName() != null ? s.getName().toUpperCase() : "",
+                "description", s.getDescription()
+        )).toList();
     }
 
     @GetMapping("/builder/rate")
@@ -537,15 +565,17 @@ public class EmployeeQuotationController {
             for (QuotationItem item : items) {
                 Map<String, Object> iMap = new LinkedHashMap<>();
                 iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
-                iMap.put("categoryName", item.getWorkCategory() != null ? item.getWorkCategory().getName() : "");
+                iMap.put("categoryName", item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase() : "");
                 iMap.put("divisionId", item.getDivision() != null ? item.getDivision().getId() : null);
-                iMap.put("divisionName", item.getDivision() != null ? item.getDivision().getName() : "");
+                iMap.put("divisionName", item.getDivision() != null && item.getDivision().getName() != null ? item.getDivision().getName().toUpperCase() : "");
                 iMap.put("itemId", item.getItem() != null ? item.getItem().getId() : null);
-                iMap.put("itemName", item.getItem() != null ? item.getItem().getName() : "");
+                iMap.put("itemName", item.getItem() != null && item.getItem().getName() != null ? item.getItem().getName().toUpperCase() : "");
                 iMap.put("materialId", item.getMaterial() != null ? item.getMaterial().getId() : null);
-                iMap.put("materialName", item.getMaterial() != null ? item.getMaterial().getName() : "");
+                iMap.put("materialName", item.getMaterial() != null && item.getMaterial().getName() != null ? item.getMaterial().getName().toUpperCase() : "");
                 iMap.put("materialOptionId", item.getMaterialOption() != null ? item.getMaterialOption().getId() : null);
-                iMap.put("materialOptionName", item.getMaterialOption() != null ? item.getMaterialOption().getName() : "");
+                iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
+                iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
+                iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
                 iMap.put("rate", item.getRate());
                 iMap.put("itemDescription", item.getItemDescription());
                 iMap.put("specification", item.getSpecification());

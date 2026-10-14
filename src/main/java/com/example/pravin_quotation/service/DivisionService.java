@@ -3,6 +3,7 @@ package com.example.pravin_quotation.service;
 import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.model.WorkCategory;
 import com.example.pravin_quotation.repository.DivisionRepository;
+import com.example.pravin_quotation.repository.QuotationItemRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -13,13 +14,16 @@ public class DivisionService {
 
     private final DivisionRepository divisionRepository;
     private final WorkCategoryRepository workCategoryRepository;
+    private final QuotationItemRepository quotationItemRepository;
 
     public DivisionService(
             DivisionRepository divisionRepository,
-            WorkCategoryRepository workCategoryRepository
+            WorkCategoryRepository workCategoryRepository,
+            QuotationItemRepository quotationItemRepository
     ) {
         this.divisionRepository = divisionRepository;
         this.workCategoryRepository = workCategoryRepository;
+        this.quotationItemRepository = quotationItemRepository;
     }
 
     public List<Division> getAllDivisions() {
@@ -69,7 +73,7 @@ public class DivisionService {
                 "Work category not found"
         ));
 
-        String divisionName = name.trim();
+        String divisionName = name.trim().toUpperCase();
 
         if (divisionRepository
                 .existsByNameIgnoreCaseAndWorkCategoryId(
@@ -118,7 +122,7 @@ public class DivisionService {
                 "Work category not found"
         ));
 
-        String divisionName = name.trim();
+        String divisionName = name.trim().toUpperCase();
 
         if (divisionRepository
                 .existsByNameIgnoreCaseAndWorkCategoryIdAndIdNot(
@@ -154,8 +158,18 @@ public class DivisionService {
 
     public void deleteDivision(Long id) {
         Division division = getDivisionById(id);
-
-        divisionRepository.delete(division);
+        long quotationCount = quotationItemRepository.countByDivisionId(id);
+        if (quotationCount > 0) {
+            division.setActive(false);
+            divisionRepository.save(division);
+            return;
+        }
+        try {
+            divisionRepository.delete(division);
+        } catch (Exception e) {
+            division.setActive(false);
+            divisionRepository.save(division);
+        }
     }
 
     private void validateName(String name) {

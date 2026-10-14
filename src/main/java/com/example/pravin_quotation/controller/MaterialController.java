@@ -72,8 +72,9 @@ public class MaterialController {
             @RequestParam(required = false) String formula,
             @RequestParam(required = false) Integer displayOrder
     ) {
+        String effectiveName = name != null ? name.trim().toUpperCase() : null;
         materialService.createMaterial(
-                name,
+                effectiveName,
                 description,
                 itemId,
                 divisionIds,
@@ -117,9 +118,10 @@ public class MaterialController {
             @RequestParam(required = false) String formula,
             @RequestParam(required = false) Integer displayOrder
     ) {
+        String effectiveName = name != null ? name.trim().toUpperCase() : null;
         materialService.updateMaterial(
                 id,
-                name,
+                effectiveName,
                 description,
                 itemId,
                 divisionIds,

@@ -190,9 +190,9 @@ public class DynamicCategoryMaterialFormulaTest {
         assertThat(result).isEqualTo("redirect:/admin/work-categories");
 
         WorkCategory updated = workCategoryService.getCategoryById(saved.getId());
-        assertThat(updated.getName()).isEqualTo("Master Foyer");
+        assertThat(updated.getName()).isEqualTo("MASTER FOYER");
         assertThat(updated.getEmoji()).isEqualTo("✨");
-        assertThat(updated.getDisplayName()).isEqualTo("✨ Master Foyer");
+        assertThat(updated.getDisplayName()).isEqualTo("✨ MASTER FOYER");
     }
 
     @Test

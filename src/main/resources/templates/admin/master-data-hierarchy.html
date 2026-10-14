@@ -1,0 +1,534 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Master Data Complete Hierarchy | Pravin KITCHENS &amp; INTERIORS</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+  <style>
+    :root {
+      --primary: #006b63;
+      --primary-dark: #00524c;
+      --primary-light: #e0f5ec;
+      --accent: #d8833b;
+      --bg-page: #f4f7f6;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #64748b;
+      --border-color: #e2e8f0;
+    }
+    body {
+      background-color: var(--bg-page);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: var(--text-main);
+      margin: 0;
+      padding: 0;
+    }
+    .top-header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border-color);
+      padding: 14px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .brand-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .brand-logo-img {
+      height: 38px;
+      width: auto;
+      object-fit: contain;
+    }
+    .page-container {
+      max-width: 1400px;
+      margin: 28px auto;
+      padding: 0 24px;
+    }
+    .hero-banner {
+      background: linear-gradient(135deg, #006b63 0%, #004d40 100%);
+      color: #ffffff;
+      padding: 24px 30px;
+      border-radius: 12px;
+      margin-bottom: 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .hero-banner h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin: 0 0 6px;
+    }
+    .hero-banner p {
+      margin: 0;
+      color: #c7ede4;
+      font-size: 0.95rem;
+    }
+    .hierarchy-card {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      margin-bottom: 22px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.03);
+      overflow: hidden;
+    }
+    .cat-header {
+      background: #f8fafc;
+      border-bottom: 1px solid var(--border-color);
+      padding: 16px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .cat-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .div-box {
+      border-left: 4px solid var(--primary);
+      background: #ffffff;
+      margin: 16px 20px;
+      padding: 16px;
+      border-radius: 0 8px 8px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      border-top: 1px solid #f1f5f9;
+      border-right: 1px solid #f1f5f9;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .div-title {
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #1e293b;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .mat-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 14px;
+      margin-top: 12px;
+    }
+    .mat-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    .formula-tag {
+      background: #e0f2fe;
+      color: #0369a1;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .opt-table {
+      width: 100%;
+      margin: 8px 0 0;
+      font-size: 13px;
+      border-collapse: collapse;
+    }
+    .opt-table th {
+      background: #e2e8f0;
+      color: #475569;
+      padding: 6px 10px;
+      font-weight: 600;
+    }
+    .opt-table td {
+      padding: 8px 10px;
+      border-bottom: 1px solid #e2e8f0;
+      vertical-align: middle;
+    }
+    .spec-pill {
+      background: #f1f5f9;
+      color: #334155;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 11px;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      margin: 2px 4px 2px 0;
+      border: 1px solid #cbd5e1;
+    }
+    .badge-active {
+      background: #dcfce7;
+      color: #15803d;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .badge-inactive {
+      background: #fee2e2;
+      color: #b91c1c;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+    }
+    .btn-action-sm {
+      padding: 3px 8px;
+      font-size: 12px;
+      border-radius: 5px;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border: 1px solid #cbd5e1;
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+    }
+    .btn-action-sm:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP HEADER -->
+<header class="top-header">
+  <div class="brand-section">
+    <img th:src="@{/images/company-logo.png}" alt="Pravin Kitchens" class="brand-logo-img">
+    <div>
+      <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: #006b63;">Pravin KITCHENS &amp; INTERIORS</h2>
+      <p style="margin: 0; font-size: 12px; color: #64748b;">Master Data Complete Hierarchy</p>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 8px; align-items: center;">
+    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }">
+      ← Back
+    </button>
+    <a th:href="@{/admin/pricing/new}" class="btn btn-sm btn-success" style="background: #006b63; border-color: #006b63;">
+      + Configure Master Data
+    </a>
+    <a th:href="@{/admin/work-categories}" class="btn btn-outline-secondary btn-sm">
+      Categories
+    </a>
+    <a th:href="@{/admin/materials}" class="btn btn-outline-secondary btn-sm">
+      Materials
+    </a>
+    <a th:href="@{/admin/pricing}" class="btn btn-outline-secondary btn-sm">
+      Pricing
+    </a>
+    <a th:href="@{/admin/dashboard}" class="btn btn-outline-secondary btn-sm">
+      ⌂ Dashboard
+    </a>
+  </div>
+</header>
+
+<div class="page-container">
+
+  <!-- HERO BANNER -->
+  <div class="hero-banner">
+    <div>
+      <h1>Master Data Complete Hierarchy</h1>
+      <p>
+        Full 5-level configuration hierarchy:
+        <strong>Work Category → Division → Material → Material Option → Material Specifications</strong>
+      </p>
+    </div>
+
+    <!-- Filter by Category -->
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <label for="catFilter" style="color: #ffffff; font-size: 13px; font-weight: 600;">Filter Category:</label>
+      <select id="catFilter" class="form-select form-select-sm" style="max-width: 220px;" onchange="filterByCategory(this.value)">
+        <option value="">All Categories</option>
+        <option th:each="c : ${allCategories}"
+                th:value="${c.id}"
+                th:text="${c.displayName}"
+                th:selected="${selectedCategoryId != null and selectedCategoryId == c.id}">
+          Foyer
+        </option>
+      </select>
+    </div>
+  </div>
+
+  <!-- ALERTS -->
+  <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+  <div th:if="${successMessage}" class="alert alert-success" th:text="${successMessage}"></div>
+
+  <!-- EMPTY STATE -->
+  <div th:if="${hierarchyList == null or hierarchyList.isEmpty()}" class="text-center p-5 bg-white rounded border">
+    <div style="font-size: 3rem; margin-bottom: 12px;">📂</div>
+    <h4>No Master Data Configured Yet</h4>
+    <p class="text-muted">Start by configuring work categories, divisions, and materials.</p>
+    <a th:href="@{/admin/pricing/new}" class="btn btn-primary" style="background: #006b63; border-color: #006b63;">
+      + Configure Master Data Now
+    </a>
+  </div>
+
+  <!-- HIERARCHY ACCORDION / TREE -->
+  <div th:each="cDto : ${hierarchyList}" class="hierarchy-card">
+
+    <!-- LEVEL 1: WORK CATEGORY -->
+    <div class="cat-header">
+      <div class="cat-title">
+        <span th:text="${cDto.category.icon != null ? cDto.category.icon : '📁'}">🏠</span>
+        <span th:text="${cDto.category.name}">Modular Kitchen</span>
+        <span th:classappend="${cDto.category.active ? 'badge-active' : 'badge-inactive'}"
+              th:text="${cDto.category.active ? 'Active' : 'Inactive'}">Active</span>
+      </div>
+
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <a th:href="@{/admin/work-categories/edit/{id}(id=${cDto.category.id})}" class="btn-action-sm">
+          ✏️ Edit Category
+        </a>
+        <form th:action="@{/admin/work-categories/toggle/{id}(id=${cDto.category.id})}" method="post" style="display:inline;">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <button type="submit" class="btn-action-sm" th:text="${cDto.category.active ? '⏸ Deactivate' : '▶ Activate'}">
+            Deactivate
+          </button>
+        </form>
+        <form th:action="@{/admin/work-categories/delete/{id}(id=${cDto.category.id})}" method="post" style="display:inline;"
+              onsubmit="return confirm('Delete or safely deactivate this category? Existing quotations will remain preserved.');">
+          <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+          <button type="submit" class="btn-action-sm text-danger">
+            🗑️ Delete
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- LEVEL 2: DIVISIONS -->
+    <div th:if="${cDto.divisions == null or cDto.divisions.isEmpty()}" class="p-3 text-muted text-center" style="font-size: 13px;">
+      No divisions mapped to this category.
+    </div>
+
+    <div th:each="dDto : ${cDto.divisions}" class="div-box">
+      <div class="div-title">
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span>📁</span>
+          <strong th:text="${dDto.division.name}">Base Unit Cabinetry</strong>
+          <span th:if="${dDto.division.description != null and !dDto.division.description.isBlank()}"
+                class="text-muted" style="font-size: 12px; font-weight: normal;" th:text="'— ' + ${dDto.division.description}"></span>
+          <span th:classappend="${dDto.division.active ? 'badge-active' : 'badge-inactive'}"
+                th:text="${dDto.division.active ? 'Active' : 'Inactive'}">Active</span>
+        </div>
+
+        <div style="display: flex; gap: 6px;">
+          <a th:href="@{/admin/divisions/edit/{id}(id=${dDto.division.id})}" class="btn-action-sm">
+            ✏️ Edit Division
+          </a>
+          <form th:action="@{/admin/divisions/toggle/{id}(id=${dDto.division.id})}" method="post" style="display:inline;">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="btn-action-sm" th:text="${dDto.division.active ? '⏸ Deactivate' : '▶ Activate'}">
+              Deactivate
+            </button>
+          </form>
+          <form th:action="@{/admin/divisions/delete/{id}(id=${dDto.division.id})}" method="post" style="display:inline;"
+                onsubmit="return confirm('Delete or safely deactivate this division? Historical quotations will remain intact.');">
+            <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <button type="submit" class="btn-action-sm text-danger">
+              🗑️ Delete
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- LEVEL 3: MATERIALS -->
+      <div th:if="${dDto.materials == null or dDto.materials.isEmpty()}" class="text-muted p-2" style="font-size: 12px;">
+        No materials mapped to this division.
+      </div>
+
+      <div th:each="mDto : ${dDto.materials}" class="mat-card">
+        <div class="mat-header">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span>📦</span>
+            <strong style="color: #006b63;" th:text="${mDto.material.name}">Marine Ply 710</strong>
+            <span class="formula-tag">
+              📐 Formula: <span th:text="${mDto.material.formula != null ? mDto.material.formula : '(L + W) × H'}">(L + W) × H</span>
+            </span>
+            <span th:classappend="${mDto.material.active ? 'badge-active' : 'badge-inactive'}"
+                  th:text="${mDto.material.active ? 'Active' : 'Inactive'}">Active</span>
+          </div>
+
+          <div style="display: flex; gap: 6px;">
+            <a th:href="@{/admin/materials/edit/{id}(id=${mDto.material.id})}" class="btn-action-sm">
+              ✏️ Edit Material
+            </a>
+            <form th:action="@{/admin/materials/toggle/{id}(id=${mDto.material.id})}" method="post" style="display:inline;">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <button type="submit" class="btn-action-sm" th:text="${mDto.material.active ? '⏸ Deactivate' : '▶ Activate'}">
+                Deactivate
+              </button>
+            </form>
+            <form th:action="@{/admin/materials/delete/{id}(id=${mDto.material.id})}" method="post" style="display:inline;"
+                  onsubmit="return confirm('Delete or safely deactivate this material?');">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <button type="submit" class="btn-action-sm text-danger">
+                🗑️ Delete
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- LEVEL 4: MATERIAL OPTIONS & PRICING -->
+        <div th:if="${mDto.options != null and !mDto.options.isEmpty()}">
+          <table class="opt-table">
+            <thead>
+              <tr>
+                <th style="width: 25%;">Material Option</th>
+                <th style="width: 35%;">Pricing by Mode</th>
+                <th style="width: 25%;">Material Specifications (Level 5)</th>
+                <th style="width: 15%; text-align: right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr th:each="oDto : ${mDto.options}">
+                <td>
+                  <strong>🏷️ <span th:text="${oDto.option.name}">18mm BWP</span></strong>
+                  <span th:classappend="${oDto.option.active ? 'badge-active' : 'badge-inactive'}" style="margin-left: 4px; font-size: 10px;"
+                        th:text="${oDto.option.active ? 'Active' : 'Inactive'}">Active</span>
+                </td>
+                <td>
+                  <div th:if="${oDto.pricingList != null and !oDto.pricingList.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                    <span th:each="p : ${oDto.pricingList}" style="background: #f0fdf4; border: 1px solid #bbf7d0; padding: 2px 6px; border-radius: 4px; font-size: 11px;">
+                      <strong th:text="${p.pricingMode}">MIDDLE</strong>:
+                      ₹<span th:text="${#numbers.formatDecimal(p.rate, 1, 2)}">180.00</span>
+                      <small class="text-muted" th:text="'(' + ${p.unit} + ')'"></small>
+                    </span>
+                  </div>
+                  <div th:if="${oDto.pricingList == null or oDto.pricingList.isEmpty()}" class="text-muted" style="font-size: 11px;">
+                    No pricing configured.
+                  </div>
+                </td>
+                <td>
+                  <!-- LEVEL 5: SPECIFICATIONS UNDER OPTION -->
+                  <div th:if="${oDto.specifications != null and !oDto.specifications.isEmpty()}" style="display: flex; flex-wrap: wrap; gap: 4px;">
+                    <div th:each="s : ${oDto.specifications}" class="spec-pill">
+                      <span>📋 <span th:text="${s.name}">Matte Finish</span></span>
+                      <form th:action="@{/admin/material-specifications/delete/{id}(id=${s.id})}" method="post" style="display:inline; margin: 0;">
+                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                        <input type="hidden" name="redirectUrl" value="/admin/master-data/hierarchy">
+                        <button type="submit" style="background:none; border:none; color:#ef4444; font-size:10px; cursor:pointer; padding:0 2px;" title="Delete specification">✕</button>
+                      </form>
+                    </div>
+                  </div>
+                  <div th:if="${oDto.specifications == null or oDto.specifications.isEmpty()}" class="text-muted" style="font-size: 11px;">
+                    Standard specifications
+                  </div>
+
+                  <!-- Quick Add Specification Button -->
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" style="font-size: 11px; color: #006b63;"
+                          th:onclick="'openSpecModal(' + ${mDto.material.id} + ',' + ${oDto.option.id} + ',\'' + ${oDto.option.name} + '\')'">
+                    + Add Spec
+                  </button>
+                </td>
+                <td style="text-align: right;">
+                  <form th:action="@{/admin/material-options/delete/{id}(id=${oDto.option.id})}" method="post" style="display:inline;"
+                        onsubmit="return confirm('Safely deactivate/delete this material option?');">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+                    <button type="submit" class="btn-action-sm text-danger" style="font-size: 11px;">
+                      🗑️
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- DIRECT MATERIAL SPECIFICATIONS -->
+        <div th:if="${mDto.directSpecifications != null and !mDto.directSpecifications.isEmpty()}" style="margin-top: 8px; font-size: 12px;">
+          <span style="font-weight: 600; color: #475569;">Direct Specifications:</span>
+          <span th:each="ds : ${mDto.directSpecifications}" class="spec-pill">
+            <span>📋 <span th:text="${ds.name}">Hafele Hinges</span></span>
+            <form th:action="@{/admin/material-specifications/delete/{id}(id=${ds.id})}" method="post" style="display:inline; margin: 0;">
+              <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+              <input type="hidden" name="redirectUrl" value="/admin/master-data/hierarchy">
+              <button type="submit" style="background:none; border:none; color:#ef4444; font-size:10px; cursor:pointer;" title="Delete specification">✕</button>
+            </form>
+          </span>
+        </div>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<!-- QUICK ADD SPECIFICATION MODAL -->
+<div class="modal fade" id="addSpecModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form th:action="@{/admin/material-specifications/save}" method="post">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" id="specMaterialId" name="materialId">
+        <input type="hidden" id="specMaterialOptionId" name="materialOptionId">
+        <input type="hidden" name="redirectUrl" value="/admin/master-data/hierarchy">
+
+        <div class="modal-header">
+          <h5 class="modal-title" style="color: #006b63; font-weight: 700;">Add Material Specification</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <div class="mb-3">
+            <label class="form-label" style="font-weight: 600;">Option Target:</label>
+            <div id="specTargetLabel" class="text-muted">Option</div>
+          </div>
+          <div class="mb-3">
+            <label for="specName" class="form-label" style="font-weight: 600;">Specification Name <span class="text-danger">*</span></label>
+            <input type="text" id="specName" name="name" class="form-control" placeholder="e.g. Matte finish, Hafele hardware, 710 Grade" required>
+            <small class="text-muted">Enter specific technical details, brand, or finish.</small>
+          </div>
+          <div class="mb-3">
+            <label for="specDescription" class="form-label">Description (Optional)</label>
+            <textarea id="specDescription" name="description" class="form-control" rows="2" placeholder="Optional notes"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-success btn-sm" style="background: #006b63; border-color: #006b63;">Save Specification</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+  function filterByCategory(catId) {
+    if (catId) {
+      window.location.href = '/admin/master-data/hierarchy?categoryId=' + encodeURIComponent(catId);
+    } else {
+      window.location.href = '/admin/master-data/hierarchy';
+    }
+  }
+
+  function openSpecModal(materialId, optionId, optionName) {
+    document.getElementById('specMaterialId').value = materialId || '';
+    document.getElementById('specMaterialOptionId').value = optionId || '';
+    document.getElementById('specTargetLabel').textContent = optionName ? ('Option: ' + optionName) : 'Material Level';
+    document.getElementById('specName').value = '';
+    const modal = new bootstrap.Modal(document.getElementById('addSpecModal'));
+    modal.show();
+  }
+</script>
+</body>
+</html>

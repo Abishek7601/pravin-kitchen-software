@@ -2,24 +2,35 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.Material;
 import com.example.pravin_quotation.model.MaterialOption;
+import com.example.pravin_quotation.model.MaterialSpecification;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.MaterialRepository;
+import com.example.pravin_quotation.repository.MaterialSpecificationRepository;
+import com.example.pravin_quotation.repository.QuotationItemRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
+@Transactional
 public class MaterialOptionService {
 
     private final MaterialOptionRepository materialOptionRepository;
     private final MaterialRepository materialRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
+    private final QuotationItemRepository quotationItemRepository;
 
     public MaterialOptionService(
             MaterialOptionRepository materialOptionRepository,
-            MaterialRepository materialRepository
+            MaterialRepository materialRepository,
+            MaterialSpecificationRepository materialSpecificationRepository,
+            QuotationItemRepository quotationItemRepository
     ) {
         this.materialOptionRepository = materialOptionRepository;
         this.materialRepository = materialRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
+        this.quotationItemRepository = quotationItemRepository;
     }
 
     public List<MaterialOption> getAllOptions() {
@@ -71,7 +82,7 @@ public class MaterialOptionService {
                         "Material not found"
                 ));
 
-        String optionName = name.trim();
+        String optionName = name.trim().toUpperCase();
 
         if (materialOptionRepository
                 .existsByNameIgnoreCaseAndMaterialId(
@@ -94,7 +105,9 @@ public class MaterialOptionService {
                 displayOrder == null ? 0 : displayOrder
         );
 
-        return materialOptionRepository.save(option);
+        MaterialOption savedOption = materialOptionRepository.save(option);
+        syncSpecifications(savedOption, description, material);
+        return savedOption;
     }
 
     public MaterialOption updateOption(
@@ -109,23 +122,28 @@ public class MaterialOptionService {
 
         validateName(name);
 
-        if (materialId == null) {
+        Material material;
+        if (materialId != null) {
+            material = materialRepository.findById(materialId)
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "Material not found"
+                    ));
+        } else {
+            material = option.getMaterial();
+        }
+
+        if (material == null) {
             throw new IllegalArgumentException(
                     "Material is required"
             );
         }
 
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Material not found"
-                ));
-
-        String optionName = name.trim();
+        String optionName = name.trim().toUpperCase();
 
         if (materialOptionRepository
                 .existsByNameIgnoreCaseAndMaterialIdAndIdNot(
                         optionName,
-                        materialId,
+                        material.getId(),
                         id
                 )) {
 
@@ -141,25 +159,106 @@ public class MaterialOptionService {
                 displayOrder == null ? 0 : displayOrder
         );
 
-        return materialOptionRepository.save(option);
+        MaterialOption updatedOption = materialOptionRepository.save(option);
+        syncSpecifications(updatedOption, description, material);
+        return updatedOption;
     }
 
     public void toggleOptionStatus(Long id) {
 
         MaterialOption option = getOptionById(id);
 
-        option.setActive(
-                !Boolean.TRUE.equals(option.getActive())
-        );
+        boolean newActive = !Boolean.TRUE.equals(option.getActive());
+        option.setActive(newActive);
 
         materialOptionRepository.save(option);
+
+        // Synchronize active status on linked specifications
+        List<MaterialSpecification> specs =
+                materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
+        for (MaterialSpecification s : specs) {
+            s.setActive(newActive);
+            materialSpecificationRepository.save(s);
+        }
     }
 
     public void deleteOption(Long id) {
-
         MaterialOption option = getOptionById(id);
+        long quotationCount = quotationItemRepository.countByMaterialOptionId(id);
+        if (quotationCount > 0) {
+            option.setActive(false);
+            materialOptionRepository.save(option);
+            List<MaterialSpecification> specs =
+                    materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
+            for (MaterialSpecification s : specs) {
+                s.setActive(false);
+                materialSpecificationRepository.save(s);
+            }
+            return;
+        }
+        try {
+            materialOptionRepository.delete(option);
+        } catch (Exception e) {
+            option.setActive(false);
+            materialOptionRepository.save(option);
+            List<MaterialSpecification> specs =
+                    materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
+            for (MaterialSpecification s : specs) {
+                s.setActive(false);
+                materialSpecificationRepository.save(s);
+            }
+        }
+    }
 
-        materialOptionRepository.delete(option);
+    private void syncSpecifications(MaterialOption option, String description, Material material) {
+        if (option == null || option.getId() == null) {
+            return;
+        }
+
+        List<MaterialSpecification> existingSpecs =
+                materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(option.getId());
+
+        String cleanDesc = cleanValue(description);
+
+        if (cleanDesc != null && !cleanDesc.isBlank()) {
+            String specName = cleanDesc.toUpperCase();
+            if (!existingSpecs.isEmpty()) {
+                // Update the primary existing specification in place
+                MaterialSpecification primary = existingSpecs.get(0);
+                primary.setName(specName);
+                primary.setDescription(cleanDesc);
+                primary.setMaterial(material != null ? material : option.getMaterial());
+                primary.setMaterialOption(option);
+                primary.setActive(true);
+                materialSpecificationRepository.save(primary);
+
+                // Ensure any secondary specs remain associated with the correct material
+                for (int i = 1; i < existingSpecs.size(); i++) {
+                    MaterialSpecification extra = existingSpecs.get(i);
+                    extra.setMaterial(material != null ? material : option.getMaterial());
+                    materialSpecificationRepository.save(extra);
+                }
+            } else {
+                // Create and link a new MaterialSpecification
+                MaterialSpecification newSpec = new MaterialSpecification();
+                newSpec.setName(specName);
+                newSpec.setDescription(cleanDesc);
+                newSpec.setMaterial(material != null ? material : option.getMaterial());
+                newSpec.setMaterialOption(option);
+                newSpec.setActive(true);
+                newSpec.setDisplayOrder(0);
+                materialSpecificationRepository.save(newSpec);
+            }
+        } else {
+            // Description was cleared; keep existing specs associated with material
+            for (MaterialSpecification spec : existingSpecs) {
+                spec.setDescription(null);
+                if (material != null) {
+                    spec.setMaterial(material);
+                }
+                materialSpecificationRepository.save(spec);
+            }
+        }
     }
 
     private void validateName(String name) {

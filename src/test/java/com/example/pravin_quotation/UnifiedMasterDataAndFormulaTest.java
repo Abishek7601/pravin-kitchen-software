@@ -584,22 +584,22 @@ public class UnifiedMasterDataAndFormulaTest {
 
         // Verify entities were created and linked properly
         WorkCategory wc = workCategoryRepository.findByNameIgnoreCase(catName).orElseThrow();
-        assertEquals(catName, wc.getName());
+        assertEquals(catName.toUpperCase(), wc.getName());
 
         List<Division> divs = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(wc.getId());
         assertFalse(divs.isEmpty());
-        assertEquals(divName, divs.get(0).getName());
+        assertEquals(divName.toUpperCase(), divs.get(0).getName());
 
         List<Item> items = itemRepository.findByDivisionIdOrderByDisplayOrderAsc(divs.get(0).getId());
         assertFalse(items.isEmpty());
 
         List<Material> mats = materialRepository.findByItemIdOrderByDisplayOrderAsc(items.get(0).getId());
         assertFalse(mats.isEmpty());
-        assertEquals(matName, mats.get(0).getName());
+        assertEquals(matName.toUpperCase(), mats.get(0).getName());
 
         List<MaterialOption> opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mats.get(0).getId());
         assertFalse(opts.isEmpty());
-        assertEquals(optName, opts.get(0).getName());
+        assertEquals(optName.toUpperCase(), opts.get(0).getName());
         assertEquals(CalculationFormula.FORMULA_L_PLUS_W_X_H, opts.get(0).getFormula());
 
         Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(opts.get(0).getId(), PricingMode.PREMIUM).orElseThrow();
@@ -646,10 +646,10 @@ public class UnifiedMasterDataAndFormulaTest {
                 .filter(m -> m.getName().equalsIgnoreCase(matName))
                 .findFirst().orElseThrow();
 
-        // Option should gracefully default to "Standard"
+        // Option should gracefully default to "STANDARD"
         List<MaterialOption> opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
         assertFalse(opts.isEmpty());
-        assertEquals("Standard", opts.get(0).getName());
+        assertEquals("STANDARD", opts.get(0).getName());
 
         Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(opts.get(0).getId(), PricingMode.MIDDLE).orElseThrow();
         assertEquals(new BigDecimal("1350.00"), pricing.getRate());

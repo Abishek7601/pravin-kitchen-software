@@ -20,6 +20,7 @@ public class PricingService {
     private final DivisionRepository divisionRepository;
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
 
     public PricingService(
             PricingRepository pricingRepository,
@@ -28,7 +29,8 @@ public class PricingService {
             WorkCategoryRepository workCategoryRepository,
             DivisionRepository divisionRepository,
             ItemRepository itemRepository,
-            MaterialRepository materialRepository
+            MaterialRepository materialRepository,
+            MaterialSpecificationRepository materialSpecificationRepository
     ) {
         this.pricingRepository = pricingRepository;
         this.materialOptionRepository = materialOptionRepository;
@@ -37,6 +39,7 @@ public class PricingService {
         this.divisionRepository = divisionRepository;
         this.itemRepository = itemRepository;
         this.materialRepository = materialRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
     }
 
     public List<Pricing> getAllPricing() {
@@ -219,39 +222,96 @@ public class PricingService {
             String formula,
             String description
     ) {
+        return saveUnifiedMasterData(
+                pricingId,
+                workCategoryId,
+                newWorkCategoryName,
+                null,
+                divisionId,
+                newDivisionName,
+                materialId,
+                newMaterialName,
+                materialOptionId,
+                newMaterialOptionName,
+                null,
+                pricingMode,
+                rate,
+                unit,
+                formula,
+                description
+        );
+    }
+
+    public Pricing saveUnifiedMasterData(
+            Long pricingId,
+            Long workCategoryId,
+            String newWorkCategoryName,
+            String categoryEmoji,
+            Long divisionId,
+            String newDivisionName,
+            Long materialId,
+            String newMaterialName,
+            Long materialOptionId,
+            String newMaterialOptionName,
+            String specificationName,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
+            String description
+    ) {
         // 1. Work Category
         WorkCategory workCategory;
         if (newWorkCategoryName != null && !newWorkCategoryName.trim().isEmpty()) {
-            String name = newWorkCategoryName.trim();
+            String name = newWorkCategoryName.trim().toUpperCase();
             workCategory = workCategoryRepository.findByNameIgnoreCase(name)
                     .orElseGet(() -> {
                         WorkCategory wc = new WorkCategory();
                         wc.setName(name);
+                        if (categoryEmoji != null && !categoryEmoji.trim().isEmpty()) {
+                            wc.setIcon(categoryEmoji.trim());
+                        }
                         wc.setActive(true);
                         return workCategoryRepository.save(wc);
                     });
+            if (!name.equals(workCategory.getName())) {
+                workCategory.setName(name);
+            }
+            if (categoryEmoji != null && !categoryEmoji.trim().isEmpty() && (workCategory.getIcon() == null || !categoryEmoji.trim().equals(workCategory.getIcon()))) {
+                workCategory.setIcon(categoryEmoji.trim());
+            }
+            workCategory = workCategoryRepository.save(workCategory);
         } else if (workCategoryId != null) {
             workCategory = workCategoryRepository.findById(workCategoryId)
                     .orElseThrow(() -> new IllegalArgumentException("Selected Work Category not found"));
+            if (categoryEmoji != null && !categoryEmoji.trim().isEmpty()) {
+                workCategory.setIcon(categoryEmoji.trim());
+                workCategory = workCategoryRepository.save(workCategory);
+            }
         } else {
             throw new IllegalArgumentException("Work Category is required");
         }
 
         // 2. Division
+        final WorkCategory finalWorkCategory = workCategory;
         Division division;
         if (newDivisionName != null && !newDivisionName.trim().isEmpty()) {
-            String divName = newDivisionName.trim();
-            division = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(workCategory.getId())
+            String divName = newDivisionName.trim().toUpperCase();
+            division = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(finalWorkCategory.getId())
                     .stream()
                     .filter(d -> d.getName().equalsIgnoreCase(divName))
                     .findFirst()
                     .orElseGet(() -> {
                         Division d = new Division();
                         d.setName(divName);
-                        d.setWorkCategory(workCategory);
+                        d.setWorkCategory(finalWorkCategory);
                         d.setActive(true);
                         return divisionRepository.save(d);
                     });
+            if (!divName.equals(division.getName())) {
+                division.setName(divName);
+                division = divisionRepository.save(division);
+            }
         } else if (divisionId != null) {
             division = divisionRepository.findById(divisionId)
                     .orElseThrow(() -> new IllegalArgumentException("Selected Division not found"));
@@ -260,10 +320,12 @@ public class PricingService {
         }
 
         // 3. Item & Material
+        final Division finalDivision = division;
         Material material;
+        String normFormula = resolveFormula(formula);
         if (newMaterialName != null && !newMaterialName.trim().isEmpty()) {
-            String matName = newMaterialName.trim();
-            List<Item> items = itemRepository.findByDivisionIdOrderByDisplayOrderAsc(division.getId());
+            String matName = newMaterialName.trim().toUpperCase();
+            List<Item> items = itemRepository.findByDivisionIdOrderByDisplayOrderAsc(finalDivision.getId());
             Item item = items.stream()
                     .filter(i -> i.getName().equalsIgnoreCase(matName))
                     .findFirst()
@@ -273,10 +335,14 @@ public class PricingService {
                         }
                         Item i = new Item();
                         i.setName(matName);
-                        i.setDivision(division);
+                        i.setDivision(finalDivision);
                         i.setActive(true);
                         return itemRepository.save(i);
                     });
+            if (!matName.equalsIgnoreCase(item.getName())) {
+                item.setName(matName);
+                itemRepository.save(item);
+            }
 
             List<Material> mats = materialRepository.findByItemIdOrderByDisplayOrderAsc(item.getId());
             material = mats.stream()
@@ -286,51 +352,69 @@ public class PricingService {
                         Material m = new Material();
                         m.setName(matName);
                         m.setItem(item);
+                        m.setFormula(normFormula);
                         m.setActive(true);
+                        m.addDivision(finalDivision);
                         return materialRepository.save(m);
                     });
+            material.setName(matName);
+            material.addDivision(finalDivision);
+            material.setFormula(normFormula);
+            material = materialRepository.save(material);
         } else if (materialId != null) {
             material = materialRepository.findById(materialId)
                     .orElseThrow(() -> new IllegalArgumentException("Selected Material not found"));
+            material.addDivision(finalDivision);
+            material.setFormula(normFormula);
+            material = materialRepository.save(material);
         } else {
             throw new IllegalArgumentException("Material is required");
         }
 
         // 4. Material Option (OPTIONAL)
-        String normFormula = resolveFormula(formula);
+        final Material finalMaterial = material;
         MaterialOption materialOption;
         if (newMaterialOptionName != null && !newMaterialOptionName.trim().isEmpty()) {
-            String optName = newMaterialOptionName.trim();
-            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(material.getId());
-            materialOption = options.stream()
-                    .filter(o -> o.getName().equalsIgnoreCase(optName))
-                    .findFirst()
-                    .orElseGet(() -> {
-                        MaterialOption o = new MaterialOption();
-                        o.setName(optName);
-                        o.setMaterial(material);
-                        o.setFormula(normFormula);
-                        o.setActive(true);
-                        return materialOptionRepository.save(o);
-                    });
-            materialOption.setFormula(normFormula);
-            materialOption = materialOptionRepository.save(materialOption);
+            String optName = newMaterialOptionName.trim().toUpperCase();
+            if (materialOptionId != null) {
+                materialOption = materialOptionRepository.findById(materialOptionId)
+                        .orElseThrow(() -> new IllegalArgumentException("Selected Material Option not found"));
+                materialOption.setName(optName);
+                materialOption.setMaterial(finalMaterial);
+                materialOption.setFormula(normFormula);
+                materialOption = materialOptionRepository.save(materialOption);
+            } else {
+                List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(finalMaterial.getId());
+                materialOption = options.stream()
+                        .filter(o -> o.getName().equalsIgnoreCase(optName))
+                        .findFirst()
+                        .orElseGet(() -> {
+                            MaterialOption o = new MaterialOption();
+                            o.setName(optName);
+                            o.setMaterial(finalMaterial);
+                            o.setFormula(normFormula);
+                            o.setActive(true);
+                            return materialOptionRepository.save(o);
+                        });
+                materialOption.setName(optName);
+                materialOption.setFormula(normFormula);
+                materialOption = materialOptionRepository.save(materialOption);
+            }
         } else if (materialOptionId != null) {
             materialOption = materialOptionRepository.findById(materialOptionId)
                     .orElseThrow(() -> new IllegalArgumentException("Selected Material Option not found"));
             materialOption.setFormula(normFormula);
             materialOption = materialOptionRepository.save(materialOption);
         } else {
-            // Material Option / Specification is optional:
-            // Find existing "Standard" or material-named option, or create a default "Standard" option
-            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(material.getId());
+            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(finalMaterial.getId());
+            String defaultOptName = "STANDARD";
             materialOption = options.stream()
-                    .filter(o -> o.getName().equalsIgnoreCase("Standard") || o.getName().equalsIgnoreCase(material.getName()))
+                    .filter(o -> o.getName().equalsIgnoreCase("Standard") || o.getName().equalsIgnoreCase("STANDARD") || o.getName().equalsIgnoreCase(finalMaterial.getName()))
                     .findFirst()
                     .orElseGet(() -> {
                         MaterialOption o = new MaterialOption();
-                        o.setName("Standard");
-                        o.setMaterial(material);
+                        o.setName(defaultOptName);
+                        o.setMaterial(finalMaterial);
                         o.setFormula(normFormula);
                         o.setActive(true);
                         return materialOptionRepository.save(o);
@@ -339,7 +423,38 @@ public class PricingService {
             materialOption = materialOptionRepository.save(materialOption);
         }
 
-        // 5. Rate & Unit & Pricing Mode validation
+        // 5. Material Specification (Level 5)
+        if (specificationName != null && !specificationName.trim().isEmpty()) {
+            String specName = specificationName.trim().toUpperCase();
+            final MaterialOption finalOpt = materialOption;
+            final Material finalMat = material;
+            List<MaterialSpecification> existingSpecs = materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(finalOpt.getId());
+            MaterialSpecification spec;
+            if (!existingSpecs.isEmpty()) {
+                spec = existingSpecs.get(0);
+                spec.setName(specName);
+                spec.setDescription(cleanValue(description));
+                spec.setMaterial(finalMat);
+                spec.setMaterialOption(finalOpt);
+                spec.setActive(true);
+                materialSpecificationRepository.save(spec);
+            } else {
+                spec = new MaterialSpecification();
+                spec.setName(specName);
+                spec.setDescription(cleanValue(description));
+                spec.setMaterial(finalMat);
+                spec.setMaterialOption(finalOpt);
+                spec.setActive(true);
+                spec.setDisplayOrder(0);
+                materialSpecificationRepository.save(spec);
+            }
+            if (finalOpt.getDescription() == null || finalOpt.getDescription().isBlank()) {
+                finalOpt.setDescription(specName);
+                materialOptionRepository.save(finalOpt);
+            }
+        }
+
+        // 6. Rate & Unit & Pricing Mode validation
         validateRate(rate);
         if (pricingMode == null) {
             pricingMode = PricingMode.MIDDLE;
@@ -347,7 +462,7 @@ public class PricingService {
         String cleanUnit = (unit == null || unit.isBlank()) ? "SQFT" : unit.trim().toUpperCase();
         validateUnit(cleanUnit);
 
-        // 6. Pricing record create or update
+        // 7. Pricing record create or update
         Pricing pricing;
         if (pricingId != null) {
             pricing = getPricingById(pricingId);

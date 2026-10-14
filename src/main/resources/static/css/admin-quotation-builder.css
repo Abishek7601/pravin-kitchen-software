@@ -418,6 +418,16 @@ body {
     grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.grid.three {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+    .grid.three {
+        grid-template-columns: 1fr;
+    }
+}
+
 /* =========================================================
    FORM FIELDS
    ========================================================= */
@@ -1816,3 +1826,26 @@ button:disabled,
         break-inside: avoid;
     }
 }
+
+/* =========================================================
+   UPPERCASE DISPLAY FOR MASTER DATA IN QUOTATION BUILDER
+   ========================================================= */
+.choice-card strong,
+.choice-card .dynamic-title,
+.selected-item-label,
+#selectedItemLabel,
+.selection-path,
+#selectionPath,
+#materialId,
+#materialOptionId,
+#materialSpecificationId,
+#materialId option,
+#materialOptionId option,
+#materialSpecificationId option,
+.summary-room-title,
+.item-category,
+.item-title,
+.item-spec,
+.summary-item-name {
+    text-transform: uppercase;
+}

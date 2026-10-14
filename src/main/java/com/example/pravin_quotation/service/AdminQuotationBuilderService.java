@@ -22,6 +22,7 @@ public class AdminQuotationBuilderService {
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
     private final MaterialOptionRepository materialOptionRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
     private final PricingRepository pricingRepository;
     private final QuotationRoomService quotationRoomService;
     private final QuotationItemService quotationItemService;
@@ -38,6 +39,7 @@ public class AdminQuotationBuilderService {
             ItemRepository itemRepository,
             MaterialRepository materialRepository,
             MaterialOptionRepository materialOptionRepository,
+            MaterialSpecificationRepository materialSpecificationRepository,
             PricingRepository pricingRepository,
             QuotationRoomService quotationRoomService,
             QuotationItemService quotationItemService,
@@ -53,6 +55,7 @@ public class AdminQuotationBuilderService {
         this.itemRepository = itemRepository;
         this.materialRepository = materialRepository;
         this.materialOptionRepository = materialOptionRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
         this.pricingRepository = pricingRepository;
         this.quotationRoomService = quotationRoomService;
         this.quotationItemService = quotationItemService;
@@ -329,6 +332,27 @@ public class AdminQuotationBuilderService {
                     );
                 }
 
+                MaterialSpecification materialSpecification = null;
+                if (itemRequest.materialSpecificationId() != null) {
+                    materialSpecification = materialSpecificationRepository
+                            .findById(itemRequest.materialSpecificationId())
+                            .orElse(null);
+                    if (materialSpecification != null) {
+                        if (materialSpecification.getMaterial() != null
+                                && !materialSpecification.getMaterial().getId().equals(material.getId())) {
+                            throw new IllegalArgumentException(
+                                    "Material specification does not belong to the selected material."
+                            );
+                        }
+                        if (materialSpecification.getMaterialOption() != null
+                                && !materialSpecification.getMaterialOption().getId().equals(option.getId())) {
+                            throw new IllegalArgumentException(
+                                    "Material specification does not belong to the selected material option."
+                            );
+                        }
+                    }
+                }
+
                 // -------------------------------------------------
                 // Resolve rate ONCE for this item
                 // -------------------------------------------------
@@ -424,7 +448,7 @@ public class AdminQuotationBuilderService {
                                 nonNegative(
                                         size.offerPrice(),
                                         "Offer price"
-                                );
+                                    );
                     }
 
                     totalSqft =
@@ -452,6 +476,11 @@ public class AdminQuotationBuilderService {
                 // Create ONE parent QuotationItem
                 // =================================================
 
+                String specText = itemRequest.specification();
+                if ((specText == null || specText.isBlank()) && materialSpecification != null) {
+                    specText = materialSpecification.getName();
+                }
+
                 QuotationItem quotationItem =
                         quotationItemService.create(
                                 room,
@@ -460,6 +489,7 @@ public class AdminQuotationBuilderService {
                                 item,
                                 material,
                                 option,
+                                materialSpecification,
                                 itemRequest.itemDescription(),
 
                                 firstLength,
@@ -473,7 +503,7 @@ public class AdminQuotationBuilderService {
 
                                 itemFormula,
 
-                                itemRequest.specification()
+                                specText
                         );
 
                 // =================================================
@@ -824,9 +854,22 @@ public class AdminQuotationBuilderService {
             Long itemId,
             Long materialId,
             Long materialOptionId,
+            Long materialSpecificationId,
             String itemDescription,
             String specification,
             List<SizeRequest> sizes) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes) {
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes);
+        }
     }
 
     public record SizeRequest(

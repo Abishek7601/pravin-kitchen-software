@@ -284,6 +284,9 @@ public class QuotationPdfService {
 
                     // Specifications
                     String specification = safe(item.getSpecification());
+                    if (specification.isBlank() && item.getMaterialSpecification() != null) {
+                        specification = safe(item.getMaterialSpecification().getName());
+                    }
 
                     // Size
                     String sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
@@ -302,7 +305,7 @@ public class QuotationPdfService {
                     // Add Row Cells
                     addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                     addBodyCell(itemTable, roomWork.toUpperCase(), Element.ALIGN_LEFT, isAltRow);
-                    addMaterialCell(itemTable, materialText, specification, isAltRow);
+                    addMaterialCell(itemTable, materialText.toUpperCase(), specification != null ? specification.toUpperCase() : "", isAltRow);
                     addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
                     addBodyCell(itemTable, format(sqft), Element.ALIGN_RIGHT, isAltRow);
                     addRupeeCell(itemTable, rupees(amount), false, false, isAltRow);
@@ -521,9 +524,9 @@ public class QuotationPdfService {
 
         Paragraph p = new Paragraph();
         p.setLeading(9f);
-        p.add(new Chunk(safe(materialName), mainFont));
+        p.add(new Chunk(safe(materialName).toUpperCase(), mainFont));
         if (specification != null && !specification.isBlank() && !specification.equals("-")) {
-            p.add(new Chunk("\n" + specification, specFont));
+            p.add(new Chunk("\n" + safe(specification).toUpperCase(), specFont));
         }
 
         PdfPCell cell = new PdfPCell(p);

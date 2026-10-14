@@ -27,6 +27,7 @@ public class AdminQuotationBuilderController {
     private final ItemRepository itemRepository;
     private final MaterialRepository materialRepository;
     private final MaterialOptionRepository materialOptionRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
     private final AdminQuotationBuilderService builderService;
     private final QuotationRepository quotationRepository;
     private final QuotationRoomRepository quotationRoomRepository;
@@ -41,6 +42,7 @@ public class AdminQuotationBuilderController {
             ItemRepository itemRepository,
             MaterialRepository materialRepository,
             MaterialOptionRepository materialOptionRepository,
+            MaterialSpecificationRepository materialSpecificationRepository,
             AdminQuotationBuilderService builderService,
             QuotationRepository quotationRepository,
             QuotationRoomRepository quotationRoomRepository,
@@ -53,6 +55,7 @@ public class AdminQuotationBuilderController {
         this.itemRepository = itemRepository;
         this.materialRepository = materialRepository;
         this.materialOptionRepository = materialOptionRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
         this.builderService = builderService;
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
@@ -79,7 +82,7 @@ public class AdminQuotationBuilderController {
     @ResponseBody
     public List<Map<String, Object>> divisions(@RequestParam Long workCategoryId) {
         return divisionRepository.findByWorkCategoryIdAndActiveTrueOrderByDisplayOrderAsc(workCategoryId)
-                .stream().map(d -> map("id", d.getId(), "name", d.getName(), "description", d.getDescription()))
+                .stream().map(d -> map("id", d.getId(), "name", d.getName() != null ? d.getName().toUpperCase() : "", "description", d.getDescription()))
                 .toList();
     }
 
@@ -87,7 +90,7 @@ public class AdminQuotationBuilderController {
     @ResponseBody
     public List<Map<String, Object>> items(@RequestParam Long divisionId) {
         return itemRepository.findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(divisionId)
-                .stream().map(i -> map("id", i.getId(), "name", i.getName(), "description", i.getDescription()))
+                .stream().map(i -> map("id", i.getId(), "name", i.getName() != null ? i.getName().toUpperCase() : "", "description", i.getDescription()))
                 .toList();
     }
 
@@ -106,7 +109,7 @@ public class AdminQuotationBuilderController {
         }
         return list.stream().map(m -> map(
                 "id", m.getId(),
-                "name", m.getName(),
+                "name", m.getName() != null ? m.getName().toUpperCase() : "",
                 "description", m.getDescription(),
                 "formula", m.getFormula()
         )).toList();
@@ -120,8 +123,28 @@ public class AdminQuotationBuilderController {
     @ResponseBody
     public List<Map<String, Object>> materialOptions(@RequestParam Long materialId) {
         return materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId)
-                .stream().map(o -> map("id", o.getId(), "name", o.getName(), "description", o.getDescription()))
+                .stream().map(o -> map("id", o.getId(), "name", o.getName() != null ? o.getName().toUpperCase() : "", "description", o.getDescription()))
                 .toList();
+    }
+
+    @GetMapping("/builder/material-specifications")
+    @ResponseBody
+    public List<Map<String, Object>> materialSpecifications(
+            @RequestParam(required = false) Long materialOptionId,
+            @RequestParam(required = false) Long materialId) {
+        List<MaterialSpecification> specs;
+        if (materialOptionId != null) {
+            specs = materialSpecificationRepository.findByMaterialOptionIdAndActiveTrueOrderByDisplayOrderAsc(materialOptionId);
+        } else if (materialId != null) {
+            specs = materialSpecificationRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId);
+        } else {
+            specs = List.of();
+        }
+        return specs.stream().map(s -> map(
+                "id", s.getId(),
+                "name", s.getName() != null ? s.getName().toUpperCase() : "",
+                "description", s.getDescription()
+        )).toList();
     }
 
     @GetMapping("/builder/rate")
@@ -207,15 +230,17 @@ public class AdminQuotationBuilderController {
                 for (QuotationItem item : items) {
                     Map<String, Object> iMap = new LinkedHashMap<>();
                     iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
-                    iMap.put("categoryName", item.getWorkCategory() != null ? item.getWorkCategory().getName() : "");
+                    iMap.put("categoryName", item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase() : "");
                     iMap.put("divisionId", item.getDivision() != null ? item.getDivision().getId() : null);
-                    iMap.put("divisionName", item.getDivision() != null ? item.getDivision().getName() : "");
+                    iMap.put("divisionName", item.getDivision() != null && item.getDivision().getName() != null ? item.getDivision().getName().toUpperCase() : "");
                     iMap.put("itemId", item.getItem() != null ? item.getItem().getId() : null);
-                    iMap.put("itemName", item.getItem() != null ? item.getItem().getName() : "");
+                    iMap.put("itemName", item.getItem() != null && item.getItem().getName() != null ? item.getItem().getName().toUpperCase() : "");
                     iMap.put("materialId", item.getMaterial() != null ? item.getMaterial().getId() : null);
-                    iMap.put("materialName", item.getMaterial() != null ? item.getMaterial().getName() : "");
+                    iMap.put("materialName", item.getMaterial() != null && item.getMaterial().getName() != null ? item.getMaterial().getName().toUpperCase() : "");
                     iMap.put("materialOptionId", item.getMaterialOption() != null ? item.getMaterialOption().getId() : null);
-                    iMap.put("materialOptionName", item.getMaterialOption() != null ? item.getMaterialOption().getName() : "");
+                    iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
+                    iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
+                    iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
                     iMap.put("rate", item.getRate());
                     iMap.put("itemDescription", item.getItemDescription());
                     iMap.put("specification", item.getSpecification());

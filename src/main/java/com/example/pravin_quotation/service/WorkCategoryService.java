@@ -1,6 +1,7 @@
 package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.repository.QuotationItemRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 import org.springframework.stereotype.Service;
 
@@ -10,11 +11,14 @@ import java.util.List;
 public class WorkCategoryService {
 
     private final WorkCategoryRepository workCategoryRepository;
+    private final QuotationItemRepository quotationItemRepository;
 
     public WorkCategoryService(
-            WorkCategoryRepository workCategoryRepository) {
+            WorkCategoryRepository workCategoryRepository,
+            QuotationItemRepository quotationItemRepository) {
 
         this.workCategoryRepository = workCategoryRepository;
+        this.quotationItemRepository = quotationItemRepository;
     }
 
 
@@ -51,7 +55,7 @@ public class WorkCategoryService {
 
         validateName(name);
 
-        String categoryName = name.trim();
+        String categoryName = name.trim().toUpperCase();
 
         if (workCategoryRepository
                 .existsByNameIgnoreCase(categoryName)) {
@@ -95,7 +99,7 @@ public class WorkCategoryService {
 
         validateName(name);
 
-        String categoryName = name.trim();
+        String categoryName = name.trim().toUpperCase();
 
         if (workCategoryRepository
                 .existsByNameIgnoreCaseAndIdNot(
@@ -141,11 +145,19 @@ public class WorkCategoryService {
 
 
     public void deleteCategory(Long id) {
-
-        WorkCategory category =
-                getCategoryById(id);
-
-        workCategoryRepository.delete(category);
+        WorkCategory category = getCategoryById(id);
+        long quotationCount = quotationItemRepository.countByWorkCategoryId(id);
+        if (quotationCount > 0) {
+            category.setActive(false);
+            workCategoryRepository.save(category);
+            return;
+        }
+        try {
+            workCategoryRepository.delete(category);
+        } catch (Exception e) {
+            category.setActive(false);
+            workCategoryRepository.save(category);
+        }
     }
 
 

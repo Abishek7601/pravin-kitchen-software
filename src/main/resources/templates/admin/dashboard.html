@@ -760,12 +760,14 @@
 
       </div>
 
-      <a th:href="@{/admin/pricing/new}"
-         class="btn btn-primary btn-sm"
-         style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
-        <i class="bi bi-plus-circle-fill"></i>
-        <span>Configure Master Data (Unified)</span>
-      </a>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <a th:href="@{/admin/pricing/new}"
+           class="btn btn-primary btn-sm"
+           style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; border: none; box-shadow: 0 2px 4px rgba(0,0,0,0.08);">
+          <i class="bi bi-plus-circle-fill"></i>
+          <span>Configure Master Data</span>
+        </a>
+      </div>
 
     </div>
 
@@ -805,96 +807,6 @@
 
 
 
-      <!-- ================================================= -->
-      <!-- 2. DIVISIONS -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/divisions}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-layers-fill"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            Divisions
-          </strong>
-
-          <span>
-            Manage divisions under selected work categories
-          </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
-
-
-
-      <!-- ================================================= -->
-      <!-- 3. MATERIALS -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/materials}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-bricks"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            Materials
-          </strong>
-
-          <span>
-            Add and manage materials
-          </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
-
-
-
-      <!-- ================================================= -->
-      <!-- 4. MATERIAL OPTIONS -->
-      <!-- ================================================= -->
-
-      <a th:href="@{/admin/material-options}"
-         class="master-data-card">
-
-        <div class="master-data-icon">
-
-          <i class="bi bi-sliders"></i>
-
-        </div>
-
-        <div class="master-data-content">
-
-          <strong>
-            Material Options
-          </strong>
-
-          <span>
-            Manage material specifications and options
-          </span>
-
-        </div>
-
-        <i class="bi bi-chevron-right master-data-arrow"></i>
-
-      </a>
 
 
 

@@ -10,6 +10,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
 
@@ -24,6 +25,7 @@ public class PricingController {
     private final DivisionRepository divisionRepository;
     private final WorkCategoryRepository workCategoryRepository;
     private final com.example.pravin_quotation.service.FormulaConfigService formulaConfigService;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
 
     public PricingController(
             PricingService pricingService,
@@ -32,7 +34,8 @@ public class PricingController {
             ItemRepository itemRepository,
             DivisionRepository divisionRepository,
             WorkCategoryRepository workCategoryRepository,
-            com.example.pravin_quotation.service.FormulaConfigService formulaConfigService
+            com.example.pravin_quotation.service.FormulaConfigService formulaConfigService,
+            MaterialSpecificationRepository materialSpecificationRepository
     ) {
         this.pricingService = pricingService;
         this.materialOptionRepository = materialOptionRepository;
@@ -41,6 +44,7 @@ public class PricingController {
         this.divisionRepository = divisionRepository;
         this.workCategoryRepository = workCategoryRepository;
         this.formulaConfigService = formulaConfigService;
+        this.materialSpecificationRepository = materialSpecificationRepository;
     }
 
     @GetMapping
@@ -62,14 +66,53 @@ public class PricingController {
     }
 
     @GetMapping({"/new", "/configure"})
-    public String newPricing(Model model) {
+    public String newPricing(
+            @RequestParam(required = false) Long workCategoryId,
+            @RequestParam(required = false) String returnUrl,
+            HttpServletRequest request,
+            Model model
+    ) {
+        String catName = "";
+        String catEmoji = "";
+        WorkCategory selectedCategory = null;
+        if (workCategoryId != null) {
+            Optional<WorkCategory> wcOpt = workCategoryRepository.findById(workCategoryId);
+            if (wcOpt.isPresent()) {
+                selectedCategory = wcOpt.get();
+                catName = selectedCategory.getName();
+                catEmoji = selectedCategory.getIcon() != null ? selectedCategory.getIcon() : "";
+            }
+        }
 
         model.addAttribute("pricing", new Pricing());
         model.addAttribute("isEdit", false);
-        model.addAttribute("categoryName", "");
+        model.addAttribute("selectedCategory", selectedCategory);
+        model.addAttribute("workCategoryId", workCategoryId != null ? workCategoryId : "");
+        model.addAttribute("categoryName", catName);
+        model.addAttribute("categoryEmoji", catEmoji);
         model.addAttribute("divisionName", "");
         model.addAttribute("materialName", "");
+        model.addAttribute("materialOptionName", "");
         model.addAttribute("specificationName", "");
+
+        // Determine context-aware Cancel URL
+        String referer = request != null ? request.getHeader("Referer") : null;
+        String effectiveCancelUrl = "/admin/work-categories";
+        if (returnUrl != null && !returnUrl.isBlank()) {
+            effectiveCancelUrl = returnUrl;
+        } else if (workCategoryId != null) {
+            effectiveCancelUrl = "/admin/work-categories/view/" + workCategoryId;
+        } else if (referer != null && !referer.isBlank()) {
+            if (referer.contains("/admin/pricing") && !referer.contains("/admin/pricing/new") && !referer.contains("/admin/pricing/configure")) {
+                effectiveCancelUrl = "/admin/pricing";
+            } else if (referer.contains("/admin/work-categories")) {
+                effectiveCancelUrl = referer;
+            } else if (referer.contains("/admin/dashboard")) {
+                effectiveCancelUrl = "/admin/dashboard";
+            }
+        }
+        model.addAttribute("cancelUrl", effectiveCancelUrl);
+
         populateUnifiedFormModel(model, null);
 
         return "admin/pricing-form";
@@ -81,6 +124,7 @@ public class PricingController {
             @RequestParam(required = false) Long workCategoryId,
             @RequestParam(required = false) String workCategoryName,
             @RequestParam(required = false) String newWorkCategoryName,
+            @RequestParam(required = false) String categoryEmoji,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) String divisionName,
             @RequestParam(required = false) String newDivisionName,
@@ -91,6 +135,7 @@ public class PricingController {
             @RequestParam(required = false) String materialOptionName,
             @RequestParam(required = false) String newMaterialOptionName,
             @RequestParam(required = false) String specification,
+            @RequestParam(required = false) String specificationName,
             @RequestParam(required = false) PricingMode pricingMode,
             @RequestParam BigDecimal rate,
             @RequestParam(defaultValue = "SQFT") String unit,
@@ -102,18 +147,27 @@ public class PricingController {
             String catName = firstNonBlank(workCategoryName, newWorkCategoryName);
             String divName = firstNonBlank(divisionName, newDivisionName);
             String matName = firstNonBlank(materialName, newMaterialName);
-            String optName = firstNonBlank(materialOptionName, newMaterialOptionName, specification);
+            String optName = firstNonBlank(materialOptionName, newMaterialOptionName);
+            String specName = firstNonBlank(specificationName, specification);
+
+            if (catName != null) catName = catName.trim().toUpperCase();
+            if (divName != null) divName = divName.trim().toUpperCase();
+            if (matName != null) matName = matName.trim().toUpperCase();
+            if (optName != null) optName = optName.trim().toUpperCase();
+            if (specName != null) specName = specName.trim().toUpperCase();
 
             pricingService.saveUnifiedMasterData(
                     pricingId,
                     workCategoryId,
                     catName,
+                    categoryEmoji,
                     divisionId,
                     divName,
                     materialId,
                     matName,
                     materialOptionId,
                     optName,
+                    specName,
                     pricingMode,
                     rate,
                     unit,
@@ -131,6 +185,8 @@ public class PricingController {
     @GetMapping("/edit/{id}")
     public String editPricing(
             @PathVariable Long id,
+            @RequestParam(required = false) String returnUrl,
+            HttpServletRequest request,
             Model model
     ) {
         Pricing pricing = pricingService.getPricingById(id);
@@ -138,14 +194,21 @@ public class PricingController {
         model.addAttribute("isEdit", true);
 
         String catName = "";
+        String catEmoji = "";
         String divName = "";
         String matName = "";
         String optName = "";
+        String specName = "";
+        Long catId = null;
 
         if (pricing.getMaterialOption() != null) {
             MaterialOption option = pricing.getMaterialOption();
             if (option.getName() != null && !option.getName().equalsIgnoreCase("Standard")) {
                 optName = option.getName();
+            }
+            List<MaterialSpecification> specs = materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(option.getId());
+            if (!specs.isEmpty()) {
+                specName = specs.get(0).getName();
             }
             Material mat = option.getMaterial();
             if (mat != null) {
@@ -158,20 +221,59 @@ public class PricingController {
                         WorkCategory wc = div.getWorkCategory();
                         if (wc != null) {
                             catName = wc.getName();
+                            catEmoji = wc.getIcon() != null ? wc.getIcon() : "";
+                            catId = wc.getId();
                         }
+                    }
+                }
+                if (divName.isEmpty() && mat.getDivisions() != null && !mat.getDivisions().isEmpty()) {
+                    Division div = mat.getDivisions().iterator().next();
+                    divName = div.getName();
+                    if (div.getWorkCategory() != null) {
+                        catName = div.getWorkCategory().getName();
+                        catEmoji = div.getWorkCategory().getIcon() != null ? div.getWorkCategory().getIcon() : "";
+                        catId = div.getWorkCategory().getId();
                     }
                 }
             }
         }
 
         model.addAttribute("categoryName", catName);
+        model.addAttribute("categoryEmoji", catEmoji);
         model.addAttribute("divisionName", divName);
         model.addAttribute("materialName", matName);
-        model.addAttribute("specificationName", optName);
+        model.addAttribute("materialOptionName", optName);
+        model.addAttribute("specificationName", !specName.isEmpty() ? specName : (pricing.getDescription() != null ? pricing.getDescription() : ""));
+
+        // Determine context-aware Cancel URL
+        String referer = request != null ? request.getHeader("Referer") : null;
+        String effectiveCancelUrl = "/admin/pricing";
+        if (returnUrl != null && !returnUrl.isBlank()) {
+            effectiveCancelUrl = returnUrl;
+        } else if (referer != null && !referer.isBlank()) {
+            if (referer.contains("/admin/work-categories")) {
+                effectiveCancelUrl = referer;
+            } else if (referer.contains("/admin/pricing") && !referer.contains("/admin/pricing/edit")) {
+                effectiveCancelUrl = "/admin/pricing";
+            } else if (referer.contains("/admin/dashboard")) {
+                effectiveCancelUrl = "/admin/dashboard";
+            }
+        } else if (catId != null) {
+            effectiveCancelUrl = "/admin/work-categories/view/" + catId;
+        }
+        model.addAttribute("cancelUrl", effectiveCancelUrl);
 
         populateUnifiedFormModel(model, pricing);
 
         return "admin/pricing-form";
+    }
+
+    public String newPricing(Model model) {
+        return newPricing(null, null, null, model);
+    }
+
+    public String editPricing(Long id, Model model) {
+        return editPricing(id, null, null, model);
     }
 
     @PostMapping("/update/{id}")
@@ -180,6 +282,7 @@ public class PricingController {
             @RequestParam(required = false) Long workCategoryId,
             @RequestParam(required = false) String workCategoryName,
             @RequestParam(required = false) String newWorkCategoryName,
+            @RequestParam(required = false) String categoryEmoji,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) String divisionName,
             @RequestParam(required = false) String newDivisionName,
@@ -190,6 +293,7 @@ public class PricingController {
             @RequestParam(required = false) String materialOptionName,
             @RequestParam(required = false) String newMaterialOptionName,
             @RequestParam(required = false) String specification,
+            @RequestParam(required = false) String specificationName,
             @RequestParam(required = false) PricingMode pricingMode,
             @RequestParam BigDecimal rate,
             @RequestParam(defaultValue = "SQFT") String unit,
@@ -201,18 +305,21 @@ public class PricingController {
             String catName = firstNonBlank(workCategoryName, newWorkCategoryName);
             String divName = firstNonBlank(divisionName, newDivisionName);
             String matName = firstNonBlank(materialName, newMaterialName);
-            String optName = firstNonBlank(materialOptionName, newMaterialOptionName, specification);
+            String optName = firstNonBlank(materialOptionName, newMaterialOptionName);
+            String specName = firstNonBlank(specificationName, specification);
 
             pricingService.saveUnifiedMasterData(
                     id,
                     workCategoryId,
                     catName,
+                    categoryEmoji,
                     divisionId,
                     divName,
                     materialId,
                     matName,
                     materialOptionId,
                     optName,
+                    specName,
                     pricingMode,
                     rate,
                     unit,
@@ -225,6 +332,102 @@ public class PricingController {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/pricing/edit/" + id;
         }
+    }
+
+    public String savePricing(
+            Long pricingId,
+            Long workCategoryId,
+            String workCategoryName,
+            String newWorkCategoryName,
+            Long divisionId,
+            String divisionName,
+            String newDivisionName,
+            Long materialId,
+            String materialName,
+            String newMaterialName,
+            Long materialOptionId,
+            String materialOptionName,
+            String newMaterialOptionName,
+            String specification,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
+            String description,
+            RedirectAttributes redirectAttributes
+    ) {
+        return savePricing(
+                pricingId,
+                workCategoryId,
+                workCategoryName,
+                newWorkCategoryName,
+                null,
+                divisionId,
+                divisionName,
+                newDivisionName,
+                materialId,
+                materialName,
+                newMaterialName,
+                materialOptionId,
+                materialOptionName,
+                newMaterialOptionName,
+                specification,
+                null,
+                pricingMode,
+                rate,
+                unit,
+                formula,
+                description,
+                redirectAttributes
+        );
+    }
+
+    public String updatePricing(
+            Long id,
+            Long workCategoryId,
+            String workCategoryName,
+            String newWorkCategoryName,
+            Long divisionId,
+            String divisionName,
+            String newDivisionName,
+            Long materialId,
+            String materialName,
+            String newMaterialName,
+            Long materialOptionId,
+            String materialOptionName,
+            String newMaterialOptionName,
+            String specification,
+            PricingMode pricingMode,
+            BigDecimal rate,
+            String unit,
+            String formula,
+            String description,
+            RedirectAttributes redirectAttributes
+    ) {
+        return updatePricing(
+                id,
+                workCategoryId,
+                workCategoryName,
+                newWorkCategoryName,
+                null,
+                divisionId,
+                divisionName,
+                newDivisionName,
+                materialId,
+                materialName,
+                newMaterialName,
+                materialOptionId,
+                materialOptionName,
+                newMaterialOptionName,
+                specification,
+                null,
+                pricingMode,
+                rate,
+                unit,
+                formula,
+                description,
+                redirectAttributes
+        );
     }
 
     public String savePricing(
@@ -249,6 +452,7 @@ public class PricingController {
                 workCategoryId,
                 null,
                 newWorkCategoryName,
+                null,
                 divisionId,
                 null,
                 newDivisionName,
@@ -258,6 +462,7 @@ public class PricingController {
                 materialOptionId,
                 null,
                 newMaterialOptionName,
+                null,
                 null,
                 pricingMode,
                 rate,
@@ -290,6 +495,7 @@ public class PricingController {
                 workCategoryId,
                 null,
                 newWorkCategoryName,
+                null,
                 divisionId,
                 null,
                 newDivisionName,
@@ -299,6 +505,7 @@ public class PricingController {
                 materialOptionId,
                 null,
                 newMaterialOptionName,
+                null,
                 null,
                 pricingMode,
                 rate,
@@ -337,19 +544,16 @@ public class PricingController {
     @GetMapping("/api/materials")
     @ResponseBody
     public List<Map<String, Object>> getMaterials(@RequestParam Long divisionId) {
-        // Collect materials under all items of this division
-        List<Item> items = itemRepository.findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(divisionId);
-        List<Map<String, Object>> result = new ArrayList<>();
-        Set<Long> seen = new HashSet<>();
-        for (Item item : items) {
-            List<Material> materials = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(item.getId());
-            for (Material m : materials) {
-                if (seen.add(m.getId())) {
-                    result.add(Map.of("id", m.getId(), "name", m.getName()));
-                }
-            }
-        }
-        return result;
+        List<Material> materials = materialRepository.findActiveByDivisionId(divisionId);
+        return materials.stream()
+                .map(m -> {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("id", m.getId());
+                    map.put("name", m.getName());
+                    map.put("formula", m.getFormula() != null ? m.getFormula() : "(L + W) × H");
+                    return map;
+                })
+                .toList();
     }
 
     @GetMapping("/api/material-options")
@@ -365,6 +569,33 @@ public class PricingController {
                     return map;
                 })
                 .toList();
+    }
+
+    @GetMapping("/api/material-specifications")
+    @ResponseBody
+    public List<Map<String, Object>> getMaterialSpecifications(
+            @RequestParam(required = false) Long materialOptionId,
+            @RequestParam(required = false) Long materialId) {
+        if (materialOptionId != null) {
+            return materialSpecificationRepository.findByMaterialOptionIdAndActiveTrueOrderByDisplayOrderAsc(materialOptionId)
+                    .stream()
+                    .map(s -> Map.<String, Object>of(
+                            "id", s.getId(),
+                            "name", s.getName(),
+                            "description", s.getDescription() != null ? s.getDescription() : ""
+                    ))
+                    .toList();
+        } else if (materialId != null) {
+            return materialSpecificationRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId)
+                    .stream()
+                    .map(s -> Map.<String, Object>of(
+                            "id", s.getId(),
+                            "name", s.getName(),
+                            "description", s.getDescription() != null ? s.getDescription() : ""
+                    ))
+                    .toList();
+        }
+        return Collections.emptyList();
     }
 
     private void populateUnifiedFormModel(Model model, Pricing pricing) {

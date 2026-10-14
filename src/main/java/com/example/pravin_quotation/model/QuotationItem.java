@@ -39,6 +39,10 @@ public class QuotationItem {
     @JoinColumn(name = "material_option_id")
     private MaterialOption materialOption;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "material_specification_id")
+    private MaterialSpecification materialSpecification;
+
     @OneToMany(
             mappedBy = "quotationItem",
             cascade = CascadeType.ALL,
@@ -190,6 +194,14 @@ public class QuotationItem {
 
     public void setMaterialOption(MaterialOption materialOption) {
         this.materialOption = materialOption;
+    }
+
+    public MaterialSpecification getMaterialSpecification() {
+        return materialSpecification;
+    }
+
+    public void setMaterialSpecification(MaterialSpecification materialSpecification) {
+        this.materialSpecification = materialSpecification;
     }
 
     public void addSize(QuotationItemSize size) {

@@ -138,6 +138,8 @@ public class QuotationItemService {
     // =========================================================
     // CREATE ITEM
     // =========================================================
+    // CREATE ITEM (WITH MATERIAL SPECIFICATION)
+    // =========================================================
 
     @Transactional
     public QuotationItem create(
@@ -147,6 +149,7 @@ public class QuotationItemService {
             Item item,
             Material material,
             MaterialOption materialOption,
+            MaterialSpecification materialSpecification,
             String itemDescription,
             BigDecimal lengthValue,
             BigDecimal widthValue,
@@ -227,6 +230,10 @@ public class QuotationItemService {
                 materialOption
         );
 
+        quotationItem.setMaterialSpecification(
+                materialSpecification
+        );
+
         quotationItem.setItemDescription(
                 cleanText(itemDescription)
         );
@@ -293,6 +300,46 @@ public class QuotationItemService {
         );
 
         return savedItem;
+    }
+
+    @Transactional
+    public QuotationItem create(
+            QuotationRoom quotationRoom,
+            WorkCategory workCategory,
+            Division division,
+            Item item,
+            Material material,
+            MaterialOption materialOption,
+            String itemDescription,
+            BigDecimal lengthValue,
+            BigDecimal widthValue,
+            BigDecimal heightValue,
+            BigDecimal calculatedSqft,
+            BigDecimal rate,
+            BigDecimal amount,
+            BigDecimal offerPrice,
+            String formula,
+            String specification
+    ) {
+        return create(
+                quotationRoom,
+                workCategory,
+                division,
+                item,
+                material,
+                materialOption,
+                null,
+                itemDescription,
+                lengthValue,
+                widthValue,
+                heightValue,
+                calculatedSqft,
+                rate,
+                amount,
+                offerPrice,
+                formula,
+                specification
+        );
     }
 
 

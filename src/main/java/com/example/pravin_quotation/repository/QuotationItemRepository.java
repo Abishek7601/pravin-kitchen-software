@@ -21,5 +21,17 @@ public interface QuotationItemRepository extends JpaRepository<QuotationItem, Lo
 
     List<QuotationItem> findByMaterialOptionIdOrderByCreatedAtDesc(Long materialOptionId);
 
+    List<QuotationItem> findByMaterialSpecificationIdOrderByCreatedAtDesc(Long materialSpecificationId);
+
+    long countByMaterialSpecificationId(Long materialSpecificationId);
+
+    long countByMaterialOptionId(Long materialOptionId);
+
+    long countByMaterialId(Long materialId);
+
+    long countByDivisionId(Long divisionId);
+
+    long countByWorkCategoryId(Long workCategoryId);
+
     List<QuotationItem> findByQuotationRoomId(Long quotationRoomId);
 }

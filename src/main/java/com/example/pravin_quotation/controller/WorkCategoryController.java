@@ -11,11 +11,14 @@ import org.springframework.web.bind.annotation.*;
 public class WorkCategoryController {
 
     private final WorkCategoryService workCategoryService;
+    private final MasterDataHierarchyController masterDataHierarchyController;
 
     public WorkCategoryController(
-            WorkCategoryService workCategoryService) {
+            WorkCategoryService workCategoryService,
+            MasterDataHierarchyController masterDataHierarchyController) {
 
         this.workCategoryService = workCategoryService;
+        this.masterDataHierarchyController = masterDataHierarchyController;
     }
 
 
@@ -28,6 +31,11 @@ public class WorkCategoryController {
         );
 
         return "admin/work-categories";
+    }
+
+    @GetMapping({"/view/{id}", "/{id}/view"})
+    public String viewCategory(@PathVariable Long id, Model model) {
+        return masterDataHierarchyController.viewCategoryDetails(id, model);
     }
 
 
@@ -52,8 +60,9 @@ public class WorkCategoryController {
             @RequestParam(required = false) Integer displayOrder) {
 
         String effectiveIcon = (icon != null && !icon.isBlank()) ? icon : emoji;
+        String effectiveName = name != null ? name.trim().toUpperCase() : null;
         workCategoryService.createCategory(
-                name,
+                effectiveName,
                 description,
                 effectiveIcon,
                 displayOrder
@@ -87,9 +96,10 @@ public class WorkCategoryController {
             @RequestParam(required = false) Integer displayOrder) {
 
         String effectiveIcon = (icon != null && !icon.isBlank()) ? icon : emoji;
+        String effectiveName = name != null ? name.trim().toUpperCase() : null;
         workCategoryService.updateCategory(
                 id,
-                name,
+                effectiveName,
                 description,
                 effectiveIcon,
                 displayOrder

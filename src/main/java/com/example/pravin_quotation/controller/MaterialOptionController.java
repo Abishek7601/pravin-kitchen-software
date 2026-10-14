@@ -51,18 +51,30 @@ public class MaterialOptionController {
 
     @PostMapping("/save")
     public String saveOption(
-            @RequestParam String name,
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) String description,
-            @RequestParam Long materialId,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Long materialId,
+            @RequestParam(required = false) Integer displayOrder,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
-
-        materialOptionService.createOption(
-                name,
-                description,
-                materialId,
-                displayOrder
-        );
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Material option name is required");
+            }
+            if (materialId == null) {
+                throw new IllegalArgumentException("Material is required");
+            }
+            String effectiveName = name.trim().toUpperCase();
+            materialOptionService.createOption(
+                    effectiveName,
+                    description,
+                    materialId,
+                    displayOrder
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Material option created successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
 
         return "redirect:/admin/material-options";
     }
@@ -70,6 +82,7 @@ public class MaterialOptionController {
     @GetMapping("/edit/{id}")
     public String editOption(
             @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
             Model model
     ) {
 
@@ -83,27 +96,82 @@ public class MaterialOptionController {
                 materialRepository.findByActiveTrueOrderByDisplayOrderAsc()
         );
 
+        model.addAttribute(
+                "redirectUrl",
+                redirectUrl
+        );
+
         return "admin/material-option-form";
     }
 
     @PostMapping("/update/{id}")
     public String updateOption(
             @PathVariable Long id,
-            @RequestParam String name,
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) String description,
-            @RequestParam Long materialId,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Long materialId,
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String redirectUrl,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Material option name is required");
+            }
+            String effectiveName = name.trim().toUpperCase();
+            materialOptionService.updateOption(
+                    id,
+                    effectiveName,
+                    description,
+                    materialId,
+                    displayOrder
+            );
+            redirectAttributes.addFlashAttribute("successMessage", "Material option updated successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
 
-        materialOptionService.updateOption(
-                id,
-                name,
-                description,
-                materialId,
-                displayOrder
-        );
+        if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+            return "redirect:" + redirectUrl;
+        }
 
         return "redirect:/admin/material-options";
+    }
+
+    @PostMapping(value = "/api/update/{id}", produces = "application/json")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> apiUpdateOption(
+            @PathVariable Long id,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String description,
+            @RequestParam(required = false) Long materialId,
+            @RequestParam(required = false) Integer displayOrder
+    ) {
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Material option name is required");
+            }
+            String effectiveName = name.trim().toUpperCase();
+            MaterialOption updated = materialOptionService.updateOption(
+                    id,
+                    effectiveName,
+                    description,
+                    materialId,
+                    displayOrder
+            );
+            return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                    "success", true,
+                    "id", updated.getId(),
+                    "name", updated.getName(),
+                    "description", updated.getDescription() != null ? updated.getDescription() : "",
+                    "displayOrder", updated.getDisplayOrder() != null ? updated.getDisplayOrder() : 0
+            ));
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage()
+            ));
+        }
     }
 
     @PostMapping("/toggle/{id}")
