@@ -11,6 +11,9 @@ public class WhatsAppResult {
     private String quotationNumber;
     private String pdfDownloadUrl;
     private int pdfSizeBytes;
+    private String messageId;
+    private String provider;
+    private Long quotationId;
 
     public WhatsAppResult() {
     }
@@ -18,6 +21,12 @@ public class WhatsAppResult {
     public WhatsAppResult(boolean success, String method, String message, String whatsappUrl,
                           String phone, String customerName, String quotationNumber,
                           String pdfDownloadUrl, int pdfSizeBytes) {
+        this(success, method, message, whatsappUrl, phone, customerName, quotationNumber, pdfDownloadUrl, pdfSizeBytes, null, null);
+    }
+
+    public WhatsAppResult(boolean success, String method, String message, String whatsappUrl,
+                          String phone, String customerName, String quotationNumber,
+                          String pdfDownloadUrl, int pdfSizeBytes, String messageId, String provider) {
         this.success = success;
         this.method = method;
         this.message = message;
@@ -27,6 +36,8 @@ public class WhatsAppResult {
         this.quotationNumber = quotationNumber;
         this.pdfDownloadUrl = pdfDownloadUrl;
         this.pdfSizeBytes = pdfSizeBytes;
+        this.messageId = messageId;
+        this.provider = provider;
     }
 
     public boolean isSuccess() {
@@ -99,5 +110,29 @@ public class WhatsAppResult {
 
     public void setPdfSizeBytes(int pdfSizeBytes) {
         this.pdfSizeBytes = pdfSizeBytes;
+    }
+
+    public String getMessageId() {
+        return messageId;
+    }
+
+    public void setMessageId(String messageId) {
+        this.messageId = messageId;
+    }
+
+    public String getProvider() {
+        return provider;
+    }
+
+    public void setProvider(String provider) {
+        this.provider = provider;
+    }
+
+    public Long getQuotationId() {
+        return quotationId;
+    }
+
+    public void setQuotationId(Long quotationId) {
+        this.quotationId = quotationId;
     }
 }

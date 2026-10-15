@@ -536,6 +536,19 @@ a {
     border-color: #26749c;
 }
 
+.whatsapp-btn {
+    color: #16865c;
+    background: #f0fdf4;
+    border-color: #bbf7d0;
+    cursor: pointer;
+}
+
+.whatsapp-btn:hover {
+    color: #ffffff;
+    background: #16865c;
+    border-color: #16865c;
+}
+
 .delete-btn {
     color: #b33939;
     background: #fdf2f2;

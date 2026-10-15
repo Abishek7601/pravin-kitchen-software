@@ -1106,7 +1106,7 @@
          FINANCIAL SUMMARY
     ====================================================== -->
 
-    <section class="detail-card financial-card">
+    <section class="detail-card financial-card" id="financialCard" th:data-subtotal="${quotation.subtotal != null ? quotation.subtotal : 0}">
 
         <div class="financial-header">
 
@@ -1136,7 +1136,8 @@
 
         <form th:action="@{/admin/quotations/charges/{id}(id=${quotation.id})}"
               method="post"
-              class="charges-form">
+              class="charges-form"
+              id="chargesForm">
 
 
             <!-- ACCESSORIES -->
@@ -1305,7 +1306,7 @@
                 Subtotal
             </span>
 
-                <strong
+                <strong id="displaySubtotal"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.subtotal != null
@@ -1328,7 +1329,7 @@
                 Accessories
             </span>
 
-                <strong
+                <strong id="displayAccessories"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.accessoriesAmount != null
@@ -1351,7 +1352,7 @@
                 Travel Charges
             </span>
 
-                <strong
+                <strong id="displayTravel"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.travelCharge != null
@@ -1374,7 +1375,7 @@
                 Other Charges
             </span>
 
-                <strong
+                <strong id="displayOther"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.otherCharges != null
@@ -1397,7 +1398,7 @@
                 Discount
             </span>
 
-                <strong
+                <strong id="displayDiscount"
                         th:text="${'- ₹ ' +
                     #numbers.formatDecimal(
                     quotation.discountAmount != null
@@ -1420,7 +1421,7 @@
 
                 GST
 
-                (<span
+                (<span id="displayGstPercentage"
                     th:text="${#numbers.formatDecimal(
                         quotation.gstPercentage != null
                         ? quotation.gstPercentage
@@ -1434,7 +1435,7 @@
             </span>
 
 
-                <strong
+                <strong id="displayGstAmount"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.gstAmount != null
@@ -1449,6 +1450,84 @@
             </div>
 
 
+            <!-- TOTAL AMOUNT -->
+
+            <div class="amount-row total-amount-row">
+
+            <span>
+                Total Amount
+            </span>
+
+                <strong id="displayTotalAmount"
+                        th:text="${'₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.totalAmount != null
+                    ? quotation.totalAmount
+                    : (quotation.taxableAmount != null
+                        ? quotation.taxableAmount.add(quotation.gstAmount != null ? quotation.gstAmount : 0)
+                        : 0),
+                    1, 2)}">
+
+                    ₹ 0.00
+
+                </strong>
+
+            </div>
+
+
+            <!-- OFFER PERCENTAGE -->
+
+            <div class="amount-row offer-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+
+                <label for="offerPercentage" style="font-weight: 700; color: var(--text-primary); margin: 0; font-size: 13px;">
+                    Offer Percentage (%)
+                </label>
+
+                <div class="input-with-prefix" style="max-width: 140px; display: inline-flex; align-items: center;">
+
+                    <input
+                            type="number"
+                            id="offerPercentage"
+                            name="offerPercentage"
+                            form="chargesForm"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #006b63; border-radius: 6px; font-weight: 700; font-size: 14px; color: #006b63; background: #f0fdfa;"
+                            th:value="${quotation.offerPercentage != null
+                        ? #numbers.formatDecimal(quotation.offerPercentage, 1, 2)
+                        : 0}">
+
+                    <span style="margin-left: 6px; font-weight: 700; color: #006b63;">%</span>
+
+                </div>
+
+            </div>
+
+
+            <!-- OFFER AMOUNT -->
+
+            <div class="amount-row offer-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+
+                <span style="color: #059669; font-weight: 600;">
+                    Offer Amount
+                </span>
+
+                <strong id="displayOfferAmount" style="color: #059669; font-size: 14px; font-weight: 800;"
+                        th:text="${'- ₹ ' +
+                    #numbers.formatDecimal(
+                    quotation.offerAmount != null
+                    ? quotation.offerAmount
+                    : 0,
+                    1, 2)}">
+
+                    - ₹ 0.00
+
+                </strong>
+
+            </div>
+
+
             <!-- GRAND TOTAL -->
 
             <div class="amount-row grand-total">
@@ -1457,7 +1536,7 @@
                 Grand Total
             </span>
 
-                <strong
+                <strong id="displayGrandTotal"
                         th:text="${'₹ ' +
                     #numbers.formatDecimal(
                     quotation.grandTotal != null
@@ -1469,6 +1548,16 @@
 
                 </strong>
 
+            </div>
+
+            <!-- SAVE / APPLY OFFER BUTTON IN SUMMARY -->
+            <div style="margin-top: 14px; text-align: right;">
+                <button type="submit"
+                        form="chargesForm"
+                        class="btn btn-primary"
+                        style="width: 100%; padding: 10px 16px; font-weight: 700; font-size: 13.5px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                    💾 Save Changes &amp; Apply Offer
+                </button>
             </div>
 
         </div>
@@ -1930,17 +2019,16 @@
 
         <a href="#"
            class="btn btn-whatsapp"
-
            th:attr="
            data-id=${quotation.id},
            data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
            data-name=${quotation.customer != null ? quotation.customer.name : ''},
            data-number=${quotation.quotationNumber},
            data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
+           onclick="openWhatsApp(this); return false;"
+           title="Send quotation PDF document via WhatsApp">
 
-           onclick="openWhatsApp(this); return false;">
-
-            💬 WhatsApp
+            💬 Send Quotation via WhatsApp
 
         </a>
 
@@ -1969,17 +2057,162 @@
      WHATSAPP SCRIPT
 ========================================================= -->
 
+<!-- =========================================================
+     WHATSAPP PDF SHARING MODAL (Desktop & Mobile Friendly)
+========================================================= -->
+<div id="waShareModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.65); z-index: 99999; overflow-y: auto; align-items: center; justify-content: center; padding: 15px; box-sizing: border-box;">
+    <div style="background: #ffffff; border-radius: 12px; max-width: 500px; width: 100%; box-shadow: 0 10px 30px rgba(0,0,0,0.3); overflow: hidden; font-family: inherit; margin: auto;">
+
+        <!-- Header -->
+        <div style="background: #16865c; color: #ffffff; padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 1.15rem;">
+                <span style="font-size: 1.3rem;">💬</span>
+                <span>Share Quotation via WhatsApp</span>
+            </div>
+            <button type="button" onclick="closeWhatsAppModal()" style="background: none; border: none; color: #ffffff; font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0 4px;">&times;</button>
+        </div>
+
+        <!-- Body -->
+        <div style="padding: 20px; color: #333333; font-size: 14px; line-height: 1.5;">
+
+            <!-- Summary Box -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: #64748b; font-weight: 500;">Customer:</span>
+                    <strong id="waModalCustName" style="color: #0f172a;">Customer Name</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                    <span style="color: #64748b; font-weight: 500;">WhatsApp Number:</span>
+                    <strong id="waModalCustPhone" style="color: #16865c; font-family: monospace; font-size: 13px;">+91 ...</strong>
+                </div>
+                <div style="display: flex; justify-content: space-between;">
+                    <span style="color: #64748b; font-weight: 500;">Quotation:</span>
+                    <strong id="waModalQuotationNo" style="color: #0f172a;">PK-...</strong>
+                </div>
+            </div>
+
+            <!-- Mobile Direct Share Button (Visible when Web Share API supports file sharing) -->
+            <div id="waMobileShareSection" style="display: none; margin-bottom: 16px; text-align: center;">
+                <button type="button" id="waMobileShareBtn" onclick="triggerMobileFileShare()" style="width: 100%; min-height: 44px; background: #25D366; color: #ffffff; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px; box-shadow: 0 2px 6px rgba(37,211,102,0.3);">
+                    <span>📲</span> Share PDF Document Directly to WhatsApp
+                </button>
+                <div style="font-size: 11px; color: #64748b; margin-top: 5px;">Direct native document sharing for mobile devices</div>
+                <div style="display: flex; align-items: center; margin: 12px 0;">
+                    <hr style="flex: 1; border: none; border-top: 1px solid #e2e8f0; margin: 0;">
+                    <span style="padding: 0 10px; font-size: 11px; color: #94a3b8; text-transform: uppercase;">or follow steps below</span>
+                    <hr style="flex: 1; border: none; border-top: 1px solid #e2e8f0; margin: 0;">
+                </div>
+            </div>
+
+            <!-- Step 1: Download PDF -->
+            <div style="border: 1px solid #bfdbfe; background: #eff6ff; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 700; color: #1d4ed8; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <span style="background: #1d4ed8; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">1</span>
+                    <span>Download Quotation PDF</span>
+                </div>
+                <div style="font-size: 12px; color: #3b82f6; margin-bottom: 8px;">
+                    Download the quotation PDF file to your device.
+                </div>
+                <a id="waDownloadBtn" href="#" download style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 38px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; box-sizing: border-box; padding: 8px;">
+                    <span>📥</span> <span id="waDownloadBtnLabel">Download PDF</span>
+                </a>
+                <div id="waDownloadNotice" style="display: none; font-size: 11px; color: #15803d; margin-top: 6px; font-weight: 500;">
+                    ✓ PDF download initiated.
+                </div>
+            </div>
+
+            <!-- Step 2: Open WhatsApp Chat -->
+            <div style="border: 1px solid #bbf7d0; background: #f0fdf4; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
+                <div style="font-weight: 700; color: #15803d; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+                    <span style="background: #15803d; color: #fff; width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 11px;">2</span>
+                    <span>Open Customer's WhatsApp Chat</span>
+                </div>
+                <div style="font-size: 12px; color: #166534; margin-bottom: 8px;">
+                    Opens WhatsApp directly to the customer's chat.
+                </div>
+                <a id="waChatBtn" href="#" target="_blank" onclick="onWhatsAppChatOpened()" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; min-height: 38px; background: #16865c; color: #ffffff; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; box-sizing: border-box; padding: 8px;">
+                    <span>💬</span> <span id="waChatBtnLabel">Open WhatsApp Chat</span>
+                </a>
+            </div>
+
+            <!-- Step 3: Attach & Send Instructions -->
+            <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #92400e; display: flex; gap: 10px;">
+                <span style="font-size: 1.3rem; line-height: 1;">📎</span>
+                <div>
+                    <strong>Step 3: Attach &amp; Send in WhatsApp</strong><br>
+                    In the WhatsApp chat, click the <strong>paperclip (attachment)</strong> icon &rarr; select <strong>Document</strong> &rarr; choose <strong><span id="waInstructionFileName">Quotation.pdf</span></strong> &rarr; click <strong>Send</strong>.
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div style="background: #f8fafc; border-top: 1px solid #e2e8f0; padding: 12px 20px; display: flex; justify-content: space-between; align-items: center;">
+            <button type="button" onclick="closeWhatsAppModal()" style="background: #e2e8f0; color: #475569; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 500; cursor: pointer;">
+                Close
+            </button>
+            <button type="button" onclick="onMarkAsShared()" style="background: #16865c; color: #ffffff; border: none; border-radius: 6px; padding: 8px 16px; font-size: 13px; font-weight: 600; cursor: pointer;">
+                ✓ Done / Refresh
+            </button>
+        </div>
+
+    </div>
+</div>
+
 <script>
 
+    let currentPdfFile = null;
+
+    async function checkMobileShareSupport(fileName, pdfBlob) {
+        const mobileSec = document.getElementById("waMobileShareSection");
+        if (!mobileSec) return;
+
+        try {
+            currentPdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+            if (navigator.canShare && navigator.canShare({ files: [currentPdfFile] })) {
+                mobileSec.style.display = "block";
+            } else {
+                mobileSec.style.display = "none";
+            }
+        } catch (e) {
+            mobileSec.style.display = "none";
+        }
+    }
+
+    async function triggerMobileFileShare() {
+        if (!currentPdfFile) return;
+        try {
+            await navigator.share({
+                title: currentPdfFile.name,
+                text: "Your quotation from Pravin Kitchens & Interiors",
+                files: [currentPdfFile]
+            });
+            const notice = document.getElementById("waDownloadNotice");
+            if (notice) {
+                notice.innerText = "✓ PDF document shared via device share sheet.";
+                notice.style.display = "block";
+            }
+        } catch (e) {
+            if (e.name !== "AbortError") {
+                console.log("Mobile share error:", e);
+            }
+        }
+    }
+
     async function openWhatsApp(button) {
+        if (button.dataset.sending === "true") {
+            return false;
+        }
 
         const quotationId = button.dataset.id;
         const quotationNumber = button.dataset.number;
         const name = button.dataset.name;
         const originalHtml = button.innerHTML;
 
-        button.innerHTML = "⏳ Generating PDF...";
+        button.dataset.sending = "true";
+        button.innerHTML = "⏳ Preparing PDF...";
         button.style.pointerEvents = "none";
+        button.style.opacity = "0.7";
 
         try {
             const response = await fetch("/admin/quotations/whatsapp/" + quotationId, {
@@ -1989,68 +2222,218 @@
             const data = await response.json();
 
             if (!response.ok || !data.success) {
-                throw new Error(data.message || "Failed to initiate WhatsApp sharing.");
+                throw new Error(data.message || "Failed to prepare quotation for WhatsApp sharing.");
             }
 
+            const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + ".pdf";
+
+            // If API provider is configured and accepted delivery (future-ready)
             if (data.method === "API") {
-                alert("✓ " + (data.message || "Quotation PDF document sent successfully to customer WhatsApp."));
+                alert("✓ Quotation PDF document (" + fileName + ") was accepted by the WhatsApp Business API provider (" + (data.provider || "API") + ") for delivery to " + (data.customerName || name) + " (" + (data.phone || "") + ").\n\nProvider Message ID: " + (data.messageId || "N/A"));
                 window.location.reload();
                 return;
             }
 
-            // Client-side WhatsApp (wa.me)
+            // Fetch the generated quotation PDF blob from existing download endpoint
             const pdfEndpoint = "/admin/quotations/pdf/" + quotationId;
+            let pdfBlob = null;
             try {
-                const pdfResponse = await fetch(pdfEndpoint);
-                if (pdfResponse.ok) {
-                    const blob = await pdfResponse.blob();
-                    const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + ".pdf";
-                    const file = new File([blob], fileName, { type: "application/pdf" });
+                const pdfResp = await fetch(pdfEndpoint);
+                if (pdfResp.ok) {
+                    pdfBlob = await pdfResp.blob();
+                }
+            } catch (e) {
+                console.warn("Could not pre-fetch PDF blob:", e);
+            }
 
-                    // Web Share API with files (supported on mobile/tablets to attach actual PDF document into WhatsApp)
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-                        try {
-                            await navigator.share({
-                                title: "Quotation " + (data.quotationNumber || quotationNumber),
-                                text: "Quotation " + (data.quotationNumber || quotationNumber) + " for " + name,
-                                files: [file]
-                            });
-                            return;
-                        } catch (shareErr) {
-                            if (shareErr.name === 'AbortError') return;
-                        }
-                    }
+            // Populate WhatsApp Share Modal details
+            document.getElementById("waModalCustName").innerText = data.customerName || name || "Customer";
+            document.getElementById("waModalCustPhone").innerText = data.phone ? ("+" + data.phone) : "N/A";
+            document.getElementById("waModalQuotationNo").innerText = data.quotationNumber || quotationNumber || "";
+            document.getElementById("waDownloadBtnLabel").innerText = "Download PDF (" + fileName + ")";
+            document.getElementById("waInstructionFileName").innerText = fileName;
 
-                    // On desktop browsers: download the generated PDF document automatically
-                    const downloadUrl = window.URL.createObjectURL(blob);
+            // Configure Step 1: Download button
+            const dlBtn = document.getElementById("waDownloadBtn");
+            dlBtn.href = pdfEndpoint;
+            dlBtn.download = fileName;
+            dlBtn.onclick = function() {
+                const notice = document.getElementById("waDownloadNotice");
+                notice.innerText = "✓ PDF download started. Now open WhatsApp in Step 2.";
+                notice.style.display = "block";
+            };
+
+            // Configure Step 2: Open WhatsApp chat button
+            const chatBtn = document.getElementById("waChatBtn");
+            chatBtn.href = data.whatsappUrl || ("https://wa.me/" + (data.phone || ""));
+            document.getElementById("waChatBtnLabel").innerText = "Open WhatsApp Chat (" + (data.phone ? "+" + data.phone : "") + ")";
+
+            // Check mobile direct file sharing support
+            if (pdfBlob) {
+                checkMobileShareSupport(fileName, pdfBlob);
+
+                // Auto-download PDF for desktop convenience
+                try {
+                    const autoDlUrl = window.URL.createObjectURL(pdfBlob);
                     const a = document.createElement("a");
-                    a.href = downloadUrl;
+                    a.href = autoDlUrl;
                     a.download = fileName;
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
-                    setTimeout(() => window.URL.revokeObjectURL(downloadUrl), 1000);
-
-                    // Open WhatsApp Web
-                    window.open(data.whatsappUrl, "_blank");
-
-                    alert("Quotation PDF has been generated and downloaded (" + fileName + ").\n\nWhatsApp Web (wa.me) cannot automatically attach files via URL links. Please attach the downloaded quotation PDF in the opened WhatsApp chat window.");
-                    return;
+                    setTimeout(() => window.URL.revokeObjectURL(autoDlUrl), 1000);
+                    const notice = document.getElementById("waDownloadNotice");
+                    notice.innerText = "✓ PDF automatically downloaded to your downloads folder.";
+                    notice.style.display = "block";
+                } catch (autoErr) {
+                    console.log("Auto download skipped:", autoErr);
                 }
-            } catch (pdfErr) {
-                console.error("PDF download fetch error:", pdfErr);
             }
 
-            // Fallback: open WhatsApp Web
-            window.open(data.whatsappUrl, "_blank");
+            // Display modal
+            document.getElementById("waShareModal").style.display = "flex";
 
         } catch (err) {
-            alert("Unable to process WhatsApp sharing: " + err.message);
+            alert("❌ Unable to open WhatsApp: " + err.message);
         } finally {
+            button.dataset.sending = "false";
             button.innerHTML = originalHtml;
             button.style.pointerEvents = "auto";
+            button.style.opacity = "1";
         }
     }
+
+    function closeWhatsAppModal() {
+        const modal = document.getElementById("waShareModal");
+        if (modal) {
+            modal.style.display = "none";
+        }
+    }
+
+    function onWhatsAppChatOpened() {
+        const notice = document.getElementById("waDownloadNotice");
+        if (notice) {
+            const fileName = document.getElementById("waInstructionFileName") ? document.getElementById("waInstructionFileName").innerText : "Quotation.pdf";
+            notice.innerText = "✓ WhatsApp opened. Please attach '" + fileName + "' and click Send.";
+            notice.style.display = "block";
+        }
+    }
+
+    function onMarkAsShared() {
+        closeWhatsAppModal();
+        window.location.reload();
+    }
+
+    // ============================================================
+    // LIVE RECALCULATION: TOTAL AMOUNT, OFFER %, OFFER AMT, GRAND TOTAL
+    // ============================================================
+    (function initQuotationFinancialSummary() {
+        const finCard = document.getElementById("financialCard");
+        const accInput = document.getElementById("accessoriesAmount");
+        const travelInput = document.getElementById("travelCharge");
+        const otherInput = document.getElementById("otherCharges");
+        const discInput = document.getElementById("discountAmount");
+        const gstInput = document.getElementById("gstPercentage");
+        const offerInput = document.getElementById("offerPercentage");
+
+        if (!finCard || !accInput || !travelInput || !otherInput || !discInput || !gstInput || !offerInput) {
+            return;
+        }
+
+        const subtotal = parseFloat(finCard.dataset.subtotal) || 0;
+
+        function formatInr(val, isNegative) {
+            const num = Math.abs(Number(val) || 0);
+            const formatted = num.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+            return (isNegative ? "- ₹ " : "₹ ") + formatted;
+        }
+
+        function recalculate() {
+            const acc = Math.max(0, parseFloat(accInput.value) || 0);
+            const travel = Math.max(0, parseFloat(travelInput.value) || 0);
+            const other = Math.max(0, parseFloat(otherInput.value) || 0);
+            const disc = Math.max(0, parseFloat(discInput.value) || 0);
+
+            let gstPct = parseFloat(gstInput.value) || 0;
+            if (gstPct < 0) gstPct = 0;
+
+            let offerPct = parseFloat(offerInput.value);
+            if (isNaN(offerPct) || offerPct < 0) {
+                offerPct = 0;
+            } else if (offerPct > 100) {
+                offerPct = 100;
+            }
+
+            const totalBeforeDiscount = subtotal + acc + travel + other;
+            const taxable = Math.max(0, totalBeforeDiscount - disc);
+            const gstAmount = taxable * (gstPct / 100);
+            const totalAmount = taxable + gstAmount;
+
+            // Formulas:
+            // Offer Amount = Total Amount × Offer Percentage / 100
+            // Grand Total = Total Amount − Offer Amount
+            const offerAmount = totalAmount * (offerPct / 100);
+            const grandTotal = Math.max(0, totalAmount - offerAmount);
+
+            // Update displays
+            const dispAcc = document.getElementById("displayAccessories");
+            if (dispAcc) dispAcc.textContent = formatInr(acc);
+
+            const dispTravel = document.getElementById("displayTravel");
+            if (dispTravel) dispTravel.textContent = formatInr(travel);
+
+            const dispOther = document.getElementById("displayOther");
+            if (dispOther) dispOther.textContent = formatInr(other);
+
+            const dispDisc = document.getElementById("displayDiscount");
+            if (dispDisc) dispDisc.textContent = formatInr(disc, true);
+
+            const dispGstPct = document.getElementById("displayGstPercentage");
+            if (dispGstPct) dispGstPct.textContent = gstPct.toFixed(2);
+
+            const dispGstAmt = document.getElementById("displayGstAmount");
+            if (dispGstAmt) dispGstAmt.textContent = formatInr(gstAmount);
+
+            const dispTotalAmt = document.getElementById("displayTotalAmount");
+            if (dispTotalAmt) dispTotalAmt.textContent = formatInr(totalAmount);
+
+            const dispOfferAmt = document.getElementById("displayOfferAmount");
+            if (dispOfferAmt) dispOfferAmt.textContent = formatInr(offerAmount, true);
+
+            const dispGrandTotal = document.getElementById("displayGrandTotal");
+            if (dispGrandTotal) dispGrandTotal.textContent = formatInr(grandTotal);
+        }
+
+        [accInput, travelInput, otherInput, discInput, gstInput, offerInput].forEach(inp => {
+            inp.addEventListener("input", recalculate);
+            inp.addEventListener("change", recalculate);
+        });
+
+        offerInput.addEventListener("blur", function() {
+            let v = parseFloat(offerInput.value);
+            if (isNaN(v) || v < 0) {
+                offerInput.value = "0";
+            } else if (v > 100) {
+                offerInput.value = "100";
+            }
+            recalculate();
+        });
+
+        const chargesForm = document.getElementById("chargesForm");
+        if (chargesForm) {
+            chargesForm.addEventListener("submit", function() {
+                let v = parseFloat(offerInput.value);
+                if (isNaN(v) || v < 0) {
+                    offerInput.value = "0";
+                } else if (v > 100) {
+                    offerInput.value = "100";
+                }
+            });
+        }
+    })();
 
 </script>
 

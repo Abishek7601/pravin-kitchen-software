@@ -211,10 +211,13 @@ public class QuotationPdfAndWhatsAppTest {
 
     @Test
     public void testWhatsAppPdfGenerationAndSharing() {
+        whatsAppService.setApiEnabled(false);
+
         WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, "http://localhost:8080");
 
         assertNotNull(result);
         assertTrue(result.isSuccess());
+        assertEquals("CLIENT_REDIRECT", result.getMethod());
         assertEquals("919840123456", result.getPhone());
         assertTrue(result.getPdfSizeBytes() > 0, "PDF should have been generated with bytes > 0");
         assertNotNull(result.getWhatsappUrl());
@@ -231,6 +234,21 @@ public class QuotationPdfAndWhatsAppTest {
         assertEquals(QuotationCommunication.CommunicationType.WHATSAPP, comm.getType());
         assertEquals(QuotationCommunication.CommunicationStatus.SENT, comm.getStatus());
         assertTrue(comm.getMessage().contains("Quotation PDF generated"));
+    }
+
+    @Test
+    public void testWhatsAppApiProviderWhenConfigured() {
+        whatsAppService.setApiEnabled(true);
+        whatsAppService.setApiProvider("mock");
+
+        WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, "http://localhost:8080");
+
+        assertNotNull(result);
+        assertTrue(result.isSuccess());
+        assertEquals("API", result.getMethod());
+        assertEquals("919840123456", result.getPhone());
+        assertNotNull(result.getMessageId());
+        assertTrue(result.getMessageId().startsWith("MOCK-WA-"));
     }
 
     @Test
@@ -270,6 +288,8 @@ public class QuotationPdfAndWhatsAppTest {
 
     @Test
     public void testAdminControllerWhatsAppSharingJson() {
+        whatsAppService.setApiEnabled(false);
+
         org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
         request.addHeader("Accept", "application/json");
 
@@ -286,10 +306,14 @@ public class QuotationPdfAndWhatsAppTest {
         WhatsAppResult wr = (WhatsAppResult) response.getBody();
         assertTrue(wr.isSuccess());
         assertTrue(wr.getPdfSizeBytes() > 0);
+        assertEquals("CLIENT_REDIRECT", wr.getMethod());
+        assertNotNull(wr.getWhatsappUrl());
     }
 
     @Test
     public void testAdminControllerWhatsAppSharingRedirect() {
+        whatsAppService.setApiEnabled(false);
+
         org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
         org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
                 new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
@@ -302,6 +326,8 @@ public class QuotationPdfAndWhatsAppTest {
 
     @Test
     public void testEmployeeControllerWhatsAppSharing() {
+        whatsAppService.setApiEnabled(false);
+
         org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
         org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
                 new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
@@ -315,5 +341,104 @@ public class QuotationPdfAndWhatsAppTest {
         assertTrue(resultObj instanceof String);
         String redirectUrl = (String) resultObj;
         assertTrue(redirectUrl.startsWith("redirect:https://wa.me/919840123456"));
+    }
+
+    @Test
+    public void testEmployeeControllerWhatsAppSharingJson() {
+        whatsAppService.setApiEnabled(false);
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("Accept", "application/json");
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        org.springframework.security.core.Authentication auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        employee.getEmail(), employee.getPassword(), java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+                );
+
+        Object resultObj = employeeQuotationController.trackWhatsApp(quotation.getId(), auth, request, redirectAttributes);
+        assertTrue(resultObj instanceof org.springframework.http.ResponseEntity<?>);
+
+        org.springframework.http.ResponseEntity<?> response = (org.springframework.http.ResponseEntity<?>) resultObj;
+        assertEquals(200, response.getStatusCode().value());
+        assertTrue(response.getBody() instanceof WhatsAppResult);
+
+        WhatsAppResult wr = (WhatsAppResult) response.getBody();
+        assertTrue(wr.isSuccess());
+        assertTrue(wr.getPdfSizeBytes() > 0);
+        assertEquals("CLIENT_REDIRECT", wr.getMethod());
+        assertNotNull(wr.getWhatsappUrl());
+        assertTrue(wr.getWhatsappUrl().contains("919840123456"));
+    }
+
+    @Test
+    public void testEmployeeControllerWhatsAppSharingUnauthorized() {
+        whatsAppService.setApiEnabled(false);
+
+        User otherEmployee = new User();
+        otherEmployee.setName("Other Employee");
+        otherEmployee.setEmail("other" + System.currentTimeMillis() + "@example.com");
+        otherEmployee.setPassword("password");
+        otherEmployee.setRole(Role.EMPLOYEE);
+        otherEmployee = userRepository.save(otherEmployee);
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("Accept", "application/json");
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        org.springframework.security.core.Authentication auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        otherEmployee.getEmail(), otherEmployee.getPassword(), java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+                );
+
+        Object resultObj = employeeQuotationController.trackWhatsApp(quotation.getId(), auth, request, redirectAttributes);
+        assertTrue(resultObj instanceof org.springframework.http.ResponseEntity<?>);
+
+        org.springframework.http.ResponseEntity<?> response = (org.springframework.http.ResponseEntity<?>) resultObj;
+        assertEquals(400, response.getStatusCode().value());
+        assertTrue(response.getBody() instanceof java.util.Map<?, ?>);
+        java.util.Map<?, ?> body = (java.util.Map<?, ?>) response.getBody();
+        assertEquals(false, body.get("success"));
+        assertTrue(body.get("message").toString().contains("not authorized"));
+    }
+
+    @Test
+    public void testEmployeeControllerPdfDownload() {
+        org.springframework.security.core.Authentication auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        employee.getEmail(), employee.getPassword(), java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+                );
+
+        org.springframework.http.ResponseEntity<byte[]> response =
+                employeeQuotationController.downloadQuotationPdf(quotation.getId(), auth);
+
+        assertNotNull(response);
+        assertEquals(200, response.getStatusCode().value());
+        assertEquals(org.springframework.http.MediaType.APPLICATION_PDF, response.getHeaders().getContentType());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().length > 0);
+    }
+
+    @Test
+    public void testEmployeeControllerPdfDownloadUnauthorized() {
+        User otherEmployee = new User();
+        otherEmployee.setName("Other Employee 2");
+        otherEmployee.setEmail("other2_" + System.currentTimeMillis() + "@example.com");
+        otherEmployee.setPassword("password");
+        otherEmployee.setRole(Role.EMPLOYEE);
+        otherEmployee = userRepository.save(otherEmployee);
+
+        org.springframework.security.core.Authentication auth =
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        otherEmployee.getEmail(), otherEmployee.getPassword(), java.util.List.of(new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+                );
+
+        assertThrows(IllegalStateException.class, () -> {
+            employeeQuotationController.downloadQuotationPdf(quotation.getId(), auth);
+        });
     }
 }

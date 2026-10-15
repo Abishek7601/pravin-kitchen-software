@@ -467,6 +467,18 @@ a:focus-visible {
     background: #405d58;
 }
 
+.btn-whatsapp {
+    color: #ffffff;
+    background: #16865c;
+    border-color: #16865c;
+}
+
+.btn-whatsapp:hover {
+    color: #ffffff;
+    background: #106b49;
+    border-color: #106b49;
+}
+
 .nav-back-btn,
 .nav-dashboard-btn {
     white-space: nowrap;

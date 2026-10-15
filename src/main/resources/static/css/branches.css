@@ -92,6 +92,7 @@ a {
     justify-content: space-between;
     align-items: center;
     gap: 28px;
+    margin-bottom: 30px;
     padding: 38px 40px;
     overflow: hidden;
     color: #ffffff;
@@ -807,6 +808,7 @@ button:focus-visible {
         flex-direction: column;
         align-items: stretch;
         gap: 23px;
+        margin-bottom: 24px;
         padding: 28px 25px;
     }
 
@@ -882,6 +884,7 @@ button:focus-visible {
     }
 
     .page-header {
+        margin-bottom: 20px;
         padding: 25px 21px;
         border-radius: 18px;
     }
@@ -1001,6 +1004,7 @@ button:focus-visible {
     }
 
     .page-header {
+        margin-bottom: 18px;
         padding: 22px 17px;
     }
 

@@ -344,6 +344,11 @@ public class QuotationPdfService {
             BigDecimal taxable = zeroIfNull(quotation.getTaxableAmount());
             BigDecimal gstPercentage = zeroIfNull(quotation.getGstPercentage());
             BigDecimal gst = zeroIfNull(quotation.getGstAmount());
+            BigDecimal totalAmount = quotation.getTotalAmount() != null && quotation.getTotalAmount().compareTo(BigDecimal.ZERO) > 0
+                    ? quotation.getTotalAmount()
+                    : taxable.add(gst);
+            BigDecimal offerPercentage = zeroIfNull(quotation.getOfferPercentage());
+            BigDecimal offerAmount = zeroIfNull(quotation.getOfferAmount());
             BigDecimal grandTotal = zeroIfNull(quotation.getGrandTotal());
 
             // --- SUMMARY ROWS INTEGRATED AT TABLE FOOTER ---
@@ -369,8 +374,14 @@ public class QuotationPdfService {
                 addSummaryRow(itemTable, gstLabel, gst, gst, false);
             }
 
+            if (offerAmount.compareTo(BigDecimal.ZERO) > 0 || offerPercentage.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Total Amount", totalAmount, totalAmount, false);
+                String offerLabel = "Special Offer (" + format(offerPercentage) + "%)";
+                addSummaryRow(itemTable, offerLabel, offerAmount.negate(), offerAmount.negate(), false);
+            }
+
             // Grand Total Row
-            addSummaryRow(itemTable, "Grand Total (Rooms + Accessories)", grandTotal, grandTotal, true);
+            addSummaryRow(itemTable, "Grand Total", grandTotal, grandTotal, true);
 
             document.add(itemTable);
 

@@ -120,8 +120,37 @@ public class QuotationCalculationService {
         quotation.setGstAmount(
                 money(gstAmount));
 
-        BigDecimal grandTotal =
+        BigDecimal totalAmount =
                 taxableAmount.add(gstAmount);
+
+        quotation.setTotalAmount(
+                money(totalAmount));
+
+        BigDecimal offerPercentage =
+                zeroIfNull(quotation.getOfferPercentage());
+
+        if (offerPercentage.compareTo(BigDecimal.ZERO) < 0) {
+            offerPercentage = BigDecimal.ZERO;
+        } else if (offerPercentage.compareTo(new BigDecimal("100")) > 0) {
+            offerPercentage = new BigDecimal("100");
+        }
+
+        quotation.setOfferPercentage(
+                money(offerPercentage));
+
+        BigDecimal offerAmount =
+                totalAmount
+                        .multiply(offerPercentage)
+                        .divide(
+                                new BigDecimal("100"),
+                                2,
+                                RoundingMode.HALF_UP);
+
+        quotation.setOfferAmount(
+                money(offerAmount));
+
+        BigDecimal grandTotal =
+                totalAmount.subtract(offerAmount);
 
         quotation.setGrandTotal(
                 money(grandTotal));
@@ -216,7 +245,8 @@ public class QuotationCalculationService {
             BigDecimal travelCharge,
             BigDecimal otherCharges,
             BigDecimal discountAmount,
-            BigDecimal gstPercentage) {
+            BigDecimal gstPercentage,
+            BigDecimal offerPercentage) {
 
         if (quotationId == null) {
             throw new IllegalArgumentException(
@@ -247,6 +277,8 @@ public class QuotationCalculationService {
 
         validateGstPercentage(gstPercentage);
 
+        validateOfferPercentage(offerPercentage);
+
         quotation.setAccessoriesAmount(
                 zeroIfNull(accessoriesAmount));
 
@@ -262,7 +294,37 @@ public class QuotationCalculationService {
         quotation.setGstPercentage(
                 zeroIfNull(gstPercentage));
 
+        if (offerPercentage != null) {
+            quotation.setOfferPercentage(
+                    money(offerPercentage));
+        }
+
         return calculateQuotation(quotationId);
+    }
+
+    @Transactional
+    public Quotation updateCharges(
+            Long quotationId,
+            BigDecimal accessoriesAmount,
+            BigDecimal travelCharge,
+            BigDecimal otherCharges,
+            BigDecimal discountAmount,
+            BigDecimal gstPercentage) {
+
+        Quotation quotation =
+                quotationRepository.findById(quotationId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "Quotation not found."));
+
+        return updateCharges(
+                quotationId,
+                accessoriesAmount,
+                travelCharge,
+                otherCharges,
+                discountAmount,
+                gstPercentage,
+                quotation.getOfferPercentage());
     }
 
 
@@ -547,6 +609,21 @@ public class QuotationCalculationService {
 
             throw new IllegalArgumentException(
                     "GST percentage cannot be greater than 100.");
+        }
+    }
+
+    public void validateOfferPercentage(
+            BigDecimal offerPercentage) {
+
+        if (offerPercentage != null) {
+            if (offerPercentage.compareTo(BigDecimal.ZERO) < 0) {
+                throw new IllegalArgumentException(
+                        "Offer percentage cannot be negative.");
+            }
+            if (offerPercentage.compareTo(new BigDecimal("100")) > 0) {
+                throw new IllegalArgumentException(
+                        "Offer percentage cannot be greater than 100.");
+            }
         }
     }
 

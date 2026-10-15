@@ -217,6 +217,10 @@ public class AdminQuotationBuilderController {
             data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
             data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
             data.put("notes", q.getNotes() != null ? q.getNotes() : "");
+            data.put("totalAmount", q.getTotalAmount() != null ? q.getTotalAmount() : q.getGrandTotal());
+            data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
+            data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
+            data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
 
             List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(id);
             List<Map<String, Object>> roomList = new ArrayList<>();

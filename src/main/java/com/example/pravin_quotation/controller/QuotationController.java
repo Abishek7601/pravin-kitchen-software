@@ -550,13 +550,15 @@ public class QuotationController {
             if (wantsJson) {
                 return ResponseEntity.badRequest().body(Map.of(
                         "success", false,
+                        "configured", whatsAppService.isApiProviderConfigured(),
+                        "provider", whatsAppService.getApiProviderName(),
                         "message", e.getMessage()
                 ));
             }
 
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "WhatsApp sharing failed: "
+                    "WhatsApp document delivery failed: "
                             + e.getMessage()
             );
 
@@ -768,6 +770,7 @@ public class QuotationController {
             @RequestParam(required = false) BigDecimal otherCharges,
             @RequestParam(required = false) BigDecimal discountAmount,
             @RequestParam(required = false) BigDecimal gstPercentage,
+            @RequestParam(required = false) BigDecimal offerPercentage,
             RedirectAttributes redirectAttributes) {
 
         try {
@@ -778,7 +781,8 @@ public class QuotationController {
                     travelCharge,
                     otherCharges,
                     discountAmount,
-                    gstPercentage
+                    gstPercentage,
+                    offerPercentage
             );
 
             redirectAttributes.addFlashAttribute(

@@ -568,6 +568,44 @@
                 </div>
 
 
+                <div class="amount-row" th:if="${quotation.offerAmount != null and quotation.offerAmount > 0}">
+
+                    <span>Total Amount</span>
+
+                    <strong>
+
+                        ₹
+
+                        <span th:text="${quotation.totalAmount != null
+                            ? quotation.totalAmount : quotation.grandTotal}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
+                <div class="amount-row discount-row" th:if="${quotation.offerAmount != null and quotation.offerAmount > 0}">
+
+                    <span>
+                        Special Offer
+                        (<span th:text="${quotation.offerPercentage != null ? quotation.offerPercentage : 0}">0</span>%)
+                    </span>
+
+                    <strong>
+
+                        - ₹
+
+                        <span th:text="${quotation.offerAmount}">
+                            0
+                        </span>
+
+                    </strong>
+
+                </div>
+
+
                 <div class="grand-total">
 
                     <span>Grand Total</span>

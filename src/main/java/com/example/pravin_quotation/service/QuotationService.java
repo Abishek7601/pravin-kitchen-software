@@ -567,6 +567,18 @@ public class QuotationService {
                 BigDecimal.ZERO
         );
 
+        quotation.setTotalAmount(
+                BigDecimal.ZERO
+        );
+
+        quotation.setOfferPercentage(
+                BigDecimal.ZERO
+        );
+
+        quotation.setOfferAmount(
+                BigDecimal.ZERO
+        );
+
         quotation.setGrandTotal(
                 BigDecimal.ZERO
         );

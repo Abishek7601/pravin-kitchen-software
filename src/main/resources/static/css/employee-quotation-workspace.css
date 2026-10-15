@@ -275,6 +275,18 @@ input:focus-visible {
     border-color: #106a49;
 }
 
+.btn-whatsapp {
+    color: #ffffff;
+    background: #16865c;
+    border-color: #16865c;
+}
+
+.btn-whatsapp:hover {
+    color: #ffffff;
+    background: #106b49;
+    border-color: #106b49;
+}
+
 .btn-small {
     min-height: 35px;
     padding: 8px 12px;

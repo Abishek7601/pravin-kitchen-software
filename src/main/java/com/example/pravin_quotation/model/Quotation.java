@@ -110,6 +110,15 @@ public class Quotation {
     @Column(name = "gst_amount", precision = 15, scale = 2)
     private BigDecimal gstAmount = BigDecimal.ZERO;
 
+    @Column(name = "total_amount", precision = 15, scale = 2)
+    private BigDecimal totalAmount = BigDecimal.ZERO;
+
+    @Column(name = "offer_percentage", precision = 5, scale = 2)
+    private BigDecimal offerPercentage = BigDecimal.ZERO;
+
+    @Column(name = "offer_amount", precision = 15, scale = 2)
+    private BigDecimal offerAmount = BigDecimal.ZERO;
+
     @Column(name = "grand_total", precision = 15, scale = 2)
     private BigDecimal grandTotal = BigDecimal.ZERO;
 
@@ -235,6 +244,18 @@ public class Quotation {
 
         if (gstAmount == null) {
             gstAmount = BigDecimal.ZERO;
+        }
+
+        if (totalAmount == null) {
+            totalAmount = grandTotal != null ? grandTotal : BigDecimal.ZERO;
+        }
+
+        if (offerPercentage == null) {
+            offerPercentage = BigDecimal.ZERO;
+        }
+
+        if (offerAmount == null) {
+            offerAmount = BigDecimal.ZERO;
         }
 
         if (grandTotal == null) {
@@ -392,6 +413,39 @@ public class Quotation {
 
     public void setGstAmount(BigDecimal gstAmount) {
         this.gstAmount = gstAmount;
+    }
+
+    public BigDecimal getTotalAmount() {
+        if (totalAmount != null && totalAmount.compareTo(BigDecimal.ZERO) > 0) {
+            return totalAmount;
+        }
+        if (grandTotal != null && grandTotal.compareTo(BigDecimal.ZERO) > 0) {
+            if (offerAmount != null && offerAmount.compareTo(BigDecimal.ZERO) > 0) {
+                return grandTotal.add(offerAmount);
+            }
+            return grandTotal;
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public void setTotalAmount(BigDecimal totalAmount) {
+        this.totalAmount = totalAmount;
+    }
+
+    public BigDecimal getOfferPercentage() {
+        return offerPercentage != null ? offerPercentage : BigDecimal.ZERO;
+    }
+
+    public void setOfferPercentage(BigDecimal offerPercentage) {
+        this.offerPercentage = offerPercentage;
+    }
+
+    public BigDecimal getOfferAmount() {
+        return offerAmount != null ? offerAmount : BigDecimal.ZERO;
+    }
+
+    public void setOfferAmount(BigDecimal offerAmount) {
+        this.offerAmount = offerAmount;
     }
 
     public BigDecimal getGrandTotal() {
