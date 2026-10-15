@@ -3,9 +3,11 @@ package com.example.pravin_quotation.service;
 import com.example.pravin_quotation.model.Material;
 import com.example.pravin_quotation.model.MaterialOption;
 import com.example.pravin_quotation.model.MaterialSpecification;
+import com.example.pravin_quotation.model.Pricing;
 import com.example.pravin_quotation.repository.MaterialOptionRepository;
 import com.example.pravin_quotation.repository.MaterialRepository;
 import com.example.pravin_quotation.repository.MaterialSpecificationRepository;
+import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationItemRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,17 +22,20 @@ public class MaterialOptionService {
     private final MaterialRepository materialRepository;
     private final MaterialSpecificationRepository materialSpecificationRepository;
     private final QuotationItemRepository quotationItemRepository;
+    private final PricingRepository pricingRepository;
 
     public MaterialOptionService(
             MaterialOptionRepository materialOptionRepository,
             MaterialRepository materialRepository,
             MaterialSpecificationRepository materialSpecificationRepository,
-            QuotationItemRepository quotationItemRepository
+            QuotationItemRepository quotationItemRepository,
+            PricingRepository pricingRepository
     ) {
         this.materialOptionRepository = materialOptionRepository;
         this.materialRepository = materialRepository;
         this.materialSpecificationRepository = materialSpecificationRepository;
         this.quotationItemRepository = quotationItemRepository;
+        this.pricingRepository = pricingRepository;
     }
 
     public List<MaterialOption> getAllOptions() {
@@ -182,31 +187,56 @@ public class MaterialOptionService {
         }
     }
 
-    public void deleteOption(Long id) {
+    @Transactional
+    public String deleteOption(Long id) {
         MaterialOption option = getOptionById(id);
-        long quotationCount = quotationItemRepository.countByMaterialOptionId(id);
-        if (quotationCount > 0) {
+        String optName = option.getName();
+
+        // 1. Check if option or any specifications under it are used in quotations
+        boolean usedInQuotations = quotationItemRepository.countByMaterialOptionId(id) > 0;
+
+        List<MaterialSpecification> specs =
+                materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
+        if (!usedInQuotations) {
+            for (MaterialSpecification s : specs) {
+                if (quotationItemRepository.countByMaterialSpecificationId(s.getId()) > 0) {
+                    usedInQuotations = true;
+                    break;
+                }
+            }
+        }
+
+        if (usedInQuotations) {
             option.setActive(false);
-            materialOptionRepository.save(option);
-            List<MaterialSpecification> specs =
-                    materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
+            materialOptionRepository.saveAndFlush(option);
             for (MaterialSpecification s : specs) {
                 s.setActive(false);
-                materialSpecificationRepository.save(s);
+                materialSpecificationRepository.saveAndFlush(s);
             }
-            return;
+            return "Material option '" + optName + "' is associated with existing quotations. It has been safely archived and deactivated to protect quotation history.";
         }
+
+        // 2. Safe to permanently delete
         try {
+            // Delete pricing under this option
+            List<Pricing> pricing = pricingRepository.findByMaterialOptionIdOrderByPricingModeAsc(id);
+            if (!pricing.isEmpty()) {
+                pricingRepository.deleteAll(pricing);
+            }
+
+            // Delete specifications under this option
+            if (!specs.isEmpty()) {
+                materialSpecificationRepository.deleteAll(specs);
+            }
+
+            // Delete option
             materialOptionRepository.delete(option);
+            materialOptionRepository.flush();
+            return "Material option '" + optName + "' deleted successfully.";
         } catch (Exception e) {
             option.setActive(false);
-            materialOptionRepository.save(option);
-            List<MaterialSpecification> specs =
-                    materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(id);
-            for (MaterialSpecification s : specs) {
-                s.setActive(false);
-                materialSpecificationRepository.save(s);
-            }
+            materialOptionRepository.saveAndFlush(option);
+            return "Material option '" + optName + "' could not be permanently removed due to database constraints, but has been safely deactivated.";
         }
     }
 

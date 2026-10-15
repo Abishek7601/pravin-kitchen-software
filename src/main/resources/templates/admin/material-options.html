@@ -243,7 +243,13 @@
               <form
                       th:action="@{/admin/material-options/delete/{id}(id=${option.id})}"
                       method="post"
-                      onsubmit="return confirmDelete();">
+                      th:data-option-name="${option.name != null ? option.name.toUpperCase() : 'this option'}"
+                      onsubmit="return confirmDelete(this);">
+
+                <input type="hidden"
+                       th:if="${_csrf != null}"
+                       th:name="${_csrf.parameterName}"
+                       th:value="${_csrf.token}">
 
                 <button
                         type="submit"
@@ -333,12 +339,12 @@
   }
 
 
-  function confirmDelete() {
-
+  function confirmDelete(form) {
+      var name = (form && form.getAttribute('data-option-name')) ? form.getAttribute('data-option-name') : 'this material option';
       return confirm(
-          "Are you sure you want to delete this material option?"
+          "Are you sure you want to delete material option '" + name + "'?\n\n" +
+          "If it is associated with historical quotations, it will be safely archived to protect quotation data."
       );
-
   }
 
 </script>

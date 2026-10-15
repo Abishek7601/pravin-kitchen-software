@@ -5,11 +5,15 @@ import com.example.pravin_quotation.repository.DivisionRepository;
 import com.example.pravin_quotation.repository.ItemRepository;
 import com.example.pravin_quotation.service.MaterialService;
 import com.example.pravin_quotation.util.CalculationFormula;
+import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/admin/materials")
@@ -140,10 +144,47 @@ public class MaterialController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteMaterial(
-            @PathVariable Long id
+    public Object deleteMaterial(
+            @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes
     ) {
-        materialService.deleteMaterial(id);
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
+
+        try {
+            Material material = materialService.getMaterialById(id);
+            String materialName = material.getName();
+            String message = materialService.deleteMaterial(id);
+            String finalMsg = (message != null && !message.isBlank())
+                    ? message
+                    : "Material '" + materialName + "' deleted successfully.";
+
+            if (wantsJson) {
+                return ResponseEntity.ok(Map.of(
+                        "success", true,
+                        "message", finalMsg
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", finalMsg);
+        } catch (Exception e) {
+            if (wantsJson) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Failed to delete material: " + e.getMessage()
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete material: " + e.getMessage());
+        }
+
+        if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+            return "redirect:" + redirectUrl;
+        }
+
         return "redirect:/admin/materials";
     }
 

@@ -117,11 +117,46 @@ public class DivisionController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteDivision(
-            @PathVariable Long id
+    public Object deleteDivision(
+            @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
-        divisionService.deleteDivision(id);
+        try {
+            Division division = divisionService.getDivisionById(id);
+            String divisionName = division.getName();
+            String message = divisionService.deleteDivision(id);
+            String finalMsg = (message != null && !message.isBlank())
+                    ? message
+                    : "Division '" + divisionName + "' deleted successfully.";
+
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", finalMsg
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", finalMsg);
+        } catch (Exception e) {
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", "Failed to delete division: " + e.getMessage()
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete division: " + e.getMessage());
+        }
+
+        if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+            return "redirect:" + redirectUrl;
+        }
 
         return "redirect:/admin/divisions";
     }

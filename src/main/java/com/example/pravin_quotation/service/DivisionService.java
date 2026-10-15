@@ -1,11 +1,9 @@
 package com.example.pravin_quotation.service;
 
-import com.example.pravin_quotation.model.Division;
-import com.example.pravin_quotation.model.WorkCategory;
-import com.example.pravin_quotation.repository.DivisionRepository;
-import com.example.pravin_quotation.repository.QuotationItemRepository;
-import com.example.pravin_quotation.repository.WorkCategoryRepository;
+import com.example.pravin_quotation.model.*;
+import com.example.pravin_quotation.repository.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -15,15 +13,33 @@ public class DivisionService {
     private final DivisionRepository divisionRepository;
     private final WorkCategoryRepository workCategoryRepository;
     private final QuotationItemRepository quotationItemRepository;
+    private final QuotationRepository quotationRepository;
+    private final ItemRepository itemRepository;
+    private final MaterialRepository materialRepository;
+    private final MaterialOptionRepository materialOptionRepository;
+    private final PricingRepository pricingRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
 
     public DivisionService(
             DivisionRepository divisionRepository,
             WorkCategoryRepository workCategoryRepository,
-            QuotationItemRepository quotationItemRepository
+            QuotationItemRepository quotationItemRepository,
+            QuotationRepository quotationRepository,
+            ItemRepository itemRepository,
+            MaterialRepository materialRepository,
+            MaterialOptionRepository materialOptionRepository,
+            PricingRepository pricingRepository,
+            MaterialSpecificationRepository materialSpecificationRepository
     ) {
         this.divisionRepository = divisionRepository;
         this.workCategoryRepository = workCategoryRepository;
         this.quotationItemRepository = quotationItemRepository;
+        this.quotationRepository = quotationRepository;
+        this.itemRepository = itemRepository;
+        this.materialRepository = materialRepository;
+        this.materialOptionRepository = materialOptionRepository;
+        this.pricingRepository = pricingRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
     }
 
     public List<Division> getAllDivisions() {
@@ -156,19 +172,79 @@ public class DivisionService {
         divisionRepository.save(division);
     }
 
-    public void deleteDivision(Long id) {
+    @Transactional
+    public String deleteDivision(Long id) {
         Division division = getDivisionById(id);
-        long quotationCount = quotationItemRepository.countByDivisionId(id);
-        if (quotationCount > 0) {
-            division.setActive(false);
-            divisionRepository.save(division);
-            return;
+        String divName = division.getName();
+
+        // 1. Check if division or any items/materials under it are used in quotations
+        boolean usedInQuotations = quotationItemRepository.countByDivisionId(id) > 0
+                || quotationRepository.countByDivisionId(id) > 0;
+
+        List<Item> items = itemRepository.findByDivisionIdOrderByDisplayOrderAsc(id);
+        if (!usedInQuotations) {
+            for (Item item : items) {
+                if (!quotationItemRepository.findByItemIdOrderByCreatedAtDesc(item.getId()).isEmpty()) {
+                    usedInQuotations = true;
+                    break;
+                }
+            }
         }
+
+        List<Material> materials = materialRepository.findAllByDivisionId(id);
+        if (!usedInQuotations) {
+            for (Material mat : materials) {
+                if (quotationItemRepository.countByMaterialId(mat.getId()) > 0) {
+                    usedInQuotations = true;
+                    break;
+                }
+                for (MaterialOption opt : materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId())) {
+                    if (quotationItemRepository.countByMaterialOptionId(opt.getId()) > 0) {
+                        usedInQuotations = true;
+                        break;
+                    }
+                }
+                if (usedInQuotations) break;
+            }
+        }
+
+        if (usedInQuotations) {
+            division.setActive(false);
+            divisionRepository.saveAndFlush(division);
+            return "Division '" + divName + "' is associated with existing quotations. It has been safely archived and deactivated to protect quotation history.";
+        }
+
+        // 2. Safe to permanently delete
         try {
+            // Remove division from material associations
+            for (Material mat : materials) {
+                mat.getDivisions().remove(division);
+                if (mat.getDivisions().isEmpty() && (mat.getItem() == null || id.equals(mat.getItem().getDivision().getId()))) {
+                    for (MaterialOption opt : materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId())) {
+                        pricingRepository.deleteAll(pricingRepository.findByMaterialOptionIdOrderByPricingModeAsc(opt.getId()));
+                        materialSpecificationRepository.deleteAll(materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(opt.getId()));
+                        materialOptionRepository.delete(opt);
+                    }
+                    materialSpecificationRepository.deleteAll(materialSpecificationRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId()));
+                    materialRepository.delete(mat);
+                } else {
+                    materialRepository.save(mat);
+                }
+            }
+
+            // Remove items under division
+            if (!items.isEmpty()) {
+                itemRepository.deleteAll(items);
+            }
+
+            // Delete division
             divisionRepository.delete(division);
+            divisionRepository.flush();
+            return "Division '" + divName + "' deleted successfully.";
         } catch (Exception e) {
             division.setActive(false);
-            divisionRepository.save(division);
+            divisionRepository.saveAndFlush(division);
+            return "Division '" + divName + "' could not be permanently removed due to database constraints, but has been safely deactivated.";
         }
     }
 

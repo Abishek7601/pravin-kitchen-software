@@ -185,11 +185,46 @@ public class MaterialOptionController {
     }
 
     @PostMapping("/delete/{id}")
-    public String deleteOption(
-            @PathVariable Long id
+    public Object deleteOption(
+            @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
-        materialOptionService.deleteOption(id);
+        try {
+            MaterialOption option = materialOptionService.getOptionById(id);
+            String optionName = option.getName();
+            String message = materialOptionService.deleteOption(id);
+            String finalMsg = (message != null && !message.isBlank())
+                    ? message
+                    : "Material option '" + optionName + "' deleted successfully.";
+
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", finalMsg
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", finalMsg);
+        } catch (Exception e) {
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", "Failed to delete material option: " + e.getMessage()
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete material option: " + e.getMessage());
+        }
+
+        if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/")) {
+            return "redirect:" + redirectUrl;
+        }
 
         return "redirect:/admin/material-options";
     }

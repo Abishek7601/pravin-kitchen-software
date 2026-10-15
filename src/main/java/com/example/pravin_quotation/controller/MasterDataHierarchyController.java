@@ -85,17 +85,17 @@ public class MasterDataHierarchyController {
         HierarchyCategoryDto catDto = new HierarchyCategoryDto();
         catDto.setCategory(cat);
 
-        List<Division> divisions = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(cat.getId());
+        List<Division> divisions = divisionRepository.findByWorkCategoryIdAndActiveTrueOrderByDisplayOrderAsc(cat.getId());
         for (Division div : divisions) {
             HierarchyDivisionDto divDto = new HierarchyDivisionDto();
             divDto.setDivision(div);
 
-            List<Material> materials = materialRepository.findAllByDivisionId(div.getId());
+            List<Material> materials = materialRepository.findActiveByDivisionId(div.getId());
             for (Material mat : materials) {
                 HierarchyMaterialDto matDto = new HierarchyMaterialDto();
                 matDto.setMaterial(mat);
 
-                List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
+                List<MaterialOption> options = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId());
                 for (MaterialOption opt : options) {
                     HierarchyOptionDto optDto = new HierarchyOptionDto();
                     optDto.setOption(opt);

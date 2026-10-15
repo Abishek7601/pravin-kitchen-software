@@ -23,12 +23,27 @@ public class WorkCategoryController {
 
 
     @GetMapping
-    public String categories(Model model) {
+    public String categories(
+            Model model,
+            @RequestParam(required = false, defaultValue = "false") boolean showArchived) {
 
-        model.addAttribute(
-                "categories",
-                workCategoryService.getAllCategories()
-        );
+        long archivedCount = workCategoryService.getArchivedCategoryCount();
+
+        if (showArchived && archivedCount > 0) {
+            model.addAttribute(
+                    "categories",
+                    workCategoryService.getArchivedCategories()
+            );
+            model.addAttribute("isArchivedView", true);
+        } else {
+            model.addAttribute(
+                    "categories",
+                    workCategoryService.getAllCategories()
+            );
+            model.addAttribute("isArchivedView", false);
+        }
+
+        model.addAttribute("archivedCount", archivedCount);
 
         return "admin/work-categories";
     }
@@ -120,10 +135,41 @@ public class WorkCategoryController {
 
 
     @PostMapping("/delete/{id}")
-    public String deleteCategory(
-            @PathVariable Long id) {
+    public Object deleteCategory(
+            @PathVariable Long id,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 
-        workCategoryService.deleteCategory(id);
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
+
+        try {
+            WorkCategory category = workCategoryService.getCategoryById(id);
+            String categoryName = category.getName();
+            String message = workCategoryService.deleteCategory(id);
+            String finalMsg = (message != null && !message.isBlank())
+                    ? message
+                    : "Work category '" + categoryName + "' deleted successfully.";
+
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", finalMsg
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", finalMsg);
+        } catch (Exception e) {
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", "Failed to delete work category: " + e.getMessage()
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete work category: " + e.getMessage());
+        }
 
         return "redirect:/admin/work-categories";
     }

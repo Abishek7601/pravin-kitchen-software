@@ -32,6 +32,9 @@ public class WorkCategory {
     private Boolean active = true;
 
     @Column(nullable = false)
+    private Boolean archived = false;
+
+    @Column(nullable = false)
     private Integer displayOrder = 0;
 
     @Column(nullable = false, updatable = false)
@@ -56,6 +59,7 @@ public class WorkCategory {
         this.description = description;
         this.icon = icon;
         this.active = active;
+        this.archived = false;
         this.displayOrder = displayOrder;
         this.createdAt = createdAt;
     }
@@ -68,6 +72,10 @@ public class WorkCategory {
 
         if (active == null) {
             active = true;
+        }
+
+        if (archived == null) {
+            archived = false;
         }
 
         if (displayOrder == null) {
@@ -133,6 +141,18 @@ public class WorkCategory {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public Boolean getArchived() {
+        return Boolean.TRUE.equals(archived);
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived != null ? archived : false;
+    }
+
+    public boolean isArchived() {
+        return Boolean.TRUE.equals(archived);
     }
 
 

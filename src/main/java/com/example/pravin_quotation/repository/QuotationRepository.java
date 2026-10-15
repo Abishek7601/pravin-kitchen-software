@@ -56,6 +56,8 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     long countByStatus(QuotationStatus status);
 
+    long countByDivisionId(Long divisionId);
+
     long countByStatusIn(java.util.Collection<QuotationStatus> statuses);
 
     long countByBranchId(Long branchId);

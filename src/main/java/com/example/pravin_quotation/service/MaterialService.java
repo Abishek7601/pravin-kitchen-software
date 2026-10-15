@@ -3,9 +3,10 @@ package com.example.pravin_quotation.service;
 import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.model.Item;
 import com.example.pravin_quotation.model.Material;
-import com.example.pravin_quotation.repository.DivisionRepository;
-import com.example.pravin_quotation.repository.ItemRepository;
-import com.example.pravin_quotation.repository.MaterialRepository;
+import com.example.pravin_quotation.model.MaterialOption;
+import com.example.pravin_quotation.model.MaterialSpecification;
+import com.example.pravin_quotation.model.Pricing;
+import com.example.pravin_quotation.repository.*;
 import com.example.pravin_quotation.util.CalculationFormula;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,18 +21,27 @@ public class MaterialService {
     private final MaterialRepository materialRepository;
     private final ItemRepository itemRepository;
     private final DivisionRepository divisionRepository;
-    private final com.example.pravin_quotation.repository.QuotationItemRepository quotationItemRepository;
+    private final QuotationItemRepository quotationItemRepository;
+    private final MaterialOptionRepository materialOptionRepository;
+    private final PricingRepository pricingRepository;
+    private final MaterialSpecificationRepository materialSpecificationRepository;
 
     public MaterialService(
             MaterialRepository materialRepository,
             ItemRepository itemRepository,
             DivisionRepository divisionRepository,
-            com.example.pravin_quotation.repository.QuotationItemRepository quotationItemRepository
+            QuotationItemRepository quotationItemRepository,
+            MaterialOptionRepository materialOptionRepository,
+            PricingRepository pricingRepository,
+            MaterialSpecificationRepository materialSpecificationRepository
     ) {
         this.materialRepository = materialRepository;
         this.itemRepository = itemRepository;
         this.divisionRepository = divisionRepository;
         this.quotationItemRepository = quotationItemRepository;
+        this.materialOptionRepository = materialOptionRepository;
+        this.pricingRepository = pricingRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
     }
 
     public List<Material> getAllMaterials() {
@@ -232,18 +242,80 @@ public class MaterialService {
     }
 
     @Transactional
-    public void deleteMaterial(Long id) {
+    public String deleteMaterial(Long id) {
         Material material = getMaterialById(id);
-        if (!quotationItemRepository.findByMaterialIdOrderByCreatedAtDesc(id).isEmpty()) {
-            material.setActive(false);
-            materialRepository.save(material);
-            return;
+        String matName = material.getName();
+
+        // 1. Check if material or any of its options/specifications are used in quotations
+        boolean usedInQuotations = quotationItemRepository.countByMaterialId(id) > 0;
+
+        List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(id);
+        if (!usedInQuotations) {
+            for (MaterialOption opt : options) {
+                if (quotationItemRepository.countByMaterialOptionId(opt.getId()) > 0) {
+                    usedInQuotations = true;
+                    break;
+                }
+            }
         }
-        try {
-            materialRepository.delete(material);
-        } catch (Exception e) {
+
+        List<MaterialSpecification> specs = materialSpecificationRepository.findByMaterialIdOrderByDisplayOrderAsc(id);
+        if (!usedInQuotations) {
+            for (MaterialSpecification spec : specs) {
+                if (quotationItemRepository.countByMaterialSpecificationId(spec.getId()) > 0) {
+                    usedInQuotations = true;
+                    break;
+                }
+            }
+        }
+
+        if (usedInQuotations) {
+            // Unsafe to permanently delete because historical quotations depend on it
             material.setActive(false);
+            materialRepository.saveAndFlush(material);
+            for (MaterialOption opt : options) {
+                opt.setActive(false);
+                materialOptionRepository.saveAndFlush(opt);
+            }
+            for (MaterialSpecification spec : specs) {
+                spec.setActive(false);
+                materialSpecificationRepository.saveAndFlush(spec);
+            }
+            return "Material '" + matName + "' is associated with existing quotations. It has been safely archived and deactivated to protect quotation history.";
+        }
+
+        // 2. Safe to permanently delete from database
+        try {
+            // Unmap divisions from join table
+            material.getDivisions().clear();
             materialRepository.save(material);
+
+            // Delete pricing and specifications under options, then options
+            for (MaterialOption opt : options) {
+                List<Pricing> pricing = pricingRepository.findByMaterialOptionIdOrderByPricingModeAsc(opt.getId());
+                if (!pricing.isEmpty()) {
+                    pricingRepository.deleteAll(pricing);
+                }
+                List<MaterialSpecification> optSpecs = materialSpecificationRepository.findByMaterialOptionIdOrderByDisplayOrderAsc(opt.getId());
+                if (!optSpecs.isEmpty()) {
+                    materialSpecificationRepository.deleteAll(optSpecs);
+                }
+                materialOptionRepository.delete(opt);
+            }
+
+            // Delete direct specifications
+            if (!specs.isEmpty()) {
+                materialSpecificationRepository.deleteAll(specs);
+            }
+
+            // Delete material
+            materialRepository.delete(material);
+            return "Material '" + matName + "' deleted successfully.";
+        } catch (Exception e) {
+            // Fallback soft-delete if any unexpected constraint arises
+            material.setActive(false);
+            materialRepository.saveAndFlush(material);
+            return "Material '" + matName + "' could not be permanently removed due to database constraints, but has been safely deactivated.";
         }
     }
 
