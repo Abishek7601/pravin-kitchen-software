@@ -174,7 +174,8 @@
 
 
                 <!-- ACTIONS -->
-                <div class="category-actions">
+                <div class="category-actions"
+                     th:style="${category.archived} ? 'grid-template-columns: repeat(2, minmax(0, 1fr));' : ''">
 
                     <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
                        class="action-btn view-btn">
@@ -222,10 +223,23 @@
 
                     </form>
 
-                    <span th:if="${category.archived}"
-                          style="display: inline-flex; align-items: center; font-size: 11px; color: #64748b; font-weight: 500; padding: 4px 8px; background: #f8fafc; border-radius: 6px; border: 1px solid #e2e8f0;">
-                        Preserved for quotations
-                    </span>
+                    <form th:if="${category.archived}"
+                          th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
+                          method="post"
+                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                          onsubmit="return confirmUnarchiveCategory(this);">
+
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}">
+
+                        <button type="submit"
+                                class="action-btn unarchive-btn"
+                                title="Restore this category to active list">
+                            📦 Unarchive
+                        </button>
+
+                    </form>
 
                 </div>
 
@@ -281,6 +295,26 @@
             "Are you sure you want to delete work category '" + name + "'?\n\n" +
             "If it has never been used in any quotation, it will be permanently deleted. If it is referenced by existing quotations, it will be safely archived to protect quotation history."
         );
+    }
+
+    function confirmUnarchiveCategory(form) {
+        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this work category';
+        var confirmed = confirm(
+            "Are you sure you want to unarchive work category '" + name + "'?\n\n" +
+            "This will restore the category and its divisions to active status in the system. Historical quotation references will remain preserved."
+        );
+        if (!confirmed) {
+            return false;
+        }
+        var btn = form ? form.querySelector('button[type="submit"]') : null;
+        if (btn) {
+            if (btn.disabled) return false;
+            btn.disabled = true;
+            btn.textContent = 'Restoring...';
+            btn.style.opacity = '0.7';
+            btn.style.cursor = 'not-allowed';
+        }
+        return true;
     }
 
 </script>

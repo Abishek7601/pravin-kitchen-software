@@ -3,6 +3,7 @@ package com.example.pravin_quotation.controller;
 import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 import com.example.pravin_quotation.service.DivisionService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,29 @@ public class DivisionController {
         this.workCategoryRepository = workCategoryRepository;
     }
 
+    private String resolveRedirectUrl(String redirectUrl, HttpServletRequest request, String defaultFallback) {
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            String trimmed = redirectUrl.trim();
+            if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\")) {
+                return trimmed;
+            }
+        }
+        if (request != null) {
+            String referer = request.getHeader("Referer");
+            if (referer != null && referer.contains("/admin/work-categories/view/")) {
+                try {
+                    java.net.URI uri = java.net.URI.create(referer);
+                    String path = uri.getPath();
+                    if (path != null && path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\")) {
+                        return path;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return defaultFallback;
+    }
+
     @GetMapping
     public String divisions(Model model) {
 
@@ -34,7 +58,10 @@ public class DivisionController {
     }
 
     @GetMapping("/new")
-    public String newDivision(Model model) {
+    public String newDivision(
+            @RequestParam(required = false) String redirectUrl,
+            Model model
+    ) {
 
         model.addAttribute(
                 "division",
@@ -46,6 +73,11 @@ public class DivisionController {
                 workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc()
         );
 
+        model.addAttribute(
+                "redirectUrl",
+                resolveRedirectUrl(redirectUrl, null, null)
+        );
+
         return "admin/division-form";
     }
 
@@ -54,7 +86,8 @@ public class DivisionController {
             @RequestParam String name,
             @RequestParam(required = false) String description,
             @RequestParam Long workCategoryId,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String redirectUrl
     ) {
 
         divisionService.createDivision(
@@ -64,12 +97,14 @@ public class DivisionController {
                 displayOrder
         );
 
-        return "redirect:/admin/divisions";
+        return "redirect:" + resolveRedirectUrl(redirectUrl, null, "/admin/divisions");
     }
 
     @GetMapping("/edit/{id}")
     public String editDivision(
             @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            HttpServletRequest request,
             Model model
     ) {
 
@@ -83,6 +118,11 @@ public class DivisionController {
                 workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc()
         );
 
+        model.addAttribute(
+                "redirectUrl",
+                resolveRedirectUrl(redirectUrl, request, null)
+        );
+
         return "admin/division-form";
     }
 
@@ -92,7 +132,8 @@ public class DivisionController {
             @RequestParam String name,
             @RequestParam(required = false) String description,
             @RequestParam Long workCategoryId,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String redirectUrl
     ) {
 
         divisionService.updateDivision(
@@ -103,7 +144,7 @@ public class DivisionController {
                 displayOrder
         );
 
-        return "redirect:/admin/divisions";
+        return "redirect:" + resolveRedirectUrl(redirectUrl, null, "/admin/divisions");
     }
 
     @PostMapping("/toggle/{id}")

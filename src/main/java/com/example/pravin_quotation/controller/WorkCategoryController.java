@@ -29,7 +29,7 @@ public class WorkCategoryController {
 
         long archivedCount = workCategoryService.getArchivedCategoryCount();
 
-        if (showArchived && archivedCount > 0) {
+        if (showArchived) {
             model.addAttribute(
                     "categories",
                     workCategoryService.getArchivedCategories()
@@ -169,6 +169,47 @@ public class WorkCategoryController {
                 ));
             }
             redirectAttributes.addFlashAttribute("errorMessage", "Failed to delete work category: " + e.getMessage());
+        }
+
+        return "redirect:/admin/work-categories";
+    }
+
+
+    @PostMapping("/unarchive/{id}")
+    public Object unarchiveCategory(
+            @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
+
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
+
+        try {
+            String message = workCategoryService.unarchiveCategory(id);
+
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", message
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", message);
+        } catch (Exception e) {
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", "Failed to unarchive work category: " + e.getMessage()
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", "Failed to unarchive work category: " + e.getMessage());
+        }
+
+        if (redirectUrl != null && !redirectUrl.isBlank() && redirectUrl.startsWith("/") && !redirectUrl.startsWith("//") && !redirectUrl.startsWith("/\\")) {
+            return "redirect:" + redirectUrl;
         }
 
         return "redirect:/admin/work-categories";

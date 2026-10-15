@@ -37,7 +37,10 @@
         </div>
 
         <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/divisions'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn"
+                    th:data-redirect="${redirectUrl}"
+                    onclick="const r = this.getAttribute('data-redirect'); if (r && r.trim().length > 0) { window.location.href = r; } else if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/divisions'; }"
+                    style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
                 <span>← Back</span>
             </button>
             <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
@@ -55,6 +58,8 @@
                          ? @{/admin/divisions/save}
                          : @{/admin/divisions/update/{id}(id=${division.id})}"
               method="post">
+
+            <input type="hidden" name="redirectUrl" th:value="${redirectUrl}" th:if="${redirectUrl != null and !redirectUrl.isBlank()}">
 
             <!-- Division Name -->
             <div class="form-group">
@@ -162,7 +167,7 @@
             <!-- Form Actions -->
             <div class="form-actions">
 
-                <a th:href="@{/admin/divisions}"
+                <a th:href="${redirectUrl != null and !redirectUrl.isBlank() ? redirectUrl : '/admin/divisions'}"
                    class="cancel-btn">
                     Cancel
                 </a>

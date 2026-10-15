@@ -287,6 +287,29 @@ public class WorkCategoryService {
     }
 
 
+    @Transactional
+    public String unarchiveCategory(Long id) {
+        WorkCategory category = getCategoryById(id);
+        String catName = category.getName();
+
+        if (!category.isArchived()) {
+            return "Work category '" + catName + "' is already active and not archived.";
+        }
+
+        category.setArchived(false);
+        category.setActive(true);
+        workCategoryRepository.saveAndFlush(category);
+
+        List<Division> divisions = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(id);
+        for (Division div : divisions) {
+            div.setActive(true);
+            divisionRepository.saveAndFlush(div);
+        }
+
+        return "Work category '" + catName + "' has been successfully unarchived and restored to active work categories.";
+    }
+
+
     private void validateName(String name) {
 
         if (name == null || name.trim().isEmpty()) {

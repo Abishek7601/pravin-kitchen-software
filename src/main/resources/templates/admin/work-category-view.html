@@ -396,7 +396,8 @@
       <h1 class="hero-title">
         <span th:text="${category.icon != null and !category.icon.isBlank() ? category.icon : '🏠'}">🏠</span>
         <span th:text="${category.name != null ? category.name.toUpperCase() : 'WORK CATEGORY'}">FOYER</span>
-        <span th:classappend="${category.active ? 'badge-active' : 'badge-inactive'}"
+        <span th:if="${category.archived}" class="badge-inactive" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">ARCHIVED</span>
+        <span th:unless="${category.archived}" th:classappend="${category.active ? 'badge-active' : 'badge-inactive'}"
               th:text="${category.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
       </h1>
       <p class="hero-subtitle" th:text="${category.description != null and !category.description.isBlank() ? category.description : 'Master data hierarchy and configured components for this work category.'}">
@@ -405,7 +406,20 @@
     </div>
 
     <div class="nav-actions">
-      <a th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}" class="btn-edit-main">
+      <form th:if="${category.archived}"
+            th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
+            method="post"
+            style="display: inline; margin: 0;"
+            th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+            onsubmit="return confirm('Are you sure you want to unarchive ' + (this.getAttribute('data-category-name') || 'this work category') + '?\n\nThis will restore the category and its divisions to active status.');">
+        <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
+        <button type="submit" class="btn-configure" style="cursor: pointer; background: #ffffff; color: #006b63; border: 1px solid #c8dad6;">
+          <i class="bi bi-box-arrow-up"></i>
+          <span>📦 Unarchive Category</span>
+        </button>
+      </form>
+      <a th:unless="${category.archived}" th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}" class="btn-edit-main">
         <i class="bi bi-pencil-square"></i>
         <span>Edit Category</span>
       </a>
@@ -463,7 +477,7 @@
         </div>
 
         <div style="display: flex; gap: 6px; align-items: center;">
-          <a th:href="@{/admin/divisions/edit/{id}(id=${dDto.division.id})}" class="btn-action-sm">
+          <a th:href="@{/admin/divisions/edit/{id}(id=${dDto.division.id}, redirectUrl=@{/admin/work-categories/view/{catId}(catId=${category.id})})}" class="btn-action-sm">
             ✏️ Edit Division
           </a>
           <form th:action="@{/admin/divisions/delete/{id}(id=${dDto.division.id})}"
@@ -498,7 +512,7 @@
           </div>
 
           <div style="display: flex; gap: 6px; align-items: center;">
-            <a th:href="@{/admin/materials/edit/{id}(id=${mDto.material.id})}" class="btn-action-sm">
+            <a th:href="@{/admin/materials/edit/{id}(id=${mDto.material.id}, redirectUrl=@{/admin/work-categories/view/{catId}(catId=${category.id})})}" class="btn-action-sm">
               ✏️ Edit Material
             </a>
             <form th:action="@{/admin/materials/delete/{id}(id=${mDto.material.id})}"

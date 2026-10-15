@@ -33,6 +33,29 @@ public class MaterialController {
         this.divisionRepository = divisionRepository;
     }
 
+    private String resolveRedirectUrl(String redirectUrl, HttpServletRequest request, String defaultFallback) {
+        if (redirectUrl != null && !redirectUrl.isBlank()) {
+            String trimmed = redirectUrl.trim();
+            if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.startsWith("/\\")) {
+                return trimmed;
+            }
+        }
+        if (request != null) {
+            String referer = request.getHeader("Referer");
+            if (referer != null && referer.contains("/admin/work-categories/view/")) {
+                try {
+                    java.net.URI uri = java.net.URI.create(referer);
+                    String path = uri.getPath();
+                    if (path != null && path.startsWith("/") && !path.startsWith("//") && !path.startsWith("/\\")) {
+                        return path;
+                    }
+                } catch (Exception ignored) {
+                }
+            }
+        }
+        return defaultFallback;
+    }
+
     @GetMapping
     public String materials(Model model) {
         model.addAttribute(
@@ -47,7 +70,10 @@ public class MaterialController {
     }
 
     @GetMapping("/new")
-    public String newMaterial(Model model) {
+    public String newMaterial(
+            @RequestParam(required = false) String redirectUrl,
+            Model model
+    ) {
         model.addAttribute(
                 "material",
                 new Material()
@@ -64,6 +90,10 @@ public class MaterialController {
                 "formulas",
                 CalculationFormula.ALL_FORMULAS
         );
+        model.addAttribute(
+                "redirectUrl",
+                resolveRedirectUrl(redirectUrl, null, null)
+        );
         return "admin/material-form";
     }
 
@@ -74,7 +104,8 @@ public class MaterialController {
             @RequestParam(required = false) Long itemId,
             @RequestParam(required = false) List<Long> divisionIds,
             @RequestParam(required = false) String formula,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String redirectUrl
     ) {
         String effectiveName = name != null ? name.trim().toUpperCase() : null;
         materialService.createMaterial(
@@ -85,12 +116,14 @@ public class MaterialController {
                 formula,
                 displayOrder
         );
-        return "redirect:/admin/materials";
+        return "redirect:" + resolveRedirectUrl(redirectUrl, null, "/admin/materials");
     }
 
     @GetMapping("/edit/{id}")
     public String editMaterial(
             @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            HttpServletRequest request,
             Model model
     ) {
         model.addAttribute(
@@ -109,6 +142,10 @@ public class MaterialController {
                 "formulas",
                 CalculationFormula.ALL_FORMULAS
         );
+        model.addAttribute(
+                "redirectUrl",
+                resolveRedirectUrl(redirectUrl, request, null)
+        );
         return "admin/material-form";
     }
 
@@ -120,7 +157,8 @@ public class MaterialController {
             @RequestParam(required = false) Long itemId,
             @RequestParam(required = false) List<Long> divisionIds,
             @RequestParam(required = false) String formula,
-            @RequestParam(required = false) Integer displayOrder
+            @RequestParam(required = false) Integer displayOrder,
+            @RequestParam(required = false) String redirectUrl
     ) {
         String effectiveName = name != null ? name.trim().toUpperCase() : null;
         materialService.updateMaterial(
@@ -132,7 +170,7 @@ public class MaterialController {
                 formula,
                 displayOrder
         );
-        return "redirect:/admin/materials";
+        return "redirect:" + resolveRedirectUrl(redirectUrl, null, "/admin/materials");
     }
 
     @PostMapping("/toggle/{id}")
