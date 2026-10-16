@@ -13,12 +13,22 @@
   </title>
 
   <link rel="stylesheet"
+        th:href="@{/css/admin-nav.css}">
+  <link rel="stylesheet"
         th:href="@{/css/customer-form.css}">
 
 </head>
 
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='customers')}"></aside>
+
+    <main class="main-content">
 
 <div class="customer-form-page">
 
@@ -338,6 +348,10 @@
 
 
   </main>
+
+</div>
+
+    </main>
 
 </div>
 

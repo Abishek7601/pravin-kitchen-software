@@ -9,6 +9,7 @@
     Configure Master Data | Pravin KITCHENS &amp; INTERIORS
   </title>
 
+  <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet" th:href="@{/css/pricing-form.css}">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
 
@@ -119,6 +120,14 @@
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+
+    <main class="main-content">
 
 <div class="page-container">
 
@@ -608,6 +617,10 @@
     </form>
 
   </div>
+
+</div>
+
+    </main>
 
 </div>
 

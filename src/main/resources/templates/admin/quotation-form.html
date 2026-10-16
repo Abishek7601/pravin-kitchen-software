@@ -14,11 +14,21 @@
     </title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/quotation-form.css}">
 
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='quotations')}"></aside>
+
+    <main class="main-content">
 
 <div class="quotation-form-page">
 
@@ -626,6 +636,10 @@
         </div>
 
     </form>
+
+</div>
+
+    </main>
 
 </div>
 

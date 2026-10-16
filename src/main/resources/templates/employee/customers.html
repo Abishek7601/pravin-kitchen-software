@@ -12,6 +12,8 @@
     <title>Customers | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/employee-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/employee-customers.css}">
 
 </head>
@@ -21,145 +23,13 @@
 <div class="dashboard-wrapper">
 
     <!-- SIDEBAR -->
-
-    <aside class="sidebar">
-
-        <div class="brand">
-
-            <div class="brand-icon">
-                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img">
-            </div>
-
-            <div class="brand-text">
-
-                <h2>Pravin KITCHENS & INTERIORS</h2>
-
-                <span>Employee Portal</span>
-
-            </div>
-
-        </div>
-
-
-        <nav class="sidebar-menu">
-
-            <a th:href="@{/employee/dashboard}"
-               class="menu-item">
-
-                <span class="menu-icon">⌂</span>
-
-                <span>Dashboard</span>
-
-            </a>
-
-
-            <a th:href="@{/employee/quotations}"
-               class="menu-item">
-
-                <span class="menu-icon">▣</span>
-
-                <span>Quotations</span>
-
-            </a>
-
-
-            <a th:href="@{/employee/customers}"
-               class="menu-item active">
-
-                <span class="menu-icon">◉</span>
-
-                <span>Customers</span>
-
-            </a>
-
-        </nav>
-
-
-        <div class="sidebar-bottom">
-
-            <form th:action="@{/logout}"
-                  method="post">
-
-                <button type="submit"
-                        class="logout-btn">
-
-                    <span>↪</span>
-
-                    <span>Logout</span>
-
-                </button>
-
-            </form>
-
-        </div>
-
-    </aside>
-
+    <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='customers')}"></aside>
 
     <!-- MAIN -->
-
     <main class="main-content">
 
         <!-- TOPBAR -->
-
-        <header class="topbar">
-
-            <div class="page-heading">
-
-                <span class="page-label">
-                    CUSTOMER MANAGEMENT
-                </span>
-
-                <h1>
-                    Customers
-                </h1>
-
-                <p>
-                    View customers assigned to your branch.
-                </p>
-
-            </div>
-
-            <div class="nav-header-actions">
-                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/employee/dashboard}" class="nav-dashboard-btn">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
-
-            <div class="employee-profile">
-
-                <div class="profile-avatar">
-
-                    <span
-                            th:text="${employee.name != null and !employee.name.isEmpty()
-                            ? #strings.substring(employee.name,0,1).toUpperCase()
-                            : 'E'}">
-                        E
-                    </span>
-
-                </div>
-
-
-                <div class="profile-info">
-
-                    <strong
-                            th:text="${employee.name}">
-                        Employee
-                    </strong>
-
-                    <small
-                            th:text="${employee.email}">
-                        employee@email.com
-                    </small>
-
-                </div>
-
-            </div>
-
-        </header>
+        <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='CUSTOMER MANAGEMENT', pageTitle='Customers', pageSubtitle='View customers assigned to your branch.')}"></header>
 
 
         <!-- CUSTOMER CARD -->

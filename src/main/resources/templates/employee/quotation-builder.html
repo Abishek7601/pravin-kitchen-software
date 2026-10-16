@@ -6,28 +6,44 @@
   <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
   <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}">
   <title>Create Quotation | Pravin KITCHENS &amp; INTERIORS</title>
+  <link rel="stylesheet" th:href="@{/css/employee-nav.css}">
   <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
 </head>
 <body>
-<div class="builder-page">
-  <header class="builder-header">
-    <div>
-      <span class="eyebrow" style="display: flex; align-items: center; gap: 8px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="builder-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 3px; border-radius: 6px;"> Pravin KITCHENS &amp; INTERIORS</span>
-      <h1>Create Quotation</h1>
-      <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
-    </div>
-    <div class="header-actions">
-      <span class="quote-number-preview">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
-      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-              <span>← Back</span>
-          </button>
-          <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-              <span>⌂ Dashboard</span>
-          </a>
+<div class="dashboard-wrapper">
+  <!-- SIDEBAR -->
+  <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
+
+  <!-- MAIN -->
+  <main class="main-content">
+    <!-- TOPBAR -->
+    <header class="topbar">
+      <div class="page-heading">
+        <span class="page-label">QUOTATION BUILDER</span>
+        <h1>Create Quotation</h1>
+        <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
       </div>
-    </div>
-  </header>
+      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #006b63; background: #e6f4f1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+          <span>← Back</span>
+        </button>
+        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+          <span>⌂ Dashboard</span>
+        </a>
+      </div>
+      <div class="employee-profile">
+        <div class="profile-avatar">
+          <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
+        </div>
+        <div class="profile-info">
+          <strong th:text="${employee != null and employee.name != null ? employee.name : (#authentication != null and #authentication.name != null ? #authentication.name : 'Employee')}">Employee</strong>
+          <small th:text="${employee != null and employee.email != null ? employee.email : (#authentication != null ? #authentication.name : 'employee@email.com')}">employee@email.com</small>
+        </div>
+      </div>
+    </header>
+
+<div class="builder-page">
 
   <main>
     <section class="card customer-card">
@@ -280,6 +296,8 @@
       <div id="saveMessage" class="save-message"></div>
       <div class="final-actions"><a th:href="@{/employee/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
     </section>
+  </main>
+</div>
   </main>
 </div>
 

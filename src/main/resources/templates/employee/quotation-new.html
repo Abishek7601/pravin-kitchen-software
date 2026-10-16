@@ -8,6 +8,8 @@
     <title>Create Quotation | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/employee-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/employee-quotation-new.css}">
 </head>
 
@@ -15,92 +17,13 @@
 
 <div class="dashboard-wrapper">
 
-    <aside class="sidebar">
-
-        <div class="brand">
-            <div class="brand-icon">
-                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img">
-            </div>
-
-            <div class="brand-text">
-                <h2>Pravin KITCHENS & INTERIORS</h2>
-                <span>Employee Portal</span>
-            </div>
-        </div>
-
-        <nav class="sidebar-menu">
-
-            <a th:href="@{/employee/dashboard}"
-               class="menu-item">
-                <span class="menu-icon">⌂</span>
-                <span>Dashboard</span>
-            </a>
-
-            <a th:href="@{/employee/quotations}"
-               class="menu-item active">
-                <span class="menu-icon">▣</span>
-                <span>Quotations</span>
-            </a>
-
-            <a th:href="@{/employee/customers}"
-               class="menu-item">
-                <span class="menu-icon">◉</span>
-                <span>Customers</span>
-            </a>
-
-        </nav>
-
-        <div class="sidebar-bottom">
-            <form th:action="@{/logout}" method="post">
-                <button type="submit" class="logout-btn">
-                    <span>↪</span>
-                    <span>Logout</span>
-                </button>
-            </form>
-        </div>
-
-    </aside>
+    <!-- SIDEBAR -->
+    <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
 
     <main class="main-content">
 
-        <header class="topbar">
-
-            <div class="page-heading">
-                <span class="page-label">QUOTATION MANAGEMENT</span>
-                <h1>Create Quotation</h1>
-                <p>
-                    Enter the customer details first. The quotation number
-                    is generated automatically.
-                </p>
-            </div>
-
-            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-right: 15px;">
-                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
-
-            <div class="employee-profile">
-
-                <div class="profile-avatar">
-                    <span th:text="${employee.name != null and !employee.name.isEmpty()
-                        ? #strings.substring(employee.name,0,1).toUpperCase()
-                        : 'E'}">E</span>
-                </div>
-
-                <div class="profile-info">
-                    <strong th:text="${employee.name}">Employee</strong>
-                    <small th:text="${employee.email}">
-                        employee@email.com
-                    </small>
-                </div>
-
-            </div>
-
-        </header>
+        <!-- TOPBAR -->
+        <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='QUOTATION MANAGEMENT', pageTitle='Create Quotation', pageSubtitle='Enter the customer details first. The quotation number is generated automatically.')}"></header>
 
         <div class="quotation-container">
 

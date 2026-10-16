@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <!-- Common Employee Navigation Head Assets -->
+    <th:block th:fragment="head-assets">
+        <link rel="stylesheet" th:href="@{/css/employee-nav.css}">
+    </th:block>
+</head>
+<body>
+
+<!-- ========================================================= -->
+<!-- SIDEBAR -->
+<!-- ========================================================= -->
+<aside class="sidebar" th:fragment="sidebar(activeTab)">
+
+    <div class="brand">
+        <div class="brand-icon">
+            <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img">
+        </div>
+        <div class="brand-text">
+            <h2>Pravin KITCHENS &amp; INTERIORS</h2>
+            <span>Employee Portal</span>
+        </div>
+    </div>
+
+    <nav class="sidebar-menu">
+
+        <!-- Dashboard -->
+        <a th:href="@{/employee/dashboard}"
+           class="menu-item"
+           th:classappend="${activeTab == 'dashboard'} ? ' active' : ''">
+            <span class="menu-icon">⌂</span>
+            <span>Dashboard</span>
+        </a>
+
+        <!-- Quotations -->
+        <a th:href="@{/employee/quotations}"
+           class="menu-item"
+           th:classappend="${activeTab == 'quotations'} ? ' active' : ''">
+            <span class="menu-icon">▣</span>
+            <span>Quotations</span>
+        </a>
+
+        <!-- Customers -->
+        <a th:href="@{/employee/customers}"
+           class="menu-item"
+           th:classappend="${activeTab == 'customers'} ? ' active' : ''">
+            <span class="menu-icon">◉</span>
+            <span>Customers</span>
+        </a>
+
+    </nav>
+
+    <div class="sidebar-bottom">
+        <form th:action="@{/logout}" method="post">
+            <button type="submit" class="logout-btn">
+                <span>↪</span>
+                <span>Logout</span>
+            </button>
+        </form>
+    </div>
+
+</aside>
+
+<!-- ========================================================= -->
+<!-- TOPBAR -->
+<!-- ========================================================= -->
+<header class="topbar" th:fragment="topbar(pageLabel, pageTitle, pageSubtitle)">
+
+    <div class="page-heading">
+        <span class="page-label" th:text="${pageLabel != null ? pageLabel : 'EMPLOYEE PORTAL'}">EMPLOYEE PORTAL</span>
+        <h1 th:text="${pageTitle != null ? pageTitle : 'Employee Portal'}">Employee Portal</h1>
+        <p th:if="${pageSubtitle != null}" th:text="${pageSubtitle}">Quotation Management System</p>
+    </div>
+
+    <div class="nav-header-actions">
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+            <span>← Back</span>
+        </button>
+        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+            <span>⌂ Back to Dashboard</span>
+        </a>
+    </div>
+
+    <div class="employee-profile">
+        <div class="profile-avatar">
+            <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
+        </div>
+        <div class="profile-info">
+            <strong th:text="${employee != null and employee.name != null ? employee.name : (#authentication != null and #authentication.name != null ? #authentication.name : 'Employee')}">Employee</strong>
+            <small th:text="${employee != null and employee.email != null ? employee.email : (#authentication != null and #authentication.name != null ? #authentication.name : 'employee@email.com')}">employee@email.com</small>
+        </div>
+    </div>
+
+</header>
+
+</body>
+</html>

@@ -58,6 +58,18 @@ public class WorkCategoryUnarchiveTest {
     private QuotationItemRepository quotationItemRepository;
 
     @Autowired
+    private QuotationRoomRepository quotationRoomRepository;
+
+    @Autowired
+    private CustomerRepository customerRepository;
+
+    @Autowired
+    private BranchRepository branchRepository;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
     private WorkCategoryService workCategoryService;
 
     @Autowired
@@ -197,22 +209,58 @@ public class WorkCategoryUnarchiveTest {
     @WithMockUser(username = "admin", roles = {"SUPER_ADMIN"})
     void testQuotationHistoryPreservedAfterUnarchive() throws Exception {
         Long catId = archivedCategory.getId();
+        long ts = System.currentTimeMillis();
 
         // Create a historical quotation linked to this category
+        Customer customer = new Customer();
+        customer.setName("CUSTOMER UNARCHIVE TEST");
+        customer.setPhone("9876543210");
+        customer = customerRepository.save(customer);
+
+        Branch branch = branchRepository.findAll().stream().findFirst().orElseGet(() -> {
+            Branch b = new Branch();
+            b.setName("Test Branch");
+            b.setActive(true);
+            return branchRepository.save(b);
+        });
+
+        User user = userRepository.findAll().stream().findFirst().orElseGet(() -> {
+            User u = new User();
+            u.setName("testuser" + ts);
+            u.setEmail("testuser" + ts + "@test.com");
+            u.setPassword("pass");
+            u.setRole(Role.EMPLOYEE);
+            u.setActive(true);
+            return userRepository.save(u);
+        });
+
         Quotation quotation = new Quotation();
-        quotation.setCustomerName("CUSTOMER UNARCHIVE TEST");
-        quotation.setCustomerPhone("9876543210");
-        quotation.setTotalAmount(new BigDecimal("50000.00"));
+        quotation.setQuotationNumber("QT-UNARCH-" + ts);
+        quotation.setCustomer(customer);
+        quotation.setBranch(branch);
+        quotation.setEmployee(user);
+        quotation.setDivision(childDivision);
+        quotation.setPricingMode(PricingMode.MIDDLE);
+        quotation.setQuotationDate(java.time.LocalDate.now());
+        quotation.setStatus(QuotationStatus.PENDING);
         quotation.setGrandTotal(new BigDecimal("50000.00"));
         quotation = quotationRepository.save(quotation);
 
+        QuotationRoom room = new QuotationRoom();
+        room.setQuotation(quotation);
+        room.setRoom("Living Room");
+        room.setFloor("Ground Floor");
+        room.setSubtotal(new BigDecimal("50000.00"));
+        room = quotationRoomRepository.save(room);
+
         QuotationItem qItem = new QuotationItem();
-        qItem.setQuotation(quotation);
+        qItem.setQuotationRoom(room);
         qItem.setWorkCategory(archivedCategory);
         qItem.setDivision(childDivision);
         qItem.setMaterial(childMaterial);
         qItem.setMaterialOption(childOption);
-        qItem.setTotalAmount(new BigDecimal("50000.00"));
+        qItem.setRate(new BigDecimal("1000.00"));
+        qItem.setAmount(new BigDecimal("50000.00"));
         qItem = quotationItemRepository.save(qItem);
 
         entityManager.flush();
@@ -227,14 +275,13 @@ public class WorkCategoryUnarchiveTest {
 
         // Verify quotation still exists and is 100% intact
         Quotation loadedQuotation = quotationRepository.findById(quotation.getId()).orElseThrow();
-        assertEquals("CUSTOMER UNARCHIVE TEST", loadedQuotation.getCustomerName());
-        assertEquals(new BigDecimal("50000.00"), loadedQuotation.getTotalAmount());
+        assertEquals("CUSTOMER UNARCHIVE TEST", loadedQuotation.getCustomer().getName());
         assertEquals(new BigDecimal("50000.00"), loadedQuotation.getGrandTotal());
 
         QuotationItem loadedItem = quotationItemRepository.findById(qItem.getId()).orElseThrow();
         assertNotNull(loadedItem.getWorkCategory());
         assertEquals(catId, loadedItem.getWorkCategory().getId(), "Quotation item must still reference the unarchived category");
-        assertEquals(new BigDecimal("50000.00"), loadedItem.getTotalAmount());
+        assertEquals(new BigDecimal("50000.00"), loadedItem.getAmount());
     }
 
     @Test

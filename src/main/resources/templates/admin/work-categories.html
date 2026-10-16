@@ -8,10 +8,20 @@
     <title>Work Categories | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/work-categories.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+
+    <main class="main-content">
 
 <div class="category-page">
 
@@ -281,6 +291,10 @@
             </div>
 
         </section>
+
+    </main>
+
+</div>
 
     </main>
 

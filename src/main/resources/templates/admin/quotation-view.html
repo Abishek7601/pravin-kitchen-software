@@ -11,12 +11,22 @@
     <title>Quotation Details - Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/quotation-view.css}">
 
 </head>
 
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='quotations')}"></aside>
+
+    <main class="main-content">
 
 <div class="page-container">
 
@@ -2048,6 +2058,10 @@
         </form>
 
     </section>
+
+</div>
+
+    </main>
 
 </div>
 

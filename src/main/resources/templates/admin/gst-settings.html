@@ -9,10 +9,20 @@
   <title>GST Settings | Pravin KITCHENS & INTERIORS</title>
 
   <link rel="stylesheet"
+        th:href="@{/css/admin-nav.css}">
+  <link rel="stylesheet"
         th:href="@{/css/gst-settings.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+
+    <main class="main-content">
 
 <div class="gst-page">
 
@@ -412,6 +422,10 @@
     </div>
 
   </div>
+
+</div>
+
+    </main>
 
 </div>
 
