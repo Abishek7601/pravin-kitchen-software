@@ -8,34 +8,25 @@
   <title>Edit Quotation Item</title>
 
   <link rel="stylesheet"
+        th:href="@{/css/employee-nav.css}">
+  <link rel="stylesheet"
         th:href="@{/css/employee-quotation-item-edit.css}">
 </head>
 
 <body>
 
-<div class="item-page">
+<div class="dashboard-wrapper">
 
-  <!-- HEADER -->
-  <header class="page-header">
-    <div>
-      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-              <span>← Back</span>
-          </button>
-          <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-              <span>⌂ Dashboard</span>
-          </a>
-      </div>
+  <!-- SIDEBAR -->
+  <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
 
-      <span class="page-eyebrow" style="display: flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #006b63; margin-top: 8px; margin-bottom: 6px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;"> Pravin KITCHENS & INTERIORS &amp; INTERIORS</span>
+  <!-- MAIN -->
+  <main class="main-content">
 
-      <h1>Edit Quotation Item</h1>
+    <!-- TOPBAR -->
+    <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='QUOTATION ITEM', pageTitle='Edit Quotation Item', pageSubtitle='Update item details, dimensions and pricing for this quotation.')}"></header>
 
-      <p>
-        Update item details, dimensions and pricing for this quotation.
-      </p>
-    </div>
-  </header>
+    <div class="item-page">
 
   <!-- DEBUG / ITEM ID CHECK -->
   <section class="info-card">
@@ -431,6 +422,8 @@
 
   </form>
 
+</div>
+  </main>
 </div>
 
 <!-- CALCULATION SCRIPT -->

@@ -8,38 +8,25 @@
   <title>Quotation Item | Pravin KITCHENS & INTERIORS</title>
 
   <link rel="stylesheet"
+        th:href="@{/css/employee-nav.css}">
+  <link rel="stylesheet"
         th:href="@{/css/employee-quotation-item-form.css}">
 </head>
 
 <body>
 
-<div class="item-page">
+<div class="dashboard-wrapper">
 
-  <!-- HEADER -->
-  <div class="page-header">
-    <div>
+  <!-- SIDEBAR -->
+  <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
 
-      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-              <span>← Back</span>
-          </button>
-          <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-              <span>⌂ Dashboard</span>
-          </a>
-      </div>
+  <!-- MAIN -->
+  <main class="main-content">
 
-      <h1 th:text="${quotationItem == null or quotationItem.id == null
-        ? 'Add Quotation Item'
-        : 'Edit Quotation Item'}">
-        Add Quotation Item
-      </h1>
+    <!-- TOPBAR -->
+    <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='QUOTATION ITEM', pageTitle=${quotationItem == null or quotationItem.id == null ? 'Add Quotation Item' : 'Edit Quotation Item'}, pageSubtitle='Manage work details, material, dimensions and pricing.')}"></header>
 
-      <p>
-        Manage work details, material, dimensions and pricing.
-      </p>
-
-    </div>
-  </div>
+    <div class="item-page">
 
 
   <!-- =========================================================
@@ -674,6 +661,8 @@
 
   </form>
 
+</div>
+  </main>
 </div>
 
 

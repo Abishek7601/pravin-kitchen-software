@@ -149,7 +149,7 @@ a {
     color: #ffffff;
 }
 
-.brand-logo-img {
+.brand-small .brand-logo-img {
     height: 36px;
     width: auto;
     object-fit: contain;
@@ -157,6 +157,19 @@ a {
     padding: 2px 6px;
     border-radius: 6px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.top-navbar .brand-icon .brand-logo-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    border-radius: inherit !important;
+    padding: 3px !important;
+    background: #ffffff !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    display: block !important;
 }
 
 .page-header h1 {

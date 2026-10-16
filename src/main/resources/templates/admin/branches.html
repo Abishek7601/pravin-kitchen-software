@@ -13,11 +13,21 @@
     <title>Branches / Districts | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/branches.css}">
 
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='branches')}"></aside>
+
+    <main class="main-content">
 
 <div class="page-container">
 
@@ -30,7 +40,6 @@
         <div class="header-content">
 
             <a th:href="@{/admin/dashboard}" class="brand-small">
-                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img">
                 <span>Pravin KITCHENS &amp; INTERIORS</span>
             </a>
 
@@ -46,14 +55,14 @@
 
         <div class="header-right-actions">
 
-            <div class="nav-header-actions">
-                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
+<!--            <div class="nav-header-actions">-->
+<!--                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }">-->
+<!--                    <span>← Back</span>-->
+<!--                </button>-->
+<!--                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">-->
+<!--                    <span>⌂ Dashboard</span>-->
+<!--                </a>-->
+<!--            </div>-->
 
             <a th:href="@{/admin/branches/new}" class="add-district-button">
                 <span class="plus-icon">+</span>
@@ -384,6 +393,10 @@
         </a>
 
     </div>
+
+</div>
+
+    </main>
 
 </div>
 

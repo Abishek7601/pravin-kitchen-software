@@ -11,10 +11,20 @@
   </title>
 
   <link rel="stylesheet"
-        href="/css/material-option-form.css">
+        th:href="@{/css/admin-nav.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/material-option-form.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+
+    <main class="main-content">
 
 <div class="form-page">
 
@@ -224,6 +234,10 @@
     </form>
 
   </div>
+
+</div>
+
+    </main>
 
 </div>
 

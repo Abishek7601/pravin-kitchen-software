@@ -11,10 +11,20 @@
     <title th:text="${selectedStatus != null ? selectedStatus.name().substring(0,1) + selectedStatus.name().substring(1).toLowerCase() + ' Quotations' : 'Quotations'} + ' | Pravin KITCHENS & INTERIORS'">Quotations | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/quotations.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='quotations')}"></aside>
+
+    <main class="main-content">
 
 <div class="quotation-page">
 
@@ -46,13 +56,13 @@
                    style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
                     <span>← Back to District</span>
                 </a>
-                <button th:if="${selectedBranch == null}"
-                        type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                    <span>⌂ Dashboard</span>
-                </a>
+<!--                <button th:if="${selectedBranch == null}"-->
+<!--                        type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">-->
+<!--                    <span>← Back</span>-->
+<!--                </button>-->
+<!--                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">-->
+<!--                    <span>⌂ Dashboard</span>-->
+<!--                </a>-->
             </div>
 
             <a th:href="@{/admin/quotations/builder}"
@@ -450,6 +460,10 @@
         </div>
 
     </div>
+
+</div>
+
+    </main>
 
 </div>
 

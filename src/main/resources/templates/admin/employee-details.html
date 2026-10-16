@@ -12,12 +12,22 @@
     <title>Employee Details | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/employee-details.css}">
 
 </head>
 
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='employees')}"></aside>
+
+    <main class="main-content">
 
 <div class="page-container">
 
@@ -884,6 +894,10 @@
 
     </section>
 
+
+</div>
+
+    </main>
 
 </div>
 

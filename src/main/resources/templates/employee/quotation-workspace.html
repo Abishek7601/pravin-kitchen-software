@@ -8,68 +8,64 @@
     <title>Quotation Workspace</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/employee-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/employee-quotation-workspace.css}">
 </head>
 
 <body>
 
-<div class="workspace-page">
+<div class="dashboard-wrapper">
 
-    <!-- ================= HEADER ================= -->
+    <!-- SIDEBAR -->
+    <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
 
-    <header class="workspace-header">
+    <!-- MAIN -->
+    <main class="main-content">
 
-        <div class="header-left">
+        <!-- TOPBAR -->
+        <header class="topbar">
+            <div class="page-heading">
+                <span class="page-label">QUOTATION WORKSPACE</span>
+                <h1 th:text="${quotation.quotationNumber}">QT-00001</h1>
+                <p>Manage and review quotation details.</p>
+            </div>
 
             <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
                     <span>← Back</span>
                 </button>
                 <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
                     <span>⌂ Dashboard</span>
                 </a>
+                <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
+                   class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: white;">
+                    ✏ Edit in Builder
+                </a>
+                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
+                   class="btn btn-dark btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #1e293b; color: white;">
+                    Preview / PDF
+                </a>
+                <button type="button"
+                        onclick="window.print()"
+                        class="btn btn-outline-secondary btn-sm"
+                        style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none;">
+                    Print
+                </button>
             </div>
 
-            <div class="page-title">
-
-                <span class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">
-                    <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">
-                    QUOTATION WORKSPACE
-                </span>
-
-                <h1>
-                    <span th:text="${quotation.quotationNumber}">
-                        QT-00001
-                    </span>
-                </h1>
-
+            <div class="employee-profile">
+                <div class="profile-avatar">
+                    <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
+                </div>
+                <div class="profile-info">
+                    <strong th:text="${employee != null and employee.name != null ? employee.name : (#authentication != null and #authentication.name != null ? #authentication.name : 'Employee')}">Employee</strong>
+                    <small th:text="${employee != null and employee.email != null ? employee.email : (#authentication != null ? #authentication.name : 'employee@email.com')}">employee@email.com</small>
+                </div>
             </div>
+        </header>
 
-        </div>
-
-        <div class="header-actions">
-
-            <!-- Employee Builder endpoint -->
-            <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
-               class="btn btn-primary" style="background: #006b63; color: white;">
-                ✏ Edit in Builder
-            </a>
-
-            <!-- Employee PDF endpoint -->
-            <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-               class="btn btn-dark">
-                Preview / PDF
-            </a>
-
-            <button type="button"
-                    onclick="window.print()"
-                    class="btn btn-outline">
-                Print
-            </button>
-
-        </div>
-
-    </header>
+        <div class="workspace-page">
 
 
     <!-- ================= QUOTATION SUMMARY ================= -->
@@ -1282,6 +1278,8 @@
 
     </section>
 
+</div>
+    </main>
 </div>
 
 

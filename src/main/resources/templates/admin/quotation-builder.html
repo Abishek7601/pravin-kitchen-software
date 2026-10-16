@@ -4,10 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="_csrf" th:content="${_csrf.token}">
-  <title>Create Quotation | Pravin KITCHENS & INTERIORS</title>
+  <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
 </head>
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='quotations')}"></aside>
+
+    <main class="main-content">
+
 <div class="builder-page">
   <header class="builder-header">
     <div>
@@ -28,7 +37,7 @@
     </div>
   </header>
 
-  <main>
+  <div class="builder-content">
     <section class="card customer-card">
       <div class="section-heading"><span class="step">01</span><div><h2>Customer Details</h2><p>These details will also be saved in the existing Customer module.</p></div></div>
       <div class="grid two">
@@ -149,7 +158,11 @@
       <div id="saveMessage" class="save-message"></div>
       <div class="final-actions"><a th:href="@{/admin/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
     </section>
-  </main>
+  </div>
+</div>
+
+    </main>
+
 </div>
 
 <script th:inline="javascript">

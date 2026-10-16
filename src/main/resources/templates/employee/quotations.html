@@ -11,46 +11,32 @@
     <title th:text="${pageTitle != null ? pageTitle + ' | Pravin KITCHENS &amp; INTERIORS' : 'My Quotations | Pravin KITCHENS &amp; INTERIORS'}">My Quotations | Pravin KITCHENS &amp; INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/employee-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/employee-quotations.css}">
 
 </head>
 
 <body>
 
-<div class="page-header">
+<div class="dashboard-wrapper">
 
-    <div>
-        <span class="brand-eyebrow" style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; color: #006b63; margin-bottom: 6px;"><img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;"> Pravin KITCHENS &amp; INTERIORS</span>
-        <h1 th:text="${pageTitle != null ? pageTitle : 'My Quotations'}">My Quotations</h1>
-        <p class="subtitle" th:text="${pageSubtitle != null ? pageSubtitle : 'View and manage your customer quotations.'}">
-            View and manage your customer quotations.
-        </p>
-    </div>
+    <!-- SIDEBAR -->
+    <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='quotations')}"></aside>
 
-    <div class="header-actions">
+    <!-- MAIN -->
+    <main class="main-content">
 
-        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-                <span>← Back</span>
-            </button>
-            <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                <span>⌂ Back to Dashboard</span>
+        <!-- TOPBAR -->
+        <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='QUOTATION MANAGEMENT', pageTitle=${pageTitle != null ? pageTitle : 'My Quotations'}, pageSubtitle=${pageSubtitle != null ? pageSubtitle : 'View and manage your customer quotations.'})}"></header>
+
+        <div style="display: flex; justify-content: flex-end; margin-bottom: 16px;">
+            <a th:href="@{/employee/quotations/new}"
+               class="btn btn-primary"
+               style="background: #006b63; color: #ffffff; padding: 9px 18px; font-weight: 600; border-radius: 8px; text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+                <span>+ Create Quotation</span>
             </a>
-            <form th:action="@{/logout}" method="post" style="display: inline-block; margin: 0;">
-                <button type="submit" class="btn btn-outline-secondary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #dc2626; text-decoration: none; transition: all 0.2s ease;">
-                    <span>↪ Logout</span>
-                </button>
-            </form>
         </div>
-
-        <a th:href="@{/employee/quotations/new}"
-           class="btn btn-primary">
-            + Create Quotation
-        </a>
-
-    </div>
-
-</div>
 
 <!-- Alerts -->
 <div th:if="${successMessage}"
@@ -237,6 +223,10 @@
         </tbody>
 
     </table>
+
+</div>
+
+    </main>
 
 </div>
 

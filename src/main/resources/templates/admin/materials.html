@@ -10,10 +10,20 @@
     <title>Materials | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
-          href="/css/materials.css">
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/materials.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+
+    <main class="main-content">
 
 <div class="page-container">
 
@@ -271,6 +281,10 @@
         </div>
 
     </div>
+
+</div>
+
+    </main>
 
 </div>
 

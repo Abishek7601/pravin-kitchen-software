@@ -98,7 +98,7 @@ input:focus-visible {
    HEADER
    ========================================================= */
 
-.customer-header {
+/* .customer-header {
     width: 100%;
     min-height: 86px;
     padding: 17px 5.5%;
@@ -121,7 +121,7 @@ input:focus-visible {
     border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 
     box-shadow: 0 5px 20px rgba(6, 59, 53, 0.13);
-}
+} */
 
 .header-left {
     display: flex;

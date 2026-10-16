@@ -11,10 +11,20 @@
     <title th:text="${branch.name + ' - ' + selectedStatus.name().substring(0,1) + selectedStatus.name().substring(1).toLowerCase() + ' Quotations | Pravin KITCHENS & INTERIORS'}">District Quotations | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
+          th:href="@{/css/admin-nav.css}">
+    <link rel="stylesheet"
           th:href="@{/css/quotations.css}">
 </head>
 
 <body>
+
+<nav th:replace="~{fragments/admin-navigation :: top-navbar}"></nav>
+
+<div class="dashboard-layout">
+
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='branches')}"></aside>
+
+    <main class="main-content">
 
 <div class="quotation-page">
 
@@ -395,6 +405,10 @@
         </div>
 
     </div>
+
+</div>
+
+    </main>
 
 </div>
 
