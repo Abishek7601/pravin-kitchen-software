@@ -20,13 +20,19 @@
     --border: #E1EBE7;
 
     --admin-sidebar-width: 255px;
+    --admin-navbar-height: 82px;
 }
 
 /* ================= TOP NAVBAR ================= */
 
 .top-navbar {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    height: var(--admin-navbar-height);
+    min-height: var(--admin-navbar-height);
     z-index: 1000;
 
     display: flex;
@@ -34,7 +40,6 @@
     justify-content: space-between;
     gap: 20px;
 
-    min-height: 82px;
     padding: 14px 32px;
 
     background: var(--white);
@@ -179,20 +184,31 @@
 .dashboard-layout {
     display: flex;
     align-items: stretch;
-    min-height: calc(100vh - 82px);
+    min-height: 100vh;
     width: 100%;
+    padding-top: var(--admin-navbar-height);
     box-sizing: border-box;
 }
 
 /* ================= SIDEBAR ================= */
 
 .sidebar {
+    position: fixed;
+    top: var(--admin-navbar-height);
+    left: 0;
+    bottom: 0;
+    z-index: 900;
+
     display: flex;
     flex-direction: column;
     flex-shrink: 0;
 
     width: var(--admin-sidebar-width);
-    min-height: calc(100vh - 82px);
+    height: calc(100vh - var(--admin-navbar-height));
+    height: calc(100dvh - var(--admin-navbar-height));
+
+    overflow-y: auto;
+    overflow-x: hidden;
 
     color: #E3F2EE;
     background: linear-gradient(
@@ -204,6 +220,23 @@
 
     border-right: 1px solid rgba(255, 255, 255, 0.06);
     box-sizing: border-box;
+}
+
+.sidebar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.35);
 }
 
 .sidebar-menu {
@@ -319,6 +352,7 @@
 .dashboard-layout > .main-content {
     flex: 1;
     min-width: 0;
+    margin-left: var(--admin-sidebar-width);
     padding: 28px 32px 48px;
     box-sizing: border-box;
     overflow-x: auto;
@@ -343,27 +377,39 @@
 /* ================= RESPONSIVE ================= */
 
 @media (max-width: 1200px) {
+    :root {
+        --admin-sidebar-width: 220px;
+    }
+
     .sidebar {
         width: 220px;
     }
 
     .dashboard-layout > .main-content {
+        margin-left: 220px;
         padding: 22px 20px;
     }
 }
 
 @media (max-width: 850px) {
     .top-navbar {
+        position: static;
+        height: auto;
+        min-height: auto;
         padding: 13px 20px;
     }
 
     .dashboard-layout {
+        padding-top: 0;
         display: block;
     }
 
     .sidebar {
+        position: static;
         width: 100%;
+        height: auto;
         min-height: auto;
+        overflow-y: visible;
     }
 
     .sidebar-menu {
@@ -391,6 +437,7 @@
     }
 
     .dashboard-layout > .main-content {
+        margin-left: 0;
         padding: 20px 15px;
     }
 }
@@ -462,8 +509,10 @@
 
     .dashboard-layout {
         display: block !important;
+        padding-top: 0 !important;
     }
 
+    .dashboard-layout > .main-content,
     .main-content {
         margin: 0 !important;
         padding: 0 !important;

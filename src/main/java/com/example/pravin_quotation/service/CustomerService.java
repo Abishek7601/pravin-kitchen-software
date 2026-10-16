@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.service;
 
+import com.example.pravin_quotation.dto.BranchCustomerCountDto;
 import com.example.pravin_quotation.model.Branch;
 import com.example.pravin_quotation.model.Customer;
 import com.example.pravin_quotation.repository.BranchRepository;
@@ -51,12 +52,19 @@ public class CustomerService {
 
 
     // ==========================================
-    // GET CUSTOMERS BY DISTRICT
+    // GET CUSTOMERS BY DISTRICT / BRANCH
     // ==========================================
 
     public List<Customer> getCustomersByBranch(Long branchId) {
 
         return customerRepository.findByBranchId(branchId);
+    }
+
+    public List<Customer> getActiveCustomersForBranch(Long branchId) {
+        if (branchId == null) {
+            return customerRepository.findByActiveTrueOrderByNameAsc();
+        }
+        return customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(branchId);
     }
 
 
@@ -66,7 +74,35 @@ public class CustomerService {
 
     public List<Customer> getActiveCustomers() {
 
-        return customerRepository.findByActiveTrue();
+        return customerRepository.findByActiveTrueOrderByNameAsc();
+    }
+
+
+    // ==========================================
+    // ADMIN CUSTOMER STATISTICS
+    // ==========================================
+
+    public long getTotalCustomerCount() {
+        return customerRepository.count();
+    }
+
+    public long getActiveCustomerCount() {
+        return customerRepository.countByActiveTrue();
+    }
+
+    public long getTotalBranchesWithCustomers() {
+        return customerRepository.countDistinctBranchesWithCustomers();
+    }
+
+    public List<BranchCustomerCountDto> getBranchWiseCustomerCounts() {
+        List<Branch> branches = branchRepository.findByActiveTrueOrderByNameAsc();
+        return branches.stream()
+                .map(b -> new BranchCustomerCountDto(
+                        b.getId(),
+                        b.getName(),
+                        customerRepository.countByBranchId(b.getId())
+                ))
+                .toList();
     }
 
 

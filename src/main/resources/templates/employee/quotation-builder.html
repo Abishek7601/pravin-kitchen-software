@@ -47,7 +47,52 @@
 
   <main>
     <section class="card customer-card">
-      <div class="section-heading"><span class="step">01</span><div><h2>Customer Details</h2><p>These details will also be saved in the existing Customer module.</p></div></div>
+      <div class="section-heading">
+        <span class="step">01</span>
+        <div>
+          <h2>Customer Details</h2>
+          <p>Choose an existing customer from your branch or create a new customer record.</p>
+        </div>
+      </div>
+
+      <div class="customer-selection-mode" style="margin-bottom: 18px; padding: 12px 16px; background: #f0faf6; border: 1px solid #cce8de; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+        <span style="font-size: 13px; font-weight: 700; color: #063b35; text-transform: uppercase; letter-spacing: 0.5px;">Customer Option:</span>
+        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
+          <input type="radio" name="customerMode" value="EXISTING" checked style="accent-color: #087f69; width: 17px; height: 17px;">
+          <span>Existing Customer</span>
+        </label>
+        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
+          <input type="radio" name="customerMode" value="NEW" style="accent-color: #087f69; width: 17px; height: 17px;">
+          <span>New Customer</span>
+        </label>
+      </div>
+
+      <div id="existingCustomerBlock" style="margin-bottom: 20px; padding: 16px; background: #ffffff; border: 1.5px solid #087f69; border-radius: 10px; box-shadow: 0 2px 8px rgba(8, 127, 105, 0.08);">
+        <label style="display: block; font-weight: 600; font-size: 13px; color: #075548; margin-bottom: 8px;">
+          Search &amp; Select Existing Customer <span>*</span>
+        </label>
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+          <input type="text" id="customerSearchInput" placeholder="🔍 Search by name or phone..." 
+                 style="flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #c8dad6; border-radius: 8px; font-size: 14px; outline: none; background: #fdfdfd;">
+          <select id="existingCustomerSelect" style="flex: 2; min-width: 280px; padding: 9px 12px; border: 1px solid #c8dad6; border-radius: 8px; font-size: 14px; background: #ffffff;">
+            <option value="">-- Choose an existing customer --</option>
+            <option th:each="c : ${customers}"
+                    th:value="${c.id}"
+                    th:data-name="${c.name}"
+                    th:data-phone="${c.phone}"
+                    th:data-email="${c.email != null ? c.email : ''}"
+                    th:data-address="${c.address != null ? c.address : ''}"
+                    th:data-branch="${c.branch != null ? c.branch.id : ''}"
+                    th:text="${c.name + ' (' + c.phone + ')'}">
+            </option>
+          </select>
+        </div>
+        <div id="customerSelectionFeedback" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+          <small id="customerSearchCount" style="color: #71847b; font-size: 12px;"></small>
+          <small id="selectedCustomerBadge" style="display: none; color: #087f69; font-weight: 600; font-size: 12px; background: #e0f5ec; padding: 3px 8px; border-radius: 4px;">✓ Customer details auto-populated</small>
+        </div>
+      </div>
+
       <div class="grid two">
         <label class="field">Customer Name <span>*</span><input id="customerName" type="text" placeholder="Enter customer name"></label>
         <label class="field">Phone Number <span>*</span><input id="customerPhone" type="tel" inputmode="numeric" placeholder="Enter phone number"></label>
@@ -307,6 +352,9 @@
   const editQuotationId = /*[[${editQuotationId}]]*/ '';
   const state = {
       quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
+      selectedCustomerId: null,
+      customerMode: 'EXISTING',
+      customersList: [],
       rooms: [],
       draft: null,
       pricingMode: 'MIDDLE'
@@ -858,58 +906,206 @@
       try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message;}
   }
 
+  function initCustomers() {
+      const select = $('existingCustomerSelect');
+      if (!select) return;
+      const options = Array.from(select.options).slice(1);
+      state.customersList = options.map(opt => ({
+          id: Number(opt.value),
+          name: opt.dataset.name || '',
+          phone: opt.dataset.phone || '',
+          email: opt.dataset.email || '',
+          address: opt.dataset.address || '',
+          branchId: opt.dataset.branch ? Number(opt.dataset.branch) : null,
+          label: opt.textContent
+      }));
+      updateCustomerMatchCount(state.customersList.length);
+  }
+
+  function updateCustomerMatchCount(count) {
+      if ($('customerSearchCount')) {
+          $('customerSearchCount').textContent = count > 0 ? `Showing ${count} customer(s)` : 'No matching customers found';
+      }
+  }
+
+  function renderCustomerDropdown(customersToRender, selectedId) {
+      const select = $('existingCustomerSelect');
+      if (!select) return;
+      select.innerHTML = '<option value="">-- Choose an existing customer --</option>';
+      customersToRender.forEach(c => {
+          const opt = document.createElement('option');
+          opt.value = c.id;
+          opt.textContent = c.label || `${c.name} (${c.phone})`;
+          opt.dataset.name = c.name;
+          opt.dataset.phone = c.phone;
+          opt.dataset.email = c.email || '';
+          opt.dataset.address = c.address || '';
+          if (c.branchId) opt.dataset.branch = c.branchId;
+          if (selectedId && Number(selectedId) === c.id) {
+              opt.selected = true;
+          }
+          select.appendChild(opt);
+      });
+      updateCustomerMatchCount(customersToRender.length);
+  }
+
+  function filterCustomers() {
+      const query = ($('customerSearchInput') ? $('customerSearchInput').value.trim().toLowerCase() : '');
+      let filtered = state.customersList;
+      if (query) {
+          filtered = filtered.filter(c =>
+              (c.name && c.name.toLowerCase().includes(query)) ||
+              (c.phone && c.phone.includes(query)) ||
+              (c.email && c.email.toLowerCase().includes(query))
+          );
+      }
+      renderCustomerDropdown(filtered, state.selectedCustomerId);
+  }
+
+  function onCustomerSelected(customerId) {
+      if (!customerId) {
+          state.selectedCustomerId = null;
+          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
+          $('customerName').value = '';
+          $('customerPhone').value = '';
+          $('customerEmail').value = '';
+          $('customerAddress').value = '';
+          return;
+      }
+      const c = state.customersList.find(x => x.id === Number(customerId));
+      if (c) {
+          state.selectedCustomerId = c.id;
+          $('customerName').value = c.name;
+          $('customerPhone').value = c.phone;
+          $('customerEmail').value = c.email || '';
+          $('customerAddress').value = c.address || '';
+          if ($('selectedCustomerBadge')) {
+              $('selectedCustomerBadge').style.display = 'inline-block';
+              $('selectedCustomerBadge').textContent = '✓ ' + c.name + ' selected';
+          }
+      }
+  }
+
+  function setCustomerMode(mode) {
+      state.customerMode = mode;
+      if (mode === 'NEW') {
+          state.selectedCustomerId = null;
+          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'none';
+          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
+          $('customerName').value = '';
+          $('customerPhone').value = '';
+          $('customerEmail').value = '';
+          $('customerAddress').value = '';
+      } else {
+          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
+          if ($('existingCustomerSelect') && $('existingCustomerSelect').value) {
+              onCustomerSelected($('existingCustomerSelect').value);
+          } else {
+              $('customerName').value = '';
+              $('customerPhone').value = '';
+              $('customerEmail').value = '';
+              $('customerAddress').value = '';
+          }
+      }
+  }
+
   async function saveQuotation() {
-      const name=$('customerName').value.trim(), phone=$('customerPhone').value.trim(), branchId=Number($('branchId').value||0);
-      if(!name||!phone||!branchId||!$('quotationDate').value)return alert('Customer Name, Phone, Branch and Date are required.');
-      if(!state.rooms.some(r=>r.items.length))return alert('Add at least one item to the quotation.');
-      const payload={
-          quotationId:state.quotationId,
-          customer:{name,phone,email:$('customerEmail').value.trim(),address:$('customerAddress').value.trim()},
+      const isNew = state.customerMode === 'NEW';
+      if (!isNew && !state.selectedCustomerId) {
+          return alert('Please select an existing customer or switch to "New Customer".');
+      }
+      const name = $('customerName').value.trim();
+      const phone = $('customerPhone').value.trim();
+      const branchId = Number($('branchId').value || 0);
+      if (!name || !phone || !branchId || !$('quotationDate').value) {
+          return alert('Customer Name, Phone, Branch and Date are required.');
+      }
+      if (!state.rooms.some(r => r.items.length)) {
+          return alert('Add at least one item to the quotation.');
+      }
+      const payload = {
+          quotationId: state.quotationId,
+          customer: {
+              id: isNew ? null : state.selectedCustomerId,
+              name,
+              phone,
+              email: $('customerEmail').value.trim(),
+              address: $('customerAddress').value.trim()
+          },
           branchId,
-          quotationDate:$('quotationDate').value,
-          pricingMode:state.pricingMode,
-          customerRequirements:$('customerRequirements').value.trim(),
-          notes:$('notes').value.trim(),
-          rooms:state.rooms.filter(r=>r.items.length).map(r=>({
-              floor:r.floor,
-              room:r.room,
-              workDescription:r.workDescription,
-              items:r.items.map(i=>({
-                  workCategoryId:i.categoryId,
-                  divisionId:i.divisionId,
-                  itemId:i.itemId,
-                  materialId:i.materialId,
-                  materialOptionId:i.materialOptionId,
-                  materialSpecificationId:i.materialSpecificationId,
-                  itemDescription:i.itemDescription,
-                  specification:i.specification,
-                  sizes:i.sizes
+          quotationDate: $('quotationDate').value,
+          pricingMode: state.pricingMode,
+          customerRequirements: $('customerRequirements').value.trim(),
+          notes: $('notes').value.trim(),
+          rooms: state.rooms.filter(r => r.items.length).map(r => ({
+              floor: r.floor,
+              room: r.room,
+              workDescription: r.workDescription,
+              items: r.items.map(i => ({
+                  workCategoryId: i.categoryId,
+                  divisionId: i.divisionId,
+                  itemId: i.itemId,
+                  materialId: i.materialId,
+                  materialOptionId: i.materialOptionId,
+                  materialSpecificationId: i.materialSpecificationId,
+                  itemDescription: i.itemDescription,
+                  specification: i.specification,
+                  sizes: i.sizes
               }))
           }))
       };
-      const button=$('saveQuotationBtn'); button.disabled=true; button.textContent='Saving Quotation...'; $('saveMessage').textContent='Saving customer, rooms, items and pricing...';
-      try { const response=await fetch(`${API_BASE}/save`,{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':csrfToken},body:JSON.stringify(payload)}); if(response.redirected){window.location.href=response.url;return;} const text=await response.text(); throw new Error(text||'Unable to save quotation.'); } catch(e){ $('saveMessage').textContent=e.message; button.disabled=false; button.textContent='Save Quotation'; }
+      const button = $('saveQuotationBtn');
+      button.disabled = true;
+      button.textContent = 'Saving Quotation...';
+      $('saveMessage').textContent = 'Saving customer, rooms, items and pricing...';
+      try {
+          const response = await fetch(`${API_BASE}/save`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+              body: JSON.stringify(payload)
+          });
+          if (response.redirected) {
+              window.location.href = response.url;
+              return;
+          }
+          const text = await response.text();
+          throw new Error(text || 'Unable to save quotation.');
+      } catch (e) {
+          $('saveMessage').textContent = e.message;
+          button.disabled = false;
+          button.textContent = 'Save Quotation';
+      }
   }
 
   // Event Listeners
-  document.querySelectorAll('.category-choice').forEach(btn=>btn.addEventListener('click',()=>loadDivisions(Number(btn.dataset.id),btn.dataset.name)));
-  $('addSizeBtn').addEventListener('click',()=>addSizeRow());
-  $('addItemBtn').addEventListener('click',addDraftToRoom);
-  $('cancelItemBtn').addEventListener('click',()=>hide('itemBuilder'));
-  document.querySelectorAll('input[name="pricingMode"]').forEach(r=>r.addEventListener('change',recalculateAll));
-  $('branchId').addEventListener('change',()=>{if(state.draft)refreshDraftRate();});
-  $('floor').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
-  $('roomNumber').addEventListener('change',()=>{if(state.rooms.length)ensureRoom();});
-  $('workDescription').addEventListener('input',()=>{const r=currentRoom();if(r)r.workDescription=$('workDescription').value;});
-  $('saveQuotationBtn').addEventListener('click',saveQuotation);
+  document.querySelectorAll('input[name="customerMode"]').forEach(r => {
+      r.addEventListener('change', () => setCustomerMode(r.value));
+  });
+  if ($('existingCustomerSelect')) {
+      $('existingCustomerSelect').addEventListener('change', (e) => onCustomerSelected(e.target.value));
+  }
+  if ($('customerSearchInput')) {
+      $('customerSearchInput').addEventListener('input', filterCustomers);
+  }
+  document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
+  $('addSizeBtn').addEventListener('click', () => addSizeRow());
+  $('addItemBtn').addEventListener('click', addDraftToRoom);
+  $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));
+  document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
+  $('branchId').addEventListener('change', () => { if (state.draft) refreshDraftRate(); });
+  $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
+  $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
+  $('workDescription').addEventListener('input', () => { const r = currentRoom(); if (r) r.workDescription = $('workDescription').value; });
+  $('saveQuotationBtn').addEventListener('click', saveQuotation);
 
   // Add Another Room buttons
   $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
   $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
   $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
 
-  $('quoteNumberPreview').textContent='AUTO';
+  $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
+  initCustomers();
 
   // Load existing quotation if editing
   if (state.quotationId) {
@@ -928,6 +1124,31 @@
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
               if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
           }
+
+          if (data.customerId) {
+              state.selectedCustomerId = data.customerId;
+              state.customerMode = 'EXISTING';
+              const rExist = document.querySelector('input[name="customerMode"][value="EXISTING"]');
+              if (rExist) rExist.checked = true;
+              if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
+              if (!state.customersList.some(c => c.id === data.customerId)) {
+                  state.customersList.unshift({
+                      id: data.customerId,
+                      name: data.customerName,
+                      phone: data.phone,
+                      email: data.email || '',
+                      address: data.address || '',
+                      branchId: data.branchId,
+                      label: `${data.customerName} (${data.phone})`
+                  });
+              }
+              renderCustomerDropdown(state.customersList, data.customerId);
+              if ($('selectedCustomerBadge')) {
+                  $('selectedCustomerBadge').style.display = 'inline-block';
+                  $('selectedCustomerBadge').textContent = '✓ ' + data.customerName + ' selected';
+              }
+          }
+
           if (data.rooms && data.rooms.length > 0) {
               state.rooms = data.rooms.map(r => ({
                   key: `${r.floor}||${r.room}`,

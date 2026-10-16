@@ -22,6 +22,7 @@ import java.util.Map;
 public class AdminQuotationBuilderController {
 
     private final BranchRepository branchRepository;
+    private final CustomerRepository customerRepository;
     private final WorkCategoryRepository workCategoryRepository;
     private final DivisionRepository divisionRepository;
     private final ItemRepository itemRepository;
@@ -37,6 +38,7 @@ public class AdminQuotationBuilderController {
 
     public AdminQuotationBuilderController(
             BranchRepository branchRepository,
+            CustomerRepository customerRepository,
             WorkCategoryRepository workCategoryRepository,
             DivisionRepository divisionRepository,
             ItemRepository itemRepository,
@@ -50,6 +52,7 @@ public class AdminQuotationBuilderController {
             QuotationItemSizeRepository quotationItemSizeRepository,
             PricingRepository pricingRepository) {
         this.branchRepository = branchRepository;
+        this.customerRepository = customerRepository;
         this.workCategoryRepository = workCategoryRepository;
         this.divisionRepository = divisionRepository;
         this.itemRepository = itemRepository;
@@ -70,12 +73,37 @@ public class AdminQuotationBuilderController {
             @RequestParam(required = false) Long branchId,
             Model model) {
         model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
+        model.addAttribute("customers", branchId != null
+                ? customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(branchId)
+                : customerRepository.findByActiveTrueOrderByNameAsc());
         model.addAttribute("workCategories", workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc());
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("editQuotationId", quotationId != null ? quotationId : "");
         model.addAttribute("selectedBranchId", branchId != null ? branchId : "");
         return "admin/quotation-builder";
+    }
+
+    @GetMapping("/builder/customers")
+    @ResponseBody
+    public List<Map<String, Object>> customers(@RequestParam(required = false) Long branchId) {
+        List<Customer> list;
+        if (branchId != null) {
+            list = customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(branchId);
+        } else {
+            list = customerRepository.findByActiveTrueOrderByNameAsc();
+        }
+        return list.stream().map(c -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", c.getId());
+            map.put("name", c.getName());
+            map.put("phone", c.getPhone());
+            map.put("email", c.getEmail());
+            map.put("address", c.getAddress());
+            map.put("branchId", c.getBranch() != null ? c.getBranch().getId() : null);
+            map.put("branchName", c.getBranch() != null ? c.getBranch().getName() : "");
+            return map;
+        }).toList();
     }
 
     @GetMapping("/builder/divisions")
@@ -208,6 +236,7 @@ public class AdminQuotationBuilderController {
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("id", q.getId());
             data.put("quotationNumber", q.getQuotationNumber());
+            data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
             data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
             data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
             data.put("email", q.getCustomer() != null ? q.getCustomer().getEmail() : "");
