@@ -39,10 +39,10 @@
 
         <div>
 
-            <p class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">
-                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">
-                Pravin KITCHENS & INTERIORS &amp; INTERIORS
-            </p>
+<!--            <p class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">-->
+<!--                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">-->
+<!--                Pravin KITCHENS &amp; INTERIORS-->
+<!--            </p>-->
 
             <h1>
                 Quotation Details
@@ -57,14 +57,14 @@
 
         <div class="header-actions">
 
-            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
+<!--            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">-->
+<!--                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">-->
+<!--                    <span>← Back</span>-->
+<!--                </button>-->
+<!--                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">-->
+<!--                    <span>⌂ Dashboard</span>-->
+<!--                </a>-->
+<!--            </div>-->
 
 
             <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
@@ -1575,226 +1575,6 @@
     </section>
 
 
-
-    <!-- =====================================================
-         NOTES
-    ====================================================== -->
-
-    <section class="detail-card notes-card">
-
-        <h3>
-            Customer Requirements
-        </h3>
-
-
-        <p
-                th:if="${quotation.customerRequirements != null
-                && !#strings.isEmpty(quotation.customerRequirements)}"
-                th:text="${quotation.customerRequirements}">
-
-            Customer requirements
-
-        </p>
-
-
-        <p class="muted"
-           th:unless="${quotation.customerRequirements != null
-           && !#strings.isEmpty(quotation.customerRequirements)}">
-
-            No specific requirements added.
-
-        </p>
-
-
-        <h3>
-            Internal Notes
-        </h3>
-
-
-        <p
-                th:if="${quotation.notes != null
-                && !#strings.isEmpty(quotation.notes)}"
-                th:text="${quotation.notes}">
-
-            Internal notes
-
-        </p>
-
-
-        <p class="muted"
-           th:unless="${quotation.notes != null
-           && !#strings.isEmpty(quotation.notes)}">
-
-            No notes added.
-
-        </p>
-
-    </section>
-
-
-
-    <!-- =====================================================
-         STATUS HISTORY
-    ====================================================== -->
-
-    <section class="detail-card history-card">
-
-
-        <div class="history-header">
-
-            <div>
-
-                <h3>
-                    Status History
-                </h3>
-
-                <p>
-                    Track every status change made to this quotation.
-                </p>
-
-            </div>
-
-
-            <span class="history-count"
-                  th:text="${#lists.size(statusHistory)} + ' Changes'">
-
-                0 Changes
-
-            </span>
-
-        </div>
-
-
-
-        <div class="history-list"
-             th:if="${statusHistory != null
-             && !#lists.isEmpty(statusHistory)}">
-
-
-            <div class="history-item"
-                 th:each="history : ${statusHistory}">
-
-
-                <div class="history-dot"></div>
-
-
-                <div class="history-content">
-
-
-                    <div class="history-top">
-
-
-                        <div>
-
-                            <span class="history-old"
-                                  th:if="${history.oldStatus != null}"
-                                  th:text="${history.oldStatus}">
-
-                                DRAFT
-
-                            </span>
-
-
-                            <span class="history-arrow"
-                                  th:if="${history.oldStatus != null}">
-
-                                →
-
-                            </span>
-
-
-                            <span class="history-new"
-                                  th:text="${history.newStatus}">
-
-                                PENDING
-
-                            </span>
-
-                        </div>
-
-
-                        <span class="history-date"
-                              th:text="${history.changedAt != null
-                              ? #temporals.format(
-                              history.changedAt,
-                              'dd MMM yyyy, hh:mm a')
-                              : 'N/A'}">
-
-                            05 Oct 2026, 11:30 AM
-
-                        </span>
-
-                    </div>
-
-
-                    <div class="history-meta">
-
-
-                        <span>
-
-                            Changed by:
-
-                            <strong
-                                    th:text="${history.changedBy != null
-                                    ? history.changedBy.name
-                                    : 'System'}">
-
-                                Abin
-
-                            </strong>
-
-                        </span>
-
-
-                        <span
-                                th:if="${history.remarks != null
-                                && !#strings.isEmpty(history.remarks)}">
-
-                            <span class="meta-separator">
-                                •
-                            </span>
-
-                            <span
-                                    th:text="${history.remarks}">
-
-                                Status updated
-
-                            </span>
-
-                        </span>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-        <div class="history-empty"
-             th:unless="${statusHistory != null
-             && !#lists.isEmpty(statusHistory)}">
-
-
-            <div class="empty-icon">
-                ↻
-            </div>
-
-
-            <h4>
-                No status history yet
-            </h4>
-
-
-            <p>
-                Status changes for this quotation will appear here.
-            </p>
-
-        </div>
-
-    </section>
 
 
 
