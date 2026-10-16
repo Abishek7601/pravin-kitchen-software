@@ -399,6 +399,11 @@ public class EmployeeQuotationController {
         model.addAttribute("rooms", Collections.emptyList());
         model.addAttribute("roomItems", Collections.emptyMap());
         model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
+        List<Customer> branchCustomers = Collections.emptyList();
+        if (employee.getBranch() != null) {
+            branchCustomers = customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(employee.getBranch().getId());
+        }
+        model.addAttribute("customers", branchCustomers);
         model.addAttribute("workCategories", workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc());
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
@@ -410,6 +415,27 @@ public class EmployeeQuotationController {
 
     public String builder(Authentication authentication, Model model) {
         return builder(null, null, authentication, model);
+    }
+
+    @GetMapping("/builder/customers")
+    @ResponseBody
+    public List<Map<String, Object>> builderCustomers(Authentication authentication) {
+        User employee = getLoggedInEmployee(authentication);
+        if (employee == null || employee.getBranch() == null) {
+            return Collections.emptyList();
+        }
+        return customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(employee.getBranch().getId())
+                .stream().map(c -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("id", c.getId());
+                    map.put("name", c.getName());
+                    map.put("phone", c.getPhone());
+                    map.put("email", c.getEmail());
+                    map.put("address", c.getAddress());
+                    map.put("branchId", c.getBranch() != null ? c.getBranch().getId() : null);
+                    map.put("branchName", c.getBranch() != null ? c.getBranch().getName() : "");
+                    return map;
+                }).toList();
     }
 
     @GetMapping("/builder/divisions")
@@ -551,6 +577,7 @@ public class EmployeeQuotationController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", q.getId());
         data.put("quotationNumber", q.getQuotationNumber());
+        data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
         data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
         data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
         data.put("email", q.getCustomer() != null ? q.getCustomer().getEmail() : "");
@@ -694,6 +721,9 @@ public class EmployeeQuotationController {
     public String saveQuotation(
 
             @RequestParam(required = false)
+            Long customerId,
+
+            @RequestParam(required = false)
             String customerName,
 
             @RequestParam(required = false)
@@ -733,21 +763,29 @@ public class EmployeeQuotationController {
             );
         }
 
-        String finalCustomerName = (customerName == null || customerName.isBlank()) ? "Draft Customer" : customerName.trim();
-        String finalPhone = (phone == null || phone.isBlank()) ? "0000000000" : phone.trim();
+        Customer customer;
+        if (customerId != null) {
+            customer = customerRepository.findById(customerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+            if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
+            }
+        } else {
+            String finalCustomerName = (customerName == null || customerName.isBlank()) ? "Draft Customer" : customerName.trim();
+            String finalPhone = (phone == null || phone.isBlank()) ? "0000000000" : phone.trim();
+            customer = customerService.createOrUpdateForQuotation(
+                    finalCustomerName,
+                    email,
+                    finalPhone,
+                    address,
+                    employee.getBranch().getId()
+            );
+        }
+
         LocalDate date = (quotationDate == null || quotationDate.isBlank())
                 ? LocalDate.now()
                 : LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE);
         PricingMode mode = (pricingMode == null) ? PricingMode.ECONOMY : pricingMode;
-
-        Customer customer =
-                customerService.createOrUpdateForQuotation(
-                        finalCustomerName,
-                        email,
-                        finalPhone,
-                        address,
-                        employee.getBranch().getId()
-                );
 
         String quotationNumber =
                 generateQuotationNumber();
@@ -816,9 +854,14 @@ public class EmployeeQuotationController {
 
             @PathVariable Long id,
 
-            @RequestParam String customerName,
+            @RequestParam(required = false)
+            Long customerId,
 
-            @RequestParam String phone,
+            @RequestParam(required = false)
+            String customerName,
+
+            @RequestParam(required = false)
+            String phone,
 
             @RequestParam(required = false)
             String email,
@@ -846,14 +889,22 @@ public class EmployeeQuotationController {
                         employee
                 );
 
-        Customer customer =
-                customerService.createOrUpdateForQuotation(
-                        customerName,
-                        email,
-                        phone,
-                        address,
-                        employee.getBranch().getId()
-                );
+        Customer customer;
+        if (customerId != null) {
+            customer = customerRepository.findById(customerId)
+                    .orElseThrow(() -> new IllegalArgumentException("Customer not found"));
+            if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
+                throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
+            }
+        } else {
+            customer = customerService.createOrUpdateForQuotation(
+                    customerName,
+                    email,
+                    phone,
+                    address,
+                    employee.getBranch().getId()
+            );
+        }
 
         quotation.setCustomer(customer);
 

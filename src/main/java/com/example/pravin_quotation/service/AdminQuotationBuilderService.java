@@ -2,6 +2,7 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -112,44 +113,53 @@ public class AdminQuotationBuilderService {
         validateRequest(request);
 
         // -----------------------------------------------------
-        // Logged-in admin
+        // Logged-in user (Admin or Employee)
         // -----------------------------------------------------
 
-        User admin =
+        User loggedInUser =
                 userRepository.findByEmail(loggedInEmail)
                         .orElseThrow(() ->
                                 new IllegalArgumentException(
-                                        "Logged-in admin was not found."
+                                        "Logged-in user was not found."
                                 )
                         );
 
-        if (!Boolean.TRUE.equals(admin.getActive())) {
+        if (!Boolean.TRUE.equals(loggedInUser.getActive())) {
             throw new IllegalArgumentException(
-                    "Admin account is inactive."
+                    "User account is inactive."
             );
         }
 
         // -----------------------------------------------------
-        // Branch
+        // Branch resolution & authorization
         // -----------------------------------------------------
 
-        Branch branch =
-                branchRepository.findById(
-                        request.branchId()
-                ).orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "Branch not found."
-                        )
-                );
+        Branch branch;
+        if (loggedInUser.getRole() == Role.EMPLOYEE) {
+            if (loggedInUser.getBranch() == null) {
+                throw new IllegalStateException("Employee is not assigned to a branch.");
+            }
+            branch = loggedInUser.getBranch();
+            if (request.branchId() != null && !request.branchId().equals(branch.getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot create quotations for another branch.");
+            }
+        } else {
+            if (request.branchId() == null) {
+                throw new IllegalArgumentException("Branch is required.");
+            }
+            branch = branchRepository.findById(request.branchId())
+                    .orElseThrow(() -> new IllegalArgumentException("Branch not found."));
+        }
 
         // -----------------------------------------------------
-        // Customer
+        // Customer resolution & authorization
         // -----------------------------------------------------
 
         Customer customer =
-                findOrCreateCustomer(
+                resolveCustomer(
                         request.customer(),
-                        branch
+                        branch,
+                        loggedInUser
                 );
 
         // -----------------------------------------------------
@@ -179,7 +189,7 @@ public class AdminQuotationBuilderService {
         );
 
         quotation.setEmployee(
-                admin
+                loggedInUser
         );
 
         quotation.setBranch(
@@ -578,51 +588,69 @@ public class AdminQuotationBuilderService {
     }
 
     // =========================================================
-    // CUSTOMER
+    // CUSTOMER RESOLUTION & AUTHORIZATION
     // =========================================================
 
-    private Customer findOrCreateCustomer(
+    private Customer resolveCustomer(
             CustomerRequest request,
-            Branch branch) {
+            Branch branch,
+            User loggedInUser) {
 
-        String phone =
-                required(
-                        request.phone(),
-                        "Phone number"
-                );
-
-        Customer customer =
-                customerRepository
-                        .findByPhone(phone)
-                        .orElse(null);
-
-        if (customer == null) {
-            customer = new Customer();
-            customer.setActive(true);
+        if (request == null) {
+            throw new IllegalArgumentException("Customer details are required.");
         }
 
-        customer.setName(
-                required(
-                        request.name(),
-                        "Customer name"
-                )
-        );
+        // Case 1: Existing Customer by ID
+        if (request.id() != null) {
+            Customer existingCustomer = customerRepository.findById(request.id())
+                    .orElseThrow(() -> new IllegalArgumentException("Selected customer not found."));
 
-        customer.setPhone(phone);
+            // Enforce branch security for employees
+            if (loggedInUser.getRole() == Role.EMPLOYEE) {
+                if (existingCustomer.getBranch() == null
+                        || !existingCustomer.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                    throw new AccessDeniedException("Unauthorized: Customer does not belong to your assigned branch.");
+                }
+            }
+            return existingCustomer;
+        }
 
-        customer.setEmail(
-                clean(request.email())
-        );
+        // Case 2: New Customer creation
+        String name = required(request.name(), "Customer name");
+        String phone = required(request.phone(), "Phone number").trim();
+        String email = clean(request.email());
+        String address = clean(request.address());
 
-        customer.setAddress(
-                clean(request.address())
-        );
+        // Check if phone already exists
+        java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(phone);
+        if (existingByPhone.isPresent()) {
+            Customer existing = existingByPhone.get();
+            if (loggedInUser.getRole() == Role.EMPLOYEE) {
+                if (existing.getBranch() != null && !existing.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                    throw new IllegalArgumentException("A customer with this phone number already belongs to another branch.");
+                }
+            }
+            // Existing customer found in this branch - reuse to avoid duplicate!
+            return existing;
+        }
 
-        customer.setBranch(branch);
+        // Email duplicate check if provided
+        if (email != null && !email.isBlank()) {
+            String lowerEmail = email.toLowerCase();
+            if (customerRepository.existsByEmail(lowerEmail)) {
+                throw new IllegalArgumentException("Email address already exists.");
+            }
+        }
 
-        return customerRepository.save(
-                customer
-        );
+        Customer newCustomer = new Customer();
+        newCustomer.setName(name);
+        newCustomer.setPhone(phone);
+        newCustomer.setEmail(email != null && !email.isBlank() ? email.toLowerCase() : null);
+        newCustomer.setAddress(address);
+        newCustomer.setBranch(branch);
+        newCustomer.setActive(true);
+
+        return customerRepository.save(newCustomer);
     }
 
     // =========================================================
@@ -685,6 +713,11 @@ public class AdminQuotationBuilderService {
             throw new IllegalArgumentException(
                     "Customer details are required."
             );
+        }
+
+        if (request.customer().id() == null) {
+            required(request.customer().name(), "Customer name");
+            required(request.customer().phone(), "Phone number");
         }
 
         if (request.rooms() == null
@@ -835,10 +868,19 @@ public class AdminQuotationBuilderService {
     }
 
     public record CustomerRequest(
+            Long id,
             String name,
             String phone,
             String email,
             String address) {
+
+        public CustomerRequest(
+                String name,
+                String phone,
+                String email,
+                String address) {
+            this(null, name, phone, email, address);
+        }
     }
 
     public record RoomRequest(

@@ -53,6 +53,11 @@ public class CustomerController {
                 search == null ? "" : search
         );
 
+        model.addAttribute("totalCustomers", customerService.getTotalCustomerCount());
+        model.addAttribute("activeCustomers", customerService.getActiveCustomerCount());
+        model.addAttribute("branchesWithCustomers", customerService.getTotalBranchesWithCustomers());
+        model.addAttribute("branchCustomerCounts", customerService.getBranchWiseCustomerCounts());
+
         return "admin/customers";
     }
 

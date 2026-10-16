@@ -50,7 +50,7 @@ public class EmployeeCustomerController {
 
         } else {
 
-            customers = customerRepository.findByActiveTrue();
+            customers = java.util.Collections.emptyList();
 
         }
 

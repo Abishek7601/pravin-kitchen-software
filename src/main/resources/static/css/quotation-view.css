@@ -59,7 +59,7 @@ scroll-padding-top: 24px;
 
 body {
 margin: 0;
-padding: 28px 20px 48px;
+padding: 0;
 font-family: "Inter", "Segoe UI", Arial, sans-serif;
 font-size: 14px;
 line-height: 1.65;
@@ -151,7 +151,34 @@ letter-spacing: 1.5px;
 text-transform: uppercase;
 }
 
-.brand-logo-img {
+/* Ensure Top Menubar logo fits properly, vertically centered, maintaining aspect ratio */
+.top-navbar .brand-icon {
+display: flex !important;
+align-items: center !important;
+justify-content: center !important;
+flex-shrink: 0 !important;
+width: 60px !important;
+height: 60px !important;
+border-radius: 14px !important;
+box-sizing: border-box !important;
+}
+
+.top-navbar .brand-icon .brand-logo-img {
+width: 100% !important;
+height: 100% !important;
+max-width: 100% !important;
+max-height: 100% !important;
+object-fit: contain !important;
+border-radius: inherit !important;
+padding: 3px !important;
+background: #ffffff !important;
+box-sizing: border-box !important;
+display: block !important;
+margin: 0 auto !important;
+}
+
+.eyebrow .brand-logo-img,
+.page-header .brand-logo-img {
 display: inline-block;
 max-width: 180px;
 height: 40px;

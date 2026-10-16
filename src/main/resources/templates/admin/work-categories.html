@@ -19,43 +19,43 @@
 
 <div class="dashboard-layout">
 
-    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='work-categories')}"></aside>
 
     <main class="main-content">
 
 <div class="category-page">
 
     <!-- HEADER -->
-    <header class="category-header">
+<!--    <header class="category-header">-->
 
-        <div class="header-brand">
+<!--        <div class="header-brand">-->
 
-            <div class="brand-mark">
-                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: inherit;">
-            </div>
+<!--            <div class="brand-mark">-->
+<!--                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: inherit;">-->
+<!--            </div>-->
 
-            <div>
-                <div class="brand-name">
-                    Pravin KITCHENS & INTERIORS
-                </div>
+<!--            <div>-->
+<!--                <div class="brand-name">-->
+<!--                    Pravin KITCHENS & INTERIORS-->
+<!--                </div>-->
 
-                <div class="brand-subtitle">
-                    Pricing Management
-                </div>
-            </div>
+<!--                <div class="brand-subtitle">-->
+<!--                    Pricing Management-->
+<!--                </div>-->
+<!--            </div>-->
 
-        </div>
+<!--        </div>-->
 
-        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">
-            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
-                <span>← Back</span>
-            </button>
-            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
-                <span>⌂ Dashboard</span>
-            </a>
-        </div>
+<!--        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">-->
+<!--            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">-->
+<!--                <span>← Back</span>-->
+<!--            </button>-->
+<!--            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">-->
+<!--                <span>⌂ Dashboard</span>-->
+<!--            </a>-->
+<!--        </div>-->
 
-    </header>
+<!--    </header>-->
 
 
     <!-- MAIN -->
@@ -76,9 +76,9 @@
 
             <div>
 
-                <span class="section-label">
-                    PRICING MANAGEMENT
-                </span>
+<!--                <span class="section-label">-->
+<!--                    PRICING MANAGEMENT-->
+<!--                </span>-->
 
                 <h1 th:text="${isArchivedView} ? 'Archived Work Categories' : 'Work Categories'">
                     Work Categories

@@ -25,13 +25,7 @@
       color: var(--text-main);
       margin: 0;
     }
-    .top-navbar {
-      position: sticky;
-      top: 0;
-      z-index: 1040;
-      background: #ffffff;
-      box-shadow: 0 3px 12px rgba(0, 65, 58, 0.05);
-    }
+
     .top-navbar .brand-icon .brand-logo-img {
       width: 100% !important;
       height: 100% !important;
@@ -356,7 +350,7 @@
 
 <div class="dashboard-layout">
 
-    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='work-categories')}"></aside>
 
     <main class="main-content">
 
