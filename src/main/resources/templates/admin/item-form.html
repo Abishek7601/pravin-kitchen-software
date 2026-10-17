@@ -25,7 +25,7 @@
 
 <div class="dashboard-layout">
 
-    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='work-categories')}"></aside>
 
     <main class="main-content">
 
@@ -154,28 +154,6 @@
       </div>
 
 
-      <!-- Display Order -->
-
-      <div class="form-group">
-
-        <label for="displayOrder">
-          Display Order
-        </label>
-
-        <input
-                type="number"
-                id="displayOrder"
-                name="displayOrder"
-                class="form-control"
-                min="0"
-                placeholder="0"
-                th:value="${item.displayOrder != null ? item.displayOrder : 0}">
-
-        <small>
-          Lower numbers will appear first.
-        </small>
-
-      </div>
 
 
       <!-- Actions -->

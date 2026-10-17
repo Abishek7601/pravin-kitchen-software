@@ -23,7 +23,7 @@
 
 <div class="dashboard-layout">
 
-    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='pricing')}"></aside>
+    <aside th:replace="~{fragments/admin-navigation :: sidebar(activeTab='work-categories')}"></aside>
 
     <main class="main-content">
 
@@ -166,7 +166,6 @@
             <th>Division</th>
             <th>Work Category</th>
             <th>Description</th>
-            <th>Order</th>
             <th>Status</th>
             <th>Actions</th>
           </tr>
@@ -226,14 +225,6 @@
 
             </td>
 
-            <td>
-
-                            <span class="order-number"
-                                  th:text="${division.displayOrder}">
-                                1
-                            </span>
-
-            </td>
 
             <td>
 
