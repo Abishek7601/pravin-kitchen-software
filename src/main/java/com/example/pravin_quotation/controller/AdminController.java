@@ -4,6 +4,7 @@ package com.example.pravin_quotation.controller;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.service.AdminDashboardService;
+import com.example.pravin_quotation.service.CustomerService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -19,12 +20,15 @@ public class AdminController {
 
     private final AdminDashboardService adminDashboardService;
     private final QuotationRepository quotationRepository;
+    private final CustomerService customerService;
 
     public AdminController(
             AdminDashboardService adminDashboardService,
-            QuotationRepository quotationRepository) {
+            QuotationRepository quotationRepository,
+            CustomerService customerService) {
         this.adminDashboardService = adminDashboardService;
         this.quotationRepository = quotationRepository;
+        this.customerService = customerService;
     }
 
     // ADMIN DASHBOARD
@@ -60,6 +64,9 @@ public class AdminController {
 
         model.addAttribute("totalPortfolioValue",
                 adminDashboardService.getTotalPortfolioValue());
+
+        model.addAttribute("branchCustomerCounts",
+                customerService.getBranchWiseCustomerCounts());
 
         return "admin/dashboard";
     }

@@ -1426,6 +1426,13 @@ input:focus-visible {
 }
 
 
+.branch-stat-chip-link:hover {
+    background: #e0f5ec !important;
+    border-color: #087f69 !important;
+    color: #063b35 !important;
+    transform: translateY(-1px);
+}
+
 /* =========================================================
    ACCESSIBILITY — REDUCED MOTION
    ========================================================= */

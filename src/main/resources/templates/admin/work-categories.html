@@ -118,179 +118,215 @@
         </section>
 
 
-        <!-- CATEGORY GRID -->
-        <section class="category-grid">
-
-            <div class="category-card"
-                 th:each="category : ${categories}">
-
-                <!-- CARD TOP -->
-                <div class="card-top">
-
-                    <div class="category-icon"
-                         th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                         th:text="${category.icon}">
-                        📁
-                    </div>
-                    <div class="category-icon"
-                         th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                         style="background: #f1f5f9; color: #94a3b8; font-size: 1.1rem; display: flex; align-items: center; justify-content: center;">
-                        📁
-                    </div>
-
-                    <span class="status-badge"
-                          style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;"
-                          th:if="${category.archived}">
-                        Archived
-                    </span>
-
-                    <span class="status-badge active"
-                          th:if="${!category.archived and category.active}">
-                        Active
-                    </span>
-
-                    <span class="status-badge inactive"
-                          th:if="${!category.archived and !category.active}">
-                        Inactive
-                    </span>
-
-                </div>
-
-
-                <!-- CONTENT -->
-                <div class="category-content">
-
-                    <h2 th:text="${category.displayName}">
-                        Modular Kitchen
-                    </h2>
-
-                    <p th:text="${category.description != null ? category.description : 'No description added.'}">
-                        Kitchen related works and quotation items.
-                    </p>
-
-                    <div class="order-info">
-
-                        <span>
-                            Display Order
-                        </span>
-
-                        <strong th:text="${category.displayOrder}">
-                            0
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ACTIONS -->
-                <div class="category-actions"
-                     th:style="${category.archived} ? 'grid-template-columns: repeat(2, minmax(0, 1fr));' : ''">
-
-                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
-                       class="action-btn view-btn">
-                        View
-                    </a>
-
-                    <a th:if="${!category.archived}"
-                       th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
-                       class="action-btn edit-btn">
-                        Edit
-                    </a>
-
-
-                    <form th:if="${!category.archived}"
-                          th:action="@{/admin/work-categories/toggle/{id}(id=${category.id})}"
-                          method="post">
-
-                        <input type="hidden"
-                               th:name="${_csrf.parameterName}"
-                               th:value="${_csrf.token}">
-
-                        <button type="submit"
-                                class="action-btn toggle-btn"
-                                th:text="${category.active ? 'Deactivate' : 'Activate'}">
-                            Deactivate
-                        </button>
-
-                    </form>
-
-
-                    <form th:if="${!category.archived}"
-                          th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
-                          method="post"
-                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
-                          onsubmit="return confirmDeleteCategory(this);">
-
-                        <input type="hidden"
-                               th:name="${_csrf.parameterName}"
-                               th:value="${_csrf.token}">
-
-                        <button type="submit"
-                                class="action-btn delete-btn">
-                            Delete
-                        </button>
-
-                    </form>
-
-                    <form th:if="${category.archived}"
-                          th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
-                          method="post"
-                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
-                          onsubmit="return confirmUnarchiveCategory(this);">
-
-                        <input type="hidden"
-                               th:name="${_csrf.parameterName}"
-                               th:value="${_csrf.token}">
-
-                        <button type="submit"
-                                class="action-btn unarchive-btn"
-                                title="Restore this category to active list">
-                            📦 Unarchive
-                        </button>
-
-                    </form>
-
-                </div>
-
+        <!-- SEARCH / FILTER TOOLBAR -->
+        <section class="category-toolbar" th:unless="${#lists.isEmpty(categories)}">
+            <div class="search-box">
+                <span class="search-icon">🔍</span>
+                <input type="text"
+                       id="categorySearch"
+                       placeholder="Search category name..."
+                       autocomplete="off">
             </div>
 
-
-            <!-- EMPTY STATE -->
-            <div class="empty-state"
-                 th:if="${#lists.isEmpty(categories)}">
-
-                <div class="empty-icon">
-                    ▦
-                </div>
-
-                <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Work Categories'">
-                    No Work Categories
-                </h3>
-
-                <p th:if="${isArchivedView}">
-                    There are currently no archived work categories.
-                </p>
-                <p th:unless="${isArchivedView}">
-                    Create your first work category to start building
-                    the quotation pricing structure.
-                </p>
-
-                <a th:unless="${isArchivedView}"
-                   th:href="@{/admin/pricing/new}"
-                   class="empty-add-btn">
-                    + Configure Master Data
-                </a>
-
-                <a th:if="${isArchivedView}"
-                   th:href="@{/admin/work-categories}"
-                   class="empty-add-btn">
-                    ← Back to Active Categories
-                </a>
-
+            <div class="filter-box">
+                <select id="statusFilter" class="status-select">
+                    <option value="">All Status</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                    <option value="archived" th:if="${isArchivedView}">Archived</option>
+                </select>
             </div>
 
+            <div class="category-count-badge">
+                <span class="count-number" id="categoryCount" th:text="${#lists.size(categories)}">0</span>
+                <span class="count-label">Categories</span>
+            </div>
         </section>
+
+
+        <!-- CATEGORY TABLE -->
+        <section class="table-card" th:unless="${#lists.isEmpty(categories)}">
+            <div class="table-responsive">
+                <table class="category-table" id="categoryTable">
+                    <thead>
+                        <tr>
+                            <th class="col-sno">S.No</th>
+                            <th class="col-icon">Emoji / Icon</th>
+                            <th class="col-name">Work Category Name</th>
+                            <th class="col-status">Status</th>
+                            <th class="col-actions">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="category, stat : ${categories}"
+                            class="category-row"
+                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                            th:data-status="${category.archived ? 'archived' : (category.active ? 'active' : 'inactive')}">
+
+                            <!-- S.NO -->
+                            <td class="col-sno serial-number" th:text="${stat.count}">1</td>
+
+                            <!-- EMOJI / ICON -->
+                            <td class="col-icon">
+                                <span class="category-icon-pill"
+                                      th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
+                                      th:text="${category.icon}">📁</span>
+                                <span class="category-icon-pill fallback"
+                                      th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}">📁</span>
+                            </td>
+
+                            <!-- WORK CATEGORY NAME -->
+                            <td class="col-name">
+                                <div class="category-name-cell">
+                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
+                                       class="category-title-link">
+                                        <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
+                                    </a>
+                                    <p class="category-description"
+                                       th:if="${category.description != null and !#strings.isEmpty(category.description)}"
+                                       th:text="${category.description}">
+                                        Kitchen related works and quotation items.
+                                    </p>
+                                </div>
+                            </td>
+
+                            <!-- STATUS -->
+                            <td class="col-status">
+                                <span class="status-badge archived"
+                                      th:if="${category.archived}">
+                                    Archived
+                                </span>
+                                <span class="status-badge active"
+                                      th:if="${!category.archived and category.active}">
+                                    Active
+                                </span>
+                                <span class="status-badge inactive"
+                                      th:if="${!category.archived and !category.active}">
+                                    Inactive
+                                </span>
+                            </td>
+
+                            <!-- ACTIONS -->
+                            <td class="col-actions">
+                                <div class="table-actions">
+                                    <!-- VIEW -->
+                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
+                                       class="action-btn view-btn"
+                                       title="View Category Details">
+                                        View
+                                    </a>
+
+                                    <!-- EDIT -->
+                                    <a th:if="${!category.archived}"
+                                       th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
+                                       class="action-btn edit-btn"
+                                       title="Edit Category">
+                                        Edit
+                                    </a>
+
+                                    <!-- ACTIVATE / DEACTIVATE (TOGGLE) -->
+                                    <form th:if="${!category.archived}"
+                                          th:action="@{/admin/work-categories/toggle/{id}(id=${category.id})}"
+                                          method="post"
+                                          class="action-form">
+                                        <input type="hidden"
+                                               th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}">
+                                        <button type="submit"
+                                                class="action-btn toggle-btn"
+                                                th:classappend="${category.active ? 'btn-deactivate' : 'btn-activate'}"
+                                                th:text="${category.active ? 'Deactivate' : 'Activate'}"
+                                                th:title="${category.active ? 'Deactivate Category' : 'Activate Category'}">
+                                            Deactivate
+                                        </button>
+                                    </form>
+
+                                    <!-- DELETE -->
+                                    <form th:if="${!category.archived}"
+                                          th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
+                                          method="post"
+                                          class="action-form"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          onsubmit="return confirmDeleteCategory(this);">
+                                        <input type="hidden"
+                                               th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}">
+                                        <button type="submit"
+                                                class="action-btn delete-btn"
+                                                title="Delete Category">
+                                            Delete
+                                        </button>
+                                    </form>
+
+                                    <!-- UNARCHIVE -->
+                                    <form th:if="${category.archived}"
+                                          th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
+                                          method="post"
+                                          class="action-form"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          onsubmit="return confirmUnarchiveCategory(this);">
+                                        <input type="hidden"
+                                               th:name="${_csrf.parameterName}"
+                                               th:value="${_csrf.token}">
+                                        <button type="submit"
+                                                class="action-btn unarchive-btn"
+                                                title="Restore this category to active list">
+                                            📦 Unarchive
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- NO MATCHES ROW -->
+                        <tr id="noResultsRow" style="display: none;">
+                            <td colspan="5" class="no-results-cell">
+                                <div class="no-results-content">
+                                    <span class="no-results-icon">🔍</span>
+                                    <strong>No matching work categories found</strong>
+                                    <p>Try adjusting your search query or status filter.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+
+        <!-- EMPTY STATE -->
+        <div class="empty-state"
+             th:if="${#lists.isEmpty(categories)}">
+
+            <div class="empty-icon">
+                ▦
+            </div>
+
+            <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Work Categories'">
+                No Work Categories
+            </h3>
+
+            <p th:if="${isArchivedView}">
+                There are currently no archived work categories.
+            </p>
+            <p th:unless="${isArchivedView}">
+                Create your first work category to start building
+                the quotation pricing structure.
+            </p>
+
+            <a th:unless="${isArchivedView}"
+               th:href="@{/admin/pricing/new}"
+               class="empty-add-btn">
+                + Configure Master Data
+            </a>
+
+            <a th:if="${isArchivedView}"
+               th:href="@{/admin/work-categories}"
+               class="empty-add-btn">
+                ← Back to Active Categories
+            </a>
+
+        </div>
 
     </main>
 
@@ -330,6 +366,53 @@
         }
         return true;
     }
+
+    // Client-side search and filtering
+    document.addEventListener('DOMContentLoaded', function() {
+        var searchInput = document.getElementById('categorySearch');
+        var statusSelect = document.getElementById('statusFilter');
+        var categoryTable = document.getElementById('categoryTable');
+        var noResultsRow = document.getElementById('noResultsRow');
+        var categoryCount = document.getElementById('categoryCount');
+
+        function filterCategories() {
+            if (!categoryTable) return;
+            var query = (searchInput ? searchInput.value : '').trim().toLowerCase();
+            var status = (statusSelect ? statusSelect.value : '').toLowerCase();
+            var rows = categoryTable.querySelectorAll('tbody tr.category-row');
+            var visibleCount = 0;
+
+            rows.forEach(function(row) {
+                var name = (row.getAttribute('data-name') || '').toLowerCase();
+                var rowStatus = (row.getAttribute('data-status') || '').toLowerCase();
+                var textContent = row.textContent.toLowerCase();
+
+                var matchesQuery = !query || name.includes(query) || textContent.includes(query);
+                var matchesStatus = !status || rowStatus === status;
+
+                if (matchesQuery && matchesStatus) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            if (noResultsRow) {
+                noResultsRow.style.display = (visibleCount === 0 && rows.length > 0) ? '' : 'none';
+            }
+            if (categoryCount) {
+                categoryCount.textContent = visibleCount;
+            }
+        }
+
+        if (searchInput) {
+            searchInput.addEventListener('input', filterCategories);
+        }
+        if (statusSelect) {
+            statusSelect.addEventListener('change', filterCategories);
+        }
+    });
 
 </script>
 
