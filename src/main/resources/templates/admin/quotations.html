@@ -14,6 +14,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/quotations.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -469,37 +471,47 @@
 
 
 <!-- =========================
-     SEARCH SCRIPT
+     SEARCH & PAGINATION SCRIPT
 ========================== -->
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
     const searchInput =
         document.getElementById("quotationSearch");
 
-    const rows =
-        document.querySelectorAll(".quotation-row");
+    const table =
+        document.getElementById("quotationTable");
 
-
-    searchInput.addEventListener("input", function () {
-
-        const searchValue =
-            this.value.toLowerCase().trim();
-
-        rows.forEach(function (row) {
-
-            const rowText =
-                row.textContent.toLowerCase();
-
-            row.style.display =
-                rowText.includes(searchValue)
-                    ? ""
-                    : "none";
-
+    let quotationPagination = null;
+    if (table) {
+        quotationPagination = initTablePagination({
+            table: table,
+            pageSize: 10,
+            recordLabel: "quotations"
         });
+    }
 
-    });
+    if (searchInput && table) {
+        searchInput.addEventListener("input", function () {
+            const searchValue = this.value.toLowerCase().trim();
+            const rows = table.querySelectorAll(".quotation-row");
 
+            rows.forEach(function (row) {
+                const rowText = row.textContent.toLowerCase();
+                if (rowText.includes(searchValue)) {
+                    row.removeAttribute("data-filtered-out");
+                } else {
+                    row.setAttribute("data-filtered-out", "true");
+                }
+            });
+
+            if (quotationPagination) {
+                quotationPagination.currentPage = 1;
+                quotationPagination.applyFilterAndRender();
+            }
+        });
+    }
 
     function filterByStatus(status) {
 

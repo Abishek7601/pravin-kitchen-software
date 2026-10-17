@@ -15,6 +15,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/divisions.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -157,7 +159,7 @@
       <div class="table-wrapper"
            th:unless="${#lists.isEmpty(divisions)}">
 
-        <table>
+        <table id="divisionTable">
 
           <thead>
 
@@ -310,6 +312,7 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
   function confirmDeleteDivision(form) {
@@ -319,6 +322,17 @@
           "If it is associated with historical quotations, it will be safely archived to protect quotation data."
       );
   }
+
+  document.addEventListener('DOMContentLoaded', function() {
+      var table = document.getElementById('divisionTable');
+      if (table) {
+          initTablePagination({
+              table: table,
+              pageSize: 10,
+              recordLabel: 'divisions'
+          });
+      }
+  });
 
 </script>
 

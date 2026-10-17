@@ -15,7 +15,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/employees.css}">
-
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -460,8 +461,9 @@
 </div>
 
 
-<!-- ================= SEARCH / FILTER ================= -->
+<!-- ================= SEARCH / FILTER & PAGINATION ================= -->
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
   const searchInput =
@@ -479,6 +481,17 @@
   const noResults =
       document.getElementById("noSearchResults");
 
+  const employeeTable =
+      document.getElementById("employeeTable");
+
+  let employeePagination = null;
+  if (employeeTable) {
+      employeePagination = initTablePagination({
+          table: employeeTable,
+          pageSize: 10,
+          recordLabel: "employees"
+      });
+  }
 
   function filterEmployees() {
 
@@ -533,13 +546,12 @@
               matchesStatus
           ) {
 
-              row.style.display = "";
-
+              row.removeAttribute("data-filtered-out");
               visibleRows++;
 
           } else {
 
-              row.style.display = "none";
+              row.setAttribute("data-filtered-out", "true");
 
           }
 
@@ -549,10 +561,15 @@
       if (noResults) {
 
           noResults.style.display =
-              visibleRows === 0
+              visibleRows === 0 && rows.length > 0
                   ? "block"
                   : "none";
 
+      }
+
+      if (employeePagination) {
+          employeePagination.currentPage = 1;
+          employeePagination.applyFilterAndRender();
       }
 
   }

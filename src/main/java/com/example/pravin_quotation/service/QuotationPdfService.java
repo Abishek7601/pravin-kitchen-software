@@ -431,6 +431,8 @@ public class QuotationPdfService {
         int activeItemCount = 0;
         boolean isAltRow = false;
 
+        BigDecimal itemsTotalAmount = BigDecimal.ZERO;
+
         for (QuotationRoom room : rooms) {
             if (!Boolean.TRUE.equals(room.getActive())) {
                 continue;
@@ -491,6 +493,9 @@ public class QuotationPdfService {
                     offerPrice = amount;
                 }
 
+                // Sum items' Total Amount before applying Offer Percentage
+                itemsTotalAmount = itemsTotalAmount.add(amount);
+
                 // Add Row Cells
                 addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
@@ -515,65 +520,51 @@ public class QuotationPdfService {
             activeItemCount++;
         }
 
-        // --- FINANCIAL VALUES ---
-        BigDecimal subtotal = zeroIfNull(quotation.getSubtotal());
-        BigDecimal accessories = zeroIfNull(quotation.getAccessoriesAmount());
-        BigDecimal travel = zeroIfNull(quotation.getTravelCharge());
-        BigDecimal otherCharges = zeroIfNull(quotation.getOtherCharges());
-        BigDecimal discount = zeroIfNull(quotation.getDiscountAmount());
-        BigDecimal taxable = zeroIfNull(quotation.getTaxableAmount());
-        BigDecimal gstPercentage = zeroIfNull(quotation.getGstPercentage());
-        BigDecimal gst = zeroIfNull(quotation.getGstAmount());
-        BigDecimal totalAmount = quotation.getTotalAmount() != null && quotation.getTotalAmount().compareTo(BigDecimal.ZERO) > 0
-                ? quotation.getTotalAmount()
-                : taxable.add(gst);
+        // --- PDF FINANCIAL VALUES ---
+        // 1. PDF Total Amount: Sum of quotation items' Total Amount values before applying Offer Percentage
+        BigDecimal pdfTotalAmount = itemsTotalAmount;
+        if (pdfTotalAmount.compareTo(BigDecimal.ZERO) == 0 && quotation.getSubtotal() != null && quotation.getSubtotal().compareTo(BigDecimal.ZERO) > 0) {
+            pdfTotalAmount = quotation.getSubtotal();
+        }
+
+        // 2. PDF Offer Price: PDF Total Amount * Offer Percentage / 100
         BigDecimal offerPercentage = zeroIfNull(quotation.getOfferPercentage());
-        BigDecimal offerAmount = zeroIfNull(quotation.getOfferAmount());
-        BigDecimal grandTotal = zeroIfNull(quotation.getGrandTotal());
+        if (offerPercentage.compareTo(BigDecimal.ZERO) < 0) {
+            offerPercentage = BigDecimal.ZERO;
+        } else if (offerPercentage.compareTo(new BigDecimal("100")) > 0) {
+            offerPercentage = new BigDecimal("100");
+        }
+
+        BigDecimal pdfOfferPrice = pdfTotalAmount.multiply(offerPercentage)
+                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+        // 3. PDF Grand Total: PDF Total Amount - PDF Offer Price
+        BigDecimal pdfGrandTotal = pdfTotalAmount.subtract(pdfOfferPrice);
 
         // --- SUMMARY ROWS INTEGRATED AT TABLE FOOTER ---
-        if (accessories.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Accessories", accessories, accessories, false);
-        }
-        if (travel.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Travel Charge", travel, travel, false);
-        }
-        if (otherCharges.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Other Charges", otherCharges, otherCharges, false);
-        }
-        if (discount.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Discount", discount.negate(), discount.negate(), false);
-        }
-        if (gst.compareTo(BigDecimal.ZERO) > 0 || discount.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Taxable Amount", taxable, taxable, false);
-        }
-        if (gst.compareTo(BigDecimal.ZERO) > 0) {
-            String gstLabel = "GST (" + format(gstPercentage) + "%)";
-            addSummaryRow(itemTable, gstLabel, gst, gst, false);
-        }
+        // Unwanted rows (Travel Charge, Other Charges, Discount, GST, Accessories, Taxable Amount) removed.
+        // Row 1: Total Amount
+        addSummaryRow(itemTable, "Total Amount", rupees(pdfTotalAmount), true);
 
-        // Total Amount Row
-        addSummaryRow(itemTable, "Total Amount", totalAmount, totalAmount, false);
+        // Row 2: Offer Price
+        String offerPriceStr = pdfOfferPrice.compareTo(BigDecimal.ZERO) > 0
+                ? "- " + rupees(pdfOfferPrice)
+                : rupees(BigDecimal.ZERO);
+        addSummaryRow(itemTable, "Offer Price", offerPriceStr, false);
 
-        // Special Offer Row
-        if (offerAmount.compareTo(BigDecimal.ZERO) > 0 || offerPercentage.compareTo(BigDecimal.ZERO) > 0) {
-            String offerLabel = "Special Offer (" + format(offerPercentage) + "%)";
-            addSummaryRow(itemTable, offerLabel, offerAmount.negate(), offerAmount.negate(), false);
-        }
-
-        // Grand Total Row (Highlighted with dark green header fill and gold text)
-        addGrandTotalRow(itemTable, "GRAND TOTAL", grandTotal);
+        // Row 3: GRAND TOTAL (Highlighted with dark teal header fill and gold text)
+        addGrandTotalRow(itemTable, "GRAND TOTAL", pdfGrandTotal);
 
         document.add(itemTable);
 
         // ========================================================
-        // 4. AMOUNT IN WORDS
+        // 4. AMOUNT IN WORDS (Matching PDF-specific Grand Total)
         // ========================================================
         Paragraph wordsPar = new Paragraph();
         wordsPar.setSpacingBefore(2f);
         wordsPar.setSpacingAfter(4f);
         wordsPar.add(new Chunk("AMOUNT IN WORDS - ", new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_NAVY)));
-        String wordsText = numberToWordsService.convertRupees(grandTotal).toUpperCase();
+        String wordsText = numberToWordsService.convertRupees(pdfGrandTotal).toUpperCase();
         wordsPar.add(new Chunk(wordsText, new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK)));
         document.add(wordsPar);
 
@@ -841,46 +832,33 @@ public class QuotationPdfService {
         }
     }
 
-    private void addSummaryRow(PdfPTable table, String label, BigDecimal amountVal, BigDecimal offerVal, boolean isTotal) {
-        Font labelFont = new Font(Font.HELVETICA, 7.5f, Font.BOLD, COLOR_TEXT_DARK);
+    private void addSummaryRow(PdfPTable table, String label, String amountText, boolean isBold) {
+        Font labelFont = new Font(Font.HELVETICA, 7.8f, Font.BOLD, COLOR_TEXT_DARK);
+        Font valFont = isBold ? rupeeBoldFont : rupeeFont;
 
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
         labelCell.setColspan(8);
         labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         labelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        labelCell.setPaddingTop(4f);
-        labelCell.setPaddingBottom(4f);
+        labelCell.setPaddingTop(4.5f);
+        labelCell.setPaddingBottom(4.5f);
         labelCell.setPaddingRight(6f);
         labelCell.setBorderColor(COLOR_BORDER);
         labelCell.setBorderWidth(0.5f);
         labelCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(labelCell);
 
-        // AMOUNT
-        String amtText = amountVal != null ? rupees(amountVal) : "-";
-        PdfPCell amtCell = new PdfPCell(new Phrase(amtText, rupeeFont));
-        amtCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        amtCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        amtCell.setPaddingTop(4f);
-        amtCell.setPaddingBottom(4f);
-        amtCell.setPaddingRight(2.5f);
-        amtCell.setBorderColor(COLOR_BORDER);
-        amtCell.setBorderWidth(0.5f);
-        amtCell.setBackgroundColor(COLOR_LIGHT_BG);
-        table.addCell(amtCell);
-
-        // OFFER PRICE
-        String offerText = offerVal != null ? rupees(offerVal) : "-";
-        PdfPCell offerCell = new PdfPCell(new Phrase(offerText, rupeeBoldFont));
-        offerCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        offerCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        offerCell.setPaddingTop(4f);
-        offerCell.setPaddingBottom(4f);
-        offerCell.setPaddingRight(2.5f);
-        offerCell.setBorderColor(COLOR_BORDER);
-        offerCell.setBorderWidth(0.5f);
-        offerCell.setBackgroundColor(COLOR_LIGHT_BG);
-        table.addCell(offerCell);
+        PdfPCell valCell = new PdfPCell(new Phrase(amountText, valFont));
+        valCell.setColspan(2);
+        valCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        valCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+        valCell.setPaddingTop(4.5f);
+        valCell.setPaddingBottom(4.5f);
+        valCell.setPaddingRight(4f);
+        valCell.setBorderColor(COLOR_BORDER);
+        valCell.setBorderWidth(0.5f);
+        valCell.setBackgroundColor(COLOR_LIGHT_BG);
+        table.addCell(valCell);
     }
 
     private void addGrandTotalRow(PdfPTable table, String label, BigDecimal grandTotal) {

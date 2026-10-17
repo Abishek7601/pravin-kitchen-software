@@ -220,9 +220,14 @@ public class QuotationPdf7PageTest {
         assertTrue(page2.contains("BWP") && page2.contains("MARINE PLY"), "Page 2 must contain material name");
         assertTrue(page2.contains("18MM"), "Page 2 must contain material option");
         assertTrue(page2.contains("SQ.FT"), "Page 2 must contain unit");
-        assertTrue(page2.contains("Total Amount"), "Page 2 must contain Total Amount label");
-        assertTrue(page2.contains("Special Offer"), "Page 2 must contain Special Offer");
-        assertTrue(page2.contains("10.00%"), "Page 2 must contain offer percentage");
+        assertTrue(page2.contains("Total Amount"), "Page 2 summary must contain Total Amount");
+        assertFalse(page2.contains("Taxable Amount"), "Page 2 summary must not contain Taxable Amount");
+        assertFalse(page2.contains("Accessories"), "Page 2 summary must not contain Accessories");
+        assertFalse(page2.contains("Travel Charge"), "Page 2 summary must not contain Travel Charge");
+        assertFalse(page2.contains("Other Charges"), "Page 2 summary must not contain Other Charges");
+        assertFalse(page2.contains("Discount"), "Page 2 summary must not contain Discount");
+        assertTrue(page2.contains("Offer Price"), "Page 2 must contain Offer Price");
+        assertFalse(page2.contains("10.00%"), "Page 2 summary must not contain offer percentage");
         assertTrue(page2.contains("GRAND TOTAL"), "Page 2 must contain GRAND TOTAL");
         assertTrue(page2.contains("AMOUNT IN WORDS"), "Page 2 must contain AMOUNT IN WORDS");
         assertTrue(page2.contains("NINETY THOUSAND"), "Page 2 must contain amount in words text");
@@ -380,8 +385,9 @@ public class QuotationPdf7PageTest {
         assertTrue(page2.contains("QT-EMP-9001"));
         assertTrue(page2.contains("Bala Subramanian"));
         assertTrue(page2.contains("Middle / Standard"));
-        assertTrue(page2.contains("Special Offer"));
-        assertTrue(page2.contains("5.00%"));
+        assertTrue(page2.contains("Total Amount"));
+        assertTrue(page2.contains("Offer Price"));
+        assertFalse(page2.contains("5.00%"));
         assertTrue(page2.contains("ONE LAKH FOURTEEN THOUSAND"));
     }
 }

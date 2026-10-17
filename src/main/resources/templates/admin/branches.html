@@ -16,7 +16,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/branches.css}">
-
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -172,7 +173,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="branch-table">
+            <table class="branch-table" id="branchTable">
                 <thead>
                     <tr>
                         <th class="col-sno">S.No</th>
@@ -328,6 +329,20 @@
     </main>
 
 </div>
+
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var table = document.getElementById('branchTable');
+        if (table) {
+            initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: 'districts'
+            });
+        }
+    });
+</script>
 
 </body>
 
