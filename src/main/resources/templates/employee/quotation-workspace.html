@@ -26,7 +26,10 @@
         <!-- TOPBAR -->
         <header class="topbar">
             <div class="page-heading">
-                <span class="page-label">QUOTATION WORKSPACE</span>
+                <span class="page-label" style="display: inline-flex; align-items: center; gap: 8px;">
+                    <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 36px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 6px; border: 1px solid #D6E4E1;">
+                    QUOTATION WORKSPACE
+                </span>
                 <h1 th:text="${quotation.quotationNumber}">QT-00001</h1>
                 <p>Manage and review quotation details.</p>
             </div>
