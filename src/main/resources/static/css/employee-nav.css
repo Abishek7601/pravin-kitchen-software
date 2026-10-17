@@ -3,21 +3,25 @@
    Consistent Sidebar and Top Menubar across all Employee pages
    ========================================================= */
 
+@import url("theme.css");
+
 :root {
-    --emp-peacock-dark: #073b38;
-    --emp-peacock-deep: #064e48;
-    --emp-peacock: #08786d;
-    --emp-peacock-light: #119b89;
-    --emp-emerald: #16a394;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --emp-peacock-dark: #013A36;
+    --emp-peacock-deep: #012825;
+    --emp-peacock: #024541;
+    --emp-peacock-light: #EAF3F1;
+    --emp-emerald: #024541;
     --emp-gold: #c5a15c;
     --emp-gold-light: #ead6a0;
 
-    --emp-page-bg: #f3f8f6;
+    --emp-page-bg: #F5F8F7;
     --emp-white: #ffffff;
-    --emp-text-dark: #173c38;
-    --emp-text: #365954;
-    --emp-muted: #81938f;
-    --emp-border: #e0ebe7;
+    --emp-text-dark: #243330;
+    --emp-text: #243330;
+    --emp-muted: #687873;
+    --emp-border: #D6E4E1;
 
     --emp-sidebar-width: 255px;
 }
@@ -46,19 +50,8 @@
     padding: 27px 17px 19px;
     overflow-y: auto;
     color: var(--emp-white);
-    background:
-        radial-gradient(
-            circle at 100% 0%,
-            rgba(22, 163, 148, 0.20),
-            transparent 34%
-        ),
-        linear-gradient(
-            180deg,
-            #073b38 0%,
-            #06332f 55%,
-            #042b29 100%
-        );
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    background: #024541;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.20) transparent;
@@ -179,28 +172,26 @@
 }
 
 .menu-item.active {
-    color: var(--emp-white);
-    background: linear-gradient(
-        100deg,
-        rgba(17, 155, 137, 0.28),
-        rgba(17, 155, 137, 0.09)
-    );
-    border-color: rgba(90, 205, 181, 0.22);
+    color: #024541;
+    background: #FFFFFF;
+    border-color: #FFFFFF;
+    font-weight: 700;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 .menu-item.active::before {
     content: "";
     position: absolute;
-    top: 10px;
-    bottom: 10px;
+    top: 9px;
+    bottom: 9px;
     left: -17px;
     width: 4px;
-    background: var(--emp-gold);
+    background: #A3D4CC;
     border-radius: 0 5px 5px 0;
 }
 
 .menu-item.active .menu-icon {
-    color: var(--emp-gold-light);
+    color: #024541;
 }
 
 /* Sidebar Bottom */
@@ -328,7 +319,7 @@
     background: var(--emp-white);
     border: 1px solid var(--emp-border);
     border-radius: 13px;
-    box-shadow: 0 3px 12px rgba(7, 59, 56, 0.05);
+    box-shadow: 0 3px 12px rgba(2, 69, 65, 0.05);
     box-sizing: border-box;
 }
 

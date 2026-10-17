@@ -3,21 +3,24 @@
    Consistent Top Navbar and Sidebar across all Admin pages
    ========================================================= */
 
+@import url("theme.css");
 @import url("https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css");
 
 :root {
-    --peacock: #006D68;
-    --peacock-dark: #005650;
-    --peacock-deep: #003F3B;
-    --peacock-light: #E5F4F0;
-    --peacock-pale: #F3FAF8;
-    --mint: #C7E8DE;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock: #024541;
+    --peacock-dark: #013A36;
+    --peacock-deep: #012825;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
+    --mint: #D6E4E1;
 
-    --text-primary: #193B38;
-    --text-secondary: #718580;
-    --page-background: #F4F8F7;
+    --text-primary: #243330;
+    --text-secondary: #687873;
+    --page-background: #F5F8F7;
     --white: #FFFFFF;
-    --border: #E1EBE7;
+    --border: #D6E4E1;
 
     --admin-sidebar-width: 255px;
     --admin-navbar-height: 82px;
@@ -210,15 +213,10 @@
     overflow-y: auto;
     overflow-x: hidden;
 
-    color: #E3F2EE;
-    background: linear-gradient(
-        180deg,
-        #005B55 0%,
-        #004C47 55%,
-        #003D39 100%
-    );
+    color: #EAF3F1;
+    background: #024541;
 
-    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
     box-sizing: border-box;
 }
 
@@ -282,16 +280,16 @@
 
 .sidebar-link:hover {
     color: var(--white);
-    background: rgba(255, 255, 255, 0.10);
-    border-color: rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.10);
 }
 
 .sidebar-link.active {
-    color: var(--peacock-deep);
+    color: #024541;
     background: #FFFFFF;
     border-color: #FFFFFF;
     font-weight: 700;
-    box-shadow: 0 4px 12px rgba(0, 35, 31, 0.13);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
 }
 
 .sidebar-link.active::before {
@@ -303,7 +301,7 @@
     width: 4px;
     content: "";
 
-    background: #A5E4D1;
+    background: #A3D4CC;
     border-radius: 0 5px 5px 0;
 }
 

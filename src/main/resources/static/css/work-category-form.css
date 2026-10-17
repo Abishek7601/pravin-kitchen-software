@@ -1,31 +1,33 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
 
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --text-soft: #94a39d;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --text-soft: #687873;
 
-    --border-color: #e0ebe5;
+    --border-color: #D6E4E1;
 
-    --success: #087f69;
-    --success-bg: #e8f8f1;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
 
-    --danger: #c62828;
-    --danger-bg: #fff1f1;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
 
-    --shadow-sm: 0 4px 16px rgba(6, 59, 53, 0.06);
-    --shadow-md: 0 12px 35px rgba(6, 59, 53, 0.10);
+    --shadow-sm: 0 4px 16px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 35px rgba(2, 69, 65, 0.08);
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -106,7 +108,7 @@ body {
     border-bottom: 1px solid var(--border-color);
 
     box-shadow:
-        0 3px 16px rgba(6, 59, 53, 0.05);
+        0 3px 16px rgba(2, 69, 65, 0.05);
 
     position: sticky;
 
@@ -155,7 +157,7 @@ body {
     letter-spacing: 0.5px;
 
     box-shadow:
-        0 7px 18px rgba(8, 127, 105, 0.18);
+        0 7px 18px rgba(2, 69, 65, 0.18);
 }
 
 .brand-section h1 {
@@ -298,7 +300,7 @@ body {
     font-size: 24px;
 
     box-shadow:
-        0 5px 15px rgba(8, 127, 105, 0.08);
+        0 5px 15px rgba(2, 69, 65, 0.08);
 }
 
 .page-title h2 {
@@ -422,7 +424,7 @@ body {
     background-color: #ffffff !important;
 
     box-shadow:
-        0 0 0 4px rgba(8, 127, 105, 0.10) !important;
+        0 0 0 4px rgba(2, 69, 65, 0.10) !important;
 
     outline: none !important;
 }
@@ -722,7 +724,7 @@ select.form-control {
     cursor: pointer;
 
     box-shadow:
-        0 8px 20px rgba(8, 127, 105, 0.19);
+        0 8px 20px rgba(2, 69, 65, 0.19);
 
     transition:
         transform 0.2s ease,
@@ -731,19 +733,14 @@ select.form-control {
 }
 
 .save-btn:hover {
-    background:
-        linear-gradient(
-            135deg,
-            #06483f,
-            #087f69
-        );
+    background: var(--primary-hover, #013A36);
 
     color: #ffffff;
 
     transform: translateY(-2px);
 
     box-shadow:
-        0 12px 26px rgba(8, 127, 105, 0.25);
+        0 12px 26px rgba(2, 69, 65, 0.25);
 }
 
 .save-btn:active {

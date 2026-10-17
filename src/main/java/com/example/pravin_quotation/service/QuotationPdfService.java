@@ -43,8 +43,8 @@ public class QuotationPdfService {
     /*
      * Design Colors matching the Reference Document (1.pdf)
      */
-    private static final Color COLOR_NAVY = new Color(27, 54, 93);         // #1B365D Primary title & marketing quotation heading
-    private static final Color COLOR_HEADER_BG = new Color(16, 51, 44);     // #10332C Dark Green table header background
+    private static final Color COLOR_NAVY = new Color(2, 69, 65);          // #024541 Dark Teal brand primary
+    private static final Color COLOR_HEADER_BG = new Color(2, 69, 65);      // #024541 Dark Teal table header background
     private static final Color COLOR_GOLD = new Color(168, 123, 46);        // #A87B2E Warm Gold accent lines & section borders
     private static final Color COLOR_HEADER_TEXT = new Color(245, 207, 83); // #F5CF53 Yellow/Gold header font
     private static final Color COLOR_LIGHT_BG = new Color(248, 250, 250);   // #F8FAFA Summary row fill & terms box

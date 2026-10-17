@@ -1,34 +1,36 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
 
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --text-soft: #96a59f;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --text-soft: #687873;
 
-    --border-color: #e0ebe5;
+    --border-color: #D6E4E1;
 
-    --success: #087f69;
-    --success-bg: #e8f8f1;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
 
-    --danger: #c62828;
-    --danger-bg: #fff0f0;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
 
     --shadow-sm:
-        0 4px 15px rgba(6, 59, 53, 0.06);
+        0 4px 15px rgba(2, 69, 65, 0.05);
 
     --shadow-md:
-        0 12px 35px rgba(6, 59, 53, 0.09);
+        0 12px 35px rgba(2, 69, 65, 0.08);
 
     --sidebar-width: 255px;
 }
@@ -107,15 +109,15 @@ body {
     background:
         linear-gradient(
             180deg,
-            var(--peacock-dark) 0%,
-            #06483f 55%,
-            #075548 100%
+            #012A27 0%,
+            #024541 55%,
+            #013A36 100%
         );
 
     color: #ffffff;
 
     box-shadow:
-        6px 0 25px rgba(6, 59, 53, 0.12);
+        6px 0 25px rgba(2, 69, 65, 0.12);
 
     z-index: 100;
 }
@@ -892,7 +894,7 @@ body {
     font-weight: 850;
 
     box-shadow:
-        0 8px 20px rgba(8, 127, 105, 0.08);
+        0 8px 20px rgba(2, 69, 65, 0.08);
 }
 
 .empty-state h3 {
@@ -1526,7 +1528,7 @@ body {
 
 .nav-back-btn {
     background: #ffffff;
-    border: 1px solid rgba(8, 127, 105, 0.25);
+    border: 1px solid rgba(2, 69, 65, 0.25);
     color: var(--peacock-green);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
@@ -1542,7 +1544,7 @@ body {
     background: var(--peacock-green);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 8px rgba(8, 127, 105, 0.2);
+    box-shadow: 0 2px 8px rgba(2, 69, 65, 0.2);
 }
 
 .nav-dashboard-btn:hover {

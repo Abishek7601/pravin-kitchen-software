@@ -1,27 +1,29 @@
 
 
 :root {
-    --peacock: #006D68;
-    --peacock-dark: #005650;
-    --peacock-deep: #003F3B;
-    --peacock-light: #E5F4F0;
-    --peacock-pale: #F3FAF8;
-    --mint: #C7E8DE;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock: #024541;
+    --peacock-dark: #013A36;
+    --peacock-deep: #012825;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
+    --mint: #D6E4E1;
 
-    --text-primary: #193B38;
-    --text-secondary: #718580;
-    --page-background: #F4F8F7;
+    --text-primary: #243330;
+    --text-secondary: #687873;
+    --page-background: #F5F8F7;
     --white: #FFFFFF;
-    --border: #E1EBE7;
+    --border: #D6E4E1;
 
-    --green: #16835D;
-    --blue: #367CB5;
-    --purple: #7961B5;
-    --gold: #B8872D;
-    --red: #C94D58;
+    --green: #13795B;
+    --blue: #024541;
+    --purple: #013A36;
+    --gold: #9A6B00;
+    --red: #B42318;
 
-    --shadow-sm: 0 3px 12px rgba(0, 65, 58, 0.05);
-    --shadow-md: 0 10px 28px rgba(0, 65, 58, 0.10);
+    --shadow-sm: 0 3px 12px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 10px 28px rgba(2, 69, 65, 0.09);
 }
 
 /* ================= GLOBAL ================= */
@@ -1006,7 +1008,7 @@ a.dashboard-card:hover::before {
     text-decoration: none;
     color: #19352e;
 
-    box-shadow: 0 5px 18px rgba(6, 59, 53, 0.06);
+    box-shadow: 0 5px 18px rgba(2, 69, 65, 0.06);
 
     transition:
         transform 0.2s ease,
@@ -1018,12 +1020,12 @@ a.dashboard-card:hover::before {
 .master-data-card:hover {
     transform: translateY(-3px);
 
-    border-color: #10a889;
+    border-color: #024541;
 
     box-shadow:
-        0 10px 28px rgba(6, 59, 53, 0.12);
+        0 10px 28px rgba(2, 69, 65, 0.10);
 
-    color: #063b35;
+    color: #024541;
 }
 
 
@@ -1039,9 +1041,9 @@ a.dashboard-card:hover::before {
 
     border-radius: 13px;
 
-    background: #e0f5ec;
+    background: #EAF3F1;
 
-    color: #087f69;
+    color: #024541;
 
     font-size: 21px;
 }
@@ -1062,7 +1064,7 @@ a.dashboard-card:hover::before {
     font-size: 15px;
     font-weight: 700;
 
-    color: #19352e;
+    color: #243330;
 }
 
 
@@ -1070,7 +1072,7 @@ a.dashboard-card:hover::before {
     font-size: 12px;
     line-height: 1.4;
 
-    color: #71847b;
+    color: #687873;
 }
 
 
@@ -1090,7 +1092,7 @@ a.dashboard-card:hover::before {
 .master-data-card:hover .master-data-arrow {
     transform: translateX(3px);
 
-    color: #087f69;
+    color: #024541;
 }
 
 

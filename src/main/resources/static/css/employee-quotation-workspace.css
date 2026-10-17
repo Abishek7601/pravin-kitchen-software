@@ -1,31 +1,33 @@
 
 
 :root {
-    --peacock: #006b63;
-    --peacock-dark: #004f4a;
-    --peacock-deep: #003b38;
-    --peacock-blue: #087f8c;
-    --emerald: #13866d;
-    --gold: #d6ad55;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock: #024541;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-blue: #024541;
+    --emerald: #024541;
+    --gold: #9A6B00;
 
-    --page-bg: #f1f7f6;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --surface-soft: #f5faf9;
+    --surface-soft: #F5F8F7;
 
-    --text-primary: #173c3a;
-    --text-secondary: #617c79;
-    --text-muted: #819795;
+    --text-primary: #243330;
+    --text-secondary: #687873;
+    --text-muted: #687873;
 
-    --border: #dceae7;
-    --border-strong: #c5ddd8;
+    --border: #D6E4E1;
+    --border-strong: #D6E4E1;
 
-    --success: #16845c;
-    --warning: #a76d1c;
-    --danger: #bd4545;
-    --info: #176b9a;
+    --success: #13795B;
+    --warning: #9A6B00;
+    --danger: #B42318;
+    --info: #1A5F7A;
 
-    --shadow-sm: 0 4px 15px rgba(0, 75, 68, 0.055);
-    --shadow-md: 0 12px 30px rgba(0, 75, 68, 0.085);
+    --shadow-sm: 0 4px 15px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 30px rgba(2, 69, 65, 0.08);
 
     --radius-sm: 9px;
     --radius-md: 14px;
@@ -213,7 +215,7 @@ input:focus-visible {
         var(--peacock-blue)
     );
     border-color: var(--peacock);
-    box-shadow: 0 4px 10px rgba(0, 107, 99, 0.12);
+    box-shadow: 0 4px 10px rgba(2, 69, 65, 0.12);
 }
 
 .btn-primary:hover {
@@ -224,7 +226,7 @@ input:focus-visible {
         #066c78
     );
     border-color: var(--peacock-dark);
-    box-shadow: 0 6px 16px rgba(0, 107, 99, 0.18);
+    box-shadow: 0 6px 16px rgba(2, 69, 65, 0.18);
 }
 
 .btn-dark {
@@ -906,7 +908,7 @@ input:focus-visible {
     border-radius: 13px;
     font-size: 16px;
     font-weight: 900;
-    box-shadow: 0 4px 10px rgba(0, 107, 99, 0.12);
+    box-shadow: 0 4px 10px rgba(2, 69, 65, 0.12);
 }
 
 .room-info {
@@ -1380,13 +1382,13 @@ input:focus-visible {
     color: #ffffff;
     background: linear-gradient(
         110deg,
-        #004f4a,
-        #006b63 55%,
-        #087f8c
+        #013A36,
+        #024541 55%,
+        #035A55
     );
     border: 1px solid rgba(214, 173, 85, 0.6);
     border-radius: 13px;
-    box-shadow: 0 8px 18px rgba(0, 75, 68, 0.12);
+    box-shadow: 0 8px 18px rgba(2, 69, 65, 0.12);
 }
 
 .grand-total > span {

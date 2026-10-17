@@ -1,28 +1,30 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --border-color: #e0ebe5;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --border-color: #D6E4E1;
 
-    --success: #16865d;
-    --success-bg: #e6f7ee;
-    --danger: #b94343;
-    --danger-bg: #fff0ef;
-    --warning: #a66b16;
-    --warning-bg: #fff6df;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
+    --warning: #9A6B00;
+    --warning-bg: #FFF8E7;
 
-    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.05);
-    --shadow-md: 0 12px 32px rgba(6, 59, 53, 0.09);
+    --shadow-sm: 0 4px 14px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 32px rgba(2, 69, 65, 0.08);
     --radius-md: 14px;
     --radius-lg: 22px;
 }
@@ -110,7 +112,7 @@ a {
         );
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: var(--radius-lg);
-    box-shadow: 0 16px 36px rgba(6, 59, 53, 0.16);
+    box-shadow: 0 16px 36px rgba(2, 69, 65, 0.16);
 }
 
 .page-header::after {
@@ -232,26 +234,26 @@ a {
 .nav-back-btn {
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.8);
-    color: #006b63;
+    color: var(--primary, #024541);
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .nav-back-btn:hover {
     background: #f0faf7;
-    color: #063f3b;
+    color: var(--primary-hover, #013A36);
     border-color: #ffffff;
 }
 
 .nav-dashboard-btn {
-    background: #006b63;
+    background: var(--primary, #024541);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .nav-dashboard-btn:hover {
-    background: #063f3b;
+    background: var(--primary-hover, #013A36);
     border-color: rgba(255, 255, 255, 0.6);
 }
 
@@ -267,7 +269,7 @@ a {
     min-height: 42px;
     max-height: 42px;
     padding: 0 18px;
-    color: #006b63;
+    color: var(--primary, #024541);
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.8);
     border-radius: 10px;
@@ -294,7 +296,7 @@ a {
     width: 22px;
     height: 22px;
     color: #ffffff;
-    background: #006b63;
+    background: var(--primary, #024541);
     border-radius: 6px;
     font-size: 16px;
     font-weight: 700;
@@ -372,7 +374,7 @@ a {
 
 .summary-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(8, 127, 105, 0.28);
+    border-color: rgba(2, 69, 65, 0.28);
     box-shadow: var(--shadow-md);
 }
 
@@ -385,7 +387,7 @@ a {
     height: 54px;
     color: var(--peacock-green);
     background: var(--peacock-light);
-    border: 1px solid rgba(8, 127, 105, 0.08);
+    border: 1px solid rgba(2, 69, 65, 0.08);
     border-radius: 16px;
     font-size: 25px;
 }
@@ -439,7 +441,7 @@ a {
 }
 
 .branch-table-card:hover {
-    border-color: rgba(8, 127, 105, 0.22);
+    border-color: rgba(2, 69, 65, 0.22);
     box-shadow: var(--shadow-md);
 }
 
@@ -968,7 +970,7 @@ a {
     border-radius: 10px;
     font-size: 14px;
     font-weight: 750;
-    box-shadow: 0 5px 15px rgba(8, 127, 105, 0.18);
+    box-shadow: 0 5px 15px rgba(2, 69, 65, 0.18);
     transition:
         transform 0.2s ease,
         box-shadow 0.2s ease;
@@ -976,7 +978,7 @@ a {
 
 .empty-button:hover {
     transform: translateY(-2px);
-    box-shadow: 0 9px 20px rgba(8, 127, 105, 0.25);
+    box-shadow: 0 9px 20px rgba(2, 69, 65, 0.25);
 }
 
 .empty-button span {

@@ -8,9 +8,9 @@
   <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
   <style>
     :root {
-      --primary: #006b63;
-      --primary-dark: #00524c;
-      --primary-light: #e0f5ec;
+      --primary: #024541;
+      --primary-dark: #013A36;
+      --primary-light: #EAF3F1;
       --accent: #d8833b;
       --bg-page: #f4f7f6;
       --card-bg: #ffffff;
@@ -50,7 +50,7 @@
       padding: 0 24px;
     }
     .hero-banner {
-      background: linear-gradient(135deg, #006b63 0%, #004d40 100%);
+      background: linear-gradient(135deg, #024541 0%, #013A36 100%);
       color: #ffffff;
       padding: 24px 30px;
       border-radius: 12px;
@@ -222,16 +222,16 @@
   <div class="brand-section">
     <img th:src="@{/images/company-logo.png}" alt="Pravin Kitchens" class="brand-logo-img">
     <div>
-      <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: #006b63;">Pravin KITCHENS &amp; INTERIORS</h2>
+      <h2 style="font-size: 1.15rem; font-weight: 700; margin: 0; color: #024541;">Pravin KITCHENS &amp; INTERIORS</h2>
       <p style="margin: 0; font-size: 12px; color: #64748b;">Master Data Complete Hierarchy</p>
     </div>
   </div>
 
   <div style="display: flex; gap: 8px; align-items: center;">
-    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }">
-      ← Back
-    </button>
-    <a th:href="@{/admin/pricing/new}" class="btn btn-sm btn-success" style="background: #006b63; border-color: #006b63;">
+<!--    <button type="button" class="btn btn-outline-secondary btn-sm" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/pricing'; }">-->
+<!--      ← Back-->
+<!--    </button>-->
+    <a th:href="@{/admin/pricing/new}" class="btn btn-sm btn-success" style="background: #024541; border-color: #024541;">
       + Configure Master Data
     </a>
     <a th:href="@{/admin/work-categories}" class="btn btn-outline-secondary btn-sm">
@@ -243,9 +243,9 @@
     <a th:href="@{/admin/pricing}" class="btn btn-outline-secondary btn-sm">
       Pricing
     </a>
-    <a th:href="@{/admin/dashboard}" class="btn btn-outline-secondary btn-sm">
-      ⌂ Dashboard
-    </a>
+<!--    <a th:href="@{/admin/dashboard}" class="btn btn-outline-secondary btn-sm">-->
+<!--      ⌂ Dashboard-->
+<!--    </a>-->
   </div>
 </header>
 
@@ -285,7 +285,7 @@
     <div style="font-size: 3rem; margin-bottom: 12px;">📂</div>
     <h4>No Master Data Configured Yet</h4>
     <p class="text-muted">Start by configuring work categories, divisions, and materials.</p>
-    <a th:href="@{/admin/pricing/new}" class="btn btn-primary" style="background: #006b63; border-color: #006b63;">
+    <a th:href="@{/admin/pricing/new}" class="btn btn-primary" style="background: #024541; border-color: #024541;">
       + Configure Master Data Now
     </a>
   </div>
@@ -367,7 +367,7 @@
         <div class="mat-header">
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
             <span>📦</span>
-            <strong style="color: #006b63;" th:text="${mDto.material.name}">Marine Ply 710</strong>
+            <strong style="color: #024541;" th:text="${mDto.material.name}">Marine Ply 710</strong>
             <span class="formula-tag">
               📐 Formula: <span th:text="${mDto.material.formula != null ? mDto.material.formula : '(L + W) × H'}">(L + W) × H</span>
             </span>
@@ -442,7 +442,7 @@
                   </div>
 
                   <!-- Quick Add Specification Button -->
-                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" style="font-size: 11px; color: #006b63;"
+                  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" style="font-size: 11px; color: #024541;"
                           th:onclick="'openSpecModal(' + ${mDto.material.id} + ',' + ${oDto.option.id} + ',\'' + ${oDto.option.name} + '\')'">
                     + Add Spec
                   </button>
@@ -497,7 +497,7 @@
         <input type="hidden" name="redirectUrl" value="/admin/master-data/hierarchy">
 
         <div class="modal-header">
-          <h5 class="modal-title" style="color: #006b63; font-weight: 700;">Add Material Specification</h5>
+          <h5 class="modal-title" style="color: #024541; font-weight: 700;">Add Material Specification</h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
         </div>
         <div class="modal-body">
@@ -517,7 +517,7 @@
         </div>
         <div class="modal-footer">
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cancel</button>
-          <button type="submit" class="btn btn-success btn-sm" style="background: #006b63; border-color: #006b63;">Save Specification</button>
+          <button type="submit" class="btn btn-success btn-sm" style="background: #024541; border-color: #024541;">Save Specification</button>
         </div>
       </form>
     </div>

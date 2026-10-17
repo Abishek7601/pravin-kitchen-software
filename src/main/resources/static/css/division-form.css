@@ -1,22 +1,24 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --border-color: #e0ebe5;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --border-color: #D6E4E1;
 
-    --danger: #dc3545;
-    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.05);
-    --shadow-md: 0 12px 35px rgba(6, 59, 53, 0.09);
+    --danger: #B42318;
+    --shadow-sm: 0 4px 14px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 35px rgba(2, 69, 65, 0.08);
     --radius-lg: 18px;
     --radius-md: 11px;
 }
@@ -147,7 +149,7 @@ body {
     background: var(--peacock-pale);
     color: var(--peacock-dark);
     border-color: #b8dfd0;
-    box-shadow: 0 6px 18px rgba(6, 59, 53, 0.08);
+    box-shadow: 0 6px 18px rgba(2, 69, 65, 0.08);
     transform: translateY(-1px);
 }
 
@@ -255,7 +257,7 @@ body {
     background-color: #ffffff;
     color: var(--text-main);
     outline: none;
-    box-shadow: 0 0 0 4px rgba(8, 127, 105, 0.11);
+    box-shadow: 0 0 0 4px rgba(2, 69, 65, 0.11);
 }
 
 .form-group select.form-control {
@@ -344,7 +346,7 @@ body {
         var(--peacock-green)
     );
     color: #ffffff;
-    box-shadow: 0 5px 13px rgba(8, 127, 105, 0.18);
+    box-shadow: 0 5px 13px rgba(2, 69, 65, 0.18);
 }
 
 .save-btn:hover {
@@ -355,7 +357,7 @@ body {
         var(--peacock-deep)
     );
     color: #ffffff;
-    box-shadow: 0 8px 20px rgba(6, 59, 53, 0.22);
+    box-shadow: 0 8px 20px rgba(2, 69, 65, 0.22);
     transform: translateY(-1px);
 }
 

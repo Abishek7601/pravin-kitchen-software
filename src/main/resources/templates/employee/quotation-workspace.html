@@ -32,14 +32,14 @@
             </div>
 
             <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">
                     <span>← Back</span>
                 </button>
-                <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+                <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">
                     <span>⌂ Dashboard</span>
                 </a>
                 <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
-                   class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: white;">
+                   class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: white;">
                     ✏ Edit in Builder
                 </a>
                 <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
@@ -49,7 +49,7 @@
                 <button type="button"
                         onclick="window.print()"
                         class="btn btn-outline-secondary btn-sm"
-                        style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none;">
+                        style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none;">
                     Print
                 </button>
             </div>
@@ -1142,10 +1142,10 @@
                                min="0"
                                max="100"
                                step="0.01"
-                               style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #006b63; border-radius: 6px; font-weight: 700; font-size: 14px; color: #006b63; background: #f0fdfa;"
+                               style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #024541; border-radius: 6px; font-weight: 700; font-size: 14px; color: #024541; background: #f0fdfa;"
                                th:value="${quotation.offerPercentage != null ? #numbers.formatDecimal(quotation.offerPercentage, 1, 2) : 0}">
 
-                        <span style="margin-left: 6px; font-weight: 700; color: #006b63;">%</span>
+                        <span style="margin-left: 6px; font-weight: 700; color: #024541;">%</span>
 
                     </div>
 

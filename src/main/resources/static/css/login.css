@@ -1,15 +1,17 @@
 
 
 :root {
-    --peacock-dark: #063f3b;
-    --peacock: #006b63;
-    --peacock-light: #0b8b7e;
-    --emerald: #16a394;
-    --gold: #c6a45c;
-    --gold-light: #e4ce91;
-    --text-dark: #183b38;
-    --text-muted: #718582;
-    --border: #dce8e5;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #012A27;
+    --peacock: #024541;
+    --peacock-light: #035A55;
+    --emerald: #024541;
+    --gold: #9A6B00;
+    --gold-light: #FFF8E7;
+    --text-dark: #243330;
+    --text-muted: #687873;
+    --border: #D6E4E1;
     --white: #ffffff;
 }
 
@@ -35,19 +37,19 @@ body {
     background:
         radial-gradient(
             circle at 15% 15%,
-            rgba(28, 160, 142, 0.25),
+            rgba(2, 69, 65, 0.25),
             transparent 35%
         ),
         radial-gradient(
             circle at 90% 85%,
-            rgba(198, 164, 92, 0.17),
+            rgba(2, 69, 65, 0.17),
             transparent 30%
         ),
         linear-gradient(
             135deg,
-            #062f30 0%,
-            #07534e 48%,
-            #0a7168 100%
+            #01201E 0%,
+            #024541 50%,
+            #013A36 100%
         );
     position: relative;
     overflow-x: hidden;

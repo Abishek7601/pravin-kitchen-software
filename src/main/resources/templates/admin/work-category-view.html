@@ -11,9 +11,9 @@
   <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
   <style>
     :root {
-      --primary: #006b63;
-      --primary-dark: #004d47;
-      --primary-light: #e6f3f1;
+      --primary: #024541;
+      --primary-dark: #013A36;
+      --primary-light: #EAF3F1;
       --secondary: #d4a373;
       --border-color: #e2e8f0;
       --text-main: #1e293b;
@@ -44,7 +44,7 @@
       padding: 0 24px;
     }
     .hero-banner {
-      background: linear-gradient(135deg, #006b63 0%, #004d40 100%);
+      background: linear-gradient(135deg, #024541 0%, #013A36 100%);
       color: #ffffff;
       padding: 24px 30px;
       border-radius: 12px;
@@ -98,7 +98,7 @@
     .btn-back {
       background: #ffffff;
       color: var(--primary);
-      border: 1px solid #c8dad6;
+      border: 1px solid #D6E4E1;
       font-size: 13px;
       font-weight: 600;
       padding: 8px 16px;
@@ -133,7 +133,7 @@
     }
     .btn-configure {
       background: #ffffff;
-      color: #006b63;
+      color: #024541;
       border: none;
       font-size: 13px;
       font-weight: 600;
@@ -396,7 +396,7 @@
             onsubmit="return confirm('Are you sure you want to unarchive ' + (this.getAttribute('data-category-name') || 'this work category') + '?\n\nThis will restore the category and its divisions to active status.');">
         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
-        <button type="submit" class="btn-configure" style="cursor: pointer; background: #ffffff; color: #006b63; border: 1px solid #c8dad6;">
+        <button type="submit" class="btn-configure" style="cursor: pointer; background: #ffffff; color: #024541; border: 1px solid #D6E4E1;">
           <i class="bi bi-box-arrow-up"></i>
           <span>📦 Unarchive Category</span>
         </button>
@@ -439,7 +439,7 @@
         There are no divisions currently mapped to <strong th:text="${category.name != null ? category.name.toUpperCase() : ''}">FOYER</strong>.
         Use Configure Master Data to add divisions, materials, and pricing under this category.
       </p>
-      <a th:href="@{/admin/pricing/new(workCategoryId=${category.id})}" class="btn btn-primary" style="background:#006b63; border-color:#006b63;">
+      <a th:href="@{/admin/pricing/new(workCategoryId=${category.id})}" class="btn btn-primary" style="background:#024541; border-color:#024541;">
         + Configure Divisions &amp; Materials
       </a>
     </div>
@@ -569,7 +569,7 @@
                           th:data-material-id="${mDto.material.id}"
                           th:data-material-name="${mDto.material.name != null ? mDto.material.name.toUpperCase() : ''}"
                           onclick="openEditOptionModal(this)"
-                          style="cursor: pointer; background: #e6f3f1; color: #006b63; border-color: #c8dad6;">
+                          style="cursor: pointer; background: #EAF3F1; color: #024541; border-color: #D6E4E1;">
                     ✏️ Edit
                   </button>
                   <a th:href="@{/admin/material-options/edit/{id}(id=${oDto.option.id}, redirectUrl=@{/admin/work-categories/view/{catId}(catId=${category.id})})}"
@@ -625,7 +625,7 @@
         <!-- CSRF Protection Token -->
         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <div class="modal-header" style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; border-radius: 12px 12px 0 0; padding: 16px 20px;">
-          <h5 class="modal-title" id="editOptionModalLabel" style="font-size: 1.1rem; font-weight: 700; color: #006b63; display: flex; align-items: center; gap: 8px;">
+          <h5 class="modal-title" id="editOptionModalLabel" style="font-size: 1.1rem; font-weight: 700; color: #024541; display: flex; align-items: center; gap: 8px;">
             <span>✏️</span> Edit Material Option
           </h5>
           <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeEditOptionModal()"></button>
@@ -638,7 +638,7 @@
           <!-- Current Material context info -->
           <div style="background: #f1f5f9; border-radius: 8px; padding: 10px 14px; margin-bottom: 16px; font-size: 13px;">
             <div style="color: #64748b; font-size: 11px; font-weight: 700; text-transform: uppercase;">Parent Material</div>
-            <strong id="editOptionMaterialName" style="color: #006b63;">PLYWOOD</strong>
+            <strong id="editOptionMaterialName" style="color: #024541;">PLYWOOD</strong>
           </div>
 
           <!-- Option Name -->
@@ -664,7 +664,7 @@
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeEditOptionModal()"
                   style="border-radius: 8px; font-weight: 600;">Cancel</button>
           <button type="submit" class="btn btn-primary btn-sm"
-                  style="background: #006b63; border-color: #006b63; border-radius: 8px; font-weight: 600; padding: 6px 18px;">
+                  style="background: #024541; border-color: #024541; border-radius: 8px; font-weight: 600; padding: 6px 18px;">
             Save Changes
           </button>
         </div>

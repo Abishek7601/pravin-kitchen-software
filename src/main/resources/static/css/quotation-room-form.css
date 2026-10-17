@@ -1,30 +1,32 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --surface-soft: #f8fbf9;
+    --surface-soft: #F5F8F7;
 
-    --text-main: #19352e;
-    --text-dark: #102c26;
-    --text-muted: #71847b;
+    --text-main: #243330;
+    --text-dark: #243330;
+    --text-muted: #687873;
 
-    --border-color: #dfeae5;
-    --border-dark: #cbdcd5;
+    --border-color: #D6E4E1;
+    --border-dark: #D6E4E1;
 
-    --danger: #b84444;
-    --danger-light: #fff1f1;
+    --danger: #B42318;
+    --danger-light: #FEE4E2;
 
-    --shadow-sm: 0 3px 12px rgba(6, 59, 53, 0.06);
-    --shadow-md: 0 10px 35px rgba(6, 59, 53, 0.09);
+    --shadow-sm: 0 3px 12px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 10px 35px rgba(2, 69, 65, 0.08);
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -464,7 +466,7 @@ textarea {
     font-weight: 850;
 
     box-shadow:
-        0 5px 14px rgba(8, 127, 105, 0.18);
+        0 5px 14px rgba(2, 69, 65, 0.18);
 }
 
 .form-card-header h2 {
@@ -637,7 +639,7 @@ textarea {
     border-color: var(--peacock-green);
 
     box-shadow:
-        0 0 0 3px rgba(8, 127, 105, 0.10);
+        0 0 0 3px rgba(2, 69, 65, 0.10);
 
     background: #ffffff;
 }
@@ -828,14 +830,14 @@ textarea {
     border-color: var(--peacock-green);
 
     box-shadow:
-        0 6px 17px rgba(8, 127, 105, 0.20);
+        0 6px 17px rgba(2, 69, 65, 0.20);
 }
 
 .btn-save:hover {
     color: #ffffff;
 
     box-shadow:
-        0 9px 23px rgba(8, 127, 105, 0.28);
+        0 9px 23px rgba(2, 69, 65, 0.28);
 }
 
 

@@ -1,29 +1,31 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
 
-    --text-main: #19352e;
-    --text-dark: #14352d;
-    --text-muted: #71847b;
+    --text-main: #243330;
+    --text-dark: #243330;
+    --text-muted: #687873;
 
-    --border-color: #dfeae5;
-    --border-light: #edf3ef;
+    --border-color: #D6E4E1;
+    --border-light: #EAF3F1;
 
-    --success: #16845d;
-    --danger: #c94b4b;
+    --success: #13795B;
+    --danger: #B42318;
 
-    --shadow-sm: 0 5px 18px rgba(6, 59, 53, 0.07);
-    --shadow-md: 0 12px 32px rgba(6, 59, 53, 0.10);
+    --shadow-sm: 0 5px 18px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 32px rgba(2, 69, 65, 0.08);
 
     --radius-sm: 8px;
     --radius-md: 12px;
@@ -208,7 +210,7 @@ body {
     font-size: 24px;
 
     box-shadow:
-        0 4px 12px rgba(8, 127, 105, 0.08);
+        0 4px 12px rgba(2, 69, 65, 0.08);
 }
 
 .form-card-header h2 {
@@ -383,7 +385,7 @@ body {
     border-color: var(--peacock-green);
 
     box-shadow:
-        0 0 0 3px rgba(8, 127, 105, 0.10);
+        0 0 0 3px rgba(2, 69, 65, 0.10);
 }
 
 
@@ -528,7 +530,7 @@ body {
     border: 1px solid transparent;
 
     box-shadow:
-        0 7px 18px rgba(8, 127, 105, 0.20);
+        0 7px 18px rgba(2, 69, 65, 0.20);
 }
 
 .btn-primary:hover {
@@ -544,7 +546,7 @@ body {
     transform: translateY(-2px);
 
     box-shadow:
-        0 10px 24px rgba(8, 127, 105, 0.25);
+        0 10px 24px rgba(2, 69, 65, 0.25);
 }
 
 

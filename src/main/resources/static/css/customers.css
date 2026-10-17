@@ -1,36 +1,38 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
 
-    --text-main: #19352e;
-    --text-muted: #71847b;
+    --text-main: #243330;
+    --text-muted: #687873;
 
-    --border-color: #e0ebe5;
+    --border-color: #D6E4E1;
 
-    --success: #16845b;
-    --success-bg: #e5f7ed;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
 
-    --danger: #c73d48;
-    --danger-bg: #fff0f0;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
 
-    --warning: #a86c12;
-    --warning-bg: #fff6df;
+    --warning: #9A6B00;
+    --warning-bg: #FFF8E7;
 
-    --blue: #3269b4;
-    --blue-bg: #edf4ff;
+    --blue: #1A5F7A;
+    --blue-bg: #EAF3F8;
 
-    --shadow-sm: 0 3px 12px rgba(6, 59, 53, 0.045);
-    --shadow-md: 0 10px 30px rgba(6, 59, 53, 0.075);
+    --shadow-sm: 0 3px 12px rgba(2, 69, 65, 0.045);
+    --shadow-md: 0 10px 30px rgba(2, 69, 65, 0.075);
 
     --radius-sm: 9px;
     --radius-md: 15px;
@@ -120,7 +122,7 @@ input:focus-visible {
 
     border-bottom: 1px solid rgba(255, 255, 255, 0.09);
 
-    box-shadow: 0 5px 20px rgba(6, 59, 53, 0.13);
+    box-shadow: 0 5px 20px rgba(2, 69, 65, 0.13);
 } */
 
 .header-left {
@@ -308,7 +310,7 @@ input:focus-visible {
     font-weight: 700;
     white-space: nowrap;
 
-    box-shadow: 0 5px 13px rgba(8, 127, 105, 0.18);
+    box-shadow: 0 5px 13px rgba(2, 69, 65, 0.18);
 
     transition:
         transform var(--transition),
@@ -336,7 +338,7 @@ input:focus-visible {
 .add-customer-btn:hover {
     color: #ffffff;
     transform: translateY(-2px);
-    box-shadow: 0 8px 19px rgba(8, 127, 105, 0.25);
+    box-shadow: 0 8px 19px rgba(2, 69, 65, 0.25);
 }
 
 
@@ -504,7 +506,7 @@ input:focus-visible {
 .search-box input:focus {
     border-color: var(--peacock-green);
     background: #ffffff;
-    box-shadow: 0 0 0 3px rgba(8, 127, 105, 0.1);
+    box-shadow: 0 0 0 3px rgba(2, 69, 65, 0.1);
 }
 
 .search-btn,
@@ -1427,9 +1429,9 @@ input:focus-visible {
 
 
 .branch-stat-chip-link:hover {
-    background: #e0f5ec !important;
-    border-color: #087f69 !important;
-    color: #063b35 !important;
+    background: #EAF3F1 !important;
+    border-color: #024541 !important;
+    color: #024541 !important;
     transform: translateY(-1px);
 }
 
