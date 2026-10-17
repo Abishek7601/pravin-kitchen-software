@@ -312,7 +312,8 @@ public class EmployeeDashboardSummaryCardsTest {
         assertTrue(pendingHtml.contains(p2.getQuotationNumber()));
         assertFalse(pendingHtml.contains(w1.getQuotationNumber()));
         assertFalse(pendingHtml.contains(s1.getQuotationNumber()));
-        assertTrue(pendingHtml.contains("Back to Dashboard"));
+        assertFalse(pendingHtml.contains("Back to Dashboard"));
+        assertFalse(pendingHtml.contains("← Back"));
 
         // -------------------------------------------------------------
         // 2. FILTER BY WORKING
@@ -339,7 +340,8 @@ public class EmployeeDashboardSummaryCardsTest {
         assertTrue(workingHtml.contains(w1.getQuotationNumber()));
         assertFalse(workingHtml.contains(p1.getQuotationNumber()));
         assertFalse(workingHtml.contains(s1.getQuotationNumber()));
-        assertTrue(workingHtml.contains("Back to Dashboard"));
+        assertFalse(workingHtml.contains("Back to Dashboard"));
+        assertFalse(workingHtml.contains("← Back"));
 
         // -------------------------------------------------------------
         // 3. FILTER BY SENT
@@ -368,7 +370,8 @@ public class EmployeeDashboardSummaryCardsTest {
         assertTrue(sentHtml.contains(s1.getQuotationNumber()));
         assertFalse(sentHtml.contains(p1.getQuotationNumber()));
         assertFalse(sentHtml.contains(w1.getQuotationNumber()));
-        assertTrue(sentHtml.contains("Back to Dashboard"));
+        assertFalse(sentHtml.contains("Back to Dashboard"));
+        assertFalse(sentHtml.contains("← Back"));
 
         // -------------------------------------------------------------
         // 4. TEST CASE-INSENSITIVITY & PATH VARIABLE ("working" / "pending")
@@ -395,7 +398,8 @@ public class EmployeeDashboardSummaryCardsTest {
 
         String emptyHtml = renderTemplate("employee/quotations", emptyModel);
         assertTrue(emptyHtml.contains("No working quotations"));
-        assertTrue(emptyHtml.contains("Back to Dashboard"));
+        assertFalse(emptyHtml.contains("Back to Dashboard"));
+        assertFalse(emptyHtml.contains("← Back"));
     }
     @Test
     void testEmployeeDashboardQuickActions() {
@@ -448,6 +452,65 @@ public class EmployeeDashboardSummaryCardsTest {
         String result = employeeQuotationController.builder(auth, builderModel);
         assertEquals("employee/quotation-builder", result, "Builder route must return quotation builder view");
         assertNotNull(builderModel.get("quotation"), "Model must contain quotation");
+    }
+
+    @Test
+    void testNoBackOrBackToDashboardOnEmployeeDashboardQuotationsCustomers() {
+        long ts = System.currentTimeMillis();
+        Branch branch = new Branch();
+        branch.setName("Madurai Branch " + ts);
+        branch = branchRepository.save(branch);
+
+        User employee = new User();
+        employee.setName("Vimal Raj");
+        employee.setEmail("vimal_" + ts + "@pravin.com");
+        employee.setPassword("secret");
+        employee.setRole(Role.EMPLOYEE);
+        employee.setBranch(branch);
+        employee = userRepository.save(employee);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(employee.getEmail(), "secret");
+
+        // 1. Employee Dashboard
+        ExtendedModelMap dashModel = new ExtendedModelMap();
+        employeeDashboardController.dashboard(auth, dashModel);
+        String dashHtml = renderTemplate("employee/dashboard", dashModel);
+        assertFalse(dashHtml.contains("Back to Dashboard"), "Employee Dashboard must not have Back to Dashboard");
+        assertFalse(dashHtml.contains("← Back"), "Employee Dashboard must not have Back button");
+        assertTrue(dashHtml.contains("Employee Dashboard"));
+        assertTrue(dashHtml.contains("Dashboard")); // sidebar
+        assertTrue(dashHtml.contains("Quotations")); // sidebar
+        assertTrue(dashHtml.contains("Customers")); // sidebar
+
+        // 2. Employee Quotations
+        ExtendedModelMap quotModel = new ExtendedModelMap();
+        employeeQuotationController.quotations(null, null, null, auth, quotModel);
+        String quotHtml = renderTemplate("employee/quotations", quotModel);
+        assertFalse(quotHtml.contains("Back to Dashboard"), "Employee Quotations must not have Back to Dashboard");
+        assertFalse(quotHtml.contains("← Back"), "Employee Quotations must not have Back button");
+        assertTrue(quotHtml.contains("My Quotations"));
+        assertTrue(quotHtml.contains("+ Create Quotation"));
+        assertTrue(quotHtml.contains("Dashboard")); // sidebar
+
+        // 3. Employee Customers
+        ExtendedModelMap custModel = new ExtendedModelMap();
+        custModel.addAttribute("employee", employee);
+        custModel.addAttribute("customers", List.of());
+        String custHtml = renderTemplate("employee/customers", custModel);
+        assertFalse(custHtml.contains("Back to Dashboard"), "Employee Customers must not have Back to Dashboard");
+        assertFalse(custHtml.contains("← Back"), "Employee Customers must not have Back button");
+        assertFalse(custHtml.contains("page-actions"), "Empty page-actions div should be removed from Customers");
+        assertTrue(custHtml.contains("Customers"));
+        assertTrue(custHtml.contains("Dashboard")); // sidebar
+
+        // 4. Verify other employee page (e.g., quotation-new) STILL preserves Back buttons
+        ExtendedModelMap newQuotModel = new ExtendedModelMap();
+        newQuotModel.addAttribute("employee", employee);
+        newQuotModel.addAttribute("customer", new Customer());
+        newQuotModel.addAttribute("pricingModes", List.of(PricingMode.values()));
+        String newQuotHtml = renderTemplate("employee/quotation-new", newQuotModel);
+        assertTrue(newQuotHtml.contains("Back to Dashboard"), "Other employee page (quotation-new) must preserve Back to Dashboard");
+        assertTrue(newQuotHtml.contains("← Back"), "Other employee page (quotation-new) must preserve Back button");
     }
 
     private String renderTemplate(String templateName, ExtendedModelMap model) {
