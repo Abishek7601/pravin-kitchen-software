@@ -75,14 +75,14 @@
         <!-- Header Actions -->
         <div class="header-actions">
 
-            <div class="nav-header-actions">
-                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/branches'; }">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
+<!--            <div class="nav-header-actions">-->
+<!--                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/branches'; }">-->
+<!--                    <span>← Back</span>-->
+<!--                </button>-->
+<!--                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">-->
+<!--                    <span>⌂ Dashboard</span>-->
+<!--                </a>-->
+<!--            </div>-->
 
             <a th:href="@{'/admin/branches/edit/' + ${branch.id}}" class="edit-district-button">
                 Edit District

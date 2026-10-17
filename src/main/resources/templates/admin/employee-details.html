@@ -55,15 +55,15 @@
         </div>
 
 
-        <div class="header-actions">
-            <div class="nav-header-actions">
-                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }">
-                    <span>← Back</span>
-                </button>
-                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">
-                    <span>⌂ Dashboard</span>
-                </a>
-            </div>
+<!--        <div class="header-actions">-->
+<!--            <div class="nav-header-actions">-->
+<!--                <button type="button" class="nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/employees'; }">-->
+<!--                    <span>← Back</span>-->
+<!--                </button>-->
+<!--                <a th:href="@{/admin/dashboard}" class="nav-dashboard-btn">-->
+<!--                    <span>⌂ Dashboard</span>-->
+<!--                </a>-->
+<!--            </div>-->
 
             <a th:href="@{'/admin/employees/edit/' + ${employee.id}}"
                class="edit-button">
