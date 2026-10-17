@@ -12,6 +12,10 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
 
     List<Customer> findByBranchId(Long branchId);
 
+    List<Customer> findByBranchIdOrderByNameAsc(Long branchId);
+
+    List<Customer> findByBranchIdAndNameContainingIgnoreCaseOrderByNameAsc(Long branchId, String name);
+
     List<Customer> findByBranchIdAndActiveTrueOrderByNameAsc(Long branchId);
 
     List<Customer> findByActiveTrue();

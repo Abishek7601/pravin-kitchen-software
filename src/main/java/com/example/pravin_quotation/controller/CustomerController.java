@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.controller;
 
+import com.example.pravin_quotation.model.Branch;
 import com.example.pravin_quotation.model.Customer;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.service.CustomerService;
@@ -7,6 +8,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+
+import java.util.List;
+import java.util.Optional;
 
 @Controller
 @RequestMapping("/admin/customers")
@@ -25,33 +29,52 @@ public class CustomerController {
 
 
     // ==========================================
-    // CUSTOMER LIST
+    // CUSTOMER LIST (ALL OR FILTERED BY BRANCH)
     // ==========================================
+
+    public String customers(String search, Model model) {
+        return customers(search, null, model);
+    }
 
     @GetMapping
     public String customers(
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long branchId,
             Model model) {
 
-        if (search != null && !search.trim().isEmpty()) {
-
-            model.addAttribute(
-                    "customers",
-                    customerService.searchCustomers(search)
-            );
-
-        } else {
-
-            model.addAttribute(
-                    "customers",
-                    customerService.getAllCustomers()
-            );
+        Branch selectedBranch = null;
+        if (branchId != null) {
+            Optional<Branch> branchOpt = branchRepository.findById(branchId);
+            if (branchOpt.isPresent()) {
+                selectedBranch = branchOpt.get();
+                model.addAttribute("selectedBranch", selectedBranch);
+            } else {
+                model.addAttribute("errorMessage", "Selected branch was not found.");
+            }
         }
 
+        List<Customer> customers;
+        if (selectedBranch != null) {
+            if (search != null && !search.trim().isEmpty()) {
+                customers = customerService.searchCustomersByBranch(selectedBranch.getId(), search.trim());
+            } else {
+                customers = customerService.getCustomersByBranch(selectedBranch.getId());
+            }
+            model.addAttribute("branchCustomerCount", customers.size());
+        } else {
+            if (search != null && !search.trim().isEmpty()) {
+                customers = customerService.searchCustomers(search.trim());
+            } else {
+                customers = customerService.getAllCustomers();
+            }
+        }
+
+        model.addAttribute("customers", customers);
         model.addAttribute(
                 "search",
                 search == null ? "" : search
         );
+        model.addAttribute("branchId", branchId);
 
         model.addAttribute("totalCustomers", customerService.getTotalCustomerCount());
         model.addAttribute("activeCustomers", customerService.getActiveCustomerCount());
@@ -59,6 +82,15 @@ public class CustomerController {
         model.addAttribute("branchCustomerCounts", customerService.getBranchWiseCustomerCounts());
 
         return "admin/customers";
+    }
+
+    @GetMapping("/branch/{branchId}")
+    public String customersByBranch(
+            @PathVariable Long branchId,
+            @RequestParam(required = false) String search,
+            Model model) {
+
+        return customers(search, branchId, model);
     }
 
 

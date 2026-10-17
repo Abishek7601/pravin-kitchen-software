@@ -1127,3 +1127,11 @@ a.dashboard-card:hover::before {
     }
 
 }
+
+.branch-stat-link:hover {
+    background: #e5f4f0 !important;
+    border-color: #006D68 !important;
+    color: #003F3B !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 10px rgba(0, 109, 104, 0.12);
+}

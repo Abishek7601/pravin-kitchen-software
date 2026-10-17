@@ -56,8 +56,20 @@ public class CustomerService {
     // ==========================================
 
     public List<Customer> getCustomersByBranch(Long branchId) {
+        if (branchId == null) {
+            return getAllCustomers();
+        }
+        return customerRepository.findByBranchIdOrderByNameAsc(branchId);
+    }
 
-        return customerRepository.findByBranchId(branchId);
+    public List<Customer> searchCustomersByBranch(Long branchId, String name) {
+        if (branchId == null) {
+            return searchCustomers(name);
+        }
+        if (name == null || name.trim().isEmpty()) {
+            return getCustomersByBranch(branchId);
+        }
+        return customerRepository.findByBranchIdAndNameContainingIgnoreCaseOrderByNameAsc(branchId, name.trim());
     }
 
     public List<Customer> getActiveCustomersForBranch(Long branchId) {
