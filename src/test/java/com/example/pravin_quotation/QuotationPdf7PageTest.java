@@ -197,10 +197,16 @@ public class QuotationPdf7PageTest {
         byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
         assertNotNull(pdfBytes);
         assertTrue(pdfBytes.length > 0);
+        java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
+        java.nio.file.Files.write(java.nio.file.Path.of("target/sample_quotation.pdf"), pdfBytes);
 
         // Verify Page Count is EXACTLY 7
         PdfReader reader = new PdfReader(pdfBytes);
         assertEquals(7, reader.getNumberOfPages(), "Quotation PDF must have exactly 7 pages");
+        byte[] p2Content = reader.getPageContent(2);
+        if (p2Content != null) {
+            java.nio.file.Files.write(java.nio.file.Path.of("target/page2_stream.txt"), p2Content);
+        }
         reader.close();
 
         // Verify Page 1 (Cover) contains branding & guidelines text
@@ -389,5 +395,54 @@ public class QuotationPdf7PageTest {
         assertTrue(page2.contains("Offer Price"));
         assertFalse(page2.contains("5.00%"));
         assertTrue(page2.contains("ONE LAKH FOURTEEN THOUSAND"));
+    }
+
+    @Test
+    public void testQuotationWithRequirementsAndNotesStillSevenPages() throws Exception {
+        Quotation q = new Quotation();
+        q.setQuotationNumber("QT-NOTES-8001");
+        q.setCustomer(customerAnand);
+        q.setBranch(branchCoimbatore);
+        q.setEmployee(adminUser);
+        q.setPricingMode(PricingMode.PREMIUM);
+        q.setQuotationDate(LocalDate.now());
+        q.setStatus(QuotationStatus.PENDING);
+        q.setSubtotal(new BigDecimal("95000.00"));
+        q.setTotalAmount(new BigDecimal("95000.00"));
+        q.setOfferPercentage(new BigDecimal("10.00"));
+        q.setOfferAmount(new BigDecimal("9500.00"));
+        q.setGrandTotal(new BigDecimal("85500.00"));
+        q.setCustomerRequirements("All base units must include soft-close tandem boxes and Hafele hinges.");
+        q.setNotes("Installation to be scheduled after civil tile work is completed.");
+        q = quotationRepository.save(q);
+
+        QuotationRoom room = new QuotationRoom();
+        room.setQuotation(q);
+        room.setRoom("Kitchen Area");
+        room.setFloor("Ground Floor");
+        room.setActive(true);
+        room = quotationRoomRepository.save(room);
+
+        QuotationItem item = new QuotationItem();
+        item.setQuotationRoom(room);
+        item.setWorkCategory(kitchenCategory);
+        item.setAmount(new BigDecimal("95000.00"));
+        item.setActive(true);
+        quotationItemRepository.save(item);
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(pdfBytes);
+
+        PdfReader reader = new PdfReader(pdfBytes);
+        assertEquals(7, reader.getNumberOfPages(), "PDF with requirements and notes must still have exactly 7 pages");
+        reader.close();
+
+        String page2 = extractPageText(pdfBytes, 2);
+        assertTrue(page2.contains("Customer Requirements:"));
+        assertTrue(page2.contains("soft-close tandem boxes"));
+        assertTrue(page2.contains("Notes & Special Instructions:"));
+        assertTrue(page2.contains("Installation to be scheduled"));
+        assertTrue(page2.contains("Payment Terms:"));
+        assertTrue(page2.contains("Customer Signature"));
     }
 }
