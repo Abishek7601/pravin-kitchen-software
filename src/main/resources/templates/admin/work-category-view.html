@@ -568,7 +568,6 @@
                           th:data-desc="${oDto.option.description != null and !oDto.option.description.isBlank() ? oDto.option.description : (oDto.specifications != null and !oDto.specifications.isEmpty() ? oDto.specifications[0].name : '')}"
                           th:data-material-id="${mDto.material.id}"
                           th:data-material-name="${mDto.material.name != null ? mDto.material.name.toUpperCase() : ''}"
-                          th:data-order="${oDto.option.displayOrder != null ? oDto.option.displayOrder : 0}"
                           onclick="openEditOptionModal(this)"
                           style="cursor: pointer; background: #e6f3f1; color: #006b63; border-color: #c8dad6;">
                     ✏️ Edit
@@ -660,12 +659,6 @@
             <textarea class="form-control" id="editOptionDesc" name="description" rows="3"
                       placeholder="Optional description or details"></textarea>
           </div>
-
-          <!-- Display Order -->
-          <div class="mb-3">
-            <label for="editOptionOrder" class="form-label" style="font-weight: 600; font-size: 13px;">Display Order</label>
-            <input type="number" class="form-control" id="editOptionOrder" name="displayOrder" min="0" value="0">
-          </div>
         </div>
         <div class="modal-footer" style="background: #f8fafc; border-top: 1px solid #e2e8f0; border-radius: 0 0 12px 12px; padding: 12px 20px;">
           <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal" onclick="closeEditOptionModal()"
@@ -688,14 +681,12 @@ function openEditOptionModal(btn) {
   const desc = btn.getAttribute('data-desc');
   const matId = btn.getAttribute('data-material-id');
   const matName = btn.getAttribute('data-material-name');
-  const order = btn.getAttribute('data-order');
 
   document.getElementById('editOptionId').value = id;
   document.getElementById('editOptionName').value = name;
   document.getElementById('editOptionDesc').value = desc || '';
   document.getElementById('editOptionMaterialId').value = matId;
   document.getElementById('editOptionMaterialName').textContent = matName || 'MATERIAL';
-  document.getElementById('editOptionOrder').value = order || 0;
 
   const form = document.getElementById('editOptionForm');
   form.action = '/admin/material-options/update/' + id;

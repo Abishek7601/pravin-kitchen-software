@@ -20,15 +20,16 @@ public interface WorkCategoryRepository
             Long id
     );
 
+    @Query("SELECT w FROM WorkCategory w ORDER BY w.name ASC")
     List<WorkCategory> findAllByOrderByDisplayOrderAsc();
 
-    @Query("SELECT w FROM WorkCategory w WHERE (w.archived IS NULL OR w.archived = false) ORDER BY w.displayOrder ASC")
+    @Query("SELECT w FROM WorkCategory w WHERE (w.archived IS NULL OR w.archived = false) ORDER BY w.name ASC")
     List<WorkCategory> findNormalCategories();
 
-    @Query("SELECT w FROM WorkCategory w WHERE (w.archived IS NULL OR w.archived = false) AND w.active = true ORDER BY w.displayOrder ASC")
+    @Query("SELECT w FROM WorkCategory w WHERE (w.archived IS NULL OR w.archived = false) AND w.active = true ORDER BY w.name ASC")
     List<WorkCategory> findByActiveTrueOrderByDisplayOrderAsc();
 
-    @Query("SELECT w FROM WorkCategory w WHERE w.archived = true ORDER BY w.displayOrder ASC")
+    @Query("SELECT w FROM WorkCategory w WHERE w.archived = true ORDER BY w.name ASC")
     List<WorkCategory> findArchivedCategories();
 
     @Query("SELECT COUNT(w) FROM WorkCategory w WHERE w.archived = true")

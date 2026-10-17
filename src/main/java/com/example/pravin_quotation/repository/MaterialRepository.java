@@ -31,29 +31,35 @@ public interface MaterialRepository
             Long id
     );
 
+    @Query("SELECT m FROM Material m ORDER BY m.name ASC")
     List<Material> findAllByOrderByDisplayOrderAsc();
 
+    @Query("SELECT m FROM Material m WHERE m.active = true ORDER BY m.name ASC")
     List<Material> findByActiveTrueOrderByDisplayOrderAsc();
 
+    @Query("SELECT m FROM Material m WHERE m.item.id = :itemId ORDER BY m.name ASC")
     List<Material> findByItemIdOrderByDisplayOrderAsc(
-            Long itemId
+            @Param("itemId") Long itemId
     );
 
+    @Query("SELECT m FROM Material m WHERE m.item.id = :itemId AND m.active = true ORDER BY m.name ASC")
     List<Material> findByItemIdAndActiveTrueOrderByDisplayOrderAsc(
-            Long itemId
+            @Param("itemId") Long itemId
     );
 
+    @Query("SELECT DISTINCT m FROM Material m JOIN m.divisions d WHERE d.id = :divisionId AND m.active = true ORDER BY m.name ASC")
     List<Material> findByDivisionsIdAndActiveTrueOrderByDisplayOrderAsc(
-            Long divisionId
+            @Param("divisionId") Long divisionId
     );
 
+    @Query("SELECT DISTINCT m FROM Material m JOIN m.divisions d WHERE d.id = :divisionId ORDER BY m.name ASC")
     List<Material> findByDivisionsIdOrderByDisplayOrderAsc(
-            Long divisionId
+            @Param("divisionId") Long divisionId
     );
 
-    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) AND m.active = true ORDER BY m.displayOrder ASC")
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) AND m.active = true ORDER BY m.name ASC")
     List<Material> findActiveByDivisionId(@Param("divisionId") Long divisionId);
 
-    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) ORDER BY m.displayOrder ASC")
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) ORDER BY m.name ASC")
     List<Material> findAllByDivisionId(@Param("divisionId") Long divisionId);
 }

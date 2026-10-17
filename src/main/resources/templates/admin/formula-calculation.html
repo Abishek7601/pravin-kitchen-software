@@ -565,7 +565,7 @@
               </td>
             </tr>
             <tr th:each="f, stat : ${formulas}">
-              <td class="text-muted fw-bold" th:text="${f.displayOrder != null ? f.displayOrder : stat.count}">1</td>
+              <td class="text-muted fw-bold" th:text="${stat.count}">1</td>
               <td>
                 <span class="fw-bold text-dark" th:text="${f.name}">(L + W) × H</span>
                 <span th:if="${f.isSystem}" class="badge bg-light text-muted border ms-1" style="font-size: 0.65rem;">Default</span>
@@ -598,7 +598,7 @@
                 <div class="d-inline-flex gap-1 align-items-center">
                   <!-- Edit Button -->
                   <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit Formula"
-                          th:attr="data-id=${f.id}, data-name=${f.name}, data-expression=${f.expression}, data-type=${f.calculationType}, data-unittype=${f.unitType}, data-measurement=${f.measurementUnit}, data-pricing=${f.pricingUnit}, data-desc=${f.description}, data-order=${f.displayOrder}"
+                          th:attr="data-id=${f.id}, data-name=${f.name}, data-expression=${f.expression}, data-type=${f.calculationType}, data-unittype=${f.unitType}, data-measurement=${f.measurementUnit}, data-pricing=${f.pricingUnit}, data-desc=${f.description}"
                           onclick="openEditModal(this)">
                     <i class="bi bi-pencil"></i>
                   </button>
@@ -788,24 +788,19 @@
                 <div id="addValidationFeedback" class="small mt-1 text-muted">Variables supported: L, W, H. Operators: +, -, *, /, ()</div>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="addCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
                 <select class="form-select" id="addCalcType" name="calculationType" required onchange="syncAddUnits()">
                   <option value="SQFT" selected>Sqft (Square Feet)</option>
                 </select>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="addUnitType" class="form-label fw-bold">Unit Type</label>
                 <select class="form-select" id="addUnitType" name="unitType" onchange="syncAddUnits()">
                   <option value="AREA">AREA (2D / 3D Area)</option>
                   <option value="LINEAR">LINEAR (1D Length / Perimeter)</option>
                 </select>
-              </div>
-
-              <div class="col-md-4">
-                <label for="addDisplayOrder" class="form-label fw-bold">Display Order</label>
-                <input type="number" class="form-control" id="addDisplayOrder" name="displayOrder" value="10" min="0">
               </div>
 
               <div class="col-md-6">
@@ -856,24 +851,19 @@
                 <div id="editValidationFeedback" class="small mt-1 text-muted">Variables supported: L, W, H. Operators: +, -, *, /, ()</div>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="editCalcType" class="form-label fw-bold">Calculation Type <span class="text-danger">*</span></label>
                 <select class="form-select" id="editCalcType" name="calculationType" required onchange="syncEditUnits()">
                   <option value="SQFT" selected>Sqft (Square Feet)</option>
                 </select>
               </div>
 
-              <div class="col-md-4">
+              <div class="col-md-6">
                 <label for="editUnitType" class="form-label fw-bold">Unit Type</label>
                 <select class="form-select" id="editUnitType" name="unitType" onchange="syncEditUnits()">
                   <option value="AREA">AREA (2D / 3D Area)</option>
                   <option value="LINEAR">LINEAR (1D Length / Perimeter)</option>
                 </select>
-              </div>
-
-              <div class="col-md-4">
-                <label for="editDisplayOrder" class="form-label fw-bold">Display Order</label>
-                <input type="number" class="form-control" id="editDisplayOrder" name="displayOrder" min="0">
               </div>
 
               <div class="col-md-6">
@@ -1004,7 +994,6 @@
       document.getElementById('editMeasurementUnit').value = 'SQFT';
       document.getElementById('editPricingUnit').value = '₹ / SQFT';
       document.getElementById('editDescription').value = button.getAttribute('data-desc') || '';
-      document.getElementById('editDisplayOrder').value = button.getAttribute('data-order') || '0';
 
       const modal = new bootstrap.Modal(document.getElementById('editFormulaModal'));
       modal.show();
