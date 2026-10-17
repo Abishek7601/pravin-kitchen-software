@@ -1,26 +1,28 @@
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --gold: #b98324;
-    --gold-light: #f8edda;
+    --gold: #9A6B00;
+    --gold-light: #FFF8E7;
 
-    --page-bg: #f5f8f6;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --surface-soft: #fbfdfc;
+    --surface-soft: #F5F8F7;
 
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --border: #dfeae5;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --border: #D6E4E1;
 
-    --danger: #c94a4a;
+    --danger: #B42318;
 
-    --shadow-sm: 0 8px 24px rgba(6, 59, 53, .07);
-    --shadow-md: 0 18px 45px rgba(6, 59, 53, .10);
+    --shadow-sm: 0 8px 24px rgba(2, 69, 65, .05);
+    --shadow-md: 0 18px 45px rgba(2, 69, 65, .08);
 }
 
 * {
@@ -69,7 +71,7 @@ button {
     justify-content: space-between;
     gap: 24px;
     padding: 15px clamp(18px, 4vw, 52px);
-    background: linear-gradient(135deg, #0a2f2a, #063b35 55%, #075548);
+    background: linear-gradient(135deg, #012A27, #024541 55%, #013A36);
     color: #fff;
     box-shadow: 0 8px 28px rgba(0,0,0,.16);
     border-bottom: 2px solid rgba(185,131,36,.75);
@@ -339,7 +341,7 @@ button {
 }
 
 .mode-button.premium.selected {
-    background: #075548;
+    background: #024541;
 }
 
 .mode-button.middle.selected {
@@ -1409,25 +1411,25 @@ button {
 
 .nav-back-btn {
     background: #ffffff;
-    border: 1px solid rgba(8, 127, 105, 0.25);
-    color: var(--peacock-green, #087f69);
+    border: 1px solid var(--border, #D6E4E1);
+    color: var(--primary, #024541);
     cursor: pointer;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
 .nav-back-btn:hover {
-    background: #f0faf5;
-    color: var(--peacock-dark, #063b35);
-    border-color: var(--peacock-green, #087f69);
+    background: var(--peacock-light, #EAF3F1);
+    color: var(--primary-hover, #013A36);
+    border-color: var(--primary, #024541);
 }
 
 .nav-dashboard-btn {
-    background: var(--peacock-green, #087f69);
+    background: var(--primary, #024541);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 8px rgba(8, 127, 105, 0.2);
+    box-shadow: 0 2px 8px rgba(2, 69, 65, 0.2);
 }
 
 .nav-dashboard-btn:hover {
-    background: var(--peacock-dark, #063b35);
+    background: var(--primary-hover, #013A36);
 }

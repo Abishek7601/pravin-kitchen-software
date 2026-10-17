@@ -1,37 +1,39 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #dff5ed;
-    --peacock-soft: #eaf9f3;
-    --peacock-pale: #f2fbf7;
+    --peacock-light: #EAF3F1;
+    --peacock-soft: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f9f6;
+    --page-bg: #F5F8F7;
     --white: #ffffff;
 
-    --text-main: #173b33;
-    --text-dark: #0b3029;
-    --text-muted: #70867d;
+    --text-main: #243330;
+    --text-dark: #243330;
+    --text-muted: #687873;
 
-    --border: #d9ebe4;
-    --border-light: #e7f1ed;
+    --border: #D6E4E1;
+    --border-light: #EAF3F1;
 
-    --success: #087f45;
-    --success-bg: #d8f7e8;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
 
-    --inactive: #5e747b;
-    --inactive-bg: #e7eef0;
+    --inactive: #687873;
+    --inactive-bg: #EAF3F1;
 
-    --danger: #dc3545;
-    --danger-bg: #fff1f2;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
 
-    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.06);
-    --shadow-md: 0 12px 35px rgba(6, 59, 53, 0.09);
-    --shadow-lg: 0 18px 50px rgba(6, 59, 53, 0.12);
+    --shadow-sm: 0 4px 14px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 35px rgba(2, 69, 65, 0.08);
+    --shadow-lg: 0 18px 50px rgba(2, 69, 65, 0.12);
 
     --radius-sm: 9px;
     --radius-md: 12px;
@@ -71,7 +73,7 @@ body {
         ),
         radial-gradient(
             circle at 0% 100%,
-            rgba(8, 127, 105, 0.06),
+            rgba(2, 69, 65, 0.06),
             transparent 25%
         ),
         var(--page-bg);
@@ -111,13 +113,13 @@ body {
     background:
         linear-gradient(
             120deg,
-            #063b35 0%,
-            #075548 45%,
-            #087f69 100%
+            #012A27 0%,
+            #024541 45%,
+            #013A36 100%
         );
 
     box-shadow:
-        0 5px 20px rgba(6, 59, 53, 0.18);
+        0 5px 20px rgba(2, 69, 65, 0.18);
 }
 
 
@@ -277,33 +279,25 @@ body {
 /* Add */
 
 .add-btn {
-    border: 1px solid #2dd6b0;
+    border: 1px solid var(--primary, #024541);
 
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            135deg,
-            #087f69,
-            #10a889
-        );
+    background: var(--primary, #024541);
 
     box-shadow:
-        0 5px 16px rgba(0, 0, 0, 0.12);
+        0 5px 16px rgba(2, 69, 65, 0.16);
 }
 
 .add-btn:hover {
     color: #ffffff;
 
-    background:
-        linear-gradient(
-            135deg,
-            #10a889,
-            #18b998
-        );
+    background: var(--primary-hover, #013A36);
+
+    border-color: var(--primary-hover, #013A36);
 
     box-shadow:
-        0 8px 22px rgba(0, 0, 0, 0.16);
+        0 8px 22px rgba(2, 69, 65, 0.22);
 
     transform: translateY(-1px);
 }
@@ -442,7 +436,7 @@ body {
         );
 
     box-shadow:
-        inset 0 0 0 1px rgba(8, 127, 105, 0.04);
+        inset 0 0 0 1px rgba(2, 69, 65, 0.04);
 }
 
 
@@ -697,7 +691,7 @@ body {
         );
 
     box-shadow:
-        inset 0 0 0 1px rgba(8, 127, 105, 0.05);
+        inset 0 0 0 1px rgba(2, 69, 65, 0.05);
 }
 
 
@@ -918,7 +912,7 @@ body {
 
     background: var(--peacock-green);
 
-    box-shadow: 0 4px 12px rgba(8, 127, 105, 0.18);
+    box-shadow: 0 4px 12px rgba(2, 69, 65, 0.18);
 
     transform: translateY(-1px);
 }
@@ -940,7 +934,7 @@ body {
 
     background: var(--peacock-deep);
 
-    box-shadow: 0 4px 12px rgba(6, 59, 53, 0.16);
+    box-shadow: 0 4px 12px rgba(2, 69, 65, 0.16);
 
     transform: translateY(-1px);
 }
@@ -1012,7 +1006,7 @@ body {
         );
 
     box-shadow:
-        0 8px 22px rgba(8, 127, 105, 0.08);
+        0 8px 22px rgba(2, 69, 65, 0.08);
 }
 
 
@@ -1065,7 +1059,7 @@ body {
         );
 
     box-shadow:
-        0 5px 15px rgba(8, 127, 105, 0.18);
+        0 5px 15px rgba(2, 69, 65, 0.18);
 
     transition:
         transform 0.2s ease,
@@ -1079,7 +1073,7 @@ body {
     transform: translateY(-1px);
 
     box-shadow:
-        0 8px 20px rgba(8, 127, 105, 0.25);
+        0 8px 20px rgba(2, 69, 65, 0.25);
 }
 
 

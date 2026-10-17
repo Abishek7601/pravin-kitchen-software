@@ -1,30 +1,32 @@
 
 
 :root {
-    --peacock: #006b63;
-    --peacock-dark: #004f4a;
-    --peacock-deep: #003d3a;
-    --peacock-blue: #087f8c;
-    --emerald: #13866d;
-    --gold: #d6ad55;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock: #024541;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-blue: #024541;
+    --emerald: #024541;
+    --gold: #9A6B00;
 
-    --page-bg: #f1f7f6;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --surface-soft: #f5faf9;
+    --surface-soft: #F5F8F7;
 
-    --text-primary: #173c3a;
-    --text-secondary: #617c79;
-    --text-muted: #819795;
+    --text-primary: #243330;
+    --text-secondary: #687873;
+    --text-muted: #687873;
 
-    --border: #dceae7;
-    --border-strong: #c5ddd8;
+    --border: #D6E4E1;
+    --border-strong: #D6E4E1;
 
-    --success: #16845c;
-    --warning: #b7791f;
-    --danger: #c44747;
+    --success: #13795B;
+    --warning: #9A6B00;
+    --danger: #B42318;
 
-    --shadow-sm: 0 4px 14px rgba(0, 75, 68, 0.06);
-    --shadow-md: 0 12px 32px rgba(0, 75, 68, 0.09);
+    --shadow-sm: 0 4px 14px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 32px rgba(2, 69, 65, 0.08);
 
     --radius-sm: 10px;
     --radius-md: 16px;
@@ -111,7 +113,7 @@ a:focus-visible {
         ),
         linear-gradient(
             180deg,
-            #004f4a 0%,
+            #013A36 0%,
             #003f3c 55%,
             #003532 100%
         );
@@ -430,7 +432,7 @@ a:focus-visible {
         var(--peacock-blue)
     );
     border-color: var(--peacock);
-    box-shadow: 0 4px 10px rgba(0, 107, 99, 0.12);
+    box-shadow: 0 4px 10px rgba(2, 69, 65, 0.12);
 }
 
 .btn-primary:hover {
@@ -441,7 +443,7 @@ a:focus-visible {
         #066c78
     );
     border-color: var(--peacock-dark);
-    box-shadow: 0 7px 16px rgba(0, 107, 99, 0.2);
+    box-shadow: 0 7px 16px rgba(2, 69, 65, 0.2);
 }
 
 .btn-outline-secondary {
@@ -648,9 +650,9 @@ a:focus-visible {
 }
 
 .status-badge:where(.status-completed) {
-    color: #006b63;
-    background: #ddf4ee;
-    border-color: #b6e3d8;
+    color: #024541;
+    background: #EAF3F1;
+    border-color: #D6E4E1;
 }
 
 .status-badge:where(.status-cancelled) {
@@ -761,7 +763,7 @@ a:focus-visible {
 
 .room-card:hover {
     border-color: #a9d3c9;
-    box-shadow: 0 8px 22px rgba(0, 75, 68, 0.07);
+    box-shadow: 0 8px 22px rgba(2, 69, 65, 0.07);
     transform: translateY(-1px);
 }
 

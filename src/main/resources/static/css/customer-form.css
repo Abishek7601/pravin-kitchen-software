@@ -1,26 +1,28 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
-    --peacock-light: #e0f5ec;
-    --peacock-pale: #f0faf5;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f8f5;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
-    --surface-soft: #f8fbf9;
+    --surface-soft: #F5F8F7;
 
-    --text-main: #19352e;
-    --text-muted: #71847b;
-    --border-color: #e0ebe5;
+    --text-main: #243330;
+    --text-muted: #687873;
+    --border-color: #D6E4E1;
 
-    --success: #16865d;
-    --danger: #b94343;
+    --success: #13795B;
+    --danger: #B42318;
 
-    --shadow-sm: 0 4px 14px rgba(6, 59, 53, 0.05);
-    --shadow-md: 0 12px 32px rgba(6, 59, 53, 0.09);
+    --shadow-sm: 0 4px 14px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 12px 32px rgba(2, 69, 65, 0.08);
 
     --radius-md: 14px;
     --radius-lg: 22px;
@@ -112,7 +114,7 @@ a {
         );
 
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    box-shadow: 0 6px 24px rgba(6, 59, 53, 0.12);
+    box-shadow: 0 6px 24px rgba(2, 69, 65, 0.12);
 }
 
 /* BRAND */
@@ -401,7 +403,7 @@ a {
 .form-group textarea:focus {
     background: #ffffff;
     border-color: var(--peacock-green);
-    box-shadow: 0 0 0 4px rgba(8, 127, 105, 0.1);
+    box-shadow: 0 0 0 4px rgba(2, 69, 65, 0.1);
 }
 
 /* AUTOFILL */
@@ -579,7 +581,7 @@ a {
     font-weight: 800;
     text-align: center;
 
-    box-shadow: 0 5px 15px rgba(8, 127, 105, 0.16);
+    box-shadow: 0 5px 15px rgba(2, 69, 65, 0.16);
 
     cursor: pointer;
 
@@ -597,7 +599,7 @@ a {
     );
 
     transform: translateY(-2px);
-    box-shadow: 0 9px 21px rgba(8, 127, 105, 0.23);
+    box-shadow: 0 9px 21px rgba(2, 69, 65, 0.23);
 }
 
 .save-button:active {

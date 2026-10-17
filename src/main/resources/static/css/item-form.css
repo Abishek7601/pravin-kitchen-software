@@ -1,31 +1,33 @@
 
 
 :root {
-    --peacock-dark: #063b35;
-    --peacock-deep: #075548;
-    --peacock-green: #087f69;
-    --peacock-bright: #10a889;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock-green: #024541;
+    --peacock-bright: #035A55;
 
-    --peacock-light: #dff5ed;
-    --peacock-soft: #e9f8f3;
-    --peacock-pale: #f2fbf7;
+    --peacock-light: #EAF3F1;
+    --peacock-soft: #EAF3F1;
+    --peacock-pale: #F5F8F7;
 
-    --page-bg: #f3f9f6;
+    --page-bg: #F5F8F7;
     --surface: #ffffff;
 
-    --text-main: #19352e;
-    --text-dark: #102b25;
-    --text-muted: #71847b;
-    --text-light: #91a29b;
+    --text-main: #243330;
+    --text-dark: #243330;
+    --text-muted: #687873;
+    --text-light: #687873;
 
-    --border-color: #dfece6;
-    --border-light: #e9f1ed;
+    --border-color: #D6E4E1;
+    --border-light: #EAF3F1;
 
-    --danger: #d94a4a;
+    --danger: #B42318;
 
-    --shadow-sm: 0 4px 16px rgba(6, 59, 53, 0.06);
-    --shadow-md: 0 10px 30px rgba(6, 59, 53, 0.09);
-    --shadow-lg: 0 18px 45px rgba(6, 59, 53, 0.12);
+    --shadow-sm: 0 4px 16px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 10px 30px rgba(2, 69, 65, 0.08);
+    --shadow-lg: 0 18px 45px rgba(2, 69, 65, 0.12);
 
     --radius-sm: 8px;
     --radius-md: 13px;
@@ -196,7 +198,7 @@ body {
     transform: translateY(-2px);
 
     box-shadow:
-        0 8px 20px rgba(8, 127, 105, 0.18);
+        0 8px 20px rgba(2, 69, 65, 0.18);
 }
 
 
@@ -344,7 +346,7 @@ body {
     border-color: var(--peacock-green) !important;
 
     box-shadow:
-        0 0 0 4px rgba(8, 127, 105, 0.10) !important;
+        0 0 0 4px rgba(2, 69, 65, 0.10) !important;
 }
 
 
@@ -544,7 +546,7 @@ input[type="number"].form-control::-webkit-inner-spin-button {
     cursor: pointer;
 
     box-shadow:
-        0 7px 18px rgba(8, 127, 105, 0.20);
+        0 7px 18px rgba(2, 69, 65, 0.20);
 
     transition:
         transform 0.2s ease,
@@ -565,7 +567,7 @@ input[type="number"].form-control::-webkit-inner-spin-button {
     transform: translateY(-2px);
 
     box-shadow:
-        0 10px 24px rgba(8, 127, 105, 0.25);
+        0 10px 24px rgba(2, 69, 65, 0.25);
 }
 
 .save-btn:active {
@@ -588,7 +590,7 @@ input[type="number"].form-control::-webkit-inner-spin-button {
     border-color: var(--peacock-green) !important;
 
     box-shadow:
-        0 0 0 4px rgba(8, 127, 105, 0.07) !important;
+        0 0 0 4px rgba(2, 69, 65, 0.07) !important;
 }
 
 

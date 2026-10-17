@@ -1,0 +1,178 @@
+/* =========================================================
+   PRAVIN KITCHENS & INTERIORS - CORE BRAND THEME SYSTEM
+   Primary Brand Color: #024541
+   ========================================================= */
+
+:root {
+    /* Brand Primary Palette */
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --primary-active: #012825;
+    --primary-rgb: 2, 69, 65;
+
+    /* Backgrounds & Surfaces */
+    --light-teal: #EAF3F1;
+    --border-subtle: #D6E4E1;
+    --page-bg: #F5F8F7;
+    --card-bg: #FFFFFF;
+    --surface: #FFFFFF;
+
+    /* Typography */
+    --text-main: #243330;
+    --text-muted: #687873;
+    --text-soft: #8D9E99;
+
+    /* Semantic Status Colors */
+    --success: #13795B;
+    --success-bg: #EAF5F1;
+    --success-border: #CCE8DD;
+
+    --warning: #9A6B00;
+    --warning-bg: #FFF8E7;
+    --warning-border: #F5E5BA;
+
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
+    --danger-border: #FECDCA;
+
+    --info: #025752;
+    --info-bg: #EAF3F1;
+    --info-border: #D6E4E1;
+
+    /* Shadows & Radii */
+    --shadow-xs: 0 1px 3px rgba(2, 69, 65, 0.04);
+    --shadow-sm: 0 3px 12px rgba(2, 69, 65, 0.06);
+    --shadow-md: 0 8px 24px rgba(2, 69, 65, 0.08);
+    --shadow-lg: 0 16px 40px rgba(2, 69, 65, 0.12);
+
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+    --radius-xl: 18px;
+
+    /* Legacy Variable Aliases across Admin & Employee stylesheets */
+    --peacock: #024541;
+    --peacock-dark: #013A36;
+    --peacock-deep: #012825;
+    --peacock-green: #024541;
+    --peacock-bright: #035B56;
+    --peacock-light: #EAF3F1;
+    --peacock-pale: #F5F8F7;
+    --mint: #D6E4E1;
+    --border: #D6E4E1;
+    --border-color: #D6E4E1;
+    --page-background: #F5F8F7;
+    --text-primary: #243330;
+    --text-secondary: #687873;
+    --white: #FFFFFF;
+
+    /* Employee portal legacy mapping */
+    --emp-peacock-dark: #013A36;
+    --emp-peacock-deep: #012825;
+    --emp-peacock: #024541;
+    --emp-peacock-light: #035B56;
+    --emp-emerald: #024541;
+    --emp-page-bg: #F5F8F7;
+    --emp-border: #D6E4E1;
+    --emp-text-dark: #243330;
+    --emp-text: #243330;
+    --emp-muted: #687873;
+    --emp-white: #FFFFFF;
+}
+
+/* Global Focus Styles with Dark Teal brand ring */
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.form-select:focus {
+    border-color: #024541 !important;
+    box-shadow: 0 0 0 3px rgba(2, 69, 65, 0.14) !important;
+    outline: none !important;
+}
+
+/* Buttons System */
+.btn-primary,
+button.btn-primary,
+a.btn-primary,
+.btn-save,
+.save-btn,
+.btn-submit {
+    background-color: #024541 !important;
+    border-color: #024541 !important;
+    color: #FFFFFF !important;
+    transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.12s ease;
+}
+
+.btn-primary:hover,
+button.btn-primary:hover,
+a.btn-primary:hover,
+.btn-save:hover,
+.save-btn:hover,
+.btn-submit:hover {
+    background-color: #013A36 !important;
+    border-color: #013A36 !important;
+    color: #FFFFFF !important;
+}
+
+.btn-secondary,
+.btn-cancel,
+.cancel-btn {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D6E4E1 !important;
+    color: #243330 !important;
+    transition: background-color 0.18s ease, border-color 0.18s ease;
+}
+
+.btn-secondary:hover,
+.btn-cancel:hover,
+.cancel-btn:hover {
+    background-color: #EAF3F1 !important;
+    border-color: #D6E4E1 !important;
+    color: #024541 !important;
+}
+
+/* Status Badges */
+.status-badge.active,
+.badge-active {
+    background-color: #EAF5F1 !important;
+    color: #13795B !important;
+    border: 1px solid #CCE8DD !important;
+}
+
+.status-badge.inactive,
+.badge-inactive {
+    background-color: #F5F8F7 !important;
+    color: #687873 !important;
+    border: 1px solid #D6E4E1 !important;
+}
+
+.status-badge.pending,
+.badge-pending {
+    background-color: #FFF8E7 !important;
+    color: #9A6B00 !important;
+    border: 1px solid #F5E5BA !important;
+}
+
+.status-badge.sent,
+.badge-sent {
+    background-color: #EAF3F1 !important;
+    color: #024541 !important;
+    border: 1px solid #D6E4E1 !important;
+}
+
+.status-badge.working,
+.badge-working {
+    background-color: #EAF5F1 !important;
+    color: #13795B !important;
+    border: 1px solid #CCE8DD !important;
+}
+
+/* Tables Headings */
+table thead th,
+.table thead th,
+.custom-table thead th {
+    background-color: #EAF3F1;
+    color: #024541;
+    border-bottom: 1px solid #D6E4E1;
+}

@@ -24,11 +24,11 @@
         <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
       </div>
       <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #006b63; background: #e6f4f1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
-        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #c8dad6; color: #006b63; text-decoration: none; transition: all 0.2s ease;">
+        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #024541; background: #EAF3F1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">
           <span>← Back</span>
         </button>
-        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #006b63; color: #ffffff; transition: all 0.2s ease;">
+        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">
           <span>⌂ Dashboard</span>
         </a>
       </div>
@@ -55,26 +55,26 @@
         </div>
       </div>
 
-      <div class="customer-selection-mode" style="margin-bottom: 18px; padding: 12px 16px; background: #f0faf6; border: 1px solid #cce8de; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-        <span style="font-size: 13px; font-weight: 700; color: #063b35; text-transform: uppercase; letter-spacing: 0.5px;">Customer Option:</span>
+      <div class="customer-selection-mode" style="margin-bottom: 18px; padding: 12px 16px; background: #f0faf6; border: 1px solid #D6E4E1; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
+        <span style="font-size: 13px; font-weight: 700; color: #013A36; text-transform: uppercase; letter-spacing: 0.5px;">Customer Option:</span>
         <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="EXISTING" checked style="accent-color: #087f69; width: 17px; height: 17px;">
+          <input type="radio" name="customerMode" value="EXISTING" checked style="accent-color: #024541; width: 17px; height: 17px;">
           <span>Existing Customer</span>
         </label>
         <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="NEW" style="accent-color: #087f69; width: 17px; height: 17px;">
+          <input type="radio" name="customerMode" value="NEW" style="accent-color: #024541; width: 17px; height: 17px;">
           <span>New Customer</span>
         </label>
       </div>
 
-      <div id="existingCustomerBlock" style="margin-bottom: 20px; padding: 16px; background: #ffffff; border: 1.5px solid #087f69; border-radius: 10px; box-shadow: 0 2px 8px rgba(8, 127, 105, 0.08);">
-        <label style="display: block; font-weight: 600; font-size: 13px; color: #075548; margin-bottom: 8px;">
+      <div id="existingCustomerBlock" style="margin-bottom: 20px; padding: 16px; background: #ffffff; border: 1.5px solid #024541; border-radius: 10px; box-shadow: 0 2px 8px rgba(2, 69, 65, 0.08);">
+        <label style="display: block; font-weight: 600; font-size: 13px; color: #024541; margin-bottom: 8px;">
           Search &amp; Select Existing Customer <span>*</span>
         </label>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
           <input type="text" id="customerSearchInput" placeholder="🔍 Search by name or phone..." 
-                 style="flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #c8dad6; border-radius: 8px; font-size: 14px; outline: none; background: #fdfdfd;">
-          <select id="existingCustomerSelect" style="flex: 2; min-width: 280px; padding: 9px 12px; border: 1px solid #c8dad6; border-radius: 8px; font-size: 14px; background: #ffffff;">
+                 style="flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; outline: none; background: #fdfdfd;">
+          <select id="existingCustomerSelect" style="flex: 2; min-width: 280px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; background: #ffffff;">
             <option value="">-- Choose an existing customer --</option>
             <option th:each="c : ${customers}"
                     th:value="${c.id}"
@@ -89,7 +89,7 @@
         </div>
         <div id="customerSelectionFeedback" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
           <small id="customerSearchCount" style="color: #71847b; font-size: 12px;"></small>
-          <small id="selectedCustomerBadge" style="display: none; color: #087f69; font-weight: 600; font-size: 12px; background: #e0f5ec; padding: 3px 8px; border-radius: 4px;">✓ Customer details auto-populated</small>
+          <small id="selectedCustomerBadge" style="display: none; color: #024541; font-weight: 600; font-size: 12px; background: #EAF3F1; padding: 3px 8px; border-radius: 4px;">✓ Customer details auto-populated</small>
         </div>
       </div>
 
@@ -133,7 +133,7 @@
         </button>
       </div>
       <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
-      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #006b63; font-weight: 600;"></div>
+      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #024541; font-weight: 600;"></div>
       <div class="grid two">
         <label class="field">Floor <span>*</span>
           <select id="floor"><option value="">Select floor</option>
@@ -844,7 +844,7 @@
             </div>
             <div style="text-align: right;">
               <span style="font-size: 11px; color: #64748b; display: block;">Room Subtotal</span>
-              <strong style="color: #006b63; font-size: 1.15rem;">${money(roomTotal)}</strong>
+              <strong style="color: #024541; font-size: 1.15rem;">${money(roomTotal)}</strong>
             </div>
           </div>`;
           const table = document.createElement('div');

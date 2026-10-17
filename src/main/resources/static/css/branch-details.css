@@ -1,31 +1,33 @@
 
 
 :root {
-    --peacock-dark: #073b38;
-    --peacock-deep: #064e48;
-    --peacock: #08786d;
-    --peacock-light: #119b89;
-    --emerald: #16a394;
-    --gold: #c5a15c;
-    --gold-light: #ead6a0;
+    --primary: #024541;
+    --primary-hover: #013A36;
+    --peacock-dark: #013A36;
+    --peacock-deep: #024541;
+    --peacock: #024541;
+    --peacock-light: #035A55;
+    --emerald: #024541;
+    --gold: #9A6B00;
+    --gold-light: #FFF8E7;
 
-    --page-bg: #f3f8f6;
+    --page-bg: #F5F8F7;
     --white: #ffffff;
-    --text-dark: #173c38;
-    --text: #365954;
-    --muted: #81938f;
-    --border: #e0ebe7;
+    --text-dark: #243330;
+    --text: #243330;
+    --muted: #687873;
+    --border: #D6E4E1;
 
-    --success: #16764a;
-    --success-bg: #e7f7ed;
-    --danger: #b83242;
-    --danger-bg: #fff0f1;
-    --warning: #986d19;
-    --warning-bg: #fff6df;
+    --success: #13795B;
+    --success-bg: #EAF5F1;
+    --danger: #B42318;
+    --danger-bg: #FEE4E2;
+    --warning: #9A6B00;
+    --warning-bg: #FFF8E7;
 
-    --shadow-sm: 0 3px 12px rgba(7, 59, 56, 0.05);
-    --shadow-md: 0 10px 30px rgba(7, 59, 56, 0.08);
-    --shadow-lg: 0 18px 45px rgba(7, 59, 56, 0.12);
+    --shadow-sm: 0 3px 12px rgba(2, 69, 65, 0.05);
+    --shadow-md: 0 10px 30px rgba(2, 69, 65, 0.08);
+    --shadow-lg: 0 18px 45px rgba(2, 69, 65, 0.12);
 
     --radius-sm: 10px;
     --radius-md: 15px;
@@ -230,26 +232,26 @@ button:focus-visible {
 .nav-back-btn {
     background: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.8);
-    color: #006b63;
+    color: var(--primary, #024541);
     cursor: pointer;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .nav-back-btn:hover {
     background: #f0faf7;
-    color: #063f3b;
+    color: var(--primary-hover, #013A36);
     border-color: #ffffff;
 }
 
 .nav-dashboard-btn {
-    background: #006b63;
+    background: var(--primary, #024541);
     color: #ffffff;
     border: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .nav-dashboard-btn:hover {
-    background: #063f3b;
+    background: var(--primary-hover, #013A36);
     border-color: rgba(255, 255, 255, 0.6);
 }
 
@@ -273,7 +275,7 @@ button:focus-visible {
 }
 
 .edit-district-button {
-    color: #063f3b;
+    color: #013A36;
     background: linear-gradient(
         135deg,
         #fceaa6,
