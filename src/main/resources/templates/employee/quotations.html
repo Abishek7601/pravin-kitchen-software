@@ -14,7 +14,8 @@
           th:href="@{/css/employee-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/employee-quotations.css}">
-
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -85,7 +86,7 @@
 
 <div class="table-card">
 
-    <table>
+    <table id="employeeQuotationTable">
 
         <thead>
         <tr>
@@ -500,6 +501,19 @@
 </script>
 
 <script th:src="@{/js/employee-session.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var table = document.getElementById('employeeQuotationTable');
+        if (table) {
+            initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: 'quotations'
+            });
+        }
+    });
+</script>
 </body>
 </html>
 

@@ -17,7 +17,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/pricing.css}">
-
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -820,10 +821,7 @@
 
 
 
-<!-- =========================================================
-     JAVASCRIPT
-========================================================== -->
-
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
 
@@ -831,25 +829,23 @@
      SEARCH PRICING
   ====================================================== */
 
+  var pricingPagination = null;
+
   function searchPricing() {
 
       const input =
           document.getElementById("pricingSearch");
 
       const filter =
-          input.value.toLowerCase().trim();
-
+          input ? input.value.toLowerCase().trim() : "";
 
       const rows =
           document.querySelectorAll(".pricing-row");
 
-
       const searchEmptyState =
           document.getElementById("searchEmptyState");
 
-
       let visibleRows = 0;
-
 
       rows.forEach(function(row) {
 
@@ -858,40 +854,29 @@
                   .toLowerCase()
                   .trim();
 
-
           if (rowText.includes(filter)) {
 
-              row.style.display = "";
-
+              row.removeAttribute("data-filtered-out");
               visibleRows++;
 
           } else {
 
-              row.style.display = "none";
+              row.setAttribute("data-filtered-out", "true");
 
           }
 
       });
 
-
-      /*
-       * Show search empty state
-       */
-
-      if (
-          rows.length > 0 &&
-          visibleRows === 0 &&
-          filter !== ""
-      ) {
-
+      if (searchEmptyState) {
           searchEmptyState.style.display =
-              "table-row";
+              (rows.length > 0 && visibleRows === 0 && filter !== "")
+                  ? "table-row"
+                  : "none";
+      }
 
-      } else {
-
-          searchEmptyState.style.display =
-              "none";
-
+      if (pricingPagination) {
+          pricingPagination.currentPage = 1;
+          pricingPagination.applyFilterAndRender();
       }
 
   }
@@ -966,6 +951,14 @@
       "DOMContentLoaded",
       function() {
 
+          const table = document.getElementById("pricingTable");
+          if (table) {
+              pricingPagination = initTablePagination({
+                  table: table,
+                  pageSize: 10,
+                  recordLabel: "pricing records"
+              });
+          }
 
           /* ---------------------------------------------
              SEARCH INPUT

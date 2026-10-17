@@ -1,0 +1,155 @@
+/* =============================================================================
+   PRAVIN KITCHENS & INTERIORS - STANDARDIZED PAGINATION COMPONENT
+   Brand Theme: #024541
+   ============================================================================= */
+
+.pagination-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 20px;
+    background: #ffffff;
+    border-top: 1px solid #D6E4E1;
+    border-bottom-left-radius: inherit;
+    border-bottom-right-radius: inherit;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 0;
+    box-sizing: border-box;
+}
+
+.pagination-info {
+    font-size: 13.5px;
+    color: #4b635d;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    line-height: 1.4;
+}
+
+.pagination-info strong {
+    color: #013A36;
+    font-weight: 700;
+}
+
+.pagination-nav {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.pagination-btn,
+.pagination-page-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 36px;
+    height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #024541;
+    background: #ffffff;
+    border: 1.5px solid #D6E4E1;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.18s ease-in-out;
+    text-decoration: none;
+    user-select: none;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.pagination-page-btn {
+    min-width: 36px;
+    padding: 0 8px;
+    font-size: 13.5px;
+}
+
+.pagination-btn:hover:not(:disabled):not(.disabled),
+.pagination-page-btn:hover:not(:disabled):not(.disabled):not(.active) {
+    background: #EAF3F1;
+    border-color: #024541;
+    color: #024541;
+    transform: translateY(-1px);
+}
+
+.pagination-btn:active:not(:disabled):not(.disabled),
+.pagination-page-btn:active:not(:disabled):not(.disabled) {
+    transform: translateY(0);
+}
+
+.pagination-btn:disabled,
+.pagination-btn.disabled,
+.pagination-page-btn:disabled,
+.pagination-page-btn.disabled {
+    opacity: 0.42;
+    cursor: not-allowed;
+    background: #f8faf9;
+    border-color: #e2e8f0;
+    color: #94a3b8;
+    pointer-events: none;
+}
+
+.pagination-page-btn.active {
+    background: #024541 !important;
+    color: #ffffff !important;
+    border-color: #024541 !important;
+    font-weight: 700;
+    box-shadow: 0 2px 6px rgba(2, 69, 65, 0.22);
+}
+
+.pagination-ellipsis {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 28px;
+    height: 36px;
+    color: #889a95;
+    font-size: 14px;
+    font-weight: 600;
+    user-select: none;
+}
+
+/* Hidden state when <= 10 records or 0 records */
+.pagination-footer.is-hidden {
+    display: none !important;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+    .pagination-footer {
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 12px 14px;
+        gap: 10px;
+    }
+
+    .pagination-nav {
+        justify-content: center;
+        gap: 4px;
+    }
+
+    .pagination-btn,
+    .pagination-page-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 8px;
+        font-size: 12px;
+        border-radius: 6px;
+    }
+
+    .pagination-page-btn {
+        min-width: 32px;
+    }
+
+    .pagination-ellipsis {
+        min-width: 22px;
+        height: 32px;
+        font-size: 12px;
+    }
+}

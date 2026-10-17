@@ -15,7 +15,8 @@
           th:href="@{/css/employee-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/employee-customers.css}">
-
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -76,7 +77,7 @@
             <div class="table-wrapper"
                  th:if="${customers != null and !customers.isEmpty()}">
 
-                <table class="quotation-table">
+                <table class="quotation-table" id="employeeCustomerTable">
 
                     <thead>
 
@@ -237,6 +238,19 @@
 </div>
 
 <script th:src="@{/js/employee-session.js}"></script>
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var table = document.getElementById('employeeCustomerTable');
+        if (table) {
+            initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: 'customers'
+            });
+        }
+    });
+</script>
 </body>
 
 </html>

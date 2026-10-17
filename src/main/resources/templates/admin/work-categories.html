@@ -11,6 +11,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/work-categories.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -337,6 +339,7 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
     function confirmDeleteCategory(form) {
@@ -367,13 +370,22 @@
         return true;
     }
 
-    // Client-side search and filtering
+    // Client-side search, filtering and pagination
     document.addEventListener('DOMContentLoaded', function() {
         var searchInput = document.getElementById('categorySearch');
         var statusSelect = document.getElementById('statusFilter');
         var categoryTable = document.getElementById('categoryTable');
         var noResultsRow = document.getElementById('noResultsRow');
         var categoryCount = document.getElementById('categoryCount');
+
+        var pagination = null;
+        if (categoryTable) {
+            pagination = initTablePagination({
+                table: categoryTable,
+                pageSize: 10,
+                recordLabel: 'categories'
+            });
+        }
 
         function filterCategories() {
             if (!categoryTable) return;
@@ -391,10 +403,10 @@
                 var matchesStatus = !status || rowStatus === status;
 
                 if (matchesQuery && matchesStatus) {
-                    row.style.display = '';
+                    row.removeAttribute('data-filtered-out');
                     visibleCount++;
                 } else {
-                    row.style.display = 'none';
+                    row.setAttribute('data-filtered-out', 'true');
                 }
             });
 
@@ -403,6 +415,10 @@
             }
             if (categoryCount) {
                 categoryCount.textContent = visibleCount;
+            }
+            if (pagination) {
+                pagination.currentPage = 1;
+                pagination.applyFilterAndRender();
             }
         }
 

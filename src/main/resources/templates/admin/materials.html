@@ -13,6 +13,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/materials.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -283,50 +285,51 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
+    var materialPagination = null;
+
+    document.addEventListener("DOMContentLoaded", function() {
+        var table = document.getElementById("materialsTable");
+        if (table) {
+            materialPagination = initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: "materials"
+            });
+        }
+    });
+
     function searchMaterials() {
+        const input = document.getElementById("materialSearch");
+        const filter = input ? input.value.toLowerCase().trim() : "";
+        const table = document.getElementById("materialsTable");
+        if (!table) return;
 
-        const input =
-            document.getElementById("materialSearch");
-
-        const filter =
-            input.value.toLowerCase();
-
-        const table =
-            document.getElementById("materialsTable");
-
-        const rows =
-            table.getElementsByTagName("tbody")[0]
-                 .getElementsByTagName("tr");
-
+        const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
 
         for (let i = 0; i < rows.length; i++) {
-
-            const rowText =
-                rows[i].textContent.toLowerCase();
+            if (rows[i].classList.contains("empty-state")) continue;
+            const rowText = rows[i].textContent.toLowerCase();
 
             if (rowText.includes(filter)) {
-
-                rows[i].style.display = "";
-
+                rows[i].removeAttribute("data-filtered-out");
             } else {
-
-                rows[i].style.display = "none";
-
+                rows[i].setAttribute("data-filtered-out", "true");
             }
-
         }
 
+        if (materialPagination) {
+            materialPagination.currentPage = 1;
+            materialPagination.applyFilterAndRender();
+        }
     }
 
-
     function confirmDelete() {
-
         return confirm(
             "Are you sure you want to delete this material?"
         );
-
     }
 
 </script>

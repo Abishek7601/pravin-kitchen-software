@@ -12,6 +12,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/gst-settings.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -430,10 +432,14 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
   const searchInput =
       document.getElementById("gstSearch");
+
+  const table =
+      document.getElementById("gstTable");
 
   const rows =
       document.querySelectorAll(".gst-row");
@@ -441,6 +447,14 @@
   const noSearchResult =
       document.getElementById("noSearchResult");
 
+  let gstPagination = null;
+  if (table) {
+      gstPagination = initTablePagination({
+          table: table,
+          pageSize: 10,
+          recordLabel: "GST rates"
+      });
+  }
 
   if (searchInput) {
 
@@ -458,17 +472,16 @@
 
               if (rowText.includes(searchValue)) {
 
-                  row.style.display = "";
+                  row.removeAttribute("data-filtered-out");
                   visibleRows++;
 
               } else {
 
-                  row.style.display = "none";
+                  row.setAttribute("data-filtered-out", "true");
 
               }
 
           });
-
 
           if (noSearchResult) {
 
@@ -477,6 +490,11 @@
                       ? "table-row"
                       : "none";
 
+          }
+
+          if (gstPagination) {
+              gstPagination.currentPage = 1;
+              gstPagination.applyFilterAndRender();
           }
 
       });

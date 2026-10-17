@@ -12,6 +12,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/material-options.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -315,37 +317,46 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
+  var optionPagination = null;
+
+  document.addEventListener("DOMContentLoaded", function() {
+      var table = document.getElementById("optionsTable");
+      if (table) {
+          optionPagination = initTablePagination({
+              table: table,
+              pageSize: 10,
+              recordLabel: "options"
+          });
+      }
+  });
+
   function searchOptions() {
+      const input = document.getElementById("optionSearch");
+      const filter = input ? input.value.toLowerCase().trim() : "";
+      const table = document.getElementById("optionsTable");
+      if (!table) return;
 
-      const input =
-          document.getElementById("optionSearch");
-
-      const filter =
-          input.value.toLowerCase();
-
-      const table =
-          document.getElementById("optionsTable");
-
-      const rows =
-          table
-              .getElementsByTagName("tbody")[0]
-              .getElementsByTagName("tr");
-
+      const rows = table.getElementsByTagName("tbody")[0].getElementsByTagName("tr");
 
       for (let i = 0; i < rows.length; i++) {
+          if (rows[i].classList.contains("empty-state")) continue;
+          const rowText = rows[i].textContent.toLowerCase();
 
-          const rowText =
-              rows[i].textContent.toLowerCase();
+          if (rowText.includes(filter)) {
+              rows[i].removeAttribute("data-filtered-out");
+          } else {
+              rows[i].setAttribute("data-filtered-out", "true");
+          }
+      }
 
-          rows[i].style.display =
-              rowText.includes(filter)
-                  ? ""
-                  : "none";
+      if (optionPagination) {
+          optionPagination.currentPage = 1;
+          optionPagination.applyFilterAndRender();
       }
   }
-
 
   function confirmDelete(form) {
       var name = (form && form.getAttribute('data-option-name')) ? form.getAttribute('data-option-name') : 'this material option';

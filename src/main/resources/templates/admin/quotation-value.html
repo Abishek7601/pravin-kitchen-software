@@ -11,7 +11,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/quotation-value.css}">
-
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -71,7 +72,7 @@
         <div th:unless="${#lists.isEmpty(quotations)}"
              class="table-wrapper">
 
-            <table>
+            <table id="quotationValueTable">
                 <thead>
                 <tr>
                     <th>Quotation No.</th>
@@ -118,5 +119,19 @@
     </main>
 
 </div>
+
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var table = document.getElementById("quotationValueTable");
+        if (table) {
+            initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: "quotations"
+            });
+        }
+    });
+</script>
 </body>
 </html>

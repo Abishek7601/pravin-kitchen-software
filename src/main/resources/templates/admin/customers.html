@@ -13,6 +13,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/customers.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -253,7 +255,7 @@
       <!-- TABLE -->
       <div class="table-wrapper">
 
-        <table class="customer-table">
+        <table class="customer-table" id="customerTable">
 
           <thead>
 
@@ -550,6 +552,20 @@
 
   }
 
+</script>
+
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      var table = document.getElementById('customerTable');
+      if (table) {
+          initTablePagination({
+              table: table,
+              pageSize: 10,
+              recordLabel: 'customers'
+          });
+      }
+  });
 </script>
 
 </body>

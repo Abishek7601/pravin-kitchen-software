@@ -12,6 +12,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/travel-charges.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -234,7 +236,7 @@
         <div class="table-wrapper"
              th:if="${travelChargeList != null and !#lists.isEmpty(travelChargeList)}">
 
-            <table class="charges-table">
+            <table class="charges-table" id="travelChargesTable">
 
                 <thead>
 
@@ -447,7 +449,7 @@
 
         <!-- ================= MOBILE CARDS ================= -->
 
-        <div class="mobile-charge-list"
+        <div class="mobile-charge-list" id="mobileChargeList"
              th:if="${travelChargeList != null and !#lists.isEmpty(travelChargeList)}">
 
             <article class="charge-card"
@@ -644,6 +646,7 @@
 </div>
 
 
+<script th:src="@{/js/pagination.js}"></script>
 <script>
 
     function confirmDelete(form) {
@@ -670,6 +673,27 @@
         });
 
     }, 4000);
+
+    document.addEventListener("DOMContentLoaded", function () {
+        var desktopTable = document.getElementById("travelChargesTable");
+        if (desktopTable) {
+            initTablePagination({
+                table: desktopTable,
+                pageSize: 10,
+                recordLabel: "travel charges"
+            });
+        }
+
+        var mobileList = document.getElementById("mobileChargeList");
+        if (mobileList) {
+            initTablePagination({
+                table: mobileList,
+                rowSelector: ".charge-card",
+                pageSize: 10,
+                recordLabel: "travel charges"
+            });
+        }
+    });
 
 </script>
 

@@ -12,6 +12,8 @@
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/portfolio.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/pagination.css}">
 </head>
 
 <body>
@@ -58,7 +60,7 @@
         <h5 class="fw-bold">Quotation Details</h5>
 
         <div class="table-responsive">
-            <table class="table table-hover align-middle">
+            <table class="table table-hover align-middle" id="portfolioTable">
                 <thead>
                 <tr>
                     <th>Quotation No.</th>
@@ -100,6 +102,20 @@
     </main>
 
 </div>
+
+<script th:src="@{/js/pagination.js}"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        var table = document.getElementById("portfolioTable");
+        if (table) {
+            initTablePagination({
+                table: table,
+                pageSize: 10,
+                recordLabel: "quotations"
+            });
+        }
+    });
+</script>
 </body>
 </html>
 
