@@ -348,6 +348,7 @@ public class QuotationPdfService {
         String titleText = "MARKETING QUOTATION";
         Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_NAVY));
         titlePar.setAlignment(Element.ALIGN_RIGHT);
+        titlePar.setSpacingAfter(4f);
         rightCell.addElement(titlePar);
 
         LineSeparator titleLine = new LineSeparator(1.2f, 100, COLOR_GOLD, Element.ALIGN_RIGHT, -1);
@@ -574,7 +575,7 @@ public class QuotationPdfService {
         PdfPTable termsTable = new PdfPTable(1);
         termsTable.setWidthPercentage(100);
         termsTable.setSpacingBefore(4f);
-        termsTable.setSpacingAfter(6f);
+        termsTable.setSpacingAfter(14f);
 
         PdfPCell termsCell = new PdfPCell();
         termsCell.setBackgroundColor(COLOR_LIGHT_BG);
