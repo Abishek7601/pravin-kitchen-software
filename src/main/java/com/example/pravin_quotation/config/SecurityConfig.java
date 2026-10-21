@@ -42,6 +42,7 @@ public class SecurityConfig {
                                 "/js/**",
                                 "/images/**",
                                 "/employee/session-status",
+                                "/employee/forgot-password/**",
                                 "/public/**"
                         ).permitAll()
 
