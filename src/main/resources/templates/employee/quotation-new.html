@@ -11,6 +11,7 @@
           th:href="@{/css/employee-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/employee-quotation-new.css}">
+    <script th:src="@{/js/title-capitalization.js}"></script>
 </head>
 
 <body>
@@ -78,7 +79,7 @@
                             <input type="text"
                                    id="customerName"
                                    name="customerName"
-                                   class="form-control"
+                                   class="form-control capitalize-title"
                                    maxlength="150"
                                    placeholder="Enter customer name"
                                    required>
@@ -129,7 +130,7 @@
 
                             <textarea id="address"
                                       name="address"
-                                      class="form-control"
+                                      class="form-control capitalize-title"
                                       rows="3"
                                       maxlength="500"
                                       placeholder="Enter customer address / area"></textarea>
@@ -308,6 +309,40 @@
         if (phone) {
             phone.addEventListener("input", function () {
                 this.value = this.value.replace(/[^0-9+()\-\s]/g, "");
+            });
+        }
+
+        const customerName = document.getElementById("customerName");
+        const address = document.getElementById("address");
+        const email = document.getElementById("email");
+        const quotationForm = document.getElementById("quotationForm");
+
+        if (typeof attachTitleCapitalization === "function") {
+            if (customerName) attachTitleCapitalization(customerName);
+            if (address) attachTitleCapitalization(address);
+        }
+
+        if (email) {
+            email.addEventListener("blur", function () {
+                if (this.value) {
+                    this.value = this.value.trim().toLowerCase();
+                }
+            });
+        }
+
+        if (quotationForm) {
+            quotationForm.addEventListener("submit", function () {
+                if (typeof toTitleCase === "function") {
+                    if (customerName && customerName.value) {
+                        customerName.value = toTitleCase(customerName.value.trim());
+                    }
+                    if (address && address.value) {
+                        address.value = toTitleCase(address.value.trim());
+                    }
+                }
+                if (email && email.value) {
+                    email.value = email.value.trim().toLowerCase();
+                }
             });
         }
 

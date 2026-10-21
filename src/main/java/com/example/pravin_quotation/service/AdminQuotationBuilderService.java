@@ -2,6 +2,7 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
+import com.example.pravin_quotation.util.TitleCaseUtils;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -616,10 +617,10 @@ public class AdminQuotationBuilderService {
         }
 
         // Case 2: New Customer creation
-        String name = required(request.name(), "Customer name");
+        String name = TitleCaseUtils.toTitleCase(required(request.name(), "Customer name").trim());
         String phone = required(request.phone(), "Phone number").trim();
         String email = clean(request.email());
-        String address = clean(request.address());
+        String address = TitleCaseUtils.toTitleCase(clean(request.address()));
 
         // Check if phone already exists
         java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(phone);

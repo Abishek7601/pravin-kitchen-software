@@ -6,6 +6,7 @@ import com.example.pravin_quotation.model.Customer;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
+import com.example.pravin_quotation.util.TitleCaseUtils;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -150,7 +151,7 @@ public class CustomerService {
                 branchId
         );
 
-        String customerName = name.trim();
+        String customerName = TitleCaseUtils.toTitleCase(name.trim());
 
         String customerEmail =
                 email == null
@@ -163,7 +164,7 @@ public class CustomerService {
         String customerAddress =
                 address == null
                         ? null
-                        : address.trim();
+                        : TitleCaseUtils.toTitleCase(address.trim());
 
 
         // Duplicate email check
@@ -235,10 +236,10 @@ public class CustomerService {
 
         validateCustomer(name, phone, branchId);
 
-        String customerName = name.trim();
+        String customerName = TitleCaseUtils.toTitleCase(name.trim());
         String customerPhone = phone.trim();
         String customerEmail = email == null ? null : email.trim().toLowerCase();
-        String customerAddress = address == null ? null : address.trim();
+        String customerAddress = address == null ? null : TitleCaseUtils.toTitleCase(address.trim());
 
         Branch branch = branchRepository.findById(branchId)
                 .orElseThrow(() -> new IllegalArgumentException("District not found"));
@@ -359,7 +360,7 @@ public class CustomerService {
                                         "District not found"));
 
 
-        customer.setName(name.trim());
+        customer.setName(TitleCaseUtils.toTitleCase(name.trim()));
 
         customer.setEmail(
                 customerEmail != null
@@ -373,7 +374,7 @@ public class CustomerService {
         customer.setAddress(
                 address == null
                         ? null
-                        : address.trim()
+                        : TitleCaseUtils.toTitleCase(address.trim())
         );
 
         customer.setBranch(branch);
