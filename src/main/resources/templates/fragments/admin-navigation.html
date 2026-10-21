@@ -36,6 +36,11 @@
             </div>
         </div>
 
+        <a th:href="@{/admin/change-password}" class="change-password-btn" title="Change Password" style="display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; color: #024541; background: #EAF3F1; border: 1px solid #D6E4E1; transition: all 0.2s ease;">
+            <i class="bi bi-key-fill"></i>
+            <span>Change Password</span>
+        </a>
+
         <form th:action="@{/logout}" method="post">
             <button type="submit" class="logout-btn">
                 <i class="bi bi-box-arrow-right"></i>
@@ -115,6 +120,14 @@
            th:classappend="${activeTab == 'configure-master-data'} ? ' active' : ''">
             <i class="bi bi-sliders"></i>
             <span>Configure Master Data</span>
+        </a>
+
+        <!-- Security / Change Password -->
+        <a th:href="@{/admin/change-password}"
+           class="sidebar-link"
+           th:classappend="${activeTab == 'change-password' or activeTab == 'security' or activeTab == 'settings'} ? ' active' : ''">
+            <i class="bi bi-shield-lock-fill"></i>
+            <span>Change Password</span>
         </a>
 
     </div>

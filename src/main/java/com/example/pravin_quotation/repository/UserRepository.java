@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.repository;
 
+import com.example.pravin_quotation.model.Role;
 import com.example.pravin_quotation.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -11,6 +12,8 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    boolean existsByRole(Role role);
 
     List<User> findByBranchId(Long branchId);
 }

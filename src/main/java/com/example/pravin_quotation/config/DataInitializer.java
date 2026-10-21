@@ -12,7 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 public class DataInitializer {
 
     @Bean
-    CommandLineRunner createSuperAdmin(
+    public CommandLineRunner createSuperAdmin(
             UserRepository userRepository,
             PasswordEncoder passwordEncoder) {
 
@@ -21,7 +21,7 @@ public class DataInitializer {
             String adminEmail = "abisheksr680@gmail.com";
             String adminPassword = "Admin@123";
 
-            if (!userRepository.existsByEmail(adminEmail)) {
+            if (!userRepository.existsByEmail(adminEmail) && !userRepository.existsByRole(Role.SUPER_ADMIN)) {
 
                 User admin = new User();
 
