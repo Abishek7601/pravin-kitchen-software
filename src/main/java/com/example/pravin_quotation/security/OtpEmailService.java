@@ -70,4 +70,37 @@ public class OtpEmailService {
             throw e;
         }
     }
+
+    public void sendPasswordResetOtp(
+            String adminEmail,
+            String employeeName,
+            String employeeIdentifier,
+            String otp
+    ) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(adminEmail);
+        message.setSubject("Pravin KITCHENS & INTERIORS - Employee Password Reset OTP");
+        message.setText(
+                "Hello Admin,\n\n"
+                        + "A password reset request has been initiated for an employee account in the "
+                        + "Pravin KITCHENS & INTERIORS Quotation Management System.\n\n"
+                        + "Employee Name: " + employeeName + "\n"
+                        + "Employee Identifier: " + employeeIdentifier + "\n\n"
+                        + "Password Reset OTP: " + otp + "\n\n"
+                        + "This OTP is valid for 5 minutes.\n\n"
+                        + "Maximum verification attempts: 5.\n\n"
+                        + "If you or your staff did not initiate this request, please review account security.\n\n"
+                        + "Regards,\n"
+                        + "Pravin KITCHENS & INTERIORS\n"
+                        + "Quotation Management System"
+        );
+
+        try {
+            mailSender.send(message);
+            log.info("Employee password reset OTP email successfully sent to Super Admin for employee [{}]", employeeName);
+        } catch (MailException e) {
+            log.error("Failed to send employee password reset OTP email for employee [{}]: {}", employeeName, e.getMessage(), e);
+            throw e;
+        }
+    }
 }

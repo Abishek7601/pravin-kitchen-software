@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Reset OTP | Pravin KITCHENS & INTERIORS</title>
+  <link rel="stylesheet" th:href="@{/css/employee-otp.css}">
+</head>
+<body>
+
+<div class="otp-container">
+  <div class="otp-card">
+
+    <!-- HEADER -->
+    <div class="logo">
+      <h1>Pravin KITCHENS & INTERIORS</h1>
+      <p>Password Reset Authorization</p>
+    </div>
+
+    <!-- EMPLOYEE INFORMATION -->
+    <div class="employee-info">
+      Password reset for:
+      <strong th:text="${employeeName}">Employee</strong>
+      <br>
+      A 6-digit verification OTP has been sent to the registered Super Admin email.
+    </div>
+
+    <!-- STATUS MESSAGES -->
+    <div th:if="${param.sent}" class="message success">
+      OTP has been sent successfully to the registered Super Admin.
+    </div>
+
+    <div th:if="${successMessage}" class="message success" th:text="${successMessage}">
+      A new verification OTP has been sent to the Super Admin.
+    </div>
+
+    <div th:if="${errorMessage}" class="message error" th:text="${errorMessage}">
+      Invalid or expired OTP.
+    </div>
+
+    <!-- VERIFY OTP FORM -->
+    <form th:action="@{/employee/forgot-password/verify}" method="post" id="verifyForm">
+      <div class="form-group">
+        <label for="otp">Enter 6-Digit OTP</label>
+        <input
+            type="text"
+            id="otp"
+            name="otp"
+            maxlength="6"
+            minlength="6"
+            inputmode="numeric"
+            autocomplete="one-time-code"
+            placeholder="000000"
+            required
+            autofocus>
+      </div>
+
+      <button type="submit" class="verify-button" id="verifyBtn">
+        Verify OTP &amp; Proceed
+      </button>
+    </form>
+
+    <!-- RESEND FORM -->
+    <form class="resend" th:action="@{/employee/forgot-password/resend}" method="post" id="resendForm">
+      <button type="submit" id="resendButton">
+        Resend OTP to Admin
+      </button>
+    </form>
+
+    <div class="resend-text" id="resendTimer"></div>
+
+    <div style="text-align: center; margin-top: 18px;">
+      <a th:href="@{/employee/forgot-password}" style="color: var(--peacock-green); font-size: 12px; font-weight: 600; text-decoration: none;">
+        &larr; Start Over / Change Employee ID
+      </a>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="footer-note">
+      OTP expires in 5 minutes.
+      <br>
+      Maximum 5 verification attempts allowed.
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const resendButton = document.getElementById("resendButton");
+  const resendForm = document.getElementById("resendForm");
+  const resendTimer = document.getElementById("resendTimer");
+  const verifyForm = document.getElementById("verifyForm");
+  const verifyBtn = document.getElementById("verifyBtn");
+  const otpInput = document.getElementById("otp");
+
+  let cooldown = 60;
+
+  function startCooldown() {
+      if (!resendButton || !resendTimer) return;
+      resendButton.disabled = true;
+      let remaining = cooldown;
+
+      resendTimer.textContent = "You can request another OTP in " + remaining + " seconds.";
+
+      const interval = setInterval(function () {
+          remaining--;
+          if (remaining <= 0) {
+              clearInterval(interval);
+              resendButton.disabled = false;
+              resendTimer.textContent = "You can request a new OTP now.";
+              return;
+          }
+          resendTimer.textContent = "You can request another OTP in " + remaining + " seconds.";
+      }, 1000);
+  }
+
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.has("sent")) {
+      startCooldown();
+  }
+
+  if (resendForm && resendButton) {
+      resendForm.addEventListener("submit", function () {
+          resendButton.disabled = true;
+          resendButton.textContent = "Sending OTP to Admin...";
+      });
+  }
+
+  if (verifyForm && verifyBtn) {
+      verifyForm.addEventListener("submit", function () {
+          verifyBtn.disabled = true;
+          verifyBtn.textContent = "Verifying OTP...";
+      });
+  }
+
+  if (otpInput) {
+      otpInput.addEventListener("input", function () {
+          this.value = this.value.replace(/\D/g, "").slice(0, 6);
+      });
+  }
+</script>
+
+</body>
+</html>

@@ -52,8 +52,9 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                             || requestUri.startsWith("/images/");
 
             boolean loginPage = requestUri.equals("/login");
+            boolean forgotPasswordPage = requestUri.startsWith("/employee/forgot-password");
 
-            if (!staticResource && !loginPage) {
+            if (!staticResource && !loginPage && !forgotPasswordPage) {
 
                 HttpSession session = request.getSession(false);
 

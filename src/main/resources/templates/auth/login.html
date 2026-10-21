@@ -38,6 +38,11 @@
          Your session expired at 8:00 PM IST. Please log in again with Admin OTP.
        </div>
 
+       <div th:if="${param.resetSuccess}"
+            class="message success">
+         Your password has been reset successfully. Please log in with your new password.
+       </div>
+
        <form th:action="@{/login}" method="post">
 
          <div class="form-group">
@@ -62,6 +67,10 @@
               placeholder="Enter your password"
               required>
 
+         </div>
+
+         <div class="form-footer-link">
+           <a th:href="@{/employee/forgot-password}">Forgot Password?</a>
          </div>
 
          <button type="submit">
