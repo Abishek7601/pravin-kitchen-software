@@ -8,6 +8,7 @@
   <title>Create Quotation | Pravin KITCHENS &amp; INTERIORS</title>
   <link rel="stylesheet" th:href="@{/css/employee-nav.css}">
   <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
+  <script th:src="@{/js/title-capitalization.js}"></script>
 </head>
 <body>
 <div class="dashboard-wrapper">
@@ -23,15 +24,15 @@
         <h1>Create Quotation</h1>
         <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
       </div>
-      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #024541; background: #EAF3F1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
-        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">
-          <span>← Back</span>
-        </button>
-        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">
-          <span>⌂ Dashboard</span>
-        </a>
-      </div>
+<!--      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">-->
+<!--        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #024541; background: #EAF3F1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>-->
+<!--        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
+<!--          <span>← Back</span>-->
+<!--        </button>-->
+<!--        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">-->
+<!--          <span>⌂ Dashboard</span>-->
+<!--        </a>-->
+<!--      </div>-->
       <div class="employee-profile">
         <div class="profile-avatar">
           <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
@@ -94,10 +95,10 @@
       </div>
 
       <div class="grid two">
-        <label class="field">Customer Name <span>*</span><input id="customerName" type="text" placeholder="Enter customer name"></label>
+        <label class="field">Customer Name <span>*</span><input id="customerName" type="text" class="capitalize-title" placeholder="Enter customer name"></label>
         <label class="field">Phone Number <span>*</span><input id="customerPhone" type="tel" inputmode="numeric" placeholder="Enter phone number"></label>
         <label class="field">Email<input id="customerEmail" type="email" placeholder="customer@email.com"></label>
-        <label class="field">Address / Area<textarea id="customerAddress" rows="2" placeholder="House / area / location"></textarea></label>
+        <label class="field">Address / Area<textarea id="customerAddress" class="capitalize-title" rows="2" placeholder="House / area / location"></textarea></label>
         <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
         <label class="field">Branch / District <span>*</span>
           <select id="branchId">
@@ -365,6 +366,31 @@
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const currentRoomKey = () => `${$('floor').value}||${$('roomNumber').value}`;
   const currentRoom = () => state.rooms.find(r => r.key === currentRoomKey());
+
+  // Title capitalization helpers
+  const WORD_START_REGEX = /(^|[\s,.\-\/\\()\[\]#{}:;]+)(\p{Ll})/gu;
+  function toTitleCase(str) {
+      if (!str) return str;
+      return String(str).replace(WORD_START_REGEX, (m, delim, ch) => delim + ch.toUpperCase());
+  }
+  function attachTitleCapitalization(input) {
+      if (!input) return;
+      function applyFormat() {
+          const val = input.value;
+          if (!val) return;
+          const formatted = toTitleCase(val);
+          if (formatted !== val) {
+              const start = input.selectionStart;
+              const end = input.selectionEnd;
+              input.value = formatted;
+              if (start !== null && end !== null && document.activeElement === input) {
+                  try { input.setSelectionRange(start, end); } catch (e) {}
+              }
+          }
+      }
+      input.addEventListener('input', applyFormat);
+      input.addEventListener('blur', applyFormat);
+  }
 
   function evaluateExpressionSafely(expression, L, W, H) {
       if (!expression) return 0;
@@ -975,13 +1001,13 @@
       const c = state.customersList.find(x => x.id === Number(customerId));
       if (c) {
           state.selectedCustomerId = c.id;
-          $('customerName').value = c.name;
-          $('customerPhone').value = c.phone;
-          $('customerEmail').value = c.email || '';
-          $('customerAddress').value = c.address || '';
+          $('customerName').value = toTitleCase(c.name || '');
+          $('customerPhone').value = c.phone || '';
+          $('customerEmail').value = c.email ? c.email.toLowerCase() : '';
+          $('customerAddress').value = toTitleCase(c.address || '');
           if ($('selectedCustomerBadge')) {
               $('selectedCustomerBadge').style.display = 'inline-block';
-              $('selectedCustomerBadge').textContent = '✓ ' + c.name + ' selected';
+              $('selectedCustomerBadge').textContent = '✓ ' + $('customerName').value + ' selected';
           }
       }
   }
@@ -1014,6 +1040,10 @@
       if (!isNew && !state.selectedCustomerId) {
           return alert('Please select an existing customer or switch to "New Customer".');
       }
+      if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
+      if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
+      if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
+
       const name = $('customerName').value.trim();
       const phone = $('customerPhone').value.trim();
       const branchId = Number($('branchId').value || 0);
@@ -1078,6 +1108,14 @@
   }
 
   // Event Listeners
+  if ($('customerName')) attachTitleCapitalization($('customerName'));
+  if ($('customerAddress')) attachTitleCapitalization($('customerAddress'));
+  if ($('customerEmail')) {
+      $('customerEmail').addEventListener('blur', function() {
+          if (this.value) this.value = this.value.trim().toLowerCase();
+      });
+  }
+
   document.querySelectorAll('input[name="customerMode"]').forEach(r => {
       r.addEventListener('change', () => setCustomerMode(r.value));
   });
@@ -1112,10 +1150,10 @@
       getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
           if (!data) return;
           if (data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
-          if (data.customerName) $('customerName').value = data.customerName;
+          if (data.customerName) $('customerName').value = toTitleCase(data.customerName);
           if (data.phone) $('customerPhone').value = data.phone;
-          if (data.email) $('customerEmail').value = data.email;
-          if (data.address) $('customerAddress').value = data.address;
+          if (data.email) $('customerEmail').value = data.email ? data.email.toLowerCase() : '';
+          if (data.address) $('customerAddress').value = toTitleCase(data.address);
           if (data.quotationDate) $('quotationDate').value = data.quotationDate;
           if (data.branchId) $('branchId').value = data.branchId;
           if (data.customerRequirements) $('customerRequirements').value = data.customerRequirements;
