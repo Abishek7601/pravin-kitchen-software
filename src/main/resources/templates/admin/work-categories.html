@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Work Categories | Pravin KITCHENS & INTERIORS</title>
+    <title>Categories | Pravin KITCHENS & INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/admin-nav.css}">
@@ -82,15 +82,15 @@
 <!--                    PRICING MANAGEMENT-->
 <!--                </span>-->
 
-                <h1 th:text="${isArchivedView} ? 'Archived Work Categories' : 'Work Categories'">
-                    Work Categories
+                <h1 th:text="${isArchivedView} ? 'Archived Categories' : 'Categories'">
+                    Categories
                 </h1>
 
                 <p th:if="${isArchivedView}">
                     Archived categories that are preserved to protect historical quotation data.
                 </p>
                 <p th:unless="${isArchivedView}">
-                    Manage the work categories used while creating quotations.
+                    Manage the categories used while creating quotations.
                 </p>
 
             </div>
@@ -154,7 +154,7 @@
                         <tr>
                             <th class="col-sno">S.No</th>
                             <th class="col-icon">Emoji / Icon</th>
-                            <th class="col-name">Work Category Name</th>
+                            <th class="col-name">Category Name</th>
                             <th class="col-status">Status</th>
                             <th class="col-actions">Actions</th>
                         </tr>
@@ -177,13 +177,10 @@
                                       th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}">📁</span>
                             </td>
 
-                            <!-- WORK CATEGORY NAME -->
+                            <!-- CATEGORY NAME -->
                             <td class="col-name">
                                 <div class="category-name-cell">
-                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
-                                       class="category-title-link">
-                                        <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
-                                    </a>
+                                    <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
                                     <p class="category-description"
                                        th:if="${category.description != null and !#strings.isEmpty(category.description)}"
                                        th:text="${category.description}">
@@ -211,13 +208,6 @@
                             <!-- ACTIONS -->
                             <td class="col-actions">
                                 <div class="table-actions">
-                                    <!-- VIEW -->
-                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
-                                       class="action-btn view-btn"
-                                       title="View Category Details">
-                                        View
-                                    </a>
-
                                     <!-- EDIT -->
                                     <a th:if="${!category.archived}"
                                        th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
@@ -248,7 +238,7 @@
                                           th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
                                           onsubmit="return confirmDeleteCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -265,7 +255,7 @@
                                           th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
                                           onsubmit="return confirmUnarchiveCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -285,7 +275,7 @@
                             <td colspan="5" class="no-results-cell">
                                 <div class="no-results-content">
                                     <span class="no-results-icon">🔍</span>
-                                    <strong>No matching work categories found</strong>
+                                    <strong>No matching categories found</strong>
                                     <p>Try adjusting your search query or status filter.</p>
                                 </div>
                             </td>
@@ -304,15 +294,15 @@
                 ▦
             </div>
 
-            <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Work Categories'">
-                No Work Categories
+            <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Categories'">
+                No Categories
             </h3>
 
             <p th:if="${isArchivedView}">
-                There are currently no archived work categories.
+                There are currently no archived categories.
             </p>
             <p th:unless="${isArchivedView}">
-                Create your first work category to start building
+                Create your first category to start building
                 the quotation pricing structure.
             </p>
 
@@ -343,17 +333,17 @@
 <script>
 
     function confirmDeleteCategory(form) {
-        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this work category';
+        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this category';
         return confirm(
-            "Are you sure you want to delete work category '" + name + "'?\n\n" +
+            "Are you sure you want to delete category '" + name + "'?\n\n" +
             "If it has never been used in any quotation, it will be permanently deleted. If it is referenced by existing quotations, it will be safely archived to protect quotation history."
         );
     }
 
     function confirmUnarchiveCategory(form) {
-        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this work category';
+        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this category';
         var confirmed = confirm(
-            "Are you sure you want to unarchive work category '" + name + "'?\n\n" +
+            "Are you sure you want to unarchive category '" + name + "'?\n\n" +
             "This will restore the category and its divisions to active status in the system. Historical quotation references will remain preserved."
         );
         if (!confirmed) {

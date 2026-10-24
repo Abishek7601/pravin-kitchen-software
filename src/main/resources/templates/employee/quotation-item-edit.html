@@ -108,15 +108,15 @@
 
       <div class="form-grid">
 
-        <!-- WORK CATEGORY -->
+        <!-- CATEGORY -->
         <div class="form-group">
-          <label for="workCategoryId">Work Category</label>
+          <label for="workCategoryId">Category</label>
 
           <select id="workCategoryId"
                   name="workCategoryId"
                   required>
 
-            <option value="">Select Work Category</option>
+            <option value="">Select Category</option>
 
             <option th:each="category : ${workCategories}"
                     th:value="${category.id}"
