@@ -38,6 +38,7 @@ import java.util.Collections;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -378,10 +379,7 @@ public class EmployeeQuotationController {
             getQuotationAndCheckOwnership(quotationId, employee);
         }
 
-        Long effectiveBranchId = branchId;
-        if (effectiveBranchId == null && employee.getBranch() != null) {
-            effectiveBranchId = employee.getBranch().getId();
-        }
+        Long effectiveBranchId = (employee.getBranch() != null) ? employee.getBranch().getId() : branchId;
 
         Quotation quotation = new Quotation();
         quotation.setQuotationNumber(previewQuotationNumber());
@@ -409,6 +407,7 @@ public class EmployeeQuotationController {
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("editQuotationId", quotationId != null ? quotationId : "");
         model.addAttribute("selectedBranchId", effectiveBranchId != null ? effectiveBranchId : "");
+        model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : "");
 
         return "employee/quotation-builder";
     }
@@ -546,23 +545,75 @@ public class EmployeeQuotationController {
     }
 
     @PostMapping("/builder/save")
-    public String saveBuilderQuotation(
+    public Object saveBuilderQuotation(
             @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            HttpServletRequest httpRequest,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
+        boolean acceptsJson = httpRequest != null
+                && httpRequest.getHeader("Accept") != null
+                && httpRequest.getHeader("Accept").contains(MediaType.APPLICATION_JSON_VALUE);
         try {
             User employee = getLoggedInEmployee(authentication);
+            if (employee.getBranch() == null) {
+                throw new IllegalStateException("Employee is not assigned to a branch.");
+            }
             if (request.quotationId() != null) {
                 getQuotationAndCheckOwnership(request.quotationId(), employee);
             }
-            Quotation quotation = builderService.save(request, authentication.getName());
+
+            Long effectiveBranchId = request.branchId();
+            if (effectiveBranchId == null || effectiveBranchId == 0L) {
+                effectiveBranchId = employee.getBranch().getId();
+            }
+            if (!effectiveBranchId.equals(employee.getBranch().getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot create quotations for another branch.");
+            }
+
+            AdminQuotationBuilderService.BuilderRequest effectiveRequest = new AdminQuotationBuilderService.BuilderRequest(
+                    request.quotationId(),
+                    request.customer(),
+                    effectiveBranchId,
+                    request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
+                    request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE,
+                    request.customerRequirements(),
+                    request.notes(),
+                    request.rooms()
+            );
+
+            Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
+            String redirectUrl = "/employee/quotations/view/" + quotation.getId();
+
+            if (acceptsJson) {
+                Map<String, Object> resp = new LinkedHashMap<>();
+                resp.put("success", true);
+                resp.put("redirectUrl", redirectUrl);
+                resp.put("quotationId", quotation.getId());
+                resp.put("quotationNumber", quotation.getQuotationNumber());
+                return ResponseEntity.ok(resp);
+            }
+
             redirectAttributes.addFlashAttribute("successMessage",
                     "Quotation " + quotation.getQuotationNumber() + " created successfully.");
-            return "redirect:/employee/quotations/view/" + quotation.getId();
+            return "redirect:" + redirectUrl;
         } catch (Exception e) {
+            if (acceptsJson) {
+                Map<String, Object> errResp = new LinkedHashMap<>();
+                errResp.put("success", false);
+                errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to save quotation.");
+                return ResponseEntity.badRequest().body(errResp);
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/employee/quotations/builder";
         }
+    }
+
+    public String saveBuilderQuotation(
+            AdminQuotationBuilderService.BuilderRequest request,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        Object res = saveBuilderQuotation(request, null, authentication, redirectAttributes);
+        return (String) res;
     }
 
     @GetMapping("/builder/load/{id}")
