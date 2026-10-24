@@ -24,15 +24,15 @@
         <h1>Create Quotation</h1>
         <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
       </div>
-<!--      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">-->
-<!--        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #024541; background: #EAF3F1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>-->
-<!--        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
-<!--          <span>← Back</span>-->
-<!--        </button>-->
-<!--        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">-->
-<!--          <span>⌂ Dashboard</span>-->
-<!--        </a>-->
-<!--      </div>-->
+      <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
+        <span class="quote-number-preview" style="margin-right: 8px; font-weight: 700; color: #024541; background: #EAF3F1; padding: 6px 12px; border-radius: 6px; font-size: 13px;">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+        <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">
+          <span>← Back</span>
+        </button>
+        <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">
+          <span>⌂ Dashboard</span>
+        </a>
+      </div>
       <div class="employee-profile">
         <div class="profile-avatar">
           <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
@@ -45,6 +45,10 @@
     </header>
 
 <div class="builder-page">
+
+  <div th:if="${errorMessage}" class="alert alert-danger" style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24; font-weight: 600;" th:text="${errorMessage}"></div>
+  <div th:if="${successMessage}" class="alert alert-success" style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; font-weight: 600;" th:text="${successMessage}"></div>
+  <div id="clientErrorBanner" class="alert alert-danger" style="display: none; margin: 0 0 16px 0; padding: 12px 16px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24; font-weight: 600;"></div>
 
   <main>
     <section class="card customer-card">
@@ -101,12 +105,12 @@
         <label class="field">Address / Area<textarea id="customerAddress" class="capitalize-title" rows="2" placeholder="House / area / location"></textarea></label>
         <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
         <label class="field">Branch / District <span>*</span>
-          <select id="branchId">
+          <select id="branchId" th:attr="data-employee-branch=${employeeBranchId}">
             <option value="">Select branch / district</option>
             <option th:each="branch : ${branches}"
                     th:value="${branch.id}"
                     th:text="${branch.name}"
-                    th:selected="${selectedBranchId != null and selectedBranchId == branch.id}"></option>
+                    th:selected="${selectedBranchId != null and (selectedBranchId == branch.id or #strings.toString(selectedBranchId) == #strings.toString(branch.id))}"></option>
           </select>
         </label>
       </div>
@@ -1046,7 +1050,10 @@
 
       const name = $('customerName').value.trim();
       const phone = $('customerPhone').value.trim();
-      const branchId = Number($('branchId').value || 0);
+      let branchId = Number($('branchId').value || 0);
+      if (!branchId && $('branchId').dataset && $('branchId').dataset.employeeBranch) {
+          branchId = Number($('branchId').dataset.employeeBranch);
+      }
       if (!name || !phone || !branchId || !$('quotationDate').value) {
           return alert('Customer Name, Phone, Branch and Date are required.');
       }
@@ -1088,20 +1095,53 @@
       button.disabled = true;
       button.textContent = 'Saving Quotation...';
       $('saveMessage').textContent = 'Saving customer, rooms, items and pricing...';
+      const clientBanner = $('clientErrorBanner');
+      if (clientBanner) clientBanner.style.display = 'none';
+
       try {
           const response = await fetch(`${API_BASE}/save`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': csrfToken
+              },
               body: JSON.stringify(payload)
           });
-          if (response.redirected) {
-              window.location.href = response.url;
-              return;
+
+          const contentType = response.headers.get('content-type') || '';
+          if (contentType.includes('application/json')) {
+              const data = await response.json();
+              if (response.ok && data.success && data.redirectUrl) {
+                  window.location.href = data.redirectUrl;
+                  return;
+              } else if (!response.ok || !data.success) {
+                  throw new Error(data.message || 'Unable to save quotation.');
+              }
           }
-          const text = await response.text();
-          throw new Error(text || 'Unable to save quotation.');
+
+          if (response.redirected) {
+              if (response.url && !response.url.includes('/builder')) {
+                  window.location.href = response.url;
+                  return;
+              } else {
+                  throw new Error('Failed to save quotation. Please verify all required details.');
+              }
+          }
+
+          if (!response.ok) {
+              const text = await response.text();
+              throw new Error(text || 'Unable to save quotation.');
+          }
+
+          window.location.href = '/employee/quotations';
       } catch (e) {
           $('saveMessage').textContent = e.message;
+          if (clientBanner) {
+              clientBanner.textContent = e.message;
+              clientBanner.style.display = 'block';
+              clientBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
           button.disabled = false;
           button.textContent = 'Save Quotation';
       }
@@ -1141,7 +1181,7 @@
   $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
   $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
 
-  $('quoteNumberPreview').textContent = 'AUTO';
+  if ($('quoteNumberPreview')) $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
   initCustomers();
 
@@ -1149,7 +1189,7 @@
   if (state.quotationId) {
       getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
           if (!data) return;
-          if (data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
+          if ($('quoteNumberPreview') && data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
           if (data.customerName) $('customerName').value = toTitleCase(data.customerName);
           if (data.phone) $('customerPhone').value = data.phone;
           if (data.email) $('customerEmail').value = data.email ? data.email.toLowerCase() : '';

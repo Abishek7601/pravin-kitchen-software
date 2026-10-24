@@ -111,8 +111,6 @@ public class AdminQuotationBuilderService {
             BuilderRequest request,
             String loggedInEmail) {
 
-        validateRequest(request);
-
         // -----------------------------------------------------
         // Logged-in user (Admin or Employee)
         // -----------------------------------------------------
@@ -130,6 +128,21 @@ public class AdminQuotationBuilderService {
                     "User account is inactive."
             );
         }
+
+        if (request != null && loggedInUser.getRole() == Role.EMPLOYEE && loggedInUser.getBranch() != null && (request.branchId() == null || request.branchId() == 0L)) {
+            request = new BuilderRequest(
+                    request.quotationId(),
+                    request.customer(),
+                    loggedInUser.getBranch().getId(),
+                    request.quotationDate(),
+                    request.pricingMode(),
+                    request.customerRequirements(),
+                    request.notes(),
+                    request.rooms()
+            );
+        }
+
+        validateRequest(request);
 
         // -----------------------------------------------------
         // Branch resolution & authorization
@@ -638,8 +651,15 @@ public class AdminQuotationBuilderService {
         // Email duplicate check if provided
         if (email != null && !email.isBlank()) {
             String lowerEmail = email.toLowerCase();
-            if (customerRepository.existsByEmail(lowerEmail)) {
-                throw new IllegalArgumentException("Email address already exists.");
+            java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(lowerEmail);
+            if (existingByEmail.isPresent()) {
+                Customer existing = existingByEmail.get();
+                if (loggedInUser.getRole() == Role.EMPLOYEE) {
+                    if (existing.getBranch() != null && !existing.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                        throw new IllegalArgumentException("A customer with this email already belongs to another branch.");
+                    }
+                }
+                return existing;
             }
         }
 
