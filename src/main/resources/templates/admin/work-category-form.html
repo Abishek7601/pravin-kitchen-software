@@ -106,14 +106,14 @@
                  id="name"
                  name="name"
                  class="form-control"
-                 placeholder="Example: Modular Kitchen"
-                 th:value="${category.name != null ? category.name.toUpperCase() : ''}"
+                 placeholder="Example: 🍳 MODULAR KITCHEN, 🏠 FOYER"
+                 th:value="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                  style="text-transform: uppercase;"
                  oninput="this.value = this.value.toUpperCase();"
                  required>
 
           <small>
-            Enter the main type of work.
+            Enter category name with emoji (e.g. 🍳 MODULAR KITCHEN, 🏠 FOYER, 🛏️ BEDROOM).
           </small>
 
         </div>
@@ -136,153 +136,6 @@
           <small>
             Optional description for this category.
           </small>
-
-        </div>
-
-
-        <!-- EMOJI / ICON & PREVIEW -->
-        <div class="form-group mb-4">
-
-          <label for="icon">
-            Category Emoji / Icon <span class="badge-optional" style="font-size: 11px; background: #e2e8f0; color: #475569; padding: 2px 8px; border-radius: 4px; margin-left: 6px;">Optional</span>
-          </label>
-
-          <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-            <input type="text"
-                   id="icon"
-                   name="icon"
-                   class="form-control"
-                   style="max-width: 120px; font-size: 1.5rem; text-align: center;"
-                   placeholder="e.g. 🏠"
-                   th:value="${category.icon}">
-            <button type="button"
-                    class="btn btn-outline-secondary btn-sm"
-                    id="clearEmojiBtn"
-                    style="padding: 6px 14px; font-size: 13px; border-radius: 6px;">
-              Clear Emoji
-            </button>
-          </div>
-
-          <!-- Emoji Picker with Categories and Search -->
-          <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 12px;">
-            <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; align-items: center;">
-              <input type="text" id="emojiSearch" class="form-control form-control-sm" placeholder="🔍 Search emoji (e.g. kitchen, shoe rack, tv unit, wardrobe, light)..." style="max-width: 280px; font-size: 12px;">
-              <div class="btn-group btn-group-sm" role="group" id="emojiCategoryTabs" style="display: flex; flex-wrap: wrap; gap: 4px;">
-                <button type="button" class="btn btn-sm btn-outline-primary active" data-tab="all">All</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="kitchen">🍳 Kitchen &amp; Cabinets</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="foyer">🏠 Foyer &amp; Shoes</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="living">🛋️ Living &amp; TV Units</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="bedroom">🛏️ Bedroom &amp; Wardrobes</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="storage">📦 Storage &amp; Shelves</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="doors">🚪 Doors &amp; Windows</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="lighting">💡 Lighting &amp; Electrical</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="furniture">🪑 Furniture &amp; Decor</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="bathroom">🚿 Bathroom Interiors</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="office">💼 Office Interiors</button>
-                <button type="button" class="btn btn-sm btn-outline-secondary" data-tab="other">✨ Other Interiors</button>
-              </div>
-            </div>
-
-            <div id="emojiGrid" style="display: flex; flex-wrap: wrap; gap: 8px; max-height: 180px; overflow-y: auto; padding-right: 4px;">
-              <!-- Kitchen and cabinets -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="kitchen cook food modular cabinetry" data-emoji="🍳" style="font-size: 13px; background: #fff;">🍳 Kitchen</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="kitchen dining modular meal cutlery" data-emoji="🍽️" style="font-size: 13px; background: #fff;">🍽️ Modular Kitchen</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="counter platform prep cooking platform" data-emoji="🔪" style="font-size: 13px; background: #fff;">🔪 Prep Counter</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="cooktop hob gas stove cooking pot" data-emoji="🥘" style="font-size: 13px; background: #fff;">🥘 Cooktop / Hob</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="pantry bottle pullout spices grocery" data-emoji="🍶" style="font-size: 13px; background: #fff;">🍶 Kitchen Pantry</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="cabinet drawer crockery modular base wall unit" data-emoji="🗄️" style="font-size: 13px; background: #fff;">🗄️ Kitchen Cabinets</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="refrigerator fridge ice cold tall unit" data-emoji="🧊" style="font-size: 13px; background: #fff;">🧊 Fridge Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="kitchen" data-keywords="breakfast counter bar island kitchen tea coffee" data-emoji="☕" style="font-size: 13px; background: #fff;">☕ Breakfast Counter</button>
-
-              <!-- Foyer and shoe racks -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="foyer entrance home main entryway" data-emoji="🏠" style="font-size: 13px; background: #fff;">🏠 Foyer</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="shoe rack footwear shoes stand foyer" data-emoji="👞" style="font-size: 13px; background: #fff;">👞 Shoe Rack</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="shoe cabinet sneaker closet foyer storage" data-emoji="👟" style="font-size: 13px; background: #fff;">👟 Shoe Cabinet</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="entry main door entryway foyer vestibule" data-emoji="🚪" style="font-size: 13px; background: #fff;">🚪 Main Entrance</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="key holder keys console table hooks foyer" data-emoji="🔑" style="font-size: 13px; background: #fff;">🔑 Key Holder</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="coat rack hanger stand umbrella foyer" data-emoji="🧥" style="font-size: 13px; background: #fff;">🧥 Coat Rack</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="foyer" data-keywords="foyer planter pot plant green entrance" data-emoji="🪴" style="font-size: 13px; background: #fff;">🪴 Foyer Planter</button>
-
-              <!-- Living rooms and TV units -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="living room sofa hall lounge couch sitting" data-emoji="🛋️" style="font-size: 13px; background: #fff;">🛋️ Living Room</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="tv unit television media console screen entertainment" data-emoji="📺" style="font-size: 13px; background: #fff;">📺 TV Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="entertainment unit media console sound living" data-emoji="📻" style="font-size: 13px; background: #fff;">📻 Media Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="coffee table center table tea table living" data-emoji="☕" style="font-size: 13px; background: #fff;">☕ Center Table</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="indoor greenery plants planter living" data-emoji="🌿" style="font-size: 13px; background: #fff;">🌿 Living Greenery</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="wall art picture decor framing panel living" data-emoji="🖼️" style="font-size: 13px; background: #fff;">🖼️ Wall Artwork</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="living" data-keywords="chandelier false ceiling pendant hanging light living" data-emoji="🏮" style="font-size: 13px; background: #fff;">🏮 Chandelier</button>
-
-              <!-- Bedrooms and wardrobes -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="bedroom bed master king queen sleep mattress" data-emoji="🛏️" style="font-size: 13px; background: #fff;">🛏️ Bedroom</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="wardrobe closet cupboard clothes almirah bedroom" data-emoji="🚪" style="font-size: 13px; background: #fff;">🚪 Wardrobe</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="sliding wardrobe dress clothes bedroom closet" data-emoji="👗" style="font-size: 13px; background: #fff;">👗 Sliding Wardrobe</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="walk-in wardrobe suit dresser bedroom closet" data-emoji="👔" style="font-size: 13px; background: #fff;">👔 Walk-in Closet</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="dressing table mirror vanity bedroom makeup" data-emoji="🪞" style="font-size: 13px; background: #fff;">🪞 Dressing Table</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="kids bedroom children toy study play bed" data-emoji="🧸" style="font-size: 13px; background: #fff;">🧸 Kids Bedroom</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bedroom" data-keywords="guest bedroom extra bed sleep room" data-emoji="🛌" style="font-size: 13px; background: #fff;">🛌 Guest Bedroom</button>
-
-              <!-- Storage and shelves -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="storage unit box loft overhead trunk" data-emoji="📦" style="font-size: 13px; background: #fff;">📦 Storage Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="cabinet drawer file chest storage credenza" data-emoji="🗄️" style="font-size: 13px; background: #fff;">🗄️ Storage Cabinet</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="bookshelf library books rack study storage display" data-emoji="📚" style="font-size: 13px; background: #fff;">📚 Bookshelf</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="utility storage tools box hardware cleaning loft" data-emoji="🧰" style="font-size: 13px; background: #fff;">🧰 Utility Storage</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="crockery unit showcase glassware cabinet dining" data-emoji="🗃️" style="font-size: 13px; background: #fff;">🗃️ Crockery Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="storage" data-keywords="wall shelves floating ledge rack display" data-emoji="🪜" style="font-size: 13px; background: #fff;">🪜 Wall Shelves</button>
-
-              <!-- Doors and windows -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="doors" data-keywords="door main wooden flush entry bedroom" data-emoji="🚪" style="font-size: 13px; background: #fff;">🚪 Flush Door</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="doors" data-keywords="window glass ventilation bay frame opening" data-emoji="🪟" style="font-size: 13px; background: #fff;">🪟 Window Unit</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="doors" data-keywords="wooden timber partition fluted jali door" data-emoji="🪵" style="font-size: 13px; background: #fff;">🪵 Wood Partition</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="doors" data-keywords="wall panel cladding brick fluted partition" data-emoji="🧱" style="font-size: 13px; background: #fff;">🧱 Wall Panel</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="doors" data-keywords="safety door grille security lock gate" data-emoji="🗝️" style="font-size: 13px; background: #fff;">🗝️ Safety Door</button>
-
-              <!-- Lighting and electrical work -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="lighting" data-keywords="lights false ceiling led spotlight cob lighting" data-emoji="💡" style="font-size: 13px; background: #fff;">💡 Ceiling Lights</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="lighting" data-keywords="electrical plug switchboard wiring power socket" data-emoji="🔌" style="font-size: 13px; background: #fff;">🔌 Switchboards</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="lighting" data-keywords="power inverter electricity backup electrical" data-emoji="⚡" style="font-size: 13px; background: #fff;">⚡ Power Backup</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="lighting" data-keywords="cove lighting led strip profile profile-light" data-emoji="🕯️" style="font-size: 13px; background: #fff;">🕯️ Cove Lighting</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="lighting" data-keywords="hanging lamp pendant chandelier light fixture" data-emoji="🏮" style="font-size: 13px; background: #fff;">🏮 Hanging Lamp</button>
-
-              <!-- Furniture and decorative items -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="furniture chair seating armchair stool bench" data-emoji="🪑" style="font-size: 13px; background: #fff;">🪑 Furniture</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="mirror decorative glass vanity looking-glass" data-emoji="🪞" style="font-size: 13px; background: #fff;">🪞 Decorative Mirror</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="paint wall texture color finish wallpaper art" data-emoji="🎨" style="font-size: 13px; background: #fff;">🎨 Wall Paint</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="vase artifact decor decorative showpiece ornament" data-emoji="🏺" style="font-size: 13px; background: #fff;">🏺 Artifacts</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="veneer laminate surface acrylic finish texture timber" data-emoji="🪵" style="font-size: 13px; background: #fff;">🪵 Laminate / Veneer</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="furniture" data-keywords="accent feature wall panelling brick stone" data-emoji="🧱" style="font-size: 13px; background: #fff;">🧱 Accent Wall</button>
-
-              <!-- Bathroom interiors -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bathroom" data-keywords="shower partition glass bathroom bath wash" data-emoji="🚿" style="font-size: 13px; background: #fff;">🚿 Shower Area</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bathroom" data-keywords="bathtub master bath soak luxury bathroom" data-emoji="🛁" style="font-size: 13px; background: #fff;">🛁 Bathtub</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bathroom" data-keywords="vanity basin sink counter washbasin bathroom" data-emoji="🧼" style="font-size: 13px; background: #fff;">🧼 Vanity Counter</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="bathroom" data-keywords="mirror cabinet medicine storage vanity bathroom" data-emoji="🪞" style="font-size: 13px; background: #fff;">🪞 Mirror Cabinet</button>
-
-              <!-- Office interiors -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="office" data-keywords="home office study desk workstation work business" data-emoji="💼" style="font-size: 13px; background: #fff;">💼 Home Office</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="office" data-keywords="computer laptop desk workstation study table" data-emoji="💻" style="font-size: 13px; background: #fff;">💻 Workstation</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="office" data-keywords="files folders documents storage office rack" data-emoji="📁" style="font-size: 13px; background: #fff;">📁 File Storage</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="office" data-keywords="commercial office conference cabin space" data-emoji="🏢" style="font-size: 13px; background: #fff;">🏢 Office Cabin</button>
-
-              <!-- Other interior-related categories -->
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="pooja puja prayer mandir temple sacred deity" data-emoji="🧘" style="font-size: 13px; background: #fff;">🧘 Pooja Room</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="balcony terrace outdoor deck garden sitout" data-emoji="🌿" style="font-size: 13px; background: #fff;">🌿 Balcony</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="laundry utility washing machine sink sink-area" data-emoji="🧺" style="font-size: 13px; background: #fff;">🧺 Laundry</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="hardware fittings channels hinges handles screws" data-emoji="🔧" style="font-size: 13px; background: #fff;">🔧 Hardware</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="carpentry civil work woodwork fabrication builder" data-emoji="🔨" style="font-size: 13px; background: #fff;">🔨 Carpentry</button>
-              <button type="button" class="btn btn-outline-secondary btn-sm emoji-select-btn" data-category="other" data-keywords="modular layout plan design architecture drawing" data-emoji="📐" style="font-size: 13px; background: #fff;">📐 Layout Plan</button>
-            </div>
-            <small style="color: #64748b; margin-top: 6px; display: block;">
-              Click an emoji above, search by name, or type/paste any custom emoji.
-            </small>
-          </div>
-
-          <!-- Live Preview -->
-          <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-            <span style="font-size: 13px; font-weight: 600; color: #166534;">Live Preview:</span>
-            <span id="liveCategoryPreview" style="font-size: 1.1rem; font-weight: 700; color: #024541; background: #ffffff; padding: 6px 14px; border-radius: 6px; border: 1px solid #86efac; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
-              [Emoji] Category Name
-            </span>
-          </div>
 
         </div>
 
@@ -347,76 +200,11 @@
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var nameInput = document.getElementById('name');
-    var emojiInput = document.getElementById('icon');
-    var previewEl = document.getElementById('liveCategoryPreview');
-    var clearBtn = document.getElementById('clearEmojiBtn');
-    var searchInput = document.getElementById('emojiSearch');
-    var tabButtons = document.querySelectorAll('#emojiCategoryTabs button');
-    var currentTab = 'all';
-
-    function updateLivePreview() {
-      var emoji = (emojiInput ? emojiInput.value : '').trim();
-      var name = (nameInput ? nameInput.value : '').trim() || 'Category Name';
-      if (previewEl) {
-        if (emoji) {
-          previewEl.textContent = emoji + ' ' + name;
-        } else {
-          previewEl.textContent = name;
-        }
-      }
-    }
-
-    function filterEmojis() {
-      var query = (searchInput ? searchInput.value : '').toLowerCase().trim();
-      var buttons = document.querySelectorAll('#emojiGrid .emoji-select-btn');
-      buttons.forEach(function (btn) {
-        var cat = btn.dataset.category || '';
-        var keywords = (btn.dataset.keywords || '').toLowerCase();
-        var text = btn.textContent.toLowerCase();
-        var matchesTab = (currentTab === 'all' || cat === currentTab);
-        var matchesQuery = (!query || text.includes(query) || keywords.includes(query));
-        btn.style.display = (matchesTab && matchesQuery) ? 'inline-flex' : 'none';
+    if (nameInput) {
+      nameInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase();
       });
     }
-
-    if (tabButtons) {
-      tabButtons.forEach(function (tabBtn) {
-        tabBtn.addEventListener('click', function () {
-          tabButtons.forEach(function (b) {
-            b.classList.remove('btn-outline-primary', 'active');
-            b.classList.add('btn-outline-secondary');
-          });
-          tabBtn.classList.remove('btn-outline-secondary');
-          tabBtn.classList.add('btn-outline-primary', 'active');
-          currentTab = tabBtn.dataset.tab;
-          filterEmojis();
-        });
-      });
-    }
-
-    if (searchInput) searchInput.addEventListener('input', filterEmojis);
-    if (nameInput) nameInput.addEventListener('input', updateLivePreview);
-    if (emojiInput) emojiInput.addEventListener('input', updateLivePreview);
-
-    document.querySelectorAll('.emoji-select-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        if (emojiInput) {
-          emojiInput.value = btn.dataset.emoji;
-          updateLivePreview();
-        }
-      });
-    });
-
-    if (clearBtn) {
-      clearBtn.addEventListener('click', function () {
-        if (emojiInput) {
-          emojiInput.value = '';
-          updateLivePreview();
-        }
-      });
-    }
-
-    updateLivePreview();
   });
 </script>
 </body>

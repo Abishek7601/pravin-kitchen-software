@@ -193,15 +193,14 @@ public class ConfigureMasterDataUiUpdatesTest {
         for (String cat : expectedCategories) {
             assertTrue(pricingFormHtml.contains("data-tab=\"" + cat + "\""),
                     "pricing-form.html must have tab for " + cat);
-            assertTrue(categoryFormHtml.contains("data-tab=\"" + cat + "\""),
-                    "work-category-form.html must have tab for " + cat);
         }
+        assertFalse(categoryFormHtml.contains("data-tab="),
+                "work-category-form.html must have separate emoji tabs removed per requirement");
 
-        // Verify specific interior emojis are present
+        // Verify specific interior emojis are present in pricing-form.html
         String[] specificEmojis = {"🍳", "👞", "👟", "📺", "🛏️", "🚪", "📦", "🪟", "💡", "🔌", "🪑", "🚿", "💼", "🧘"};
         for (String emoji : specificEmojis) {
             assertTrue(pricingFormHtml.contains(emoji), "pricing-form.html must contain emoji " + emoji);
-            assertTrue(categoryFormHtml.contains(emoji), "work-category-form.html must contain emoji " + emoji);
         }
 
         // Test saving with a new emoji (e.g. 👞 for Shoe Rack)
@@ -268,52 +267,39 @@ public class ConfigureMasterDataUiUpdatesTest {
     }
 
     @Test
-    @DisplayName("Req 6: Category Page contains Configure Master Data modal with emoji selection, preview, and no page redirect")
+    @DisplayName("Req 6: Category Page contains Add Categories modal, single category name field with emoji, and 4-column table")
     public void testCategoryPageContainsConfigureMasterDataModal() throws Exception {
         String workCategoriesHtml = loadTemplateContent("admin/work-categories.html");
 
         // 1. Configure Master Data button is present above category table
         assertTrue(workCategoriesHtml.contains("id=\"openConfigureMasterDataBtn\""),
                 "Category page must have Configure Master Data button with id 'openConfigureMasterDataBtn'");
-        assertTrue(workCategoriesHtml.contains("Configure Master Data"),
-                "Category page must display Configure Master Data button label");
 
         // 2. Modal markup is present on the same page
         assertTrue(workCategoriesHtml.contains("id=\"masterDataModal\""),
                 "Category page must contain modal container 'masterDataModal'");
         assertTrue(workCategoriesHtml.contains("id=\"categoryNameInput\""),
                 "Modal must contain Category Name input field");
-        assertTrue(workCategoriesHtml.contains("id=\"categoryEmojiInput\""),
-                "Modal must contain Category Emoji input field");
         assertTrue(workCategoriesHtml.contains("id=\"modalSaveCategoryBtn\""),
                 "Modal must contain Save Category button");
         assertTrue(workCategoriesHtml.contains("id=\"modalCancelBtn\""),
                 "Modal must contain Cancel button");
 
-        // 3. Common interior-design and kitchen emojis
-        String[] requiredEmojis = {"🏠", "🍳", "🛏️", "🚪", "🪟", "🛋️", "💡", "🪵", "🎨", "🧱"};
-        for (String emoji : requiredEmojis) {
-            assertTrue(workCategoriesHtml.contains(emoji),
-                    "Category modal emoji picker must contain interior emoji: " + emoji);
-        }
-
-        // 4. Live preview element
-        assertTrue(workCategoriesHtml.contains("id=\"previewEmoji\""),
-                "Modal must display live emoji preview");
+        // 3. Live preview element for name
         assertTrue(workCategoriesHtml.contains("id=\"previewName\""),
                 "Modal must display live name preview");
 
-        // 5. Table displays emoji inline beside category name
-        assertTrue(workCategoriesHtml.contains("category-inline-emoji"),
-                "Category table must render inline emoji beside the category name");
+        // 4. Table headers match: S.NO | CATEGORY NAME | STATUS | ACTIONS (no separate EMOJI/ICON column)
+        assertTrue(workCategoriesHtml.contains("Category Name"),
+                "Category table must render Category Name column");
+        assertFalse(workCategoriesHtml.contains("<th class=\"col-icon\">"),
+                "Category table must NOT contain separate EMOJI / ICON table header column");
 
-        // 6. View action remains removed
-        assertFalse(workCategoriesHtml.contains("title=\"View\""),
-                "Category table must NOT contain View action button");
-        assertFalse(workCategoriesHtml.contains("/admin/work-categories/view/"),
-                "Category table must NOT link to category view page");
+        // 5. Actions column includes View button for work types
+        assertTrue(workCategoriesHtml.contains("js-view-category-btn"),
+                "Category table must contain View action button");
 
-        // 7. Verify pagination method correctness
+        // 6. Verify pagination method correctness
         assertFalse(workCategoriesHtml.contains("pagination.init()"),
                 "Category page must NOT call nonexistent 'pagination.init()'");
         assertTrue(workCategoriesHtml.contains("pagination.applyFilterAndRender"),
@@ -367,7 +353,7 @@ public class ConfigureMasterDataUiUpdatesTest {
     }
 
     @Test
-    @DisplayName("Req 8: Edit category modal elements present and duplicate emoji field removed")
+    @DisplayName("Req 8: Edit category modal elements present and single category name field used")
     public void testEditCategoryModalAndSingleEmojiFieldMarkup() throws Exception {
         String html = loadTemplateContent("admin/work-categories.html");
 
@@ -381,11 +367,9 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertTrue(html.contains("id=\"categoryIdInput\""),
                 "Modal form must contain hidden categoryIdInput to distinguish between create and update");
 
-        // 3. Duplicate emoji display box removed; only one Category Emoji field exists
-        assertFalse(html.contains("id=\"selectedEmojiDisplay\""),
-                "Duplicate emoji display box 'selectedEmojiDisplay' must be removed from modal");
-        assertTrue(html.contains("id=\"categoryEmojiInput\""),
-                "Modal must contain single categoryEmojiInput text input field");
+        // 3. Category Name input is the single field (including emoji)
+        assertTrue(html.contains("id=\"categoryNameInput\""),
+                "Modal must contain single categoryNameInput text input field");
 
         // 4. In-place table update function is defined for AJAX modal save
         assertTrue(html.contains("updateCategoryRowInTable"),

@@ -109,9 +109,11 @@ public class WorkCategoryService {
                 cleanValue(description)
         );
 
-        category.setIcon(
-                cleanValue(icon)
-        );
+        String iconVal = cleanValue(icon);
+        if (iconVal == null) {
+            iconVal = extractLeadingEmoji(categoryName);
+        }
+        category.setIcon(iconVal);
 
         category.setActive(true);
 
@@ -153,9 +155,14 @@ public class WorkCategoryService {
                 cleanValue(description)
         );
 
-        category.setIcon(
-                cleanValue(icon)
-        );
+        String updateIconVal = cleanValue(icon);
+        if (updateIconVal == null) {
+            updateIconVal = extractLeadingEmoji(categoryName);
+            if (updateIconVal == null && category.getIcon() != null && !category.getIcon().isBlank()) {
+                updateIconVal = category.getIcon();
+            }
+        }
+        category.setIcon(updateIconVal);
 
         category.setDisplayOrder(
                 displayOrder == null ? 0 : displayOrder
@@ -469,6 +476,45 @@ public class WorkCategoryService {
             divisionRepository.saveAndFlush(division);
             return "Work type '" + workTypeName + "' has associated data and has been safely deactivated to protect system integrity.";
         }
+    }
+
+    @Transactional
+    public Division toggleWorkTypeStatus(Long categoryId, Long workTypeId) {
+        if (workTypeId == null) {
+            throw new IllegalArgumentException("Work type ID is required");
+        }
+        Division division = divisionRepository.findById(workTypeId)
+                .orElseThrow(() -> new IllegalArgumentException("Work type not found with ID: " + workTypeId));
+
+        if (categoryId != null && division.getWorkCategory() != null && !categoryId.equals(division.getWorkCategory().getId())) {
+            throw new IllegalArgumentException("Work type does not belong to the specified category");
+        }
+
+        division.setActive(!Boolean.TRUE.equals(division.getActive()));
+        return divisionRepository.saveAndFlush(division);
+    }
+
+    public static String extractLeadingEmoji(String text) {
+        if (text == null || text.isBlank()) return null;
+        text = text.trim();
+        StringBuilder emoji = new StringBuilder();
+        int i = 0;
+        while (i < text.length()) {
+            int codePoint = text.codePointAt(i);
+            int type = Character.getType(codePoint);
+            if (type == Character.SURROGATE || type == Character.OTHER_SYMBOL || type == Character.MODIFIER_SYMBOL
+                    || (codePoint >= 0x1F300 && codePoint <= 0x1FAFF)
+                    || (codePoint >= 0x2600 && codePoint <= 0x27BF)
+                    || (codePoint >= 0xFE00 && codePoint <= 0xFE0F)) {
+                emoji.append(Character.toChars(codePoint));
+                i += Character.charCount(codePoint);
+            } else if (Character.isWhitespace(codePoint) && emoji.length() > 0) {
+                break;
+            } else {
+                break;
+            }
+        }
+        return emoji.length() > 0 ? emoji.toString().trim() : null;
     }
 
     public static String resolveWorkTypeEmoji(String name, String fallbackCategoryEmoji) {

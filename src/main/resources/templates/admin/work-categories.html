@@ -159,7 +159,6 @@
                     <thead>
                         <tr>
                             <th class="col-sno">S.No</th>
-                            <th class="col-icon">Emoji / Icon</th>
                             <th class="col-name">Category Name</th>
                             <th class="col-status">Status</th>
                             <th class="col-actions">Actions</th>
@@ -170,7 +169,7 @@
                             class="category-row"
                             th:id="'category-row-' + ${category.id}"
                             th:data-id="${category.id}"
-                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                             th:data-icon="${category.icon != null ? category.icon : ''}"
                             th:data-description="${category.description != null ? category.description : ''}"
                             th:data-status="${category.archived ? 'archived' : (category.active ? 'active' : 'inactive')}">
@@ -178,24 +177,11 @@
                             <!-- S.NO -->
                             <td class="col-sno serial-number" th:text="${stat.count}">1</td>
 
-                            <!-- EMOJI / ICON -->
-                            <td class="col-icon">
-                                <span class="category-icon-pill"
-                                      th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                                      th:text="${category.icon}">📁</span>
-                                <span class="category-icon-pill fallback"
-                                      th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}">📁</span>
-                            </td>
-
                             <!-- CATEGORY NAME -->
                             <td class="col-name">
                                 <div class="category-name-cell">
-                                    <div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">
-                                        <span class="category-inline-emoji"
-                                              th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                                              th:text="${category.icon}"
-                                              style="font-size: 1.25rem; line-height: 1;">🏠</span>
-                                        <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
+                                    <div class="category-title-wrap">
+                                        <strong class="category-title" th:text="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}">MODULAR KITCHEN</strong>
                                     </div>
                                     <p class="category-description"
                                        th:if="${category.description != null and !#strings.isEmpty(category.description)}"
@@ -228,7 +214,7 @@
                                     <button type="button"
                                             class="action-btn view-btn js-view-category-btn"
                                             th:data-id="${category.id}"
-                                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                                             th:data-icon="${category.icon != null ? category.icon : ''}"
                                             th:data-description="${category.description != null ? category.description : ''}"
                                             title="View Category Work Types">
@@ -240,7 +226,7 @@
                                             th:if="${!category.archived}"
                                             class="action-btn edit-btn js-edit-category-btn"
                                             th:data-id="${category.id}"
-                                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                                             th:data-icon="${category.icon != null ? category.icon : ''}"
                                             th:data-description="${category.description != null ? category.description : ''}"
                                             title="Edit Category">
@@ -269,7 +255,7 @@
                                           th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
+                                          th:data-category-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : 'this category')}"
                                           onsubmit="return confirmDeleteCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -286,7 +272,7 @@
                                           th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
+                                          th:data-category-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : 'this category')}"
                                           onsubmit="return confirmUnarchiveCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -303,7 +289,7 @@
 
                         <!-- NO MATCHES ROW -->
                         <tr id="noResultsRow" style="display: none;">
-                            <td colspan="5" class="no-results-cell">
+                            <td colspan="4" class="no-results-cell">
                                 <div class="no-results-content">
                                     <span class="no-results-icon">🔍</span>
                                     <strong>No matching categories found</strong>
@@ -370,10 +356,10 @@
         <!-- Modal Header -->
         <div class="modal-header">
             <div class="modal-title-wrap">
-                <div class="modal-icon-badge" id="modalHeaderBadge">✨</div>
+                <div class="modal-icon-badge" id="modalHeaderBadge">📁</div>
                 <div>
-                    <h3 id="modalTitle">Configure Master Data</h3>
-                    <p class="modal-subtitle" id="modalSubtitle">Add a new category with custom emoji and details</p>
+                    <h3 id="modalTitle">Add Categories</h3>
+                    <p class="modal-subtitle" id="modalSubtitle">Add a category with name (including emoji) and details</p>
                 </div>
             </div>
             <button type="button" class="modal-close-btn" id="modalCloseXBtn" aria-label="Close modal">&times;</button>
@@ -387,13 +373,13 @@
             <input type="hidden" th:if="${_csrf != null}" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" th:if="${_csrf != null}" id="csrfHeader" th:value="${_csrf.headerName}">
             <input type="hidden" id="categoryIdInput" name="id" value="">
+            <input type="hidden" id="categoryEmojiInput" name="icon" value="">
 
             <div class="modal-body">
                 <!-- Live Preview Bar -->
                 <div class="modal-live-preview">
                     <span class="preview-label">Live Preview:</span>
                     <div class="preview-badge">
-                        <span id="previewEmoji" class="preview-emoji">🏠</span>
                         <strong id="previewName" class="preview-name">NEW CATEGORY</strong>
                     </div>
                 </div>
@@ -407,61 +393,11 @@
                            id="categoryNameInput"
                            name="name"
                            class="modal-input"
-                           placeholder="e.g. MODULAR KITCHEN, BALCONY, POOJA ROOM"
+                           placeholder="e.g. 🍳 MODULAR KITCHEN, 🏠 FOYER, 🛏️ BEDROOM"
                            autocomplete="off"
-                           style="text-transform: uppercase;"
                            required>
                     <div id="nameValidationMsg" class="field-error" style="display: none;">Category name is required.</div>
-                </div>
-
-                <!-- Category Emoji Picker Section -->
-                <div class="modal-form-group">
-                    <label>
-                        Category Emoji <span class="badge-tag">Select or customize</span>
-                    </label>
-
-                    <!-- Selected Emoji Input Row (single field, no duplicate box) -->
-                    <div class="selected-emoji-row">
-                        <input type="text"
-                               id="categoryEmojiInput"
-                               name="icon"
-                               class="modal-emoji-input"
-                               value="🏠"
-                               placeholder="🏠"
-                               maxlength="8">
-                        <button type="button" id="clearSelectedEmojiBtn" class="btn-clear-emoji">Clear</button>
-                        <span class="emoji-help-text">Click an emoji below or type custom</span>
-                    </div>
-
-                    <!-- Preset Emoji Palette with common interior & kitchen items -->
-                    <div class="emoji-palette-card">
-                        <div class="palette-category-title">Common Interior &amp; Kitchen Emojis:</div>
-                        <div class="emoji-palette-grid">
-                            <!-- Emojis explicitly required: 🏠, 🍳, 🛏️, 🚪, 🪟, 🛋️, 💡, 🪵, 🎨, 🧱 -->
-                            <button type="button" class="palette-emoji-btn active" data-emoji="🏠" title="House / Foyer">🏠 <span class="emoji-label">Foyer</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🍳" title="Kitchen">🍳 <span class="emoji-label">Kitchen</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🛏️" title="Bedroom">🛏️ <span class="emoji-label">Bedroom</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🚪" title="Doors / Wardrobe">🚪 <span class="emoji-label">Doors</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪟" title="Windows / Balcony">🪟 <span class="emoji-label">Windows</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🛋️" title="Living / TV Unit">🛋️ <span class="emoji-label">Living</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="💡" title="Lighting / False Ceiling">💡 <span class="emoji-label">Lighting</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪵" title="Wood / Laminate">🪵 <span class="emoji-label">Woodwork</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🎨" title="Wall Paint / Finishes">🎨 <span class="emoji-label">Finishes</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🧱" title="Accent / Partition">🧱 <span class="emoji-label">Partition</span></button>
-
-                            <!-- Extended Popular Interior Choices -->
-                            <button type="button" class="palette-emoji-btn" data-emoji="📦" title="Storage / Loft">📦 <span class="emoji-label">Storage</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🗄️" title="Cabinets / Drawers">🗄️ <span class="emoji-label">Cabinets</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🍽️" title="Dining / Crockery">🍽️ <span class="emoji-label">Dining</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪞" title="Dressing / Mirror">🪞 <span class="emoji-label">Vanity</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="👞" title="Shoe Rack">👞 <span class="emoji-label">Shoes</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🌿" title="Balcony / Greenery">🌿 <span class="emoji-label">Balcony</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🧘" title="Pooja Room">🧘 <span class="emoji-label">Pooja</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="💼" title="Office / Study">💼 <span class="emoji-label">Study</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🚿" title="Bathroom">🚿 <span class="emoji-label">Bath</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="☕" title="Breakfast Counter">☕ <span class="emoji-label">Bar</span></button>
-                        </div>
-                    </div>
+                    <small style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">Include emoji directly in the category name (e.g. 🍳 MODULAR KITCHEN)</small>
                 </div>
 
                 <!-- Description Input (Optional) -->
@@ -495,7 +431,7 @@
         <!-- Modal Header -->
         <div class="modal-header" style="flex-shrink: 0; background: linear-gradient(135deg, #024541 0%, #013A36 100%); color: #ffffff; padding: 18px 24px;">
             <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 14px;">
-                <div class="modal-icon-badge" id="viewModalHeaderBadge" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 26px; border: 1px solid rgba(255, 255, 255, 0.25);">🍳</div>
+                <div class="modal-icon-badge" id="viewModalHeaderBadge" style="display: none;"></div>
                 <div>
                     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                         <h3 id="viewModalTitle" style="margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; color: #ffffff; text-transform: uppercase;">MODULAR KITCHEN</h3>
@@ -535,38 +471,12 @@
                 <div id="workTypeFormAlert" class="modal-alert" style="display: none; margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
                 <form id="workTypeForm" onsubmit="return false;">
                     <input type="hidden" id="workTypeIdInput" value="">
-                    <div style="display: grid; grid-template-columns: 1fr 140px; gap: 12px; margin-bottom: 10px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Work Type Name <span style="color: #dc2626;">*</span>
-                            </label>
-                            <input type="text" id="workTypeNameInput" class="modal-input" placeholder="e.g. BOTTOM CABINET, WARDROBE" style="text-transform: uppercase; padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Emoji
-                            </label>
-                            <input type="text" id="workTypeEmojiInput" class="modal-emoji-input" placeholder="🗄️" maxlength="8" style="padding: 8px 10px; font-size: 16px; width: 100%; text-align: center; border: 1px solid #cbd5e1; border-radius: 6px;">
-                        </div>
-                    </div>
-                    <!-- Quick emoji row -->
+                    <input type="hidden" id="workTypeEmojiInput" value="">
                     <div style="margin-bottom: 12px;">
-                        <span style="font-size: 11px; color: #64748b; margin-bottom: 4px; display: block;">Quick Emoji Picks:</span>
-                        <div id="workTypeQuickEmojis" style="display: flex; gap: 6px; flex-wrap: wrap;">
-                            <button type="button" class="btn-quick-emoji" data-emoji="🗄️" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🗄️</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🪑" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🪑</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🏝️" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🏝️</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🏠" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🏠</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🪜" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🪜</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🚪" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🚪</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="📦" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">📦</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🪵" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🪵</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🍳" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🍳</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🛏️" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🛏️</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🛋️" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🛋️</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="👞" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">👞</button>
-                            <button type="button" class="btn-quick-emoji" data-emoji="🛠️" style="background:#fff; border:1px solid #cbd5e1; border-radius:4px; padding:2px 6px; cursor:pointer; font-size:14px;">🛠️</button>
-                        </div>
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Work Type Name <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="workTypeNameInput" class="modal-input" placeholder="e.g. SHOE RACK, BOTTOM CABINET, WARDROBE" style="text-transform: uppercase; padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
                     </div>
                     <div style="margin-bottom: 12px;">
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
@@ -856,22 +766,18 @@
         var saveBtnText = document.getElementById('saveBtnText');
         var saveBtnIcon = document.getElementById('saveBtnIcon');
         var nameInput = document.getElementById('categoryNameInput');
-        var emojiInput = document.getElementById('categoryEmojiInput');
         var descInput = document.getElementById('categoryDescriptionInput');
-        var previewEmoji = document.getElementById('previewEmoji');
         var previewName = document.getElementById('previewName');
         var nameValidationMsg = document.getElementById('nameValidationMsg');
         var modalAlert = document.getElementById('modalAlert');
-        var clearEmojiBtn = document.getElementById('clearSelectedEmojiBtn');
-        var paletteBtns = document.querySelectorAll('.palette-emoji-btn');
 
         function openAddModal() {
             if (!modalOverlay) return;
             resetModal();
             if (categoryIdInput) categoryIdInput.value = '';
-            if (modalTitle) modalTitle.textContent = 'Configure Master Data';
-            if (modalSubtitle) modalSubtitle.textContent = 'Add a new category with custom emoji and details';
-            if (modalHeaderBadge) modalHeaderBadge.textContent = '✨';
+            if (modalTitle) modalTitle.textContent = 'Add Categories';
+            if (modalSubtitle) modalSubtitle.textContent = 'Add a category with name (including emoji) and details';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '📁';
             if (saveBtnText) saveBtnText.textContent = 'Save Category';
             if (saveBtnIcon) saveBtnIcon.textContent = '💾';
 
@@ -889,19 +795,17 @@
             resetModal();
             var id = categoryData.id || '';
             var name = categoryData.name || '';
-            var icon = categoryData.icon || '';
             var desc = categoryData.description || '';
 
             if (categoryIdInput) categoryIdInput.value = id;
             if (modalTitle) modalTitle.textContent = 'Edit Category';
-            if (modalSubtitle) modalSubtitle.textContent = 'Update category details, emoji, and description';
+            if (modalSubtitle) modalSubtitle.textContent = 'Update category name (including emoji) and description';
             if (modalHeaderBadge) modalHeaderBadge.textContent = '✏️';
             if (saveBtnText) saveBtnText.textContent = 'Update Category';
             if (saveBtnIcon) saveBtnIcon.textContent = '💾';
 
             if (nameInput) nameInput.value = name;
             if (descInput) descInput.value = desc;
-            setEmoji(icon);
             if (previewName) previewName.textContent = name || 'CATEGORY';
 
             modalOverlay.style.display = 'flex';
@@ -927,8 +831,6 @@
             if (categoryIdInput) categoryIdInput.value = '';
             if (nameInput) nameInput.value = '';
             if (descInput) descInput.value = '';
-            if (emojiInput) emojiInput.value = '🏠';
-            if (previewEmoji) previewEmoji.textContent = '🏠';
             if (previewName) previewName.textContent = 'NEW CATEGORY';
             if (nameValidationMsg) nameValidationMsg.style.display = 'none';
             if (modalAlert) {
@@ -941,27 +843,6 @@
                 if (saveBtnText) saveBtnText.textContent = 'Save Category';
                 if (saveBtnIcon) saveBtnIcon.textContent = '💾';
             }
-            paletteBtns.forEach(function(btn) {
-                if (btn.getAttribute('data-emoji') === '🏠') {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        function setEmoji(emoji) {
-            var val = (emoji || '').trim();
-            if (emojiInput) emojiInput.value = val;
-            if (previewEmoji) previewEmoji.textContent = val || '📁';
-
-            paletteBtns.forEach(function(btn) {
-                if (btn.getAttribute('data-emoji') === val) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
         }
 
         if (openBtn) {
@@ -1049,15 +930,12 @@
 
         function openWorkTypeForm(item) {
             if (!workTypeFormContainer) return;
-            if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';
-            if (viewModalGlobalAlert) viewModalGlobalAlert.style.display = 'none';
-
-            if (item && item.id) {
+            if (workTypeFormAlert) workTypeFormAlert.style.display             if (item && item.id) {
                 // Edit Mode
                 if (workTypeFormTitle) workTypeFormTitle.textContent = 'Edit Work Type: ' + item.name;
                 if (workTypeIdInput) workTypeIdInput.value = item.id;
                 if (workTypeNameInput) workTypeNameInput.value = item.name || '';
-                if (workTypeEmojiInput) workTypeEmojiInput.value = item.emoji || '';
+                if (workTypeEmojiInput) workTypeEmojiInput.value = '';
                 if (workTypeDescriptionInput) workTypeDescriptionInput.value = item.description || '';
                 if (saveWorkTypeBtn) saveWorkTypeBtn.textContent = 'Update Work Type';
             } else {
@@ -1065,8 +943,7 @@
                 if (workTypeFormTitle) workTypeFormTitle.textContent = 'Add Work Type to ' + (currentViewCategory ? currentViewCategory.name : 'Category');
                 if (workTypeIdInput) workTypeIdInput.value = '';
                 if (workTypeNameInput) workTypeNameInput.value = '';
-                var defaultEmoji = (currentViewCategory && currentViewCategory.icon && currentViewCategory.icon !== '📁') ? currentViewCategory.icon : '🗄️';
-                if (workTypeEmojiInput) workTypeEmojiInput.value = defaultEmoji;
+                if (workTypeEmojiInput) workTypeEmojiInput.value = '';
                 if (workTypeDescriptionInput) workTypeDescriptionInput.value = '';
                 if (saveWorkTypeBtn) saveWorkTypeBtn.textContent = 'Save Work Type';
             }
@@ -1077,16 +954,6 @@
             }
             workTypeFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
-
-        // Quick emoji buttons in work type form
-        document.querySelectorAll('.btn-quick-emoji').forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var em = this.getAttribute('data-emoji');
-                if (workTypeEmojiInput && em) {
-                    workTypeEmojiInput.value = em;
-                }
-            });
-        });
 
         if (workTypeNameInput) {
             workTypeNameInput.addEventListener('input', function() {
@@ -1135,9 +1002,6 @@
                 if (viewModalBadge) viewModalBadge.textContent = total + (total === 1 ? ' Work Type' : ' Work Types');
                 if (viewWorkTypesCount) viewWorkTypesCount.textContent = total;
 
-                if (data.categoryEmoji && viewModalHeaderBadge) {
-                    viewModalHeaderBadge.textContent = data.categoryEmoji;
-                }
                 if (data.categoryName && viewModalTitle) {
                     viewModalTitle.textContent = data.categoryName.toUpperCase();
                 }
@@ -1151,30 +1015,34 @@
                 if (viewWorkTypesEmpty) viewWorkTypesEmpty.style.display = 'none';
                 if (viewWorkTypesGrid) {
                     var html = '';
-                    list.forEach(function(item) {
-                        var emoji = item.emoji || item.icon || '📋';
+                    list.forEach(function(item, index) {
+                        var num = index + 1;
                         var name = item.name || '';
                         var desc = item.description || '';
                         var isActive = item.active !== false;
 
                         html += '<div class="work-type-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.2s ease;">' +
-                            '<!-- Top: Emoji, Full Work Type Name, and Status -->' +
-                            '<div style="display: flex; align-items: flex-start; gap: 12px; width: 100%; min-width: 0;">' +
-                                '<div class="work-type-emoji" style="width: 44px; height: 44px; border-radius: 10px; background: #f8fafc; display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; border: 1px solid #e2e8f0;">' + escapeHtml(emoji) + '</div>' +
-                                '<div style="min-width: 0; flex: 1;">' +
-                                    '<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">' +
+                            '<!-- Top: Number, Full Work Type Name, and Status Badge -->' +
+                            '<div style="width: 100%; min-width: 0;">' +
+                                '<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">' +
+                                    '<div style="display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1;">' +
+                                        '<span class="work-type-number" style="font-size: 15px; font-weight: 700; color: #024541; flex-shrink: 0;">' + num + '.</span>' +
                                         '<strong class="work-type-title" style="font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: break-word;" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</strong>' +
-                                        (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 6px; font-weight: 600; flex-shrink: 0;">Inactive</span>' : '') +
                                     '</div>' +
-                                    (desc ? '<div style="font-size: 12px; color: #64748b; margin-top: 4px; line-height: 1.4; word-break: break-word;" title="' + escapeHtml(desc) + '">' + escapeHtml(desc) + '</div>' : '') +
+                                    '<span class="status-badge ' + (isActive ? 'active' : 'inactive') + '" style="font-size: 11px; padding: 3px 9px; border-radius: 6px; font-weight: 600; flex-shrink: 0;">' + (isActive ? 'Active' : 'Inactive') + '</span>' +
                                 '</div>' +
+                                (desc ? '<div style="font-size: 12px; color: #64748b; margin-top: 6px; margin-left: 20px; line-height: 1.4; word-break: break-word;" title="' + escapeHtml(desc) + '">' + escapeHtml(desc) + '</div>' : '') +
                             '</div>' +
-                            '<!-- Bottom: Actions on dedicated row -->' +
+                            '<!-- Bottom: Actions -->' +
                             '<div class="work-type-actions" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;">' +
-                                '<button type="button" class="js-manage-materials-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-emoji="' + escapeHtml(emoji) + '" title="Configure Materials for ' + escapeHtml(name) + '" style="padding: 6px 14px; border: 1px solid #024541; background: #024541; color: #ffffff; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">' +
+                                '<button type="button" class="js-manage-materials-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" title="Configure Materials for ' + escapeHtml(name) + '" style="padding: 6px 14px; border: 1px solid #024541; background: #024541; color: #ffffff; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">' +
                                     '<span>+ Add Materials</span>' +
                                 '</button>' +
-                                '<button type="button" class="js-edit-work-type-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-emoji="' + escapeHtml(emoji) + '" data-description="' + escapeHtml(desc) + '" title="Edit Work Type" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                '<button type="button" class="js-edit-work-type-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-description="' + escapeHtml(desc) + '" title="Edit Work Type" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                (isActive
+                                    ? '<button type="button" class="js-toggle-work-type-btn btn-deactivate" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-active="true" title="Deactivate Work Type" style="padding: 6px 12px; border: 1px solid #fed7aa; background: #fff7ed; color: #c2410c; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Deactivate</button>'
+                                    : '<button type="button" class="js-toggle-work-type-btn btn-activate" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-active="false" title="Activate Work Type" style="padding: 6px 12px; border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Activate</button>'
+                                ) +
                                 '<button type="button" class="js-delete-work-type-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" title="Delete Work Type" style="padding: 6px 12px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
                             '</div>' +
                         '</div>';
@@ -1200,7 +1068,6 @@
             saveWorkTypeBtn.addEventListener('click', function() {
                 if (!currentViewCategory) return;
                 var nameVal = (workTypeNameInput ? workTypeNameInput.value : '').trim().toUpperCase();
-                var emojiVal = (workTypeEmojiInput ? workTypeEmojiInput.value : '').trim();
                 var descVal = (workTypeDescriptionInput ? workTypeDescriptionInput.value : '').trim();
                 var workTypeId = (workTypeIdInput ? workTypeIdInput.value : '').trim();
                 var isEdit = (workTypeId && workTypeId.length > 0 && workTypeId !== '0');
@@ -1222,7 +1089,6 @@
                 var params = new URLSearchParams();
                 if (isEdit) params.append('id', workTypeId);
                 params.append('name', nameVal);
-                if (emojiVal) params.append('emoji', emojiVal);
                 if (descVal) params.append('description', descVal);
 
                 var headers = {
@@ -1264,7 +1130,7 @@
             });
         }
 
-        // Delegate Edit & Delete clicks inside viewWorkTypesGrid
+        // Delegate Manage Materials, Edit, Toggle Status & Delete clicks inside viewWorkTypesGrid
         if (viewWorkTypesGrid) {
             viewWorkTypesGrid.addEventListener('click', function(e) {
                 var matBtn = e.target.closest('.js-manage-materials-btn');
@@ -1272,9 +1138,8 @@
                     e.preventDefault();
                     var id = matBtn.getAttribute('data-id');
                     var name = matBtn.getAttribute('data-name') || '';
-                    var emoji = matBtn.getAttribute('data-emoji') || '🗄️';
                     var catName = (currentViewCategory && currentViewCategory.name) ? currentViewCategory.name : '';
-                    openMaterialsModal(id, name, emoji, catName);
+                    openMaterialsModal(id, name, '🗄️', catName);
                     return;
                 }
 
@@ -1283,9 +1148,62 @@
                     e.preventDefault();
                     var id = editBtn.getAttribute('data-id');
                     var name = editBtn.getAttribute('data-name') || '';
-                    var emoji = editBtn.getAttribute('data-emoji') || '';
                     var desc = editBtn.getAttribute('data-description') || '';
-                    openWorkTypeForm({ id: id, name: name, emoji: emoji, description: desc });
+                    openWorkTypeForm({ id: id, name: name, description: desc });
+                    return;
+                }
+
+                var toggleBtn = e.target.closest('.js-toggle-work-type-btn');
+                if (toggleBtn) {
+                    e.preventDefault();
+                    if (!currentViewCategory) return;
+                    var wtId = toggleBtn.getAttribute('data-id');
+                    var wtName = toggleBtn.getAttribute('data-name') || 'this work type';
+                    var isCurrentlyActive = toggleBtn.getAttribute('data-active') === 'true';
+                    var actionName = isCurrentlyActive ? 'deactivate' : 'activate';
+
+                    var confirmed = confirm(
+                        "Are you sure you want to " + actionName + " work type '" + wtName + "'?"
+                    );
+                    if (!confirmed) return;
+
+                    toggleBtn.disabled = true;
+                    toggleBtn.textContent = '...';
+
+                    var csrf = getCsrfInfo();
+                    var url = '/admin/work-categories/' + currentViewCategory.id + '/work-types/' + encodeURIComponent(wtId) + '/toggle';
+                    var headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (csrf.token) headers[csrf.header] = csrf.token;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return { ok: resp.ok, status: resp.status, data: data };
+                        });
+                    })
+                    .then(function(res) {
+                        if (!res.ok || !res.data.success) {
+                            var errMsg = (res.data && res.data.message) ? res.data.message : ('Failed to ' + actionName + ' work type.');
+                            alert(errMsg);
+                            toggleBtn.disabled = false;
+                            toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
+                            return;
+                        }
+
+                        showViewModalAlert(res.data.message || ('Work type ' + (isCurrentlyActive ? 'deactivated' : 'activated') + ' successfully.'), false);
+                        reloadWorkTypes(currentViewCategory.id);
+                    })
+                    .catch(function(err) {
+                        alert(err.message || ('An error occurred while trying to ' + actionName + ' the work type.'));
+                        toggleBtn.disabled = false;
+                        toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
+                    });
                     return;
                 }
 
@@ -1939,28 +1857,6 @@
             });
         }
 
-        // Preset emoji buttons
-        paletteBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var em = this.getAttribute('data-emoji');
-                setEmoji(em);
-            });
-        });
-
-        // Custom emoji typed into input
-        if (emojiInput) {
-            emojiInput.addEventListener('input', function() {
-                setEmoji(this.value);
-            });
-        }
-
-        // Clear emoji button
-        if (clearEmojiBtn) {
-            clearEmojiBtn.addEventListener('click', function() {
-                setEmoji('');
-            });
-        }
-
         // Helper to get CSRF token
         function getCsrfInfo() {
             var tokenMeta = document.querySelector('meta[name="_csrf"]');
@@ -1980,7 +1876,6 @@
                 var isEdit = (editId && editId.length > 0 && editId !== '0');
 
                 var nameVal = (nameInput ? nameInput.value : '').trim().toUpperCase();
-                var emojiVal = (emojiInput ? emojiInput.value : '').trim();
                 var descVal = (descInput ? descInput.value : '').trim();
 
                 // Validate name
@@ -2032,7 +1927,6 @@
                     formData.append('id', editId);
                 }
                 formData.append('name', nameVal);
-                if (emojiVal) formData.append('icon', emojiVal);
                 if (descVal) formData.append('description', descVal);
                 if (csrf.token) formData.append('_csrf', csrf.token);
 
@@ -2140,44 +2034,19 @@
             var nameUpper = (category.name || '').toUpperCase();
             var iconVal = (category.icon || '').trim();
             var descVal = category.description || '';
+            var displayName = (iconVal && !nameUpper.includes(iconVal) ? (iconVal + ' ') : '') + nameUpper;
 
             // Update row attributes
-            tr.setAttribute('data-name', nameUpper);
+            tr.setAttribute('data-name', displayName);
             tr.setAttribute('data-icon', iconVal);
             tr.setAttribute('data-description', descVal);
 
-            // Update icon pill in col-icon
-            var iconPill = tr.querySelector('.col-icon .category-icon-pill');
-            if (iconPill) {
-                iconPill.textContent = iconVal || '📁';
-                if (!iconVal) {
-                    iconPill.classList.add('fallback');
-                } else {
-                    iconPill.classList.remove('fallback');
-                }
-            }
-
-            // Update category title and inline emoji
+            // Update category title
             var titleWrap = tr.querySelector('.category-name-cell .category-title-wrap');
             if (titleWrap) {
-                var inlineEmoji = titleWrap.querySelector('.category-inline-emoji');
-                if (iconVal) {
-                    if (inlineEmoji) {
-                        inlineEmoji.textContent = iconVal;
-                    } else {
-                        var span = document.createElement('span');
-                        span.className = 'category-inline-emoji';
-                        span.style.cssText = 'font-size: 1.25rem; line-height: 1;';
-                        span.textContent = iconVal;
-                        titleWrap.insertBefore(span, titleWrap.firstChild);
-                    }
-                } else if (inlineEmoji) {
-                    inlineEmoji.remove();
-                }
-
                 var titleEl = titleWrap.querySelector('.category-title');
                 if (titleEl) {
-                    titleEl.textContent = nameUpper;
+                    titleEl.textContent = displayName;
                 }
             }
 
@@ -2202,15 +2071,23 @@
             // Update edit button data attributes
             var editBtn = tr.querySelector('.js-edit-category-btn');
             if (editBtn) {
-                editBtn.setAttribute('data-name', nameUpper);
+                editBtn.setAttribute('data-name', displayName);
                 editBtn.setAttribute('data-icon', iconVal);
                 editBtn.setAttribute('data-description', descVal);
+            }
+
+            // Update view button data attributes
+            var viewBtn = tr.querySelector('.js-view-category-btn');
+            if (viewBtn) {
+                viewBtn.setAttribute('data-name', displayName);
+                viewBtn.setAttribute('data-icon', iconVal);
+                viewBtn.setAttribute('data-description', descVal);
             }
 
             // Update delete form data-category-name
             var deleteForm = tr.querySelector('.col-actions form[action*="/delete/"]');
             if (deleteForm) {
-                deleteForm.setAttribute('data-category-name', nameUpper);
+                deleteForm.setAttribute('data-category-name', displayName);
             }
 
             // Flash highlight row smoothly
@@ -2236,7 +2113,6 @@
             if (toolbar) toolbar.style.display = '';
 
             if (!categoryTable) {
-                // If table didn't exist initially, reload cleanly to render the complete table structure
                 window.location.reload();
                 return;
             }
@@ -2244,34 +2120,33 @@
             var tbody = categoryTable.querySelector('tbody');
             if (!tbody) return;
 
+            var nameUpper = (category.name || '').toUpperCase();
+            var iconVal = (category.icon || '').trim();
+            var descVal = category.description || '';
+            var displayName = (iconVal && !nameUpper.includes(iconVal) ? (iconVal + ' ') : '') + nameUpper;
+
             var tr = document.createElement('tr');
             tr.className = 'category-row';
             tr.id = 'category-row-' + category.id;
             tr.setAttribute('data-id', category.id);
-            tr.setAttribute('data-name', (category.name || '').toUpperCase());
-            tr.setAttribute('data-icon', (category.icon || '').trim());
-            tr.setAttribute('data-description', category.description || '');
+            tr.setAttribute('data-name', displayName);
+            tr.setAttribute('data-icon', iconVal);
+            tr.setAttribute('data-description', descVal);
             tr.setAttribute('data-status', 'active');
             tr.style.backgroundColor = '#f0fdf4';
             tr.style.transition = 'background-color 1.5s ease';
 
             var csrf = getCsrfInfo();
-            var iconDisplay = (category.icon && category.icon.trim()) ? category.icon.trim() : '📁';
-
             var sNo = tbody.querySelectorAll('tr.category-row').length + 1;
 
             tr.innerHTML =
                 '<td class="col-sno serial-number">' + sNo + '</td>' +
-                '<td class="col-icon">' +
-                    '<span class="category-icon-pill">' + escapeHtml(iconDisplay) + '</span>' +
-                '</td>' +
                 '<td class="col-name">' +
                     '<div class="category-name-cell">' +
-                        '<div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">' +
-                            ((category.icon && category.icon.trim()) ? '<span class="category-inline-emoji" style="font-size: 1.25rem; line-height: 1;">' + escapeHtml(category.icon.trim()) + '</span>' : '') +
-                            '<strong class="category-title">' + escapeHtml(category.name.toUpperCase()) + '</strong>' +
+                        '<div class="category-title-wrap">' +
+                            '<strong class="category-title">' + escapeHtml(displayName) + '</strong>' +
                         '</div>' +
-                        (category.description ? '<p class="category-description">' + escapeHtml(category.description) + '</p>' : '') +
+                        (descVal ? '<p class="category-description">' + escapeHtml(descVal) + '</p>' : '') +
                     '</div>' +
                 '</td>' +
                 '<td class="col-status">' +
@@ -2279,13 +2154,15 @@
                 '</td>' +
                 '<td class="col-actions">' +
                     '<div class="table-actions">' +
-                        '<button type="button" class="action-btn view-btn js-view-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(category.name.toUpperCase()) + '" data-icon="' + escapeHtml((category.icon || '').trim()) + '" data-description="' + escapeHtml(category.description || '') + '" title="View Category Work Types">View</button>' +
-                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(category.name.toUpperCase()) + '" data-icon="' + escapeHtml((category.icon || '').trim()) + '" data-description="' + escapeHtml(category.description || '') + '" title="Edit Category">Edit</button>' +
+                        '<button type="button" class="action-btn view-btn js-view-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(displayName) + '" data-icon="' + escapeHtml(iconVal) + '" data-description="' + escapeHtml(descVal) + '" title="View Category Work Types">View</button>' +
+                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(displayName) + '" data-icon="' + escapeHtml(iconVal) + '" data-description="' + escapeHtml(descVal) + '" title="Edit Category">Edit</button>' +
                         '<form action="/admin/work-categories/toggle/' + category.id + '" method="post" class="action-form">' +
+                            '<input type="hidden" name="' + csrf.header + '" value="' + csrf.token + '">' +
                             '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
                             '<button type="submit" class="action-btn toggle-btn btn-deactivate" title="Deactivate Category">Deactivate</button>' +
                         '</form>' +
-                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(category.name.toUpperCase()) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(displayName) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                            '<input type="hidden" name="' + csrf.header + '" value="' + csrf.token + '">' +
                             '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
                             '<button type="submit" class="action-btn delete-btn" title="Delete Category">Delete</button>' +
                         '</form>' +

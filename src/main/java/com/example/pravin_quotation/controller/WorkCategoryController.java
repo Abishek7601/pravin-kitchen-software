@@ -191,6 +191,34 @@ public class WorkCategoryController {
         }
     }
 
+    @PostMapping({"/{categoryId}/work-types/{workTypeId}/toggle", "/work-types/{workTypeId}/toggle"})
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> toggleWorkType(
+            @PathVariable(required = false) Long categoryId,
+            @PathVariable Long workTypeId,
+            @RequestParam(required = false) Long workCategoryId) {
+
+        Long effectiveCatId = categoryId != null ? categoryId : workCategoryId;
+
+        try {
+            Division division = workCategoryService.toggleWorkTypeStatus(effectiveCatId, workTypeId);
+            Long catId = division.getWorkCategory() != null ? division.getWorkCategory().getId() : effectiveCatId;
+            java.util.Map<String, Object> resp = (catId != null)
+                    ? new java.util.LinkedHashMap<>(workCategoryService.getCategoryWorkTypes(catId))
+                    : new java.util.LinkedHashMap<>();
+            boolean nowActive = Boolean.TRUE.equals(division.getActive());
+            resp.put("success", true);
+            resp.put("active", nowActive);
+            resp.put("message", "Work type '" + division.getName() + "' is now " + (nowActive ? "Active" : "Inactive") + ".");
+            return org.springframework.http.ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to toggle work type status."
+            ));
+        }
+    }
+
     // =========================================================
     // WORK TYPE MATERIALS MANAGEMENT
     // =========================================================
