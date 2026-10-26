@@ -166,7 +166,11 @@
                     <tbody>
                         <tr th:each="category, stat : ${categories}"
                             class="category-row"
+                            th:id="'category-row-' + ${category.id}"
+                            th:data-id="${category.id}"
                             th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                            th:data-icon="${category.icon != null ? category.icon : ''}"
+                            th:data-description="${category.description != null ? category.description : ''}"
                             th:data-status="${category.archived ? 'archived' : (category.active ? 'active' : 'inactive')}">
 
                             <!-- S.NO -->
@@ -218,13 +222,17 @@
                             <!-- ACTIONS -->
                             <td class="col-actions">
                                 <div class="table-actions">
-                                    <!-- EDIT -->
-                                    <a th:if="${!category.archived}"
-                                       th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
-                                       class="action-btn edit-btn"
-                                       title="Edit Category">
+                                    <!-- EDIT IN MODAL -->
+                                    <button type="button"
+                                            th:if="${!category.archived}"
+                                            class="action-btn edit-btn js-edit-category-btn"
+                                            th:data-id="${category.id}"
+                                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                                            th:data-icon="${category.icon != null ? category.icon : ''}"
+                                            th:data-description="${category.description != null ? category.description : ''}"
+                                            title="Edit Category">
                                         Edit
-                                    </a>
+                                    </button>
 
                                     <!-- ACTIVATE / DEACTIVATE (TOGGLE) -->
                                     <form th:if="${!category.archived}"
@@ -341,16 +349,16 @@
 </div>
 
 
-<!-- CONFIGURE MASTER DATA MODAL -->
+<!-- CONFIGURE MASTER DATA / EDIT CATEGORY MODAL -->
 <div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true">
     <div class="master-data-modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <!-- Modal Header -->
         <div class="modal-header">
             <div class="modal-title-wrap">
-                <div class="modal-icon-badge">✨</div>
+                <div class="modal-icon-badge" id="modalHeaderBadge">✨</div>
                 <div>
                     <h3 id="modalTitle">Configure Master Data</h3>
-                    <p class="modal-subtitle">Add a new category with custom emoji and details</p>
+                    <p class="modal-subtitle" id="modalSubtitle">Add a new category with custom emoji and details</p>
                 </div>
             </div>
             <button type="button" class="modal-close-btn" id="modalCloseXBtn" aria-label="Close modal">&times;</button>
@@ -363,6 +371,7 @@
         <form id="createCategoryForm" onsubmit="return false;" novalidate>
             <input type="hidden" th:if="${_csrf != null}" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" th:if="${_csrf != null}" id="csrfHeader" th:value="${_csrf.headerName}">
+            <input type="hidden" id="categoryIdInput" name="id" value="">
 
             <div class="modal-body">
                 <!-- Live Preview Bar -->
@@ -396,9 +405,8 @@
                         Category Emoji <span class="badge-tag">Select or customize</span>
                     </label>
 
-                    <!-- Selected Emoji Input Row -->
+                    <!-- Selected Emoji Input Row (single field, no duplicate box) -->
                     <div class="selected-emoji-row">
-                        <div class="selected-emoji-display" id="selectedEmojiDisplay">🏠</div>
                         <input type="text"
                                id="categoryEmojiInput"
                                name="icon"
@@ -557,9 +565,13 @@
         }
 
         // =========================================================
-        // CONFIGURE MASTER DATA MODAL LOGIC
+        // CONFIGURE MASTER DATA & EDIT CATEGORY MODAL LOGIC
         // =========================================================
         var modalOverlay = document.getElementById('masterDataModal');
+        var modalTitle = document.getElementById('modalTitle');
+        var modalSubtitle = document.getElementById('modalSubtitle');
+        var modalHeaderBadge = document.getElementById('modalHeaderBadge');
+        var categoryIdInput = document.getElementById('categoryIdInput');
         var openBtn = document.getElementById('openConfigureMasterDataBtn');
         var emptyOpenBtn = document.getElementById('emptyConfigureMasterDataBtn');
         var closeXBtn = document.getElementById('modalCloseXBtn');
@@ -570,7 +582,6 @@
         var nameInput = document.getElementById('categoryNameInput');
         var emojiInput = document.getElementById('categoryEmojiInput');
         var descInput = document.getElementById('categoryDescriptionInput');
-        var selectedEmojiDisplay = document.getElementById('selectedEmojiDisplay');
         var previewEmoji = document.getElementById('previewEmoji');
         var previewName = document.getElementById('previewName');
         var nameValidationMsg = document.getElementById('nameValidationMsg');
@@ -578,9 +589,45 @@
         var clearEmojiBtn = document.getElementById('clearSelectedEmojiBtn');
         var paletteBtns = document.querySelectorAll('.palette-emoji-btn');
 
-        function openModal() {
+        function openAddModal() {
             if (!modalOverlay) return;
             resetModal();
+            if (categoryIdInput) categoryIdInput.value = '';
+            if (modalTitle) modalTitle.textContent = 'Configure Master Data';
+            if (modalSubtitle) modalSubtitle.textContent = 'Add a new category with custom emoji and details';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '✨';
+            if (saveBtnText) saveBtnText.textContent = 'Save Category';
+            if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+
+            modalOverlay.style.display = 'flex';
+            setTimeout(function() {
+                modalOverlay.classList.add('active');
+                if (nameInput) nameInput.focus();
+            }, 10);
+            modalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openEditModal(categoryData) {
+            if (!modalOverlay) return;
+            resetModal();
+            var id = categoryData.id || '';
+            var name = categoryData.name || '';
+            var icon = categoryData.icon || '';
+            var desc = categoryData.description || '';
+
+            if (categoryIdInput) categoryIdInput.value = id;
+            if (modalTitle) modalTitle.textContent = 'Edit Category';
+            if (modalSubtitle) modalSubtitle.textContent = 'Update category details, emoji, and description';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '✏️';
+            if (saveBtnText) saveBtnText.textContent = 'Update Category';
+            if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+
+            if (nameInput) nameInput.value = name;
+            if (descInput) descInput.value = desc;
+            setEmoji(icon);
+            if (previewName) previewName.textContent = name || 'CATEGORY';
+
             modalOverlay.style.display = 'flex';
             setTimeout(function() {
                 modalOverlay.classList.add('active');
@@ -601,10 +648,10 @@
         }
 
         function resetModal() {
+            if (categoryIdInput) categoryIdInput.value = '';
             if (nameInput) nameInput.value = '';
             if (descInput) descInput.value = '';
             if (emojiInput) emojiInput.value = '🏠';
-            if (selectedEmojiDisplay) selectedEmojiDisplay.textContent = '🏠';
             if (previewEmoji) previewEmoji.textContent = '🏠';
             if (previewName) previewName.textContent = 'NEW CATEGORY';
             if (nameValidationMsg) nameValidationMsg.style.display = 'none';
@@ -629,11 +676,7 @@
 
         function setEmoji(emoji) {
             var val = (emoji || '').trim();
-            if (!val) {
-                val = '';
-            }
             if (emojiInput) emojiInput.value = val;
-            if (selectedEmojiDisplay) selectedEmojiDisplay.textContent = val || '📁';
             if (previewEmoji) previewEmoji.textContent = val || '📁';
 
             paletteBtns.forEach(function(btn) {
@@ -646,10 +689,10 @@
         }
 
         if (openBtn) {
-            openBtn.addEventListener('click', openModal);
+            openBtn.addEventListener('click', openAddModal);
         }
         if (emptyOpenBtn) {
-            emptyOpenBtn.addEventListener('click', openModal);
+            emptyOpenBtn.addEventListener('click', openAddModal);
         }
         if (closeXBtn) {
             closeXBtn.addEventListener('click', closeModal);
@@ -657,6 +700,18 @@
         if (cancelBtn) {
             cancelBtn.addEventListener('click', closeModal);
         }
+
+        // Delegate click for Edit buttons in table rows
+        document.addEventListener('click', function(e) {
+            var editBtn = e.target.closest('.js-edit-category-btn');
+            if (!editBtn) return;
+            e.preventDefault();
+            var id = editBtn.getAttribute('data-id');
+            var name = editBtn.getAttribute('data-name') || '';
+            var icon = editBtn.getAttribute('data-icon') || '';
+            var desc = editBtn.getAttribute('data-description') || '';
+            openEditModal({ id: id, name: name, icon: icon, description: desc });
+        });
 
         // Close on backdrop click
         if (modalOverlay) {
@@ -680,7 +735,8 @@
                 this.value = this.value.toUpperCase();
                 var trimmed = this.value.trim();
                 if (previewName) {
-                    previewName.textContent = trimmed || 'NEW CATEGORY';
+                    var defaultLabel = (categoryIdInput && categoryIdInput.value) ? 'CATEGORY' : 'NEW CATEGORY';
+                    previewName.textContent = trimmed || defaultLabel;
                 }
                 if (nameValidationMsg && trimmed.length > 0) {
                     nameValidationMsg.style.display = 'none';
@@ -725,9 +781,12 @@
             return { token: token, header: header };
         }
 
-        // Save Category Submission
+        // Save / Update Category Submission
         if (saveBtn) {
             saveBtn.addEventListener('click', function() {
+                var editId = (categoryIdInput ? categoryIdInput.value : '').trim();
+                var isEdit = (editId && editId.length > 0 && editId !== '0');
+
                 var nameVal = (nameInput ? nameInput.value : '').trim().toUpperCase();
                 var emojiVal = (emojiInput ? emojiInput.value : '').trim();
                 var descVal = (descInput ? descInput.value : '').trim();
@@ -744,12 +803,17 @@
                     return;
                 }
 
-                // Check local duplicate before sending
+                // Check local duplicate before sending (ignoring current row in edit mode)
                 if (categoryTable) {
                     var existingRows = categoryTable.querySelectorAll('tbody tr.category-row');
                     var isDup = false;
                     existingRows.forEach(function(row) {
-                        if ((row.getAttribute('data-name') || '').toUpperCase() === nameVal) {
+                        var rowId = row.getAttribute('data-id');
+                        var rowName = (row.getAttribute('data-name') || '').toUpperCase();
+                        if (isEdit && rowId === editId) {
+                            return;
+                        }
+                        if (rowName === nameVal) {
                             isDup = true;
                         }
                     });
@@ -766,12 +830,15 @@
 
                 // Prepare request
                 saveBtn.disabled = true;
-                if (saveBtnText) saveBtnText.textContent = 'Saving...';
+                if (saveBtnText) saveBtnText.textContent = isEdit ? 'Updating...' : 'Saving...';
                 if (saveBtnIcon) saveBtnIcon.textContent = '⏳';
                 if (modalAlert) modalAlert.style.display = 'none';
 
                 var csrf = getCsrfInfo();
                 var formData = new URLSearchParams();
+                if (isEdit) {
+                    formData.append('id', editId);
+                }
                 formData.append('name', nameVal);
                 if (emojiVal) formData.append('icon', emojiVal);
                 if (descVal) formData.append('description', descVal);
@@ -786,7 +853,9 @@
                     headers[csrf.header] = csrf.token;
                 }
 
-                fetch('/admin/work-categories/save', {
+                var endpoint = isEdit ? ('/admin/work-categories/update/' + editId) : '/admin/work-categories/save';
+
+                fetch(endpoint, {
                     method: 'POST',
                     headers: headers,
                     body: formData.toString()
@@ -798,13 +867,13 @@
                 })
                 .then(function(result) {
                     if (!result.ok || !result.data.success) {
-                        var errMsg = (result.data && result.data.message) ? result.data.message : 'Failed to save category.';
+                        var errMsg = (result.data && result.data.message) ? result.data.message : (isEdit ? 'Failed to update category.' : 'Failed to save category.');
                         throw new Error(errMsg);
                     }
 
                     // Success!
-                    var created = result.data.category || {
-                        id: Date.now(),
+                    var categoryResult = result.data.category || {
+                        id: isEdit ? editId : Date.now(),
                         name: nameVal,
                         icon: emojiVal,
                         description: descVal,
@@ -813,35 +882,39 @@
 
                     if (modalAlert) {
                         modalAlert.className = 'modal-alert success';
-                        modalAlert.textContent = '✅ ' + (result.data.message || 'Category saved successfully!');
+                        modalAlert.textContent = '✅ ' + (result.data.message || (isEdit ? 'Category updated successfully!' : 'Category saved successfully!'));
                         modalAlert.style.display = 'flex';
                     }
 
-                    // Dynamically append row and refresh table safely
+                    // Dynamically update DOM safely without page reload
                     try {
-                        addCategoryRowToTable(created);
+                        if (isEdit) {
+                            updateCategoryRowInTable(categoryResult);
+                        } else {
+                            addCategoryRowToTable(categoryResult);
+                        }
                     } catch (renderError) {
-                        console.error('Category saved successfully, but DOM/pagination update encountered an issue:', renderError);
+                        console.error('DOM/pagination update encountered an issue:', renderError);
                     }
 
                     // Show top-level success banner
-                    showPageAlert('✅ ' + (result.data.message || 'Category created successfully.'), 'success');
+                    showPageAlert('✅ ' + (result.data.message || (isEdit ? 'Category updated successfully.' : 'Category created successfully.')), 'success');
 
                     // Close modal smoothly and reset form
                     setTimeout(function() {
                         closeModal();
                         resetModal();
-                    }, 600);
+                    }, 500);
                 })
                 .catch(function(err) {
-                    console.error('Save category request failed:', err);
+                    console.error('Category save/update request failed:', err);
                     if (modalAlert) {
                         modalAlert.className = 'modal-alert error';
                         modalAlert.textContent = '⚠️ ' + err.message;
                         modalAlert.style.display = 'flex';
                     }
                     saveBtn.disabled = false;
-                    if (saveBtnText) saveBtnText.textContent = 'Save Category';
+                    if (saveBtnText) saveBtnText.textContent = isEdit ? 'Update Category' : 'Save Category';
                     if (saveBtnIcon) saveBtnIcon.textContent = '💾';
                 });
             });
@@ -859,6 +932,106 @@
                 alertDiv.style.opacity = '0';
                 setTimeout(function() { alertDiv.remove(); }, 400);
             }, 4000);
+        }
+
+        function updateCategoryRowInTable(category) {
+            if (!category || !category.id) return;
+            var tr = document.getElementById('category-row-' + category.id);
+            if (!tr && categoryTable) {
+                tr = categoryTable.querySelector('tbody tr[data-id="' + category.id + '"]');
+            }
+            if (!tr) {
+                window.location.reload();
+                return;
+            }
+
+            var nameUpper = (category.name || '').toUpperCase();
+            var iconVal = (category.icon || '').trim();
+            var descVal = category.description || '';
+
+            // Update row attributes
+            tr.setAttribute('data-name', nameUpper);
+            tr.setAttribute('data-icon', iconVal);
+            tr.setAttribute('data-description', descVal);
+
+            // Update icon pill in col-icon
+            var iconPill = tr.querySelector('.col-icon .category-icon-pill');
+            if (iconPill) {
+                iconPill.textContent = iconVal || '📁';
+                if (!iconVal) {
+                    iconPill.classList.add('fallback');
+                } else {
+                    iconPill.classList.remove('fallback');
+                }
+            }
+
+            // Update category title and inline emoji
+            var titleWrap = tr.querySelector('.category-name-cell .category-title-wrap');
+            if (titleWrap) {
+                var inlineEmoji = titleWrap.querySelector('.category-inline-emoji');
+                if (iconVal) {
+                    if (inlineEmoji) {
+                        inlineEmoji.textContent = iconVal;
+                    } else {
+                        var span = document.createElement('span');
+                        span.className = 'category-inline-emoji';
+                        span.style.cssText = 'font-size: 1.25rem; line-height: 1;';
+                        span.textContent = iconVal;
+                        titleWrap.insertBefore(span, titleWrap.firstChild);
+                    }
+                } else if (inlineEmoji) {
+                    inlineEmoji.remove();
+                }
+
+                var titleEl = titleWrap.querySelector('.category-title');
+                if (titleEl) {
+                    titleEl.textContent = nameUpper;
+                }
+            }
+
+            // Update description
+            var descEl = tr.querySelector('.category-name-cell .category-description');
+            if (descVal) {
+                if (descEl) {
+                    descEl.textContent = descVal;
+                } else {
+                    var cell = tr.querySelector('.category-name-cell');
+                    if (cell) {
+                        var p = document.createElement('p');
+                        p.className = 'category-description';
+                        p.textContent = descVal;
+                        cell.appendChild(p);
+                    }
+                }
+            } else if (descEl) {
+                descEl.remove();
+            }
+
+            // Update edit button data attributes
+            var editBtn = tr.querySelector('.js-edit-category-btn');
+            if (editBtn) {
+                editBtn.setAttribute('data-name', nameUpper);
+                editBtn.setAttribute('data-icon', iconVal);
+                editBtn.setAttribute('data-description', descVal);
+            }
+
+            // Update delete form data-category-name
+            var deleteForm = tr.querySelector('.col-actions form[action*="/delete/"]');
+            if (deleteForm) {
+                deleteForm.setAttribute('data-category-name', nameUpper);
+            }
+
+            // Flash highlight row smoothly
+            tr.style.backgroundColor = '#dbeafe';
+            tr.style.transition = 'background-color 1.5s ease';
+            setTimeout(function() {
+                tr.style.backgroundColor = '';
+            }, 1800);
+
+            // Re-apply filter and pagination
+            if (pagination && typeof pagination.applyFilterAndRender === 'function') {
+                pagination.applyFilterAndRender();
+            }
         }
 
         function addCategoryRowToTable(category) {
@@ -881,7 +1054,11 @@
 
             var tr = document.createElement('tr');
             tr.className = 'category-row';
+            tr.id = 'category-row-' + category.id;
+            tr.setAttribute('data-id', category.id);
             tr.setAttribute('data-name', (category.name || '').toUpperCase());
+            tr.setAttribute('data-icon', (category.icon || '').trim());
+            tr.setAttribute('data-description', category.description || '');
             tr.setAttribute('data-status', 'active');
             tr.style.backgroundColor = '#f0fdf4';
             tr.style.transition = 'background-color 1.5s ease';
@@ -910,7 +1087,7 @@
                 '</td>' +
                 '<td class="col-actions">' +
                     '<div class="table-actions">' +
-                        '<a href="/admin/work-categories/edit/' + category.id + '" class="action-btn edit-btn" title="Edit Category">Edit</a>' +
+                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(category.name.toUpperCase()) + '" data-icon="' + escapeHtml((category.icon || '').trim()) + '" data-description="' + escapeHtml(category.description || '') + '" title="Edit Category">Edit</button>' +
                         '<form action="/admin/work-categories/toggle/' + category.id + '" method="post" class="action-form">' +
                             '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
                             '<button type="submit" class="action-btn toggle-btn btn-deactivate" title="Deactivate Category">Deactivate</button>' +

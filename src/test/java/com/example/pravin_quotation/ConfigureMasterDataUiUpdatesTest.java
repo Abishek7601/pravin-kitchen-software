@@ -21,12 +21,35 @@ import org.springframework.ui.Model;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
 public class ConfigureMasterDataUiUpdatesTest {
+
+    @Autowired
+    private WebApplicationContext context;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    public void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+    }
 
     @Autowired
     private PricingController pricingController;
@@ -225,15 +248,23 @@ public class ConfigureMasterDataUiUpdatesTest {
     private com.example.pravin_quotation.controller.WorkCategoryController workCategoryController;
 
     @Test
+    @WithMockUser(username = "superadmin@pravin.com", roles = {"SUPER_ADMIN"})
     @DisplayName("Req 5: Admin Dashboard removes Configure Master Data button/card while preserving Category and Pricing cards")
     public void testAdminDashboardRemovesConfigureMasterData() throws Exception {
         String dashboardHtml = loadTemplateContent("admin/dashboard.html");
         assertFalse(dashboardHtml.contains("Configure Master Data"),
-                "Dashboard must NOT contain 'Configure Master Data' button, card, or link");
+                "Dashboard template must NOT contain 'Configure Master Data' button, card, or link");
         assertTrue(dashboardHtml.contains("@{/admin/work-categories}"),
                 "Dashboard must retain Category link");
         assertTrue(dashboardHtml.contains("@{/admin/pricing}"),
                 "Dashboard must retain Pricing link");
+
+        // Verify rendered Admin Dashboard HTML (including shared fragments) contains ZERO occurrences of Configure Master Data
+        mockMvc.perform(get("/admin/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Configure Master Data"))))
+                .andExpect(content().string(containsString("Category")))
+                .andExpect(content().string(containsString("Pricing")));
     }
 
     @Test
@@ -333,5 +364,101 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertNotNull(persisted, "Category must be persisted in database");
         assertEquals("🪵", persisted.getIcon(), "Category emoji must match selected emoji 🪵");
         assertEquals(uniqueName.toUpperCase(), persisted.getName(), "Category name should be uppercase");
+    }
+
+    @Test
+    @DisplayName("Req 8: Edit category modal elements present and duplicate emoji field removed")
+    public void testEditCategoryModalAndSingleEmojiFieldMarkup() throws Exception {
+        String html = loadTemplateContent("admin/work-categories.html");
+
+        // 1. Edit button triggers modal on same page (button, not external anchor link)
+        assertTrue(html.contains("js-edit-category-btn"),
+                "Category table must have 'js-edit-category-btn' to trigger modal edit");
+        assertTrue(html.contains("th:data-id=\"${category.id}\""),
+                "Category row or edit button must bind category ID for modal population");
+
+        // 2. Hidden category ID input present in modal form
+        assertTrue(html.contains("id=\"categoryIdInput\""),
+                "Modal form must contain hidden categoryIdInput to distinguish between create and update");
+
+        // 3. Duplicate emoji display box removed; only one Category Emoji field exists
+        assertFalse(html.contains("id=\"selectedEmojiDisplay\""),
+                "Duplicate emoji display box 'selectedEmojiDisplay' must be removed from modal");
+        assertTrue(html.contains("id=\"categoryEmojiInput\""),
+                "Modal must contain single categoryEmojiInput text input field");
+
+        // 4. In-place table update function is defined for AJAX modal save
+        assertTrue(html.contains("updateCategoryRowInTable"),
+                "Category page script must define updateCategoryRowInTable for smooth in-place table updates");
+    }
+
+    @Test
+    @DisplayName("Req 9: Editing category via AJAX updates database without creating duplicates")
+    public void testEditCategoryUpdatesExistingWithoutDuplicates() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Create an initial category
+        String initialName = "GUEST_ROOM_" + System.currentTimeMillis();
+        WorkCategory initialCat = new WorkCategory();
+        initialCat.setName(initialName);
+        initialCat.setIcon("🛏️");
+        initialCat.setDescription("Initial description");
+        initialCat.setActive(true);
+        WorkCategory savedInitial = workCategoryRepository.save(initialCat);
+        Long catId = savedInitial.getId();
+        long initialCount = workCategoryRepository.count();
+
+        // 1. Verify GET /edit/{id} returns JSON when requested via AJAX
+        org.springframework.mock.web.MockHttpServletRequest editReq = new org.springframework.mock.web.MockHttpServletRequest();
+        editReq.addHeader("X-Requested-With", "XMLHttpRequest");
+        Object getEditResponse = workCategoryController.editCategory(
+                catId,
+                editReq,
+                new org.springframework.ui.ConcurrentModel()
+        );
+        assertTrue(getEditResponse instanceof org.springframework.http.ResponseEntity,
+                "GET edit with AJAX must return ResponseEntity JSON");
+        org.springframework.http.ResponseEntity<?> editEntity = (org.springframework.http.ResponseEntity<?>) getEditResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, editEntity.getStatusCode());
+        WorkCategory editCat = (WorkCategory) editEntity.getBody();
+        assertNotNull(editCat);
+        assertEquals(catId, editCat.getId());
+        assertEquals("🛏️", editCat.getIcon());
+
+        // 2. Perform Edit update with ID via saveCategory
+        String updatedName = "LUXURY_GUEST_ROOM_" + System.currentTimeMillis();
+        String updatedEmoji = "🚪";
+        String updatedDesc = "Updated luxury guest room description";
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Object updateResponse = workCategoryController.saveCategory(
+                catId,
+                updatedName,
+                updatedDesc,
+                updatedEmoji,
+                null,
+                1,
+                request,
+                redirectAttributes
+        );
+        assertTrue(updateResponse instanceof org.springframework.http.ResponseEntity,
+                "Save with existing ID via AJAX must return ResponseEntity JSON");
+        org.springframework.http.ResponseEntity<?> updateEntity = (org.springframework.http.ResponseEntity<?>) updateResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, updateEntity.getStatusCode());
+
+        // 3. Confirm total database count did NOT increase (no duplicate created!)
+        long countAfterUpdate = workCategoryRepository.count();
+        assertEquals(initialCount, countAfterUpdate, "Editing an existing category must NOT create a duplicate record");
+
+        // 4. Confirm entity updated in database
+        WorkCategory reloaded = workCategoryRepository.findById(catId).orElse(null);
+        assertNotNull(reloaded, "Updated category must exist in database");
+        assertEquals(updatedName.toUpperCase(), reloaded.getName(), "Category name must be updated and uppercase");
+        assertEquals("🚪", reloaded.getIcon(), "Category emoji must be updated to 🚪");
+        assertEquals(updatedDesc, reloaded.getDescription(), "Category description must be updated");
     }
 }
