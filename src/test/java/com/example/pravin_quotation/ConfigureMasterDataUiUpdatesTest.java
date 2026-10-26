@@ -220,4 +220,118 @@ public class ConfigureMasterDataUiUpdatesTest {
         WorkCategory preservedCat = workCategoryRepository.findById(savedCat.getId()).orElseThrow();
         assertEquals("👞", preservedCat.getIcon(), "Existing emoji must be preserved when not changed");
     }
+
+    @Autowired(required = false)
+    private com.example.pravin_quotation.controller.WorkCategoryController workCategoryController;
+
+    @Test
+    @DisplayName("Req 5: Admin Dashboard removes Configure Master Data button/card while preserving Category and Pricing cards")
+    public void testAdminDashboardRemovesConfigureMasterData() throws Exception {
+        String dashboardHtml = loadTemplateContent("admin/dashboard.html");
+        assertFalse(dashboardHtml.contains("Configure Master Data"),
+                "Dashboard must NOT contain 'Configure Master Data' button, card, or link");
+        assertTrue(dashboardHtml.contains("@{/admin/work-categories}"),
+                "Dashboard must retain Category link");
+        assertTrue(dashboardHtml.contains("@{/admin/pricing}"),
+                "Dashboard must retain Pricing link");
+    }
+
+    @Test
+    @DisplayName("Req 6: Category Page contains Configure Master Data modal with emoji selection, preview, and no page redirect")
+    public void testCategoryPageContainsConfigureMasterDataModal() throws Exception {
+        String workCategoriesHtml = loadTemplateContent("admin/work-categories.html");
+
+        // 1. Configure Master Data button is present above category table
+        assertTrue(workCategoriesHtml.contains("id=\"openConfigureMasterDataBtn\""),
+                "Category page must have Configure Master Data button with id 'openConfigureMasterDataBtn'");
+        assertTrue(workCategoriesHtml.contains("Configure Master Data"),
+                "Category page must display Configure Master Data button label");
+
+        // 2. Modal markup is present on the same page
+        assertTrue(workCategoriesHtml.contains("id=\"masterDataModal\""),
+                "Category page must contain modal container 'masterDataModal'");
+        assertTrue(workCategoriesHtml.contains("id=\"categoryNameInput\""),
+                "Modal must contain Category Name input field");
+        assertTrue(workCategoriesHtml.contains("id=\"categoryEmojiInput\""),
+                "Modal must contain Category Emoji input field");
+        assertTrue(workCategoriesHtml.contains("id=\"modalSaveCategoryBtn\""),
+                "Modal must contain Save Category button");
+        assertTrue(workCategoriesHtml.contains("id=\"modalCancelBtn\""),
+                "Modal must contain Cancel button");
+
+        // 3. Common interior-design and kitchen emojis
+        String[] requiredEmojis = {"🏠", "🍳", "🛏️", "🚪", "🪟", "🛋️", "💡", "🪵", "🎨", "🧱"};
+        for (String emoji : requiredEmojis) {
+            assertTrue(workCategoriesHtml.contains(emoji),
+                    "Category modal emoji picker must contain interior emoji: " + emoji);
+        }
+
+        // 4. Live preview element
+        assertTrue(workCategoriesHtml.contains("id=\"previewEmoji\""),
+                "Modal must display live emoji preview");
+        assertTrue(workCategoriesHtml.contains("id=\"previewName\""),
+                "Modal must display live name preview");
+
+        // 5. Table displays emoji inline beside category name
+        assertTrue(workCategoriesHtml.contains("category-inline-emoji"),
+                "Category table must render inline emoji beside the category name");
+
+        // 6. View action remains removed
+        assertFalse(workCategoriesHtml.contains("title=\"View\""),
+                "Category table must NOT contain View action button");
+        assertFalse(workCategoriesHtml.contains("/admin/work-categories/view/"),
+                "Category table must NOT link to category view page");
+
+        // 7. Verify pagination method correctness
+        assertFalse(workCategoriesHtml.contains("pagination.init()"),
+                "Category page must NOT call nonexistent 'pagination.init()'");
+        assertTrue(workCategoriesHtml.contains("pagination.applyFilterAndRender"),
+                "Category page must use valid 'pagination.applyFilterAndRender()'");
+    }
+
+    @Test
+    @DisplayName("Req 7: Saving category with emoji via AJAX persists to database and returns JSON response")
+    public void testSaveCategoryAjaxWithEmoji() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        String uniqueName = "LIBRARY_STUDY_" + System.currentTimeMillis();
+        String selectedEmoji = "🪵";
+
+        WorkCategory formCat = new WorkCategory();
+        formCat.setName(uniqueName);
+        formCat.setIcon(selectedEmoji);
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Object response = workCategoryController.saveCategory(
+                uniqueName,
+                "Library room",
+                selectedEmoji,
+                null,
+                1,
+                request,
+                redirectAttributes
+        );
+        assertNotNull(response);
+        assertTrue(response instanceof org.springframework.http.ResponseEntity,
+                "AJAX request must return ResponseEntity JSON");
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")), "Response should indicate success");
+
+        // Verify entity persisted in MySQL with emoji
+        WorkCategory persisted = workCategoryRepository.findByNameIgnoreCase(uniqueName).orElse(null);
+        assertNotNull(persisted, "Category must be persisted in database");
+        assertEquals("🪵", persisted.getIcon(), "Category emoji must match selected emoji 🪵");
+        assertEquals(uniqueName.toUpperCase(), persisted.getName(), "Category name should be uppercase");
+    }
 }

@@ -67,23 +67,70 @@ public class WorkCategoryController {
 
 
     @PostMapping("/save")
-    public String saveCategory(
-            @RequestParam String name,
+    public Object saveCategory(
+            @RequestParam(required = false) String name,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String icon,
             @RequestParam(required = false) String emoji,
-            @RequestParam(required = false) Integer displayOrder) {
+            @RequestParam(required = false) Integer displayOrder,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes) {
 
-        String effectiveIcon = (icon != null && !icon.isBlank()) ? icon : emoji;
-        String effectiveName = name != null ? name.trim().toUpperCase() : null;
-        workCategoryService.createCategory(
-                effectiveName,
-                description,
-                effectiveIcon,
-                displayOrder
-        );
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
-        return "redirect:/admin/work-categories";
+        try {
+            if (name == null || name.trim().isEmpty()) {
+                throw new IllegalArgumentException("Category name is required");
+            }
+
+            String effectiveIcon = (icon != null && !icon.isBlank()) ? icon.trim() : (emoji != null && !emoji.isBlank() ? emoji.trim() : null);
+            String effectiveName = name.trim().toUpperCase();
+
+            WorkCategory category = workCategoryService.createCategory(
+                    effectiveName,
+                    description,
+                    effectiveIcon,
+                    displayOrder
+            );
+
+            if (wantsJson) {
+                java.util.Map<String, Object> catMap = new java.util.HashMap<>();
+                catMap.put("id", category.getId());
+                catMap.put("name", category.getName());
+                catMap.put("icon", category.getIcon() != null ? category.getIcon() : "");
+                catMap.put("description", category.getDescription() != null ? category.getDescription() : "");
+                catMap.put("active", category.getActive() != null ? category.getActive() : true);
+                catMap.put("archived", category.getArchived());
+
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", "Category '" + category.getName() + "' created successfully.",
+                        "category", catMap
+                ));
+            }
+
+            redirectAttributes.addFlashAttribute("successMessage", "Category '" + category.getName() + "' created successfully.");
+            return "redirect:/admin/work-categories";
+        } catch (Exception e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : "Error saving category";
+            if (errorMsg.contains("Work category already exists")) {
+                errorMsg = "Category with name '" + (name != null ? name.trim().toUpperCase() : "") + "' already exists.";
+            } else if (errorMsg.contains("Work category name is required")) {
+                errorMsg = "Category name is required.";
+            }
+
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", errorMsg
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
+            return "redirect:/admin/work-categories";
+        }
     }
 
 

@@ -7,6 +7,9 @@
 
     <title>Categories | Pravin KITCHENS & INTERIORS</title>
 
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
+
     <link rel="stylesheet"
           th:href="@{/css/admin-nav.css}">
     <link rel="stylesheet"
@@ -110,11 +113,12 @@
                     <span>📦 Archived (<span th:text="${archivedCount}">0</span>)</span>
                 </a>
 
-                <a th:href="@{/admin/pricing/new}"
+                <button type="button"
+                   id="openConfigureMasterDataBtn"
                    class="btn btn-primary"
-                   style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff;">
+                   style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; background: #024541; color: #ffffff; transition: all 0.2s ease;">
                     <span>+ Configure Master Data</span>
-                </a>
+                </button>
             </div>
 
         </section>
@@ -180,7 +184,13 @@
                             <!-- CATEGORY NAME -->
                             <td class="col-name">
                                 <div class="category-name-cell">
-                                    <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
+                                    <div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="category-inline-emoji"
+                                              th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
+                                              th:text="${category.icon}"
+                                              style="font-size: 1.25rem; line-height: 1;">🏠</span>
+                                        <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
+                                    </div>
                                     <p class="category-description"
                                        th:if="${category.description != null and !#strings.isEmpty(category.description)}"
                                        th:text="${category.description}">
@@ -306,11 +316,13 @@
                 the quotation pricing structure.
             </p>
 
-            <a th:unless="${isArchivedView}"
-               th:href="@{/admin/pricing/new}"
-               class="empty-add-btn">
+            <button type="button"
+               th:unless="${isArchivedView}"
+               id="emptyConfigureMasterDataBtn"
+               class="empty-add-btn"
+               style="cursor: pointer; border: none;">
                 + Configure Master Data
-            </a>
+            </button>
 
             <a th:if="${isArchivedView}"
                th:href="@{/admin/work-categories}"
@@ -328,6 +340,131 @@
 
 </div>
 
+
+<!-- CONFIGURE MASTER DATA MODAL -->
+<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true">
+    <div class="master-data-modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+        <!-- Modal Header -->
+        <div class="modal-header">
+            <div class="modal-title-wrap">
+                <div class="modal-icon-badge">✨</div>
+                <div>
+                    <h3 id="modalTitle">Configure Master Data</h3>
+                    <p class="modal-subtitle">Add a new category with custom emoji and details</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" id="modalCloseXBtn" aria-label="Close modal">&times;</button>
+        </div>
+
+        <!-- Feedback Alert inside Modal -->
+        <div id="modalAlert" class="modal-alert" style="display: none;"></div>
+
+        <!-- Modal Form -->
+        <form id="createCategoryForm" onsubmit="return false;" novalidate>
+            <input type="hidden" th:if="${_csrf != null}" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" th:if="${_csrf != null}" id="csrfHeader" th:value="${_csrf.headerName}">
+
+            <div class="modal-body">
+                <!-- Live Preview Bar -->
+                <div class="modal-live-preview">
+                    <span class="preview-label">Live Preview:</span>
+                    <div class="preview-badge">
+                        <span id="previewEmoji" class="preview-emoji">🏠</span>
+                        <strong id="previewName" class="preview-name">NEW CATEGORY</strong>
+                    </div>
+                </div>
+
+                <!-- Category Name Input -->
+                <div class="modal-form-group">
+                    <label for="categoryNameInput">
+                        Category Name <span class="required-star">*</span>
+                    </label>
+                    <input type="text"
+                           id="categoryNameInput"
+                           name="name"
+                           class="modal-input"
+                           placeholder="e.g. MODULAR KITCHEN, BALCONY, POOJA ROOM"
+                           autocomplete="off"
+                           style="text-transform: uppercase;"
+                           required>
+                    <div id="nameValidationMsg" class="field-error" style="display: none;">Category name is required.</div>
+                </div>
+
+                <!-- Category Emoji Picker Section -->
+                <div class="modal-form-group">
+                    <label>
+                        Category Emoji <span class="badge-tag">Select or customize</span>
+                    </label>
+
+                    <!-- Selected Emoji Input Row -->
+                    <div class="selected-emoji-row">
+                        <div class="selected-emoji-display" id="selectedEmojiDisplay">🏠</div>
+                        <input type="text"
+                               id="categoryEmojiInput"
+                               name="icon"
+                               class="modal-emoji-input"
+                               value="🏠"
+                               placeholder="🏠"
+                               maxlength="8">
+                        <button type="button" id="clearSelectedEmojiBtn" class="btn-clear-emoji">Clear</button>
+                        <span class="emoji-help-text">Click an emoji below or type custom</span>
+                    </div>
+
+                    <!-- Preset Emoji Palette with common interior & kitchen items -->
+                    <div class="emoji-palette-card">
+                        <div class="palette-category-title">Common Interior &amp; Kitchen Emojis:</div>
+                        <div class="emoji-palette-grid">
+                            <!-- Emojis explicitly required: 🏠, 🍳, 🛏️, 🚪, 🪟, 🛋️, 💡, 🪵, 🎨, 🧱 -->
+                            <button type="button" class="palette-emoji-btn active" data-emoji="🏠" title="House / Foyer">🏠 <span class="emoji-label">Foyer</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🍳" title="Kitchen">🍳 <span class="emoji-label">Kitchen</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🛏️" title="Bedroom">🛏️ <span class="emoji-label">Bedroom</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🚪" title="Doors / Wardrobe">🚪 <span class="emoji-label">Doors</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪟" title="Windows / Balcony">🪟 <span class="emoji-label">Windows</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🛋️" title="Living / TV Unit">🛋️ <span class="emoji-label">Living</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="💡" title="Lighting / False Ceiling">💡 <span class="emoji-label">Lighting</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪵" title="Wood / Laminate">🪵 <span class="emoji-label">Woodwork</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🎨" title="Wall Paint / Finishes">🎨 <span class="emoji-label">Finishes</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🧱" title="Accent / Partition">🧱 <span class="emoji-label">Partition</span></button>
+
+                            <!-- Extended Popular Interior Choices -->
+                            <button type="button" class="palette-emoji-btn" data-emoji="📦" title="Storage / Loft">📦 <span class="emoji-label">Storage</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🗄️" title="Cabinets / Drawers">🗄️ <span class="emoji-label">Cabinets</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🍽️" title="Dining / Crockery">🍽️ <span class="emoji-label">Dining</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪞" title="Dressing / Mirror">🪞 <span class="emoji-label">Vanity</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="👞" title="Shoe Rack">👞 <span class="emoji-label">Shoes</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🌿" title="Balcony / Greenery">🌿 <span class="emoji-label">Balcony</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🧘" title="Pooja Room">🧘 <span class="emoji-label">Pooja</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="💼" title="Office / Study">💼 <span class="emoji-label">Study</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🚿" title="Bathroom">🚿 <span class="emoji-label">Bath</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="☕" title="Breakfast Counter">☕ <span class="emoji-label">Bar</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Input (Optional) -->
+                <div class="modal-form-group">
+                    <label for="categoryDescriptionInput">
+                        Description <span class="badge-tag-opt">Optional</span>
+                    </label>
+                    <textarea id="categoryDescriptionInput"
+                              name="description"
+                              class="modal-textarea"
+                              rows="2"
+                              placeholder="e.g. Modular kitchen units, base cabinets, and accessories."></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" id="modalCancelBtn" class="btn-modal-cancel">Cancel</button>
+                <button type="button" id="modalSaveCategoryBtn" class="btn-modal-save">
+                    <span id="saveBtnIcon">💾</span>
+                    <span id="saveBtnText">Save Category</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
 
 <script th:src="@{/js/pagination.js}"></script>
 <script>
@@ -360,7 +497,7 @@
         return true;
     }
 
-    // Client-side search, filtering and pagination
+    // Client-side search, filtering, pagination and Configure Master Data Modal
     document.addEventListener('DOMContentLoaded', function() {
         var searchInput = document.getElementById('categorySearch');
         var statusSelect = document.getElementById('statusFilter');
@@ -417,6 +554,429 @@
         }
         if (statusSelect) {
             statusSelect.addEventListener('change', filterCategories);
+        }
+
+        // =========================================================
+        // CONFIGURE MASTER DATA MODAL LOGIC
+        // =========================================================
+        var modalOverlay = document.getElementById('masterDataModal');
+        var openBtn = document.getElementById('openConfigureMasterDataBtn');
+        var emptyOpenBtn = document.getElementById('emptyConfigureMasterDataBtn');
+        var closeXBtn = document.getElementById('modalCloseXBtn');
+        var cancelBtn = document.getElementById('modalCancelBtn');
+        var saveBtn = document.getElementById('modalSaveCategoryBtn');
+        var saveBtnText = document.getElementById('saveBtnText');
+        var saveBtnIcon = document.getElementById('saveBtnIcon');
+        var nameInput = document.getElementById('categoryNameInput');
+        var emojiInput = document.getElementById('categoryEmojiInput');
+        var descInput = document.getElementById('categoryDescriptionInput');
+        var selectedEmojiDisplay = document.getElementById('selectedEmojiDisplay');
+        var previewEmoji = document.getElementById('previewEmoji');
+        var previewName = document.getElementById('previewName');
+        var nameValidationMsg = document.getElementById('nameValidationMsg');
+        var modalAlert = document.getElementById('modalAlert');
+        var clearEmojiBtn = document.getElementById('clearSelectedEmojiBtn');
+        var paletteBtns = document.querySelectorAll('.palette-emoji-btn');
+
+        function openModal() {
+            if (!modalOverlay) return;
+            resetModal();
+            modalOverlay.style.display = 'flex';
+            setTimeout(function() {
+                modalOverlay.classList.add('active');
+                if (nameInput) nameInput.focus();
+            }, 10);
+            modalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            if (!modalOverlay) return;
+            modalOverlay.classList.remove('active');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            setTimeout(function() {
+                modalOverlay.style.display = 'none';
+            }, 220);
+        }
+
+        function resetModal() {
+            if (nameInput) nameInput.value = '';
+            if (descInput) descInput.value = '';
+            if (emojiInput) emojiInput.value = '🏠';
+            if (selectedEmojiDisplay) selectedEmojiDisplay.textContent = '🏠';
+            if (previewEmoji) previewEmoji.textContent = '🏠';
+            if (previewName) previewName.textContent = 'NEW CATEGORY';
+            if (nameValidationMsg) nameValidationMsg.style.display = 'none';
+            if (modalAlert) {
+                modalAlert.style.display = 'none';
+                modalAlert.className = 'modal-alert';
+                modalAlert.textContent = '';
+            }
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                if (saveBtnText) saveBtnText.textContent = 'Save Category';
+                if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+            }
+            paletteBtns.forEach(function(btn) {
+                if (btn.getAttribute('data-emoji') === '🏠') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function setEmoji(emoji) {
+            var val = (emoji || '').trim();
+            if (!val) {
+                val = '';
+            }
+            if (emojiInput) emojiInput.value = val;
+            if (selectedEmojiDisplay) selectedEmojiDisplay.textContent = val || '📁';
+            if (previewEmoji) previewEmoji.textContent = val || '📁';
+
+            paletteBtns.forEach(function(btn) {
+                if (btn.getAttribute('data-emoji') === val) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        if (openBtn) {
+            openBtn.addEventListener('click', openModal);
+        }
+        if (emptyOpenBtn) {
+            emptyOpenBtn.addEventListener('click', openModal);
+        }
+        if (closeXBtn) {
+            closeXBtn.addEventListener('click', closeModal);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+
+        // Close on backdrop click
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modalOverlay && modalOverlay.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // Name input auto-uppercase & live preview
+        if (nameInput) {
+            nameInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                var trimmed = this.value.trim();
+                if (previewName) {
+                    previewName.textContent = trimmed || 'NEW CATEGORY';
+                }
+                if (nameValidationMsg && trimmed.length > 0) {
+                    nameValidationMsg.style.display = 'none';
+                }
+                if (modalAlert && modalAlert.classList.contains('error')) {
+                    modalAlert.style.display = 'none';
+                }
+            });
+        }
+
+        // Preset emoji buttons
+        paletteBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var em = this.getAttribute('data-emoji');
+                setEmoji(em);
+            });
+        });
+
+        // Custom emoji typed into input
+        if (emojiInput) {
+            emojiInput.addEventListener('input', function() {
+                setEmoji(this.value);
+            });
+        }
+
+        // Clear emoji button
+        if (clearEmojiBtn) {
+            clearEmojiBtn.addEventListener('click', function() {
+                setEmoji('');
+            });
+        }
+
+        // Helper to get CSRF token
+        function getCsrfInfo() {
+            var tokenMeta = document.querySelector('meta[name="_csrf"]');
+            var headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            var tokenInput = document.getElementById('csrfToken');
+            var headerInput = document.getElementById('csrfHeader');
+
+            var token = (tokenMeta && tokenMeta.content) ? tokenMeta.content : (tokenInput ? tokenInput.value : '');
+            var header = (headerMeta && headerMeta.content) ? headerMeta.content : (headerInput ? headerInput.value : 'X-CSRF-TOKEN');
+            return { token: token, header: header };
+        }
+
+        // Save Category Submission
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                var nameVal = (nameInput ? nameInput.value : '').trim().toUpperCase();
+                var emojiVal = (emojiInput ? emojiInput.value : '').trim();
+                var descVal = (descInput ? descInput.value : '').trim();
+
+                // Validate name
+                if (!nameVal) {
+                    if (nameValidationMsg) nameValidationMsg.style.display = 'block';
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert error';
+                        modalAlert.textContent = 'Category name is required.';
+                        modalAlert.style.display = 'flex';
+                    }
+                    if (nameInput) nameInput.focus();
+                    return;
+                }
+
+                // Check local duplicate before sending
+                if (categoryTable) {
+                    var existingRows = categoryTable.querySelectorAll('tbody tr.category-row');
+                    var isDup = false;
+                    existingRows.forEach(function(row) {
+                        if ((row.getAttribute('data-name') || '').toUpperCase() === nameVal) {
+                            isDup = true;
+                        }
+                    });
+                    if (isDup) {
+                        if (modalAlert) {
+                            modalAlert.className = 'modal-alert error';
+                            modalAlert.textContent = "Category '" + nameVal + "' already exists.";
+                            modalAlert.style.display = 'flex';
+                        }
+                        if (nameInput) nameInput.focus();
+                        return;
+                    }
+                }
+
+                // Prepare request
+                saveBtn.disabled = true;
+                if (saveBtnText) saveBtnText.textContent = 'Saving...';
+                if (saveBtnIcon) saveBtnIcon.textContent = '⏳';
+                if (modalAlert) modalAlert.style.display = 'none';
+
+                var csrf = getCsrfInfo();
+                var formData = new URLSearchParams();
+                formData.append('name', nameVal);
+                if (emojiVal) formData.append('icon', emojiVal);
+                if (descVal) formData.append('description', descVal);
+                if (csrf.token) formData.append('_csrf', csrf.token);
+
+                var headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (csrf.token && csrf.header) {
+                    headers[csrf.header] = csrf.token;
+                }
+
+                fetch('/admin/work-categories/save', {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData.toString()
+                })
+                .then(function(res) {
+                    return res.json().then(function(data) {
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function(result) {
+                    if (!result.ok || !result.data.success) {
+                        var errMsg = (result.data && result.data.message) ? result.data.message : 'Failed to save category.';
+                        throw new Error(errMsg);
+                    }
+
+                    // Success!
+                    var created = result.data.category || {
+                        id: Date.now(),
+                        name: nameVal,
+                        icon: emojiVal,
+                        description: descVal,
+                        active: true
+                    };
+
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert success';
+                        modalAlert.textContent = '✅ ' + (result.data.message || 'Category saved successfully!');
+                        modalAlert.style.display = 'flex';
+                    }
+
+                    // Dynamically append row and refresh table safely
+                    try {
+                        addCategoryRowToTable(created);
+                    } catch (renderError) {
+                        console.error('Category saved successfully, but DOM/pagination update encountered an issue:', renderError);
+                    }
+
+                    // Show top-level success banner
+                    showPageAlert('✅ ' + (result.data.message || 'Category created successfully.'), 'success');
+
+                    // Close modal smoothly and reset form
+                    setTimeout(function() {
+                        closeModal();
+                        resetModal();
+                    }, 600);
+                })
+                .catch(function(err) {
+                    console.error('Save category request failed:', err);
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert error';
+                        modalAlert.textContent = '⚠️ ' + err.message;
+                        modalAlert.style.display = 'flex';
+                    }
+                    saveBtn.disabled = false;
+                    if (saveBtnText) saveBtnText.textContent = 'Save Category';
+                    if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+                });
+            });
+        }
+
+        function showPageAlert(msg, type) {
+            var container = document.querySelector('.category-container');
+            if (!container) return;
+            var alertDiv = document.createElement('div');
+            alertDiv.style.cssText = 'background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px; animation: modalFadeIn 0.3s ease;';
+            alertDiv.innerHTML = '<span>' + (type === 'success' ? '✅' : '⚠️') + '</span><span>' + msg + '</span>';
+            container.insertBefore(alertDiv, container.firstChild);
+            setTimeout(function() {
+                alertDiv.style.transition = 'opacity 0.4s ease';
+                alertDiv.style.opacity = '0';
+                setTimeout(function() { alertDiv.remove(); }, 400);
+            }, 4000);
+        }
+
+        function addCategoryRowToTable(category) {
+            var tableCard = document.querySelector('.table-card');
+            var emptyState = document.querySelector('.empty-state');
+            var toolbar = document.querySelector('.category-toolbar');
+
+            if (emptyState) emptyState.style.display = 'none';
+            if (tableCard) tableCard.style.display = '';
+            if (toolbar) toolbar.style.display = '';
+
+            if (!categoryTable) {
+                // If table didn't exist initially, reload cleanly to render the complete table structure
+                window.location.reload();
+                return;
+            }
+
+            var tbody = categoryTable.querySelector('tbody');
+            if (!tbody) return;
+
+            var tr = document.createElement('tr');
+            tr.className = 'category-row';
+            tr.setAttribute('data-name', (category.name || '').toUpperCase());
+            tr.setAttribute('data-status', 'active');
+            tr.style.backgroundColor = '#f0fdf4';
+            tr.style.transition = 'background-color 1.5s ease';
+
+            var csrf = getCsrfInfo();
+            var iconDisplay = (category.icon && category.icon.trim()) ? category.icon.trim() : '📁';
+
+            var sNo = tbody.querySelectorAll('tr.category-row').length + 1;
+
+            tr.innerHTML =
+                '<td class="col-sno serial-number">' + sNo + '</td>' +
+                '<td class="col-icon">' +
+                    '<span class="category-icon-pill">' + escapeHtml(iconDisplay) + '</span>' +
+                '</td>' +
+                '<td class="col-name">' +
+                    '<div class="category-name-cell">' +
+                        '<div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">' +
+                            ((category.icon && category.icon.trim()) ? '<span class="category-inline-emoji" style="font-size: 1.25rem; line-height: 1;">' + escapeHtml(category.icon.trim()) + '</span>' : '') +
+                            '<strong class="category-title">' + escapeHtml(category.name.toUpperCase()) + '</strong>' +
+                        '</div>' +
+                        (category.description ? '<p class="category-description">' + escapeHtml(category.description) + '</p>' : '') +
+                    '</div>' +
+                '</td>' +
+                '<td class="col-status">' +
+                    '<span class="status-badge active">Active</span>' +
+                '</td>' +
+                '<td class="col-actions">' +
+                    '<div class="table-actions">' +
+                        '<a href="/admin/work-categories/edit/' + category.id + '" class="action-btn edit-btn" title="Edit Category">Edit</a>' +
+                        '<form action="/admin/work-categories/toggle/' + category.id + '" method="post" class="action-form">' +
+                            '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
+                            '<button type="submit" class="action-btn toggle-btn btn-deactivate" title="Deactivate Category">Deactivate</button>' +
+                        '</form>' +
+                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(category.name.toUpperCase()) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                            '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
+                            '<button type="submit" class="action-btn delete-btn" title="Delete Category">Delete</button>' +
+                        '</form>' +
+                    '</div>' +
+                '</td>';
+
+            // Insert at top of rows
+            var firstRow = tbody.querySelector('tr.category-row');
+            if (firstRow) {
+                tbody.insertBefore(tr, firstRow);
+            } else {
+                tbody.appendChild(tr);
+            }
+
+            // Recalculate serial numbers
+            var allRows = tbody.querySelectorAll('tr.category-row');
+            allRows.forEach(function(r, idx) {
+                var snoCell = r.querySelector('.col-sno');
+                if (snoCell) snoCell.textContent = idx + 1;
+            });
+
+            if (categoryCount) {
+                categoryCount.textContent = allRows.length;
+            }
+
+            // Clear any active search or status filter so the newly added row is visible
+            if (searchInput) searchInput.value = '';
+            if (statusSelect) statusSelect.value = '';
+            allRows.forEach(function(r) {
+                r.removeAttribute('data-filtered-out');
+            });
+            if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+
+            // Re-render pagination correctly using the TablePagination engine (applyFilterAndRender)
+            if (pagination && typeof pagination.applyFilterAndRender === 'function') {
+                pagination.currentPage = 1;
+                pagination.applyFilterAndRender();
+            } else if (categoryTable && typeof initTablePagination === 'function') {
+                pagination = initTablePagination({
+                    table: categoryTable,
+                    pageSize: 10,
+                    recordLabel: 'categories'
+                });
+            }
+
+            // Fade out the highlight color
+            setTimeout(function() {
+                tr.style.backgroundColor = '';
+            }, 2000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
     });
 
