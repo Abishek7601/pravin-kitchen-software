@@ -4,6 +4,7 @@ import com.example.pravin_quotation.controller.PricingController;
 import com.example.pravin_quotation.model.Pricing;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 import com.example.pravin_quotation.service.PricingService;
 import com.example.pravin_quotation.util.CalculationFormula;
@@ -67,6 +68,10 @@ public class ConfigureMasterDataUiUpdatesTest {
     private ResourceLoader resourceLoader;
 
     private String loadTemplateContent(String templatePath) throws Exception {
+        java.nio.file.Path sourcePath = java.nio.file.Paths.get("src/main/resources/templates/" + templatePath);
+        if (java.nio.file.Files.exists(sourcePath)) {
+            return java.nio.file.Files.readString(sourcePath, StandardCharsets.UTF_8);
+        }
         Resource resource = resourceLoader.getResource("classpath:templates/" + templatePath);
         assertTrue(resource.exists(), "Template must exist: " + templatePath);
         try (InputStream is = resource.getInputStream()) {
@@ -701,5 +706,67 @@ public class ConfigureMasterDataUiUpdatesTest {
                 "work-categories.html must delegate click events for View button");
         assertTrue(html.contains("e.target.closest('.js-edit-category-btn')"),
                 "work-categories.html must delegate click events for Edit button");
+    }
+
+    @Test
+    @DisplayName("Req 17: Work type activate/deactivate toggles directly without confirm or alert popups and persists in DB")
+    public void testDirectStatusToggleNoAlerts() throws Exception {
+        // 1. Verify in work-categories.html that work type toggle handler does NOT use confirm() or alert()
+        String html = loadTemplateContent("admin/work-categories.html");
+        int toggleHandlerStart = html.indexOf("var toggleBtn = e.target.closest('.js-toggle-work-type-btn');");
+        assertTrue(toggleHandlerStart > 0, "work-categories.html must contain toggleBtn handler");
+        int toggleHandlerEnd = html.indexOf("var delBtn = e.target.closest('.js-delete-work-type-btn');", toggleHandlerStart);
+        assertTrue(toggleHandlerEnd > toggleHandlerStart, "delBtn handler must follow toggleBtn handler");
+
+        String toggleHandlerBlock = html.substring(toggleHandlerStart, toggleHandlerEnd);
+        assertFalse(toggleHandlerBlock.contains("confirm("), "Work type toggle must NOT display confirm() popup. Block was: " + toggleHandlerBlock);
+        assertFalse(toggleHandlerBlock.contains("alert("), "Work type toggle must NOT display alert() popup");
+        assertTrue(toggleHandlerBlock.contains("card.querySelector('.status-badge')"), "Work type toggle must update card status badge in-place");
+        assertTrue(toggleHandlerBlock.contains("showViewModalAlert("), "Work type toggle must use non-blocking inline message");
+
+        // 2. Verify backend toggles status and persists in database without creating duplicates
+        WorkCategory cat = new WorkCategory();
+        cat.setName("TOGGLE_TEST_CAT_" + System.currentTimeMillis());
+        cat.setIcon("⚡");
+        cat.setActive(true);
+        WorkCategory savedCat = workCategoryRepository.save(cat);
+
+        Division division = workCategoryService.createWorkType(savedCat.getId(), "KITCHEN ISLAND", "🏝️", "Center cooking counter");
+        Long divisionId = division.getId();
+        assertTrue(Boolean.TRUE.equals(division.getActive()), "Initial work type status must be Active");
+
+        long divisionCountBefore = divisionRepository.count();
+
+        // 3. Toggle from Active -> Inactive
+        org.springframework.http.ResponseEntity<?> resp1 = (org.springframework.http.ResponseEntity<?>)
+                workCategoryController.toggleWorkType(savedCat.getId(), divisionId, null);
+        assertEquals(org.springframework.http.HttpStatus.OK, resp1.getStatusCode());
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body1 = (java.util.Map<String, Object>) resp1.getBody();
+        assertNotNull(body1);
+        assertEquals(Boolean.TRUE, body1.get("success"));
+        assertEquals(Boolean.FALSE, body1.get("active"), "After first toggle, work type status must be Inactive");
+
+        // Check DB
+        Division reloaded1 = divisionRepository.findById(divisionId).orElse(null);
+        assertNotNull(reloaded1);
+        assertFalse(reloaded1.getActive(), "Database record must reflect Inactive status");
+        assertEquals(divisionCountBefore, divisionRepository.count(), "Toggling status must not create new records");
+
+        // 4. Toggle from Inactive -> Active
+        org.springframework.http.ResponseEntity<?> resp2 = (org.springframework.http.ResponseEntity<?>)
+                workCategoryController.toggleWorkType(savedCat.getId(), divisionId, null);
+        assertEquals(org.springframework.http.HttpStatus.OK, resp2.getStatusCode());
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body2 = (java.util.Map<String, Object>) resp2.getBody();
+        assertNotNull(body2);
+        assertEquals(Boolean.TRUE, body2.get("success"));
+        assertEquals(Boolean.TRUE, body2.get("active"), "After second toggle, work type status must be Active again");
+
+        // Check DB
+        Division reloaded2 = divisionRepository.findById(divisionId).orElse(null);
+        assertNotNull(reloaded2);
+        assertTrue(reloaded2.getActive(), "Database record must reflect Active status");
+        assertEquals(divisionCountBefore, divisionRepository.count(), "Toggling status must not create new records");
     }
 }

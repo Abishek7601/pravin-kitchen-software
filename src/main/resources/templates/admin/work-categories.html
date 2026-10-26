@@ -1169,13 +1169,8 @@
                     var wtId = toggleBtn.getAttribute('data-id');
                     var wtName = toggleBtn.getAttribute('data-name') || 'this work type';
                     var isCurrentlyActive = toggleBtn.getAttribute('data-active') === 'true';
-                    var actionName = isCurrentlyActive ? 'deactivate' : 'activate';
 
-                    var confirmed = confirm(
-                        "Are you sure you want to " + actionName + " work type '" + wtName + "'?"
-                    );
-                    if (!confirmed) return;
-
+                    // Direct status toggle without popups
                     toggleBtn.disabled = true;
                     toggleBtn.textContent = '...';
 
@@ -1197,21 +1192,52 @@
                         });
                     })
                     .then(function(res) {
+                        toggleBtn.disabled = false;
                         if (!res.ok || !res.data.success) {
-                            var errMsg = (res.data && res.data.message) ? res.data.message : ('Failed to ' + actionName + ' work type.');
-                            alert(errMsg);
-                            toggleBtn.disabled = false;
+                            var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to update work type status.';
+                            showViewModalAlert(errMsg, true);
                             toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
                             return;
                         }
 
-                        showViewModalAlert(res.data.message || ('Work type ' + (isCurrentlyActive ? 'deactivated' : 'activated') + ' successfully.'), false);
-                        reloadWorkTypes(currentViewCategory.id);
+                        // Determine new active status from backend response
+                        var newActive = (typeof res.data.active === 'boolean') ? res.data.active : !isCurrentlyActive;
+
+                        // Update only the relevant work type card directly in-place
+                        var card = toggleBtn.closest('.work-type-card');
+                        if (card) {
+                            var badge = card.querySelector('.status-badge');
+                            if (badge) {
+                                badge.className = 'status-badge ' + (newActive ? 'active' : 'inactive');
+                                badge.textContent = newActive ? 'Active' : 'Inactive';
+                            }
+                        }
+
+                        // Update toggle button state & styles
+                        toggleBtn.setAttribute('data-active', newActive ? 'true' : 'false');
+                        if (newActive) {
+                            toggleBtn.className = 'js-toggle-work-type-btn btn-deactivate';
+                            toggleBtn.textContent = 'Deactivate';
+                            toggleBtn.title = 'Deactivate Work Type';
+                            toggleBtn.style.border = '1px solid #fed7aa';
+                            toggleBtn.style.background = '#fff7ed';
+                            toggleBtn.style.color = '#c2410c';
+                        } else {
+                            toggleBtn.className = 'js-toggle-work-type-btn btn-activate';
+                            toggleBtn.textContent = 'Activate';
+                            toggleBtn.title = 'Activate Work Type';
+                            toggleBtn.style.border = '1px solid #bbf7d0';
+                            toggleBtn.style.background = '#f0fdf4';
+                            toggleBtn.style.color = '#15803d';
+                        }
+
+                        // Show non-blocking feedback inside the View modal
+                        showViewModalAlert(res.data.message || ('Work type is now ' + (newActive ? 'Active' : 'Inactive') + '.'), false);
                     })
                     .catch(function(err) {
-                        alert(err.message || ('An error occurred while trying to ' + actionName + ' the work type.'));
                         toggleBtn.disabled = false;
                         toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
+                        showViewModalAlert(err.message || 'An unexpected error occurred while toggling work type status.', true);
                     });
                     return;
                 }

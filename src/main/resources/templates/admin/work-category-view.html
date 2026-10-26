@@ -463,10 +463,7 @@
           </a>
           <form th:action="@{/admin/divisions/toggle/{id}(id=${dDto.division.id})}"
                 method="post"
-                style="display: inline; margin: 0;"
-                th:data-division-name="${dDto.division.name != null ? dDto.division.name.toUpperCase() : 'this work type'}"
-                th:data-action="${dDto.division.active ? 'deactivate' : 'activate'}"
-                onsubmit="return confirm('Are you sure you want to ' + this.getAttribute('data-action') + ' work type \'' + (this.getAttribute('data-division-name') || '') + '\'?');">
+                style="display: inline; margin: 0;">
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
             <button type="submit"
