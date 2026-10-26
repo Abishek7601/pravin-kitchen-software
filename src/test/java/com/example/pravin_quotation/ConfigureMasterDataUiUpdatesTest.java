@@ -21,12 +21,35 @@ import org.springframework.ui.Model;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
 public class ConfigureMasterDataUiUpdatesTest {
+
+    @Autowired
+    private WebApplicationContext context;
+
+    private MockMvc mockMvc;
+
+    @BeforeEach
+    public void setUp() {
+        mockMvc = MockMvcBuilders.webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+    }
 
     @Autowired
     private PricingController pricingController;
@@ -219,5 +242,223 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertNotNull(updatedPricing);
         WorkCategory preservedCat = workCategoryRepository.findById(savedCat.getId()).orElseThrow();
         assertEquals("👞", preservedCat.getIcon(), "Existing emoji must be preserved when not changed");
+    }
+
+    @Autowired(required = false)
+    private com.example.pravin_quotation.controller.WorkCategoryController workCategoryController;
+
+    @Test
+    @WithMockUser(username = "superadmin@pravin.com", roles = {"SUPER_ADMIN"})
+    @DisplayName("Req 5: Admin Dashboard removes Configure Master Data button/card while preserving Category and Pricing cards")
+    public void testAdminDashboardRemovesConfigureMasterData() throws Exception {
+        String dashboardHtml = loadTemplateContent("admin/dashboard.html");
+        assertFalse(dashboardHtml.contains("Configure Master Data"),
+                "Dashboard template must NOT contain 'Configure Master Data' button, card, or link");
+        assertTrue(dashboardHtml.contains("@{/admin/work-categories}"),
+                "Dashboard must retain Category link");
+        assertTrue(dashboardHtml.contains("@{/admin/pricing}"),
+                "Dashboard must retain Pricing link");
+
+        // Verify rendered Admin Dashboard HTML (including shared fragments) contains ZERO occurrences of Configure Master Data
+        mockMvc.perform(get("/admin/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Configure Master Data"))))
+                .andExpect(content().string(containsString("Category")))
+                .andExpect(content().string(containsString("Pricing")));
+    }
+
+    @Test
+    @DisplayName("Req 6: Category Page contains Configure Master Data modal with emoji selection, preview, and no page redirect")
+    public void testCategoryPageContainsConfigureMasterDataModal() throws Exception {
+        String workCategoriesHtml = loadTemplateContent("admin/work-categories.html");
+
+        // 1. Configure Master Data button is present above category table
+        assertTrue(workCategoriesHtml.contains("id=\"openConfigureMasterDataBtn\""),
+                "Category page must have Configure Master Data button with id 'openConfigureMasterDataBtn'");
+        assertTrue(workCategoriesHtml.contains("Configure Master Data"),
+                "Category page must display Configure Master Data button label");
+
+        // 2. Modal markup is present on the same page
+        assertTrue(workCategoriesHtml.contains("id=\"masterDataModal\""),
+                "Category page must contain modal container 'masterDataModal'");
+        assertTrue(workCategoriesHtml.contains("id=\"categoryNameInput\""),
+                "Modal must contain Category Name input field");
+        assertTrue(workCategoriesHtml.contains("id=\"categoryEmojiInput\""),
+                "Modal must contain Category Emoji input field");
+        assertTrue(workCategoriesHtml.contains("id=\"modalSaveCategoryBtn\""),
+                "Modal must contain Save Category button");
+        assertTrue(workCategoriesHtml.contains("id=\"modalCancelBtn\""),
+                "Modal must contain Cancel button");
+
+        // 3. Common interior-design and kitchen emojis
+        String[] requiredEmojis = {"🏠", "🍳", "🛏️", "🚪", "🪟", "🛋️", "💡", "🪵", "🎨", "🧱"};
+        for (String emoji : requiredEmojis) {
+            assertTrue(workCategoriesHtml.contains(emoji),
+                    "Category modal emoji picker must contain interior emoji: " + emoji);
+        }
+
+        // 4. Live preview element
+        assertTrue(workCategoriesHtml.contains("id=\"previewEmoji\""),
+                "Modal must display live emoji preview");
+        assertTrue(workCategoriesHtml.contains("id=\"previewName\""),
+                "Modal must display live name preview");
+
+        // 5. Table displays emoji inline beside category name
+        assertTrue(workCategoriesHtml.contains("category-inline-emoji"),
+                "Category table must render inline emoji beside the category name");
+
+        // 6. View action remains removed
+        assertFalse(workCategoriesHtml.contains("title=\"View\""),
+                "Category table must NOT contain View action button");
+        assertFalse(workCategoriesHtml.contains("/admin/work-categories/view/"),
+                "Category table must NOT link to category view page");
+
+        // 7. Verify pagination method correctness
+        assertFalse(workCategoriesHtml.contains("pagination.init()"),
+                "Category page must NOT call nonexistent 'pagination.init()'");
+        assertTrue(workCategoriesHtml.contains("pagination.applyFilterAndRender"),
+                "Category page must use valid 'pagination.applyFilterAndRender()'");
+    }
+
+    @Test
+    @DisplayName("Req 7: Saving category with emoji via AJAX persists to database and returns JSON response")
+    public void testSaveCategoryAjaxWithEmoji() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        String uniqueName = "LIBRARY_STUDY_" + System.currentTimeMillis();
+        String selectedEmoji = "🪵";
+
+        WorkCategory formCat = new WorkCategory();
+        formCat.setName(uniqueName);
+        formCat.setIcon(selectedEmoji);
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Object response = workCategoryController.saveCategory(
+                uniqueName,
+                "Library room",
+                selectedEmoji,
+                null,
+                1,
+                request,
+                redirectAttributes
+        );
+        assertNotNull(response);
+        assertTrue(response instanceof org.springframework.http.ResponseEntity,
+                "AJAX request must return ResponseEntity JSON");
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")), "Response should indicate success");
+
+        // Verify entity persisted in MySQL with emoji
+        WorkCategory persisted = workCategoryRepository.findByNameIgnoreCase(uniqueName).orElse(null);
+        assertNotNull(persisted, "Category must be persisted in database");
+        assertEquals("🪵", persisted.getIcon(), "Category emoji must match selected emoji 🪵");
+        assertEquals(uniqueName.toUpperCase(), persisted.getName(), "Category name should be uppercase");
+    }
+
+    @Test
+    @DisplayName("Req 8: Edit category modal elements present and duplicate emoji field removed")
+    public void testEditCategoryModalAndSingleEmojiFieldMarkup() throws Exception {
+        String html = loadTemplateContent("admin/work-categories.html");
+
+        // 1. Edit button triggers modal on same page (button, not external anchor link)
+        assertTrue(html.contains("js-edit-category-btn"),
+                "Category table must have 'js-edit-category-btn' to trigger modal edit");
+        assertTrue(html.contains("th:data-id=\"${category.id}\""),
+                "Category row or edit button must bind category ID for modal population");
+
+        // 2. Hidden category ID input present in modal form
+        assertTrue(html.contains("id=\"categoryIdInput\""),
+                "Modal form must contain hidden categoryIdInput to distinguish between create and update");
+
+        // 3. Duplicate emoji display box removed; only one Category Emoji field exists
+        assertFalse(html.contains("id=\"selectedEmojiDisplay\""),
+                "Duplicate emoji display box 'selectedEmojiDisplay' must be removed from modal");
+        assertTrue(html.contains("id=\"categoryEmojiInput\""),
+                "Modal must contain single categoryEmojiInput text input field");
+
+        // 4. In-place table update function is defined for AJAX modal save
+        assertTrue(html.contains("updateCategoryRowInTable"),
+                "Category page script must define updateCategoryRowInTable for smooth in-place table updates");
+    }
+
+    @Test
+    @DisplayName("Req 9: Editing category via AJAX updates database without creating duplicates")
+    public void testEditCategoryUpdatesExistingWithoutDuplicates() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Create an initial category
+        String initialName = "GUEST_ROOM_" + System.currentTimeMillis();
+        WorkCategory initialCat = new WorkCategory();
+        initialCat.setName(initialName);
+        initialCat.setIcon("🛏️");
+        initialCat.setDescription("Initial description");
+        initialCat.setActive(true);
+        WorkCategory savedInitial = workCategoryRepository.save(initialCat);
+        Long catId = savedInitial.getId();
+        long initialCount = workCategoryRepository.count();
+
+        // 1. Verify GET /edit/{id} returns JSON when requested via AJAX
+        org.springframework.mock.web.MockHttpServletRequest editReq = new org.springframework.mock.web.MockHttpServletRequest();
+        editReq.addHeader("X-Requested-With", "XMLHttpRequest");
+        Object getEditResponse = workCategoryController.editCategory(
+                catId,
+                editReq,
+                new org.springframework.ui.ConcurrentModel()
+        );
+        assertTrue(getEditResponse instanceof org.springframework.http.ResponseEntity,
+                "GET edit with AJAX must return ResponseEntity JSON");
+        org.springframework.http.ResponseEntity<?> editEntity = (org.springframework.http.ResponseEntity<?>) getEditResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, editEntity.getStatusCode());
+        WorkCategory editCat = (WorkCategory) editEntity.getBody();
+        assertNotNull(editCat);
+        assertEquals(catId, editCat.getId());
+        assertEquals("🛏️", editCat.getIcon());
+
+        // 2. Perform Edit update with ID via saveCategory
+        String updatedName = "LUXURY_GUEST_ROOM_" + System.currentTimeMillis();
+        String updatedEmoji = "🚪";
+        String updatedDesc = "Updated luxury guest room description";
+
+        org.springframework.mock.web.MockHttpServletRequest request = new org.springframework.mock.web.MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Object updateResponse = workCategoryController.saveCategory(
+                catId,
+                updatedName,
+                updatedDesc,
+                updatedEmoji,
+                null,
+                1,
+                request,
+                redirectAttributes
+        );
+        assertTrue(updateResponse instanceof org.springframework.http.ResponseEntity,
+                "Save with existing ID via AJAX must return ResponseEntity JSON");
+        org.springframework.http.ResponseEntity<?> updateEntity = (org.springframework.http.ResponseEntity<?>) updateResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, updateEntity.getStatusCode());
+
+        // 3. Confirm total database count did NOT increase (no duplicate created!)
+        long countAfterUpdate = workCategoryRepository.count();
+        assertEquals(initialCount, countAfterUpdate, "Editing an existing category must NOT create a duplicate record");
+
+        // 4. Confirm entity updated in database
+        WorkCategory reloaded = workCategoryRepository.findById(catId).orElse(null);
+        assertNotNull(reloaded, "Updated category must exist in database");
+        assertEquals(updatedName.toUpperCase(), reloaded.getName(), "Category name must be updated and uppercase");
+        assertEquals("🚪", reloaded.getIcon(), "Category emoji must be updated to 🚪");
+        assertEquals(updatedDesc, reloaded.getDescription(), "Category description must be updated");
     }
 }

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
   <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
-  <title th:text="${(category.name != null ? category.name.toUpperCase() : 'WORK CATEGORY') + ' — Master Data View | Pravin Kitchens'}">Work Category View</title>
+  <title th:text="${(category.name != null ? category.name.toUpperCase() : 'CATEGORY') + ' — Master Data View | Pravin Kitchens'}">Category View</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
   <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
@@ -373,27 +373,27 @@
     <div>
       <h1 class="hero-title">
         <span th:text="${category.icon != null and !category.icon.isBlank() ? category.icon : '🏠'}">🏠</span>
-        <span th:text="${category.name != null ? category.name.toUpperCase() : 'WORK CATEGORY'}">FOYER</span>
+        <span th:text="${category.name != null ? category.name.toUpperCase() : 'CATEGORY'}">FOYER</span>
         <span th:if="${category.archived}" class="badge-inactive" style="background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1;">ARCHIVED</span>
         <span th:unless="${category.archived}" th:classappend="${category.active ? 'badge-active' : 'badge-inactive'}"
               th:text="${category.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
       </h1>
-      <p class="hero-subtitle" th:text="${category.description != null and !category.description.isBlank() ? category.description : 'Master data hierarchy and configured components for this work category.'}">
-        Master data hierarchy and configured components for this work category.
+      <p class="hero-subtitle" th:text="${category.description != null and !category.description.isBlank() ? category.description : 'Master data hierarchy and configured components for this category.'}">
+        Master data hierarchy and configured components for this category.
       </p>
     </div>
 
     <div class="nav-actions">
       <a th:href="@{/admin/work-categories}" class="btn-back">
         <i class="bi bi-arrow-left"></i>
-        <span>Back to Work Categories</span>
+        <span>Back to Categories</span>
       </a>
       <form th:if="${category.archived}"
             th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
             method="post"
             style="display: inline; margin: 0;"
-            th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
-            onsubmit="return confirm('Are you sure you want to unarchive ' + (this.getAttribute('data-category-name') || 'this work category') + '?\n\nThis will restore the category and its divisions to active status.');">
+            th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
+            onsubmit="return confirm('Are you sure you want to unarchive ' + (this.getAttribute('data-category-name') || 'this category') + '?\n\nThis will restore the category and its divisions to active status.');">
         <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
         <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
         <button type="submit" class="btn-configure" style="cursor: pointer; background: #ffffff; color: #024541; border: 1px solid #D6E4E1;">
@@ -416,7 +416,7 @@
   <div class="hierarchy-container">
     <div class="hierarchy-header">
       <div class="hierarchy-flow-badge">
-        <span class="flow-step">1. Work Category</span>
+        <span class="flow-step">1. Category</span>
         <span>→</span>
         <span class="flow-step">2. Division</span>
         <span>→</span>

@@ -326,11 +326,13 @@ public class DynamicCategoryMaterialFormulaTest {
         opt.setActive(true);
         opt = materialOptionRepository.save(opt);
 
-        WorkCategory cat = new WorkCategory();
-        cat.setName("Dining");
-        cat.setEmoji("🍽️");
-        cat.setActive(true);
-        cat = workCategoryRepository.save(cat);
+        WorkCategory cat = workCategoryRepository.findByNameIgnoreCase("Dining").orElseGet(() -> {
+            WorkCategory c = new WorkCategory();
+            c.setName("Dining_" + System.currentTimeMillis());
+            c.setEmoji("🍽️");
+            c.setActive(true);
+            return workCategoryRepository.save(c);
+        });
 
         Division div = new Division();
         div.setName("Storage");

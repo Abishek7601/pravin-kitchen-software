@@ -281,7 +281,7 @@
     </section>
 
     <section class="card work-card">
-      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Work categories are loaded from your existing database.</p></div></div>
+      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Categories are loaded from your existing database.</p></div></div>
       <div id="categoryGrid" class="choice-grid">
         <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
           <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>

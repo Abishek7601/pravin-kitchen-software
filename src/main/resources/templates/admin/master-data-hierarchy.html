@@ -257,7 +257,7 @@
       <h1>Master Data Complete Hierarchy</h1>
       <p>
         Full 5-level configuration hierarchy:
-        <strong>Work Category → Division → Material → Material Option → Material Specifications</strong>
+        <strong>Category → Division → Material → Material Option → Material Specifications</strong>
       </p>
     </div>
 
@@ -284,7 +284,7 @@
   <div th:if="${hierarchyList == null or hierarchyList.isEmpty()}" class="text-center p-5 bg-white rounded border">
     <div style="font-size: 3rem; margin-bottom: 12px;">📂</div>
     <h4>No Master Data Configured Yet</h4>
-    <p class="text-muted">Start by configuring work categories, divisions, and materials.</p>
+    <p class="text-muted">Start by configuring categories, divisions, and materials.</p>
     <a th:href="@{/admin/pricing/new}" class="btn btn-primary" style="background: #024541; border-color: #024541;">
       + Configure Master Data Now
     </a>
@@ -293,7 +293,7 @@
   <!-- HIERARCHY ACCORDION / TREE -->
   <div th:each="cDto : ${hierarchyList}" class="hierarchy-card">
 
-    <!-- LEVEL 1: WORK CATEGORY -->
+    <!-- LEVEL 1: CATEGORY -->
     <div class="cat-header">
       <div class="cat-title">
         <span th:text="${cDto.category.icon != null ? cDto.category.icon : '📁'}">🏠</span>

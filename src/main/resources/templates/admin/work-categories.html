@@ -5,7 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Work Categories | Pravin KITCHENS & INTERIORS</title>
+    <title>Categories | Pravin KITCHENS & INTERIORS</title>
+
+    <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}"/>
+    <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}"/>
 
     <link rel="stylesheet"
           th:href="@{/css/admin-nav.css}">
@@ -82,15 +85,15 @@
 <!--                    PRICING MANAGEMENT-->
 <!--                </span>-->
 
-                <h1 th:text="${isArchivedView} ? 'Archived Work Categories' : 'Work Categories'">
-                    Work Categories
+                <h1 th:text="${isArchivedView} ? 'Archived Categories' : 'Categories'">
+                    Categories
                 </h1>
 
                 <p th:if="${isArchivedView}">
                     Archived categories that are preserved to protect historical quotation data.
                 </p>
                 <p th:unless="${isArchivedView}">
-                    Manage the work categories used while creating quotations.
+                    Manage the categories used while creating quotations.
                 </p>
 
             </div>
@@ -110,11 +113,12 @@
                     <span>📦 Archived (<span th:text="${archivedCount}">0</span>)</span>
                 </a>
 
-                <a th:href="@{/admin/pricing/new}"
+                <button type="button"
+                   id="openConfigureMasterDataBtn"
                    class="btn btn-primary"
-                   style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff;">
+                   style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; background: #024541; color: #ffffff; transition: all 0.2s ease;">
                     <span>+ Configure Master Data</span>
-                </a>
+                </button>
             </div>
 
         </section>
@@ -154,7 +158,7 @@
                         <tr>
                             <th class="col-sno">S.No</th>
                             <th class="col-icon">Emoji / Icon</th>
-                            <th class="col-name">Work Category Name</th>
+                            <th class="col-name">Category Name</th>
                             <th class="col-status">Status</th>
                             <th class="col-actions">Actions</th>
                         </tr>
@@ -162,7 +166,11 @@
                     <tbody>
                         <tr th:each="category, stat : ${categories}"
                             class="category-row"
+                            th:id="'category-row-' + ${category.id}"
+                            th:data-id="${category.id}"
                             th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                            th:data-icon="${category.icon != null ? category.icon : ''}"
+                            th:data-description="${category.description != null ? category.description : ''}"
                             th:data-status="${category.archived ? 'archived' : (category.active ? 'active' : 'inactive')}">
 
                             <!-- S.NO -->
@@ -177,13 +185,16 @@
                                       th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}">📁</span>
                             </td>
 
-                            <!-- WORK CATEGORY NAME -->
+                            <!-- CATEGORY NAME -->
                             <td class="col-name">
                                 <div class="category-name-cell">
-                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
-                                       class="category-title-link">
+                                    <div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">
+                                        <span class="category-inline-emoji"
+                                              th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
+                                              th:text="${category.icon}"
+                                              style="font-size: 1.25rem; line-height: 1;">🏠</span>
                                         <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
-                                    </a>
+                                    </div>
                                     <p class="category-description"
                                        th:if="${category.description != null and !#strings.isEmpty(category.description)}"
                                        th:text="${category.description}">
@@ -211,20 +222,17 @@
                             <!-- ACTIONS -->
                             <td class="col-actions">
                                 <div class="table-actions">
-                                    <!-- VIEW -->
-                                    <a th:href="@{/admin/work-categories/view/{id}(id=${category.id})}"
-                                       class="action-btn view-btn"
-                                       title="View Category Details">
-                                        View
-                                    </a>
-
-                                    <!-- EDIT -->
-                                    <a th:if="${!category.archived}"
-                                       th:href="@{/admin/work-categories/edit/{id}(id=${category.id})}"
-                                       class="action-btn edit-btn"
-                                       title="Edit Category">
+                                    <!-- EDIT IN MODAL -->
+                                    <button type="button"
+                                            th:if="${!category.archived}"
+                                            class="action-btn edit-btn js-edit-category-btn"
+                                            th:data-id="${category.id}"
+                                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                                            th:data-icon="${category.icon != null ? category.icon : ''}"
+                                            th:data-description="${category.description != null ? category.description : ''}"
+                                            title="Edit Category">
                                         Edit
-                                    </a>
+                                    </button>
 
                                     <!-- ACTIVATE / DEACTIVATE (TOGGLE) -->
                                     <form th:if="${!category.archived}"
@@ -248,7 +256,7 @@
                                           th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
                                           onsubmit="return confirmDeleteCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -265,7 +273,7 @@
                                           th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this work category'}"
+                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
                                           onsubmit="return confirmUnarchiveCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -285,7 +293,7 @@
                             <td colspan="5" class="no-results-cell">
                                 <div class="no-results-content">
                                     <span class="no-results-icon">🔍</span>
-                                    <strong>No matching work categories found</strong>
+                                    <strong>No matching categories found</strong>
                                     <p>Try adjusting your search query or status filter.</p>
                                 </div>
                             </td>
@@ -304,23 +312,25 @@
                 ▦
             </div>
 
-            <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Work Categories'">
-                No Work Categories
+            <h3 th:text="${isArchivedView} ? 'No Archived Categories' : 'No Categories'">
+                No Categories
             </h3>
 
             <p th:if="${isArchivedView}">
-                There are currently no archived work categories.
+                There are currently no archived categories.
             </p>
             <p th:unless="${isArchivedView}">
-                Create your first work category to start building
+                Create your first category to start building
                 the quotation pricing structure.
             </p>
 
-            <a th:unless="${isArchivedView}"
-               th:href="@{/admin/pricing/new}"
-               class="empty-add-btn">
+            <button type="button"
+               th:unless="${isArchivedView}"
+               id="emptyConfigureMasterDataBtn"
+               class="empty-add-btn"
+               style="cursor: pointer; border: none;">
                 + Configure Master Data
-            </a>
+            </button>
 
             <a th:if="${isArchivedView}"
                th:href="@{/admin/work-categories}"
@@ -339,21 +349,146 @@
 </div>
 
 
+<!-- CONFIGURE MASTER DATA / EDIT CATEGORY MODAL -->
+<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true">
+    <div class="master-data-modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
+        <!-- Modal Header -->
+        <div class="modal-header">
+            <div class="modal-title-wrap">
+                <div class="modal-icon-badge" id="modalHeaderBadge">✨</div>
+                <div>
+                    <h3 id="modalTitle">Configure Master Data</h3>
+                    <p class="modal-subtitle" id="modalSubtitle">Add a new category with custom emoji and details</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" id="modalCloseXBtn" aria-label="Close modal">&times;</button>
+        </div>
+
+        <!-- Feedback Alert inside Modal -->
+        <div id="modalAlert" class="modal-alert" style="display: none;"></div>
+
+        <!-- Modal Form -->
+        <form id="createCategoryForm" onsubmit="return false;" novalidate>
+            <input type="hidden" th:if="${_csrf != null}" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" th:if="${_csrf != null}" id="csrfHeader" th:value="${_csrf.headerName}">
+            <input type="hidden" id="categoryIdInput" name="id" value="">
+
+            <div class="modal-body">
+                <!-- Live Preview Bar -->
+                <div class="modal-live-preview">
+                    <span class="preview-label">Live Preview:</span>
+                    <div class="preview-badge">
+                        <span id="previewEmoji" class="preview-emoji">🏠</span>
+                        <strong id="previewName" class="preview-name">NEW CATEGORY</strong>
+                    </div>
+                </div>
+
+                <!-- Category Name Input -->
+                <div class="modal-form-group">
+                    <label for="categoryNameInput">
+                        Category Name <span class="required-star">*</span>
+                    </label>
+                    <input type="text"
+                           id="categoryNameInput"
+                           name="name"
+                           class="modal-input"
+                           placeholder="e.g. MODULAR KITCHEN, BALCONY, POOJA ROOM"
+                           autocomplete="off"
+                           style="text-transform: uppercase;"
+                           required>
+                    <div id="nameValidationMsg" class="field-error" style="display: none;">Category name is required.</div>
+                </div>
+
+                <!-- Category Emoji Picker Section -->
+                <div class="modal-form-group">
+                    <label>
+                        Category Emoji <span class="badge-tag">Select or customize</span>
+                    </label>
+
+                    <!-- Selected Emoji Input Row (single field, no duplicate box) -->
+                    <div class="selected-emoji-row">
+                        <input type="text"
+                               id="categoryEmojiInput"
+                               name="icon"
+                               class="modal-emoji-input"
+                               value="🏠"
+                               placeholder="🏠"
+                               maxlength="8">
+                        <button type="button" id="clearSelectedEmojiBtn" class="btn-clear-emoji">Clear</button>
+                        <span class="emoji-help-text">Click an emoji below or type custom</span>
+                    </div>
+
+                    <!-- Preset Emoji Palette with common interior & kitchen items -->
+                    <div class="emoji-palette-card">
+                        <div class="palette-category-title">Common Interior &amp; Kitchen Emojis:</div>
+                        <div class="emoji-palette-grid">
+                            <!-- Emojis explicitly required: 🏠, 🍳, 🛏️, 🚪, 🪟, 🛋️, 💡, 🪵, 🎨, 🧱 -->
+                            <button type="button" class="palette-emoji-btn active" data-emoji="🏠" title="House / Foyer">🏠 <span class="emoji-label">Foyer</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🍳" title="Kitchen">🍳 <span class="emoji-label">Kitchen</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🛏️" title="Bedroom">🛏️ <span class="emoji-label">Bedroom</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🚪" title="Doors / Wardrobe">🚪 <span class="emoji-label">Doors</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪟" title="Windows / Balcony">🪟 <span class="emoji-label">Windows</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🛋️" title="Living / TV Unit">🛋️ <span class="emoji-label">Living</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="💡" title="Lighting / False Ceiling">💡 <span class="emoji-label">Lighting</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪵" title="Wood / Laminate">🪵 <span class="emoji-label">Woodwork</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🎨" title="Wall Paint / Finishes">🎨 <span class="emoji-label">Finishes</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🧱" title="Accent / Partition">🧱 <span class="emoji-label">Partition</span></button>
+
+                            <!-- Extended Popular Interior Choices -->
+                            <button type="button" class="palette-emoji-btn" data-emoji="📦" title="Storage / Loft">📦 <span class="emoji-label">Storage</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🗄️" title="Cabinets / Drawers">🗄️ <span class="emoji-label">Cabinets</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🍽️" title="Dining / Crockery">🍽️ <span class="emoji-label">Dining</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🪞" title="Dressing / Mirror">🪞 <span class="emoji-label">Vanity</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="👞" title="Shoe Rack">👞 <span class="emoji-label">Shoes</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🌿" title="Balcony / Greenery">🌿 <span class="emoji-label">Balcony</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🧘" title="Pooja Room">🧘 <span class="emoji-label">Pooja</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="💼" title="Office / Study">💼 <span class="emoji-label">Study</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="🚿" title="Bathroom">🚿 <span class="emoji-label">Bath</span></button>
+                            <button type="button" class="palette-emoji-btn" data-emoji="☕" title="Breakfast Counter">☕ <span class="emoji-label">Bar</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description Input (Optional) -->
+                <div class="modal-form-group">
+                    <label for="categoryDescriptionInput">
+                        Description <span class="badge-tag-opt">Optional</span>
+                    </label>
+                    <textarea id="categoryDescriptionInput"
+                              name="description"
+                              class="modal-textarea"
+                              rows="2"
+                              placeholder="e.g. Modular kitchen units, base cabinets, and accessories."></textarea>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="modal-footer">
+                <button type="button" id="modalCancelBtn" class="btn-modal-cancel">Cancel</button>
+                <button type="button" id="modalSaveCategoryBtn" class="btn-modal-save">
+                    <span id="saveBtnIcon">💾</span>
+                    <span id="saveBtnText">Save Category</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script th:src="@{/js/pagination.js}"></script>
 <script>
 
     function confirmDeleteCategory(form) {
-        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this work category';
+        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this category';
         return confirm(
-            "Are you sure you want to delete work category '" + name + "'?\n\n" +
+            "Are you sure you want to delete category '" + name + "'?\n\n" +
             "If it has never been used in any quotation, it will be permanently deleted. If it is referenced by existing quotations, it will be safely archived to protect quotation history."
         );
     }
 
     function confirmUnarchiveCategory(form) {
-        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this work category';
+        var name = (form && form.getAttribute('data-category-name')) ? form.getAttribute('data-category-name') : 'this category';
         var confirmed = confirm(
-            "Are you sure you want to unarchive work category '" + name + "'?\n\n" +
+            "Are you sure you want to unarchive category '" + name + "'?\n\n" +
             "This will restore the category and its divisions to active status in the system. Historical quotation references will remain preserved."
         );
         if (!confirmed) {
@@ -370,7 +505,7 @@
         return true;
     }
 
-    // Client-side search, filtering and pagination
+    // Client-side search, filtering, pagination and Configure Master Data Modal
     document.addEventListener('DOMContentLoaded', function() {
         var searchInput = document.getElementById('categorySearch');
         var statusSelect = document.getElementById('statusFilter');
@@ -427,6 +562,598 @@
         }
         if (statusSelect) {
             statusSelect.addEventListener('change', filterCategories);
+        }
+
+        // =========================================================
+        // CONFIGURE MASTER DATA & EDIT CATEGORY MODAL LOGIC
+        // =========================================================
+        var modalOverlay = document.getElementById('masterDataModal');
+        var modalTitle = document.getElementById('modalTitle');
+        var modalSubtitle = document.getElementById('modalSubtitle');
+        var modalHeaderBadge = document.getElementById('modalHeaderBadge');
+        var categoryIdInput = document.getElementById('categoryIdInput');
+        var openBtn = document.getElementById('openConfigureMasterDataBtn');
+        var emptyOpenBtn = document.getElementById('emptyConfigureMasterDataBtn');
+        var closeXBtn = document.getElementById('modalCloseXBtn');
+        var cancelBtn = document.getElementById('modalCancelBtn');
+        var saveBtn = document.getElementById('modalSaveCategoryBtn');
+        var saveBtnText = document.getElementById('saveBtnText');
+        var saveBtnIcon = document.getElementById('saveBtnIcon');
+        var nameInput = document.getElementById('categoryNameInput');
+        var emojiInput = document.getElementById('categoryEmojiInput');
+        var descInput = document.getElementById('categoryDescriptionInput');
+        var previewEmoji = document.getElementById('previewEmoji');
+        var previewName = document.getElementById('previewName');
+        var nameValidationMsg = document.getElementById('nameValidationMsg');
+        var modalAlert = document.getElementById('modalAlert');
+        var clearEmojiBtn = document.getElementById('clearSelectedEmojiBtn');
+        var paletteBtns = document.querySelectorAll('.palette-emoji-btn');
+
+        function openAddModal() {
+            if (!modalOverlay) return;
+            resetModal();
+            if (categoryIdInput) categoryIdInput.value = '';
+            if (modalTitle) modalTitle.textContent = 'Configure Master Data';
+            if (modalSubtitle) modalSubtitle.textContent = 'Add a new category with custom emoji and details';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '✨';
+            if (saveBtnText) saveBtnText.textContent = 'Save Category';
+            if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+
+            modalOverlay.style.display = 'flex';
+            setTimeout(function() {
+                modalOverlay.classList.add('active');
+                if (nameInput) nameInput.focus();
+            }, 10);
+            modalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function openEditModal(categoryData) {
+            if (!modalOverlay) return;
+            resetModal();
+            var id = categoryData.id || '';
+            var name = categoryData.name || '';
+            var icon = categoryData.icon || '';
+            var desc = categoryData.description || '';
+
+            if (categoryIdInput) categoryIdInput.value = id;
+            if (modalTitle) modalTitle.textContent = 'Edit Category';
+            if (modalSubtitle) modalSubtitle.textContent = 'Update category details, emoji, and description';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '✏️';
+            if (saveBtnText) saveBtnText.textContent = 'Update Category';
+            if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+
+            if (nameInput) nameInput.value = name;
+            if (descInput) descInput.value = desc;
+            setEmoji(icon);
+            if (previewName) previewName.textContent = name || 'CATEGORY';
+
+            modalOverlay.style.display = 'flex';
+            setTimeout(function() {
+                modalOverlay.classList.add('active');
+                if (nameInput) nameInput.focus();
+            }, 10);
+            modalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            if (!modalOverlay) return;
+            modalOverlay.classList.remove('active');
+            modalOverlay.setAttribute('aria-hidden', 'true');
+            document.body.style.overflow = '';
+            setTimeout(function() {
+                modalOverlay.style.display = 'none';
+            }, 220);
+        }
+
+        function resetModal() {
+            if (categoryIdInput) categoryIdInput.value = '';
+            if (nameInput) nameInput.value = '';
+            if (descInput) descInput.value = '';
+            if (emojiInput) emojiInput.value = '🏠';
+            if (previewEmoji) previewEmoji.textContent = '🏠';
+            if (previewName) previewName.textContent = 'NEW CATEGORY';
+            if (nameValidationMsg) nameValidationMsg.style.display = 'none';
+            if (modalAlert) {
+                modalAlert.style.display = 'none';
+                modalAlert.className = 'modal-alert';
+                modalAlert.textContent = '';
+            }
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                if (saveBtnText) saveBtnText.textContent = 'Save Category';
+                if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+            }
+            paletteBtns.forEach(function(btn) {
+                if (btn.getAttribute('data-emoji') === '🏠') {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        function setEmoji(emoji) {
+            var val = (emoji || '').trim();
+            if (emojiInput) emojiInput.value = val;
+            if (previewEmoji) previewEmoji.textContent = val || '📁';
+
+            paletteBtns.forEach(function(btn) {
+                if (btn.getAttribute('data-emoji') === val) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+        }
+
+        if (openBtn) {
+            openBtn.addEventListener('click', openAddModal);
+        }
+        if (emptyOpenBtn) {
+            emptyOpenBtn.addEventListener('click', openAddModal);
+        }
+        if (closeXBtn) {
+            closeXBtn.addEventListener('click', closeModal);
+        }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', closeModal);
+        }
+
+        // Delegate click for Edit buttons in table rows
+        document.addEventListener('click', function(e) {
+            var editBtn = e.target.closest('.js-edit-category-btn');
+            if (!editBtn) return;
+            e.preventDefault();
+            var id = editBtn.getAttribute('data-id');
+            var name = editBtn.getAttribute('data-name') || '';
+            var icon = editBtn.getAttribute('data-icon') || '';
+            var desc = editBtn.getAttribute('data-description') || '';
+            openEditModal({ id: id, name: name, icon: icon, description: desc });
+        });
+
+        // Close on backdrop click
+        if (modalOverlay) {
+            modalOverlay.addEventListener('click', function(e) {
+                if (e.target === modalOverlay) {
+                    closeModal();
+                }
+            });
+        }
+
+        // Close on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && modalOverlay && modalOverlay.classList.contains('active')) {
+                closeModal();
+            }
+        });
+
+        // Name input auto-uppercase & live preview
+        if (nameInput) {
+            nameInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                var trimmed = this.value.trim();
+                if (previewName) {
+                    var defaultLabel = (categoryIdInput && categoryIdInput.value) ? 'CATEGORY' : 'NEW CATEGORY';
+                    previewName.textContent = trimmed || defaultLabel;
+                }
+                if (nameValidationMsg && trimmed.length > 0) {
+                    nameValidationMsg.style.display = 'none';
+                }
+                if (modalAlert && modalAlert.classList.contains('error')) {
+                    modalAlert.style.display = 'none';
+                }
+            });
+        }
+
+        // Preset emoji buttons
+        paletteBtns.forEach(function(btn) {
+            btn.addEventListener('click', function() {
+                var em = this.getAttribute('data-emoji');
+                setEmoji(em);
+            });
+        });
+
+        // Custom emoji typed into input
+        if (emojiInput) {
+            emojiInput.addEventListener('input', function() {
+                setEmoji(this.value);
+            });
+        }
+
+        // Clear emoji button
+        if (clearEmojiBtn) {
+            clearEmojiBtn.addEventListener('click', function() {
+                setEmoji('');
+            });
+        }
+
+        // Helper to get CSRF token
+        function getCsrfInfo() {
+            var tokenMeta = document.querySelector('meta[name="_csrf"]');
+            var headerMeta = document.querySelector('meta[name="_csrf_header"]');
+            var tokenInput = document.getElementById('csrfToken');
+            var headerInput = document.getElementById('csrfHeader');
+
+            var token = (tokenMeta && tokenMeta.content) ? tokenMeta.content : (tokenInput ? tokenInput.value : '');
+            var header = (headerMeta && headerMeta.content) ? headerMeta.content : (headerInput ? headerInput.value : 'X-CSRF-TOKEN');
+            return { token: token, header: header };
+        }
+
+        // Save / Update Category Submission
+        if (saveBtn) {
+            saveBtn.addEventListener('click', function() {
+                var editId = (categoryIdInput ? categoryIdInput.value : '').trim();
+                var isEdit = (editId && editId.length > 0 && editId !== '0');
+
+                var nameVal = (nameInput ? nameInput.value : '').trim().toUpperCase();
+                var emojiVal = (emojiInput ? emojiInput.value : '').trim();
+                var descVal = (descInput ? descInput.value : '').trim();
+
+                // Validate name
+                if (!nameVal) {
+                    if (nameValidationMsg) nameValidationMsg.style.display = 'block';
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert error';
+                        modalAlert.textContent = 'Category name is required.';
+                        modalAlert.style.display = 'flex';
+                    }
+                    if (nameInput) nameInput.focus();
+                    return;
+                }
+
+                // Check local duplicate before sending (ignoring current row in edit mode)
+                if (categoryTable) {
+                    var existingRows = categoryTable.querySelectorAll('tbody tr.category-row');
+                    var isDup = false;
+                    existingRows.forEach(function(row) {
+                        var rowId = row.getAttribute('data-id');
+                        var rowName = (row.getAttribute('data-name') || '').toUpperCase();
+                        if (isEdit && rowId === editId) {
+                            return;
+                        }
+                        if (rowName === nameVal) {
+                            isDup = true;
+                        }
+                    });
+                    if (isDup) {
+                        if (modalAlert) {
+                            modalAlert.className = 'modal-alert error';
+                            modalAlert.textContent = "Category '" + nameVal + "' already exists.";
+                            modalAlert.style.display = 'flex';
+                        }
+                        if (nameInput) nameInput.focus();
+                        return;
+                    }
+                }
+
+                // Prepare request
+                saveBtn.disabled = true;
+                if (saveBtnText) saveBtnText.textContent = isEdit ? 'Updating...' : 'Saving...';
+                if (saveBtnIcon) saveBtnIcon.textContent = '⏳';
+                if (modalAlert) modalAlert.style.display = 'none';
+
+                var csrf = getCsrfInfo();
+                var formData = new URLSearchParams();
+                if (isEdit) {
+                    formData.append('id', editId);
+                }
+                formData.append('name', nameVal);
+                if (emojiVal) formData.append('icon', emojiVal);
+                if (descVal) formData.append('description', descVal);
+                if (csrf.token) formData.append('_csrf', csrf.token);
+
+                var headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (csrf.token && csrf.header) {
+                    headers[csrf.header] = csrf.token;
+                }
+
+                var endpoint = isEdit ? ('/admin/work-categories/update/' + editId) : '/admin/work-categories/save';
+
+                fetch(endpoint, {
+                    method: 'POST',
+                    headers: headers,
+                    body: formData.toString()
+                })
+                .then(function(res) {
+                    return res.json().then(function(data) {
+                        return { ok: res.ok, data: data };
+                    });
+                })
+                .then(function(result) {
+                    if (!result.ok || !result.data.success) {
+                        var errMsg = (result.data && result.data.message) ? result.data.message : (isEdit ? 'Failed to update category.' : 'Failed to save category.');
+                        throw new Error(errMsg);
+                    }
+
+                    // Success!
+                    var categoryResult = result.data.category || {
+                        id: isEdit ? editId : Date.now(),
+                        name: nameVal,
+                        icon: emojiVal,
+                        description: descVal,
+                        active: true
+                    };
+
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert success';
+                        modalAlert.textContent = '✅ ' + (result.data.message || (isEdit ? 'Category updated successfully!' : 'Category saved successfully!'));
+                        modalAlert.style.display = 'flex';
+                    }
+
+                    // Dynamically update DOM safely without page reload
+                    try {
+                        if (isEdit) {
+                            updateCategoryRowInTable(categoryResult);
+                        } else {
+                            addCategoryRowToTable(categoryResult);
+                        }
+                    } catch (renderError) {
+                        console.error('DOM/pagination update encountered an issue:', renderError);
+                    }
+
+                    // Show top-level success banner
+                    showPageAlert('✅ ' + (result.data.message || (isEdit ? 'Category updated successfully.' : 'Category created successfully.')), 'success');
+
+                    // Close modal smoothly and reset form
+                    setTimeout(function() {
+                        closeModal();
+                        resetModal();
+                    }, 500);
+                })
+                .catch(function(err) {
+                    console.error('Category save/update request failed:', err);
+                    if (modalAlert) {
+                        modalAlert.className = 'modal-alert error';
+                        modalAlert.textContent = '⚠️ ' + err.message;
+                        modalAlert.style.display = 'flex';
+                    }
+                    saveBtn.disabled = false;
+                    if (saveBtnText) saveBtnText.textContent = isEdit ? 'Update Category' : 'Save Category';
+                    if (saveBtnIcon) saveBtnIcon.textContent = '💾';
+                });
+            });
+        }
+
+        function showPageAlert(msg, type) {
+            var container = document.querySelector('.category-container');
+            if (!container) return;
+            var alertDiv = document.createElement('div');
+            alertDiv.style.cssText = 'background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px; animation: modalFadeIn 0.3s ease;';
+            alertDiv.innerHTML = '<span>' + (type === 'success' ? '✅' : '⚠️') + '</span><span>' + msg + '</span>';
+            container.insertBefore(alertDiv, container.firstChild);
+            setTimeout(function() {
+                alertDiv.style.transition = 'opacity 0.4s ease';
+                alertDiv.style.opacity = '0';
+                setTimeout(function() { alertDiv.remove(); }, 400);
+            }, 4000);
+        }
+
+        function updateCategoryRowInTable(category) {
+            if (!category || !category.id) return;
+            var tr = document.getElementById('category-row-' + category.id);
+            if (!tr && categoryTable) {
+                tr = categoryTable.querySelector('tbody tr[data-id="' + category.id + '"]');
+            }
+            if (!tr) {
+                window.location.reload();
+                return;
+            }
+
+            var nameUpper = (category.name || '').toUpperCase();
+            var iconVal = (category.icon || '').trim();
+            var descVal = category.description || '';
+
+            // Update row attributes
+            tr.setAttribute('data-name', nameUpper);
+            tr.setAttribute('data-icon', iconVal);
+            tr.setAttribute('data-description', descVal);
+
+            // Update icon pill in col-icon
+            var iconPill = tr.querySelector('.col-icon .category-icon-pill');
+            if (iconPill) {
+                iconPill.textContent = iconVal || '📁';
+                if (!iconVal) {
+                    iconPill.classList.add('fallback');
+                } else {
+                    iconPill.classList.remove('fallback');
+                }
+            }
+
+            // Update category title and inline emoji
+            var titleWrap = tr.querySelector('.category-name-cell .category-title-wrap');
+            if (titleWrap) {
+                var inlineEmoji = titleWrap.querySelector('.category-inline-emoji');
+                if (iconVal) {
+                    if (inlineEmoji) {
+                        inlineEmoji.textContent = iconVal;
+                    } else {
+                        var span = document.createElement('span');
+                        span.className = 'category-inline-emoji';
+                        span.style.cssText = 'font-size: 1.25rem; line-height: 1;';
+                        span.textContent = iconVal;
+                        titleWrap.insertBefore(span, titleWrap.firstChild);
+                    }
+                } else if (inlineEmoji) {
+                    inlineEmoji.remove();
+                }
+
+                var titleEl = titleWrap.querySelector('.category-title');
+                if (titleEl) {
+                    titleEl.textContent = nameUpper;
+                }
+            }
+
+            // Update description
+            var descEl = tr.querySelector('.category-name-cell .category-description');
+            if (descVal) {
+                if (descEl) {
+                    descEl.textContent = descVal;
+                } else {
+                    var cell = tr.querySelector('.category-name-cell');
+                    if (cell) {
+                        var p = document.createElement('p');
+                        p.className = 'category-description';
+                        p.textContent = descVal;
+                        cell.appendChild(p);
+                    }
+                }
+            } else if (descEl) {
+                descEl.remove();
+            }
+
+            // Update edit button data attributes
+            var editBtn = tr.querySelector('.js-edit-category-btn');
+            if (editBtn) {
+                editBtn.setAttribute('data-name', nameUpper);
+                editBtn.setAttribute('data-icon', iconVal);
+                editBtn.setAttribute('data-description', descVal);
+            }
+
+            // Update delete form data-category-name
+            var deleteForm = tr.querySelector('.col-actions form[action*="/delete/"]');
+            if (deleteForm) {
+                deleteForm.setAttribute('data-category-name', nameUpper);
+            }
+
+            // Flash highlight row smoothly
+            tr.style.backgroundColor = '#dbeafe';
+            tr.style.transition = 'background-color 1.5s ease';
+            setTimeout(function() {
+                tr.style.backgroundColor = '';
+            }, 1800);
+
+            // Re-apply filter and pagination
+            if (pagination && typeof pagination.applyFilterAndRender === 'function') {
+                pagination.applyFilterAndRender();
+            }
+        }
+
+        function addCategoryRowToTable(category) {
+            var tableCard = document.querySelector('.table-card');
+            var emptyState = document.querySelector('.empty-state');
+            var toolbar = document.querySelector('.category-toolbar');
+
+            if (emptyState) emptyState.style.display = 'none';
+            if (tableCard) tableCard.style.display = '';
+            if (toolbar) toolbar.style.display = '';
+
+            if (!categoryTable) {
+                // If table didn't exist initially, reload cleanly to render the complete table structure
+                window.location.reload();
+                return;
+            }
+
+            var tbody = categoryTable.querySelector('tbody');
+            if (!tbody) return;
+
+            var tr = document.createElement('tr');
+            tr.className = 'category-row';
+            tr.id = 'category-row-' + category.id;
+            tr.setAttribute('data-id', category.id);
+            tr.setAttribute('data-name', (category.name || '').toUpperCase());
+            tr.setAttribute('data-icon', (category.icon || '').trim());
+            tr.setAttribute('data-description', category.description || '');
+            tr.setAttribute('data-status', 'active');
+            tr.style.backgroundColor = '#f0fdf4';
+            tr.style.transition = 'background-color 1.5s ease';
+
+            var csrf = getCsrfInfo();
+            var iconDisplay = (category.icon && category.icon.trim()) ? category.icon.trim() : '📁';
+
+            var sNo = tbody.querySelectorAll('tr.category-row').length + 1;
+
+            tr.innerHTML =
+                '<td class="col-sno serial-number">' + sNo + '</td>' +
+                '<td class="col-icon">' +
+                    '<span class="category-icon-pill">' + escapeHtml(iconDisplay) + '</span>' +
+                '</td>' +
+                '<td class="col-name">' +
+                    '<div class="category-name-cell">' +
+                        '<div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">' +
+                            ((category.icon && category.icon.trim()) ? '<span class="category-inline-emoji" style="font-size: 1.25rem; line-height: 1;">' + escapeHtml(category.icon.trim()) + '</span>' : '') +
+                            '<strong class="category-title">' + escapeHtml(category.name.toUpperCase()) + '</strong>' +
+                        '</div>' +
+                        (category.description ? '<p class="category-description">' + escapeHtml(category.description) + '</p>' : '') +
+                    '</div>' +
+                '</td>' +
+                '<td class="col-status">' +
+                    '<span class="status-badge active">Active</span>' +
+                '</td>' +
+                '<td class="col-actions">' +
+                    '<div class="table-actions">' +
+                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(category.name.toUpperCase()) + '" data-icon="' + escapeHtml((category.icon || '').trim()) + '" data-description="' + escapeHtml(category.description || '') + '" title="Edit Category">Edit</button>' +
+                        '<form action="/admin/work-categories/toggle/' + category.id + '" method="post" class="action-form">' +
+                            '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
+                            '<button type="submit" class="action-btn toggle-btn btn-deactivate" title="Deactivate Category">Deactivate</button>' +
+                        '</form>' +
+                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(category.name.toUpperCase()) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                            '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
+                            '<button type="submit" class="action-btn delete-btn" title="Delete Category">Delete</button>' +
+                        '</form>' +
+                    '</div>' +
+                '</td>';
+
+            // Insert at top of rows
+            var firstRow = tbody.querySelector('tr.category-row');
+            if (firstRow) {
+                tbody.insertBefore(tr, firstRow);
+            } else {
+                tbody.appendChild(tr);
+            }
+
+            // Recalculate serial numbers
+            var allRows = tbody.querySelectorAll('tr.category-row');
+            allRows.forEach(function(r, idx) {
+                var snoCell = r.querySelector('.col-sno');
+                if (snoCell) snoCell.textContent = idx + 1;
+            });
+
+            if (categoryCount) {
+                categoryCount.textContent = allRows.length;
+            }
+
+            // Clear any active search or status filter so the newly added row is visible
+            if (searchInput) searchInput.value = '';
+            if (statusSelect) statusSelect.value = '';
+            allRows.forEach(function(r) {
+                r.removeAttribute('data-filtered-out');
+            });
+            if (noResultsRow) {
+                noResultsRow.style.display = 'none';
+            }
+
+            // Re-render pagination correctly using the TablePagination engine (applyFilterAndRender)
+            if (pagination && typeof pagination.applyFilterAndRender === 'function') {
+                pagination.currentPage = 1;
+                pagination.applyFilterAndRender();
+            } else if (categoryTable && typeof initTablePagination === 'function') {
+                pagination = initTablePagination({
+                    table: categoryTable,
+                    pageSize: 10,
+                    recordLabel: 'categories'
+                });
+            }
+
+            // Fade out the highlight color
+            setTimeout(function() {
+                tr.style.backgroundColor = '';
+            }, 2000);
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
         }
     });
 
