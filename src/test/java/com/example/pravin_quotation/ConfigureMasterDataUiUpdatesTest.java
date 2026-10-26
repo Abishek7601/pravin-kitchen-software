@@ -61,6 +61,9 @@ public class ConfigureMasterDataUiUpdatesTest {
     private WorkCategoryRepository workCategoryRepository;
 
     @Autowired
+    private com.example.pravin_quotation.service.WorkCategoryService workCategoryService;
+
+    @Autowired
     private ResourceLoader resourceLoader;
 
     private String loadTemplateContent(String templatePath) throws Exception {
@@ -594,5 +597,109 @@ public class ConfigureMasterDataUiUpdatesTest {
         @SuppressWarnings("unchecked")
         java.util.List<?> list = (java.util.List<?>) body.get("workTypes");
         assertTrue(list.isEmpty(), "Empty category workTypes list must be empty");
+    }
+
+    @Test
+    @DisplayName("Req 14: Category View includes category emoji and work types display single number format")
+    public void testViewCategoryIncludesEmojiAndSingleNumberWorkTypes() throws Exception {
+        // Create category with emoji icon
+        WorkCategory cat = new WorkCategory();
+        cat.setName("PENTHOUSE_" + System.currentTimeMillis());
+        cat.setIcon("🏢");
+        cat.setActive(true);
+        WorkCategory savedCat = workCategoryRepository.save(cat);
+
+        // Add 2 work types (divisions)
+        workCategoryService.createWorkType(savedCat.getId(), "LIVING AREA", "🛋️", "Living area description");
+        workCategoryService.createWorkType(savedCat.getId(), "TERRACE", "🌿", "Terrace description");
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + savedCat.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(savedCat.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity);
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+
+        String categoryName = (String) body.get("categoryName");
+        assertNotNull(categoryName, "categoryName must not be null");
+        assertTrue(categoryName.contains("🏢"), "categoryName returned for View Category must include the emoji 🏢");
+
+        // Check work-categories.html template to ensure single number per work type and no work type icon
+        String html = loadTemplateContent("admin/work-categories.html");
+        assertTrue(html.contains("span class=\"work-type-number\""),
+                "View modal must use a single work-type-number for sequence display");
+        assertTrue(html.contains("var num = index + 1;"),
+                "Work type numbering must be 1-indexed dynamic number");
+    }
+
+    @Test
+    @DisplayName("Req 15: POST /update/{id} endpoint successfully updates category without creating duplicates")
+    public void testUpdateCategoryViaUpdateEndpointNoDuplicates() {
+        // Create category
+        WorkCategory cat = new WorkCategory();
+        String initialName = "STUDY_" + System.currentTimeMillis();
+        cat.setName(initialName);
+        cat.setIcon("📚");
+        cat.setDescription("Initial study description");
+        cat.setActive(true);
+        WorkCategory saved = workCategoryRepository.save(cat);
+        Long id = saved.getId();
+        long countBefore = workCategoryRepository.count();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String updatedName = "📚 EXECUTIVE STUDY";
+        String updatedDesc = "Updated study description";
+
+        Object updateResponse = workCategoryController.updateCategory(
+                id,
+                updatedName,
+                updatedDesc,
+                null,
+                null,
+                0,
+                request,
+                redirectAttributes
+        );
+
+        assertTrue(updateResponse instanceof org.springframework.http.ResponseEntity);
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) updateResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        // Count must remain the same
+        long countAfter = workCategoryRepository.count();
+        assertEquals(countBefore, countAfter, "Updating category via /update/{id} must not create duplicate records");
+
+        // Reload from database
+        WorkCategory updated = workCategoryRepository.findById(id).orElse(null);
+        assertNotNull(updated);
+        assertEquals(updatedName.toUpperCase(), updated.getName());
+        assertEquals("📚", updated.getIcon(), "Icon should be extracted from leading emoji if present");
+        assertEquals(updatedDesc, updated.getDescription());
+    }
+
+    @Test
+    @DisplayName("Req 16: Category template JavaScript contains valid syntax and event delegation")
+    public void testTemplateJavaScriptSyntaxIntegrity() throws Exception {
+        String html = loadTemplateContent("admin/work-categories.html");
+
+        // Verify the fix for line 933
+        assertFalse(html.contains("workTypeFormAlert.style.display             if"),
+                "work-categories.html must not contain broken JavaScript syntax");
+        assertTrue(html.contains("if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';"),
+                "work-categories.html must cleanly hide workTypeFormAlert on open");
+
+        // Verify event delegation for View and Edit buttons
+        assertTrue(html.contains("e.target.closest('.js-view-category-btn')"),
+                "work-categories.html must delegate click events for View button");
+        assertTrue(html.contains("e.target.closest('.js-edit-category-btn')"),
+                "work-categories.html must delegate click events for Edit button");
     }
 }

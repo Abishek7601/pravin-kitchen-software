@@ -319,8 +319,14 @@ public class WorkCategoryService {
 
     public java.util.Map<String, Object> getCategoryWorkTypes(Long categoryId) {
         WorkCategory category = getCategoryById(categoryId);
-        String catName = category.getName() != null ? category.getName().toUpperCase() : "";
-        String catEmoji = category.getIcon() != null && !category.getIcon().isBlank() ? category.getIcon().trim() : "📁";
+        String catName = category.getName() != null ? category.getName().trim().toUpperCase() : "";
+        String catEmoji = category.getIcon() != null && !category.getIcon().isBlank() ? category.getIcon().trim() : "";
+        if (catEmoji.isEmpty()) {
+            String extracted = extractLeadingEmoji(catName);
+            if (extracted != null && !extracted.isBlank()) {
+                catEmoji = extracted.trim();
+            }
+        }
 
         List<Division> divisions = divisionRepository.findByWorkCategoryIdOrderByDisplayOrderAsc(categoryId);
 
@@ -333,7 +339,7 @@ public class WorkCategoryService {
                 divMap.put("name", name.toUpperCase());
                 String emoji = (div.getIcon() != null && !div.getIcon().isBlank())
                         ? div.getIcon().trim()
-                        : resolveWorkTypeEmoji(name, catEmoji);
+                        : resolveWorkTypeEmoji(name, (!catEmoji.isEmpty() ? catEmoji : "📁"));
                 divMap.put("emoji", emoji);
                 divMap.put("icon", emoji);
                 divMap.put("description", div.getDescription() != null ? div.getDescription() : "");
@@ -343,10 +349,14 @@ public class WorkCategoryService {
             }
         }
 
+        String fullCatName = (!catEmoji.isEmpty() && !catName.contains(catEmoji))
+                ? (catEmoji + " " + catName)
+                : catName;
+
         java.util.Map<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("success", true);
         result.put("categoryId", category.getId());
-        result.put("categoryName", catName);
+        result.put("categoryName", fullCatName);
         result.put("categoryEmoji", catEmoji);
         result.put("categoryDescription", category.getDescription() != null ? category.getDescription() : "");
         result.put("totalCount", workTypes.size());

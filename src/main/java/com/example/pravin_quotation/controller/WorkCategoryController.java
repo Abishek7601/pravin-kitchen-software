@@ -471,9 +471,9 @@ public class WorkCategoryController {
     }
 
 
-    @PostMapping("/update/{id}")
+    @PostMapping({"/update/{id}", "/update"})
     public Object updateCategory(
-            @PathVariable Long id,
+            @PathVariable(required = false) Long id,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String description,
             @RequestParam(required = false) String icon,
@@ -488,6 +488,20 @@ public class WorkCategoryController {
                 || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
         try {
+            Long effectiveId = id;
+            if (effectiveId == null && request != null) {
+                String idParam = request.getParameter("id");
+                if (idParam == null) idParam = request.getParameter("categoryId");
+                if (idParam != null && !idParam.isBlank()) {
+                    try {
+                        effectiveId = Long.parseLong(idParam.trim());
+                    } catch (Exception ignored) {}
+                }
+            }
+            if (effectiveId == null) {
+                throw new IllegalArgumentException("Category ID is required for update.");
+            }
+
             if (name == null || name.trim().isEmpty()) {
                 throw new IllegalArgumentException("Category name is required");
             }
@@ -496,7 +510,7 @@ public class WorkCategoryController {
             String effectiveName = name.trim().toUpperCase();
 
             WorkCategory category = workCategoryService.updateCategory(
-                    id,
+                    effectiveId,
                     effectiveName,
                     description,
                     effectiveIcon,

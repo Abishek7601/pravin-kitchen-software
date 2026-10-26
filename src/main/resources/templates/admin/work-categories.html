@@ -64,7 +64,7 @@
 
 
     <!-- MAIN -->
-    <main class="category-container">
+    <div class="category-container">
 
         <!-- ALERTS -->
         <div th:if="${successMessage}" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px;">
@@ -341,7 +341,7 @@
 
         </div>
 
-    </main>
+    </div>
 
 </div>
 
@@ -351,7 +351,7 @@
 
 
 <!-- CONFIGURE MASTER DATA / EDIT CATEGORY MODAL -->
-<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true">
+<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true" style="display: none; z-index: 1100;">
     <div class="master-data-modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <!-- Modal Header -->
         <div class="modal-header">
@@ -794,8 +794,11 @@
             if (!modalOverlay) return;
             resetModal();
             var id = categoryData.id || '';
-            var name = categoryData.name || '';
+            var rawName = (categoryData.name || '').trim().toUpperCase();
+            var icon = (categoryData.icon || '').trim();
             var desc = categoryData.description || '';
+
+            var displayName = (icon && !rawName.includes(icon)) ? (icon + ' ' + rawName) : rawName;
 
             if (categoryIdInput) categoryIdInput.value = id;
             if (modalTitle) modalTitle.textContent = 'Edit Category';
@@ -804,9 +807,9 @@
             if (saveBtnText) saveBtnText.textContent = 'Update Category';
             if (saveBtnIcon) saveBtnIcon.textContent = '💾';
 
-            if (nameInput) nameInput.value = name;
+            if (nameInput) nameInput.value = displayName;
             if (descInput) descInput.value = desc;
-            if (previewName) previewName.textContent = name || 'CATEGORY';
+            if (previewName) previewName.textContent = displayName || 'CATEGORY';
 
             modalOverlay.style.display = 'flex';
             setTimeout(function() {
@@ -930,7 +933,8 @@
 
         function openWorkTypeForm(item) {
             if (!workTypeFormContainer) return;
-            if (workTypeFormAlert) workTypeFormAlert.style.display             if (item && item.id) {
+            if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';
+            if (item && item.id) {
                 // Edit Mode
                 if (workTypeFormTitle) workTypeFormTitle.textContent = 'Edit Work Type: ' + item.name;
                 if (workTypeIdInput) workTypeIdInput.value = item.id;
@@ -1003,7 +1007,12 @@
                 if (viewWorkTypesCount) viewWorkTypesCount.textContent = total;
 
                 if (data.categoryName && viewModalTitle) {
-                    viewModalTitle.textContent = data.categoryName.toUpperCase();
+                    var titleText = data.categoryName.toUpperCase();
+                    var emojiText = (data.categoryEmoji && data.categoryEmoji.trim()) ? data.categoryEmoji.trim() : '';
+                    if (emojiText && !titleText.includes(emojiText)) {
+                        titleText = emojiText + ' ' + titleText;
+                    }
+                    viewModalTitle.textContent = titleText;
                 }
 
                 if (total === 0 || list.length === 0) {
@@ -1268,12 +1277,13 @@
             hideWorkTypeForm();
             if (viewModalGlobalAlert) viewModalGlobalAlert.style.display = 'none';
 
-            var catName = (cat.name || '').toUpperCase();
-            var catIcon = (cat.icon && cat.icon.trim()) ? cat.icon.trim() : '📁';
+            var rawName = (cat.name || '').trim().toUpperCase();
+            var catIcon = (cat.icon && cat.icon.trim()) ? cat.icon.trim() : '';
+            var displayName = (catIcon && !rawName.includes(catIcon)) ? (catIcon + ' ' + rawName) : rawName;
             var catDesc = cat.description || '';
 
-            if (viewModalHeaderBadge) viewModalHeaderBadge.textContent = catIcon;
-            if (viewModalTitle) viewModalTitle.textContent = catName || 'CATEGORY';
+            if (viewModalHeaderBadge) viewModalHeaderBadge.textContent = catIcon || '📁';
+            if (viewModalTitle) viewModalTitle.textContent = displayName || 'CATEGORY';
             if (viewModalBadge) viewModalBadge.textContent = 'Loading...';
             if (viewWorkTypesCount) viewWorkTypesCount.textContent = '...';
             if (viewCategoryDescText) {

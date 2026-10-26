@@ -1611,18 +1611,20 @@ body {
     z-index: 1100;
     background: rgba(1, 40, 37, 0.5);
     backdrop-filter: blur(4px);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 16px;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
 .master-data-modal-overlay.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
 }
 
 .master-data-modal {
