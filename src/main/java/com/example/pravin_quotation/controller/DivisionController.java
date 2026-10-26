@@ -48,13 +48,7 @@ public class DivisionController {
 
     @GetMapping
     public String divisions(Model model) {
-
-        model.addAttribute(
-                "divisions",
-                divisionService.getAllDivisions()
-        );
-
-        return "admin/divisions";
+        return "redirect:/admin/work-categories";
     }
 
     @GetMapping("/new")

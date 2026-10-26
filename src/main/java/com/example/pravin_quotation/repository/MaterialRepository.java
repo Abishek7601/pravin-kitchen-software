@@ -1,6 +1,7 @@
 package com.example.pravin_quotation.repository;
 
 import com.example.pravin_quotation.model.Material;
+import com.example.pravin_quotation.model.PricingMode;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -57,9 +58,24 @@ public interface MaterialRepository
             @Param("divisionId") Long divisionId
     );
 
-    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) AND m.active = true ORDER BY m.name ASC")
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) AND m.active = true ORDER BY m.name ASC")
     List<Material> findActiveByDivisionId(@Param("divisionId") Long divisionId);
 
-    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (d.id = :divisionId OR i.division.id = :divisionId) ORDER BY m.name ASC")
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) ORDER BY m.name ASC")
     List<Material> findAllByDivisionId(@Param("divisionId") Long divisionId);
+
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) AND m.pricingGrade = :pricingGrade AND m.active = true ORDER BY m.displayOrder ASC, m.name ASC")
+    List<Material> findActiveByDivisionIdAndPricingGrade(@Param("divisionId") Long divisionId, @Param("pricingGrade") PricingMode pricingGrade);
+
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) AND m.pricingGrade = :pricingGrade ORDER BY m.displayOrder ASC, m.name ASC")
+    List<Material> findAllByDivisionIdAndPricingGrade(@Param("divisionId") Long divisionId, @Param("pricingGrade") PricingMode pricingGrade);
+
+    @Query("SELECT DISTINCT m FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) ORDER BY m.displayOrder ASC, m.name ASC")
+    List<Material> findAllByDivisionIdUnified(@Param("divisionId") Long divisionId);
+
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) AND m.pricingGrade = :pricingGrade AND LOWER(m.name) = LOWER(:name)")
+    boolean existsByDivisionIdAndPricingGradeAndNameIgnoreCase(@Param("divisionId") Long divisionId, @Param("pricingGrade") PricingMode pricingGrade, @Param("name") String name);
+
+    @Query("SELECT CASE WHEN COUNT(m) > 0 THEN true ELSE false END FROM Material m LEFT JOIN m.divisions d LEFT JOIN m.item i WHERE (m.division.id = :divisionId OR d.id = :divisionId OR i.division.id = :divisionId) AND m.pricingGrade = :pricingGrade AND LOWER(m.name) = LOWER(:name) AND m.id <> :id")
+    boolean existsByDivisionIdAndPricingGradeAndNameIgnoreCaseAndIdNot(@Param("divisionId") Long divisionId, @Param("pricingGrade") PricingMode pricingGrade, @Param("name") String name, @Param("id") Long id);
 }

@@ -576,7 +576,7 @@
       if (!$('floor').value || !$('roomNumber').value) { alert('Select Floor and Room Number first.'); return; }
       ensureRoom();
       const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
-      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Division</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select division')}</small></button>`).join('')}</div>`);
+      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Work Type</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><div style="font-size: 24px; margin-bottom: 4px;">${esc(d.emoji || d.icon || '🛠️')}</div><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select work type')}</small></button>`).join('')}</div>`);
       hide('itemArea'); hide('itemBuilder');
       document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => selectDivision(Number(btn.dataset.id), btn.dataset.name, categoryId, categoryName)));
   }
@@ -602,11 +602,11 @@
       $('selectedItemLabel').textContent = `${categoryName} → ${divisionName}`;
       $('selectionPath').textContent = `${categoryName} / ${divisionName}`;
 
-      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}`);
+      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}`);
       if (!materials || materials.length === 0) {
-          $('materialId').innerHTML = '<option value="" disabled selected>No materials available for this division</option>';
+          $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
       } else {
-          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}">${esc(m.name)}</option>`).join('');
+          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${m.rate != null ? m.rate : ''}">${esc(m.name)}${m.rate != null ? ' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft') : ''}</option>`).join('');
       }
       $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
       $('materialSpecificationId').innerHTML = '<option value="">Select specification (optional)</option>';
@@ -655,10 +655,23 @@
   $('materialId').addEventListener('change', async e => {
       state.draft.materialId = Number(e.target.value) || null;
       const selected = e.target.selectedOptions[0];
-      state.draft.materialName = selected?.textContent || '';
+      const rawText = selected?.textContent || '';
+      state.draft.materialName = rawText.includes(' - ₹') ? rawText.split(' - ₹')[0].trim() : rawText.trim();
+      state.draft.formula = selected?.dataset?.formula || '(L + W) × H';
 
-      const configuredFormula = selected?.dataset?.formula || '(L + W) × H';
-      state.draft.formula = configuredFormula;
+      const configuredRate = selected?.dataset?.rate;
+      const configuredUnit = selected?.dataset?.unit || 'Sq.ft';
+      const configuredSpec = selected?.dataset?.spec || '';
+
+      if (configuredRate !== undefined && configuredRate !== '' && configuredRate !== 'null') {
+          state.draft.rate = Number(configuredRate);
+          state.draft.unit = configuredUnit;
+          state.draft.measurementUnit = configuredUnit;
+          state.draft.pricingUnit = '₹ / ' + configuredUnit;
+      }
+      if (configuredSpec && !$('specification').value.trim()) {
+          $('specification').value = configuredSpec;
+      }
 
       const badge = $('materialFormulaBadge');
       if (badge) {
@@ -669,18 +682,28 @@
               badge.style.display = 'none';
           }
       }
-
       applyFormulaToAllRows();
-
       const options = state.draft.materialId ? await getJson(`${API_BASE}/material-options?materialId=${state.draft.materialId}`) : [];
       if (!options || options.length === 0) {
-          $('materialOptionId').innerHTML = '<option value="">No predefined options (enter custom specification below)</option>';
+          $('materialOptionId').innerHTML = '<option value="">Standard Material Option</option>';
+          state.draft.materialOptionId = null;
+          state.draft.materialOptionName = state.draft.materialName;
       } else {
           $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+          if (options.length === 1) {
+              $('materialOptionId').value = options[0].id;
+              state.draft.materialOptionId = options[0].id;
+              state.draft.materialOptionName = options[0].name;
+          } else {
+              state.draft.materialOptionId = null;
+              state.draft.materialOptionName = '';
+          }
       }
-      state.draft.materialOptionId = null; state.draft.materialOptionName = ''; state.draft.rate = 0;
       state.draft.materialSpecificationId = null; state.draft.materialSpecificationName = '';
-      await loadSpecifications(null, state.draft.materialId);
+      await loadSpecifications(state.draft.materialOptionId, state.draft.materialId);
+      if (state.draft.materialOptionId && (!state.draft.rate || state.draft.rate === 0)) {
+          await refreshDraftRate();
+      }
       renderMaterialDetails();
       calculateDraft();
   });
@@ -709,17 +732,25 @@
   });
 
   async function refreshDraftRate() {
-      if (!state.draft?.materialOptionId || !$('branchId').value) { state.draft.rate = 0; calculateDraft(); return; }
+      if (state.draft?.rate && state.draft?.rate > 0 && (!state.draft?.materialOptionId || state.draft?.materialOptionName === state.draft?.materialName)) {
+          calculateDraft();
+          return;
+      }
+      if (!state.draft?.materialOptionId || !$('branchId').value) {
+          if (!state.draft?.rate) state.draft.rate = 0;
+          calculateDraft();
+          return;
+      }
       try {
-          const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&pricingMode=${state.pricingMode}`);
+          const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&materialId=${state.draft.materialId || ''}&pricingMode=${state.pricingMode}`);
           state.draft.rate = Number(data.rate || 0);
           state.draft.formula = data.formula || '(L + W) × H';
-          state.draft.unit = 'SQFT';
-          state.draft.measurementUnit = 'sq.ft';
-          state.draft.pricingUnit = '₹ / SQFT';
+          state.draft.unit = data.unit || 'SQFT';
+          state.draft.measurementUnit = data.measurementUnit || 'sq.ft';
+          state.draft.pricingUnit = data.pricingUnit || '₹ / SQFT';
           $('pricingMessage').textContent = '';
       } catch (e) {
-          state.draft.rate = 0;
+          if (!state.draft?.rate) state.draft.rate = 0;
           $('pricingMessage').textContent = e.message;
       }
       calculateDraft();
@@ -805,7 +836,7 @@
   }
 
   function addDraftToRoom() {
-      if (!state.draft || !state.draft.materialOptionId) return alert('Select a material option.');
+      if (!state.draft || (!state.draft.materialId && !state.draft.materialOptionId)) return alert('Select a material.');
       const sizes=readSizes();
       if (sizes.length === 0) return alert('Add at least one size.');
       const formula = (state.draft.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
@@ -924,11 +955,19 @@
 
   async function recalculateAll() {
       state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
+      if (state.draft && state.draft.divisionId) {
+          const materials = await getJson(`${API_BASE}/materials?divisionId=${state.draft.divisionId}&pricingGrade=${state.pricingMode}`);
+          if (!materials || materials.length === 0) {
+              $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
+          } else {
+              $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${m.rate != null ? m.rate : ''}">${esc(m.name)}${m.rate != null ? ' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft') : ''}</option>`).join('');
+          }
+      }
       if (!state.rooms.some(r=>r.items.length)) return;
       const requests=[];
       state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{
           if(!$('branchId').value)return;
-          const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId}&pricingMode=${state.pricingMode}`);
+          const data=await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${item.materialOptionId || ''}&materialId=${item.materialId || ''}&pricingMode=${state.pricingMode}`);
           item.rate=Number(data.rate||0);
           if (data.formula) item.formula = data.formula;
           if (data.unit) item.unit = data.unit;

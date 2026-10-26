@@ -323,16 +323,23 @@ public class AdminQuotationBuilderService {
                     }
                 }
 
-                MaterialOption option =
-                        materialOptionRepository
-                                .findById(
-                                        itemRequest.materialOptionId()
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalArgumentException(
-                                                "Material option not found."
-                                        )
-                                );
+                MaterialOption option = null;
+                if (itemRequest.materialOptionId() != null) {
+                    option = materialOptionRepository.findById(itemRequest.materialOptionId()).orElse(null);
+                }
+                if (option == null) {
+                    List<MaterialOption> existingOpts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(material.getId());
+                    if (!existingOpts.isEmpty()) {
+                        option = existingOpts.get(0);
+                    } else {
+                        MaterialOption opt = new MaterialOption();
+                        opt.setName(material.getName());
+                        opt.setMaterial(material);
+                        opt.setDescription(material.getDescription());
+                        opt.setActive(true);
+                        option = materialOptionRepository.save(opt);
+                    }
+                }
 
                 // -------------------------------------------------
                 // Validate hierarchy
@@ -381,12 +388,21 @@ public class AdminQuotationBuilderService {
                 // Resolve rate ONCE for this item
                 // -------------------------------------------------
 
-                BigDecimal rate =
-                        resolveRate(
+                BigDecimal rate = null;
+                if (material.getRate() != null && (material.getPricingGrade() == null || material.getPricingGrade() == request.pricingMode())) {
+                    rate = material.getRate();
+                }
+                if (rate == null) {
+                    try {
+                        rate = resolveRate(
                                 request.branchId(),
                                 option.getId(),
                                 request.pricingMode()
                         );
+                    } catch (Exception e) {
+                        rate = material.getRate() != null ? material.getRate() : BigDecimal.ZERO;
+                    }
+                }
 
                 Pricing itemPricing = pricingRepository
                         .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())

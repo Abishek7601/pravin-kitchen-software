@@ -461,4 +461,154 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertEquals("🚪", reloaded.getIcon(), "Category emoji must be updated to 🚪");
         assertEquals(updatedDesc, reloaded.getDescription(), "Category description must be updated");
     }
+
+    @Autowired
+    private com.example.pravin_quotation.repository.DivisionRepository divisionRepository;
+
+    @Autowired
+    private com.example.pravin_quotation.repository.ItemRepository itemRepository;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Test
+    @DisplayName("Req 10: Category management page includes View button in Actions column alongside Edit and Delete")
+    public void testCategoryPageHasViewButtonAndActions() throws Exception {
+        Resource templateResource = resourceLoader.getResource("classpath:templates/admin/work-categories.html");
+        assertTrue(templateResource.exists(), "work-categories.html template must exist");
+
+        String html;
+        try (InputStream is = templateResource.getInputStream()) {
+            html = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        // 1. Actions column must contain View, Edit, and Delete
+        assertTrue(html.contains("js-view-category-btn"),
+                "Category page table must contain View button with class 'js-view-category-btn'");
+        assertTrue(html.contains("view-btn"),
+                "Category page table must contain 'view-btn' class on the View button");
+        assertTrue(html.contains("js-edit-category-btn"),
+                "Category page table must preserve 'js-edit-category-btn'");
+        assertTrue(html.contains("delete-btn"),
+                "Category page table must preserve 'delete-btn'");
+
+        // 2. Both existing table template and dynamic row creation include View button
+        assertTrue(html.contains("data-id=\"' + category.id + '\"") && html.contains("title=\"View Category Work Types\""),
+                "Dynamic JavaScript row creation in addCategoryRowToTable must also include the View button");
+    }
+
+    @Test
+    @DisplayName("Req 11: Category management page contains View Category Work Types modal popup")
+    public void testCategoryPageHasViewWorkTypesModal() throws Exception {
+        Resource templateResource = resourceLoader.getResource("classpath:templates/admin/work-categories.html");
+        assertTrue(templateResource.exists(), "work-categories.html template must exist");
+
+        String html;
+        try (InputStream is = templateResource.getInputStream()) {
+            html = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        // 1. View modal dialog exists
+        assertTrue(html.contains("id=\"viewWorkTypesModal\""),
+                "Category page must contain View Work Types modal with id 'viewWorkTypesModal'");
+
+        // 2. Header contains title, emoji badge, and close button
+        assertTrue(html.contains("id=\"viewModalTitle\""),
+                "View modal must contain 'viewModalTitle'");
+        assertTrue(html.contains("id=\"viewModalHeaderBadge\""),
+                "View modal must contain 'viewModalHeaderBadge'");
+        assertTrue(html.contains("id=\"viewModalCloseXBtn\""),
+                "View modal must contain 'viewModalCloseXBtn'");
+
+        // 3. Total count element exists
+        assertTrue(html.contains("id=\"viewWorkTypesCount\""),
+                "View modal must contain 'viewWorkTypesCount'");
+
+        // 4. Grid and empty state exist
+        assertTrue(html.contains("id=\"viewWorkTypesGrid\""),
+                "View modal must contain 'viewWorkTypesGrid'");
+        assertTrue(html.contains("id=\"viewWorkTypesEmpty\""),
+                "View modal must contain 'viewWorkTypesEmpty'");
+        assertTrue(html.contains("No work types found in this category"),
+                "View modal must contain clear empty state message: 'No work types found in this category'");
+
+        // 5. Footer Close button exists
+        assertTrue(html.contains("id=\"viewModalCloseBtn\""),
+                "View modal must contain 'viewModalCloseBtn'");
+    }
+
+    @Test
+    @DisplayName("Req 12: GET /admin/work-categories/{id}/work-types returns dynamically loaded work types from MySQL")
+    public void testViewCategoryWorkTypesEndpointReturnsAssociatedItems() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Use category Modular kitchen (or find an active category with divisions)
+        WorkCategory cat = workCategoryRepository.findAll().stream()
+                .filter(c -> c.getName() != null && c.getName().toLowerCase().contains("kitchen"))
+                .findFirst()
+                .orElseGet(() -> workCategoryRepository.findAll().get(0));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + cat.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(cat.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity,
+                "viewCategory with AJAX/work-types route must return ResponseEntity");
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")));
+        assertEquals(cat.getId(), body.get("categoryId"));
+        assertNotNull(body.get("categoryName"));
+        assertNotNull(body.get("totalCount"));
+        assertTrue(body.get("workTypes") instanceof java.util.List);
+
+        int totalCount = (int) body.get("totalCount");
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> workTypes = (java.util.List<java.util.Map<String, Object>>) body.get("workTypes");
+        assertEquals(totalCount, workTypes.size(), "totalCount must match the actual workTypes list size");
+
+        // Verify each work type has id, name, emoji, active
+        for (java.util.Map<String, Object> wt : workTypes) {
+            assertNotNull(wt.get("name"), "Work type must have a name");
+            assertNotNull(wt.get("emoji"), "Work type must have an emoji");
+        }
+    }
+
+    @Test
+    @DisplayName("Req 13: View Category Work Types handles empty state for categories without items")
+    public void testViewCategoryWorkTypesEmptyState() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Create empty category with no divisions/items
+        WorkCategory emptyCat = new WorkCategory();
+        emptyCat.setName("BALCONY_EMPTY_" + System.currentTimeMillis());
+        emptyCat.setIcon("🌿");
+        emptyCat.setActive(true);
+        WorkCategory saved = workCategoryRepository.save(emptyCat);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + saved.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(saved.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity);
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")));
+        assertEquals(0, body.get("totalCount"), "Empty category must have totalCount 0");
+        @SuppressWarnings("unchecked")
+        java.util.List<?> list = (java.util.List<?>) body.get("workTypes");
+        assertTrue(list.isEmpty(), "Empty category workTypes list must be empty");
+    }
 }

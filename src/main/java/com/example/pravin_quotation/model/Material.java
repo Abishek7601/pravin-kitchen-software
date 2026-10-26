@@ -1,6 +1,7 @@
 package com.example.pravin_quotation.model;
 
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashSet;
@@ -29,6 +30,23 @@ public class Material {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "item_id", nullable = true)
     private Item item;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "division_id", nullable = true)
+    private Division division;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_grade", length = 30)
+    private PricingMode pricingGrade;
+
+    @Column(name = "rate", precision = 15, scale = 2)
+    private BigDecimal rate;
+
+    @Column(name = "unit", length = 30)
+    private String unit = "Sq.ft";
+
+    @Column(name = "specification", length = 500)
+    private String specification;
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -139,6 +157,58 @@ public class Material {
         this.item = item;
     }
 
+    public Division getDivision() {
+        if (division != null) {
+            return division;
+        }
+        if (divisions != null && !divisions.isEmpty()) {
+            return divisions.iterator().next();
+        }
+        if (item != null && item.getDivision() != null) {
+            return item.getDivision();
+        }
+        return null;
+    }
+
+    public void setDivision(Division division) {
+        this.division = division;
+        if (division != null) {
+            addDivision(division);
+        }
+    }
+
+    public PricingMode getPricingGrade() {
+        return pricingGrade;
+    }
+
+    public void setPricingGrade(PricingMode pricingGrade) {
+        this.pricingGrade = pricingGrade;
+    }
+
+    public BigDecimal getRate() {
+        return rate;
+    }
+
+    public void setRate(BigDecimal rate) {
+        this.rate = rate;
+    }
+
+    public String getUnit() {
+        return (unit != null && !unit.isBlank()) ? unit : "Sq.ft";
+    }
+
+    public void setUnit(String unit) {
+        this.unit = unit;
+    }
+
+    public String getSpecification() {
+        return specification;
+    }
+
+    public void setSpecification(String specification) {
+        this.specification = specification;
+    }
+
     public Set<Division> getDivisions() {
         return divisions;
     }
@@ -160,6 +230,9 @@ public class Material {
     }
 
     public List<String> getDivisionNames() {
+        if (division != null) {
+            return List.of(division.getName());
+        }
         if (divisions == null || divisions.isEmpty()) {
             if (item != null && item.getDivision() != null) {
                 return List.of(item.getDivision().getName());
@@ -177,6 +250,9 @@ public class Material {
 
     public boolean hasDivision(Long divisionId) {
         if (divisionId == null) return false;
+        if (division != null && divisionId.equals(division.getId())) {
+            return true;
+        }
         if (divisions != null) {
             for (Division d : divisions) {
                 if (d != null && divisionId.equals(d.getId())) {
@@ -192,6 +268,10 @@ public class Material {
 
     public Boolean getActive() {
         return active;
+    }
+
+    public boolean isActive() {
+        return Boolean.TRUE.equals(this.active);
     }
 
     public void setActive(Boolean active) {
