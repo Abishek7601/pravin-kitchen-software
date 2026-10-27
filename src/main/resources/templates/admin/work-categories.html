@@ -701,21 +701,21 @@
                                 <strong style="font-size: 13px; color: #024541; display: flex; align-items: center; gap: 5px;">
                                     <span>🏬</span> Branch-Wise Material Rates <span style="color: #dc2626;">*</span>
                                 </strong>
-                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
-                                    Set separate rates (₹) for each branch across Premium, Middle / Standard, and Economy grades.
+                                <div id="branchPricingSubtitle" style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                    Showing branch rates for <span id="currentGradeNameText" style="font-weight: 700; color: #024541;">💎 Premium</span>. Select a grade from the top tabs above to configure rates for other grades.
                                 </div>
                             </div>
-                            <span id="branchCountBadge" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Loading branches...</span>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                                <span id="branchCountBadge" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Loading branches...</span>
+                            </div>
                         </div>
 
                         <div style="overflow-x: auto; max-height: 280px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
                             <table class="branch-pricing-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
                                 <thead style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 1;">
                                     <tr>
-                                        <th style="padding: 8px 12px; text-align: left; font-weight: 700; color: #334155; font-size: 11px; text-transform: uppercase;">Branch</th>
-                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #065f46; font-size: 11px; text-transform: uppercase;">💎 Premium (₹)</th>
-                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #0284c7; font-size: 11px; text-transform: uppercase;">⚖️ Middle (₹)</th>
-                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #166534; font-size: 11px; text-transform: uppercase;">🌱 Economy (₹)</th>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 700; color: #334155; font-size: 11px; text-transform: uppercase; width: 55%;">Branch</th>
+                                        <th id="branchRateColumnHeader" style="padding: 8px 12px; text-align: right; font-weight: 700; color: #065f46; font-size: 11px; text-transform: uppercase;">💎 Premium Rate (₹)</th>
                                     </tr>
                                 </thead>
                                 <tbody id="branchPricingTableBody">
@@ -1950,15 +1950,87 @@
 
         var branchPricingTableBody = document.getElementById('branchPricingTableBody');
         var branchCountBadge = document.getElementById('branchCountBadge');
+        var formBranchRates = {};
 
-        function renderBranchPricingRows(branches, existingRates) {
+        function syncVisibleInputsToState() {
             if (!branchPricingTableBody) return;
-            branchPricingTableBody.innerHTML = '';
+            var inputs = branchPricingTableBody.querySelectorAll('.branch-rate-field');
+            inputs.forEach(function(inp) {
+                var bId = inp.getAttribute('data-branch-id');
+                var gr = inp.getAttribute('data-grade');
+                var val = (inp.value || '').trim();
+                if (bId && gr) {
+                    if (!formBranchRates[bId]) formBranchRates[bId] = {};
+                    if (val !== '') {
+                        formBranchRates[bId][gr] = val;
+                    } else {
+                        delete formBranchRates[bId][gr];
+                    }
+                }
+            });
+            updateBranchGradeBadges();
+        }
 
+        function updateBranchGradeBadges() {
+            var pCount = 0, mCount = 0, eCount = 0;
+            Object.keys(formBranchRates).forEach(function(bId) {
+                var br = formBranchRates[bId] || {};
+                if (br.PREMIUM != null && String(br.PREMIUM).trim() !== '') pCount++;
+                if (br.MIDDLE != null && String(br.MIDDLE).trim() !== '') mCount++;
+                if (br.ECONOMY != null && String(br.ECONOMY).trim() !== '') eCount++;
+            });
+            var badgeP = document.getElementById('badgeBranchPremRates');
+            var badgeM = document.getElementById('badgeBranchMidRates');
+            var badgeE = document.getElementById('badgeBranchEcoRates');
+            if (badgeP) badgeP.textContent = pCount;
+            if (badgeM) badgeM.textContent = mCount;
+            if (badgeE) badgeE.textContent = eCount;
+        }
+
+        function renderBranchPricingRows(branches, activeGrade) {
+            if (!branchPricingTableBody) return;
+            var grade = activeGrade || activeMaterialsGrade || 'PREMIUM';
+
+            var headerEl = document.getElementById('branchRateColumnHeader');
+            var subtitleEl = document.getElementById('branchPricingSubtitle');
+            var gradeTextEl = document.getElementById('currentGradeNameText');
+
+            var gradeLabel = 'Premium';
+            var colTitle = 'Premium Rate (₹)';
+            var colColor = '#065f46';
+            var colBg = '#fafdfb';
+            var gradeEmoji = '💎';
+
+            if (grade === 'MIDDLE') {
+                gradeLabel = 'Middle / Standard';
+                colTitle = 'Middle / Standard Rate (₹)';
+                colColor = '#0284c7';
+                colBg = '#fafcff';
+                gradeEmoji = '⚖️';
+            } else if (grade === 'ECONOMY') {
+                gradeLabel = 'Economy';
+                colTitle = 'Economy Rate (₹)';
+                colColor = '#166534';
+                colBg = '#fcfdfa';
+                gradeEmoji = '🌱';
+            }
+
+            if (headerEl) {
+                headerEl.innerHTML = '<span style="color: ' + colColor + ';">' + gradeEmoji + ' ' + escapeHtml(colTitle) + '</span>';
+            }
+            if (gradeTextEl) {
+                gradeTextEl.textContent = gradeEmoji + ' ' + gradeLabel;
+                gradeTextEl.style.color = colColor;
+            }
+            if (subtitleEl) {
+                subtitleEl.innerHTML = 'Showing branch rates for <span style="font-weight: 700; color: ' + colColor + ';">' + gradeEmoji + ' ' + gradeLabel + '</span>. Use the top grade tabs above to view and set rates for other grades.';
+            }
+
+            branchPricingTableBody.innerHTML = '';
             var bList = (branches && Array.isArray(branches)) ? branches : [];
             if (bList.length === 0) {
                 if (branchCountBadge) branchCountBadge.textContent = '0 Branches';
-                branchPricingTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 14px;">No active branches found in database.</td></tr>';
+                branchPricingTableBody.innerHTML = '<tr><td colspan="2" style="text-align: center; color: #64748b; padding: 14px;">No active branches found in database.</td></tr>';
                 return;
             }
 
@@ -1969,38 +2041,28 @@
             bList.forEach(function(branch) {
                 var bId = branch.id;
                 var bName = branch.name || ('Branch #' + bId);
-                var ratesForBranch = (existingRates && (existingRates[bId] || existingRates[String(bId)])) || {};
-
-                var pVal = (ratesForBranch.PREMIUM != null && ratesForBranch.PREMIUM !== '') ? ratesForBranch.PREMIUM : '';
-                var mVal = (ratesForBranch.MIDDLE != null && ratesForBranch.MIDDLE !== '') ? ratesForBranch.MIDDLE : '';
-                var eVal = (ratesForBranch.ECONOMY != null && ratesForBranch.ECONOMY !== '') ? ratesForBranch.ECONOMY : '';
+                var branchRates = formBranchRates[bId] || formBranchRates[String(bId)] || {};
+                var currentVal = (branchRates[grade] != null && branchRates[grade] !== '') ? branchRates[grade] : '';
 
                 var tr = document.createElement('tr');
                 tr.style.borderBottom = '1px solid #f1f5f9';
                 tr.innerHTML =
-                    '<td style="padding: 10px 12px; font-weight: 600; color: #1e293b; vertical-align: middle;">' +
+                    '<td style="padding: 10px 12px; font-weight: 600; color: #1e293b; vertical-align: middle; width: 55%;">' +
                         '<span style="font-size: 13px; display: flex; align-items: center; gap: 4px;">📍 ' + escapeHtml(bName) + '</span>' +
                     '</td>' +
-                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
+                    '<td style="padding: 6px 12px; vertical-align: middle;">' +
                         '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
-                            'data-branch-id="' + bId + '" data-grade="PREMIUM" value="' + (pVal !== '' ? Number(pVal) : '') + '" ' +
-                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #065f46; background: #fafdfb;">' +
-                    '</td>' +
-                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
-                        '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
-                            'data-branch-id="' + bId + '" data-grade="MIDDLE" value="' + (mVal !== '' ? Number(mVal) : '') + '" ' +
-                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #0284c7; background: #fafcff;">' +
-                    '</td>' +
-                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
-                        '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
-                            'data-branch-id="' + bId + '" data-grade="ECONOMY" value="' + (eVal !== '' ? Number(eVal) : '') + '" ' +
-                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #166534; background: #fcfdfa;">' +
+                            'data-branch-id="' + bId + '" data-grade="' + grade + '" value="' + (currentVal !== '' ? Number(currentVal) : '') + '" ' +
+                            'style="width: 100%; text-align: right; padding: 7px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; font-weight: 600; color: ' + colColor + '; background: ' + colBg + ';">' +
                     '</td>';
                 branchPricingTableBody.appendChild(tr);
             });
+
+            updateBranchGradeBadges();
         }
 
         function hideMaterialForm() {
+            formBranchRates = {};
             if (materialFormContainer) materialFormContainer.style.display = 'none';
             if (materialFormAlert) materialFormAlert.style.display = 'none';
             if (materialIdInput) materialIdInput.value = '';
@@ -2010,11 +2072,63 @@
             if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
             if (materialFormulaSelect) materialFormulaSelect.value = 'L × W';
             updateFormulaDescription();
-            renderBranchPricingRows(currentMaterialsData ? currentMaterialsData.branches : [], null);
+            renderBranchPricingRows(currentMaterialsData ? currentMaterialsData.branches : [], activeMaterialsGrade);
             if (saveMaterialBtn) {
                 saveMaterialBtn.disabled = false;
                 saveMaterialBtn.textContent = 'Save Material';
             }
+        }
+
+        function switchGradeTab(newGrade) {
+            if (!newGrade) return;
+
+            // 1. Immediately capture any unsaved values in visible inputs
+            syncVisibleInputsToState();
+
+            // 2. Set active grade
+            activeMaterialsGrade = newGrade;
+            if (materialGradeSelect) {
+                materialGradeSelect.value = newGrade;
+            }
+
+            // 3. Update top tabs UI
+            var tabs = document.querySelectorAll('.grade-tab-btn');
+            tabs.forEach(function(btn) {
+                var g = btn.getAttribute('data-grade');
+                var countBadge = btn.querySelector('.grade-count-badge');
+                if (g === newGrade) {
+                    btn.classList.add('active');
+                    btn.style.color = '#024541';
+                    btn.style.borderBottom = '3px solid #024541';
+                    if (countBadge) {
+                        countBadge.style.background = '#024541';
+                        countBadge.style.color = '#ffffff';
+                    }
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = '#64748b';
+                    btn.style.borderBottom = '3px solid transparent';
+                    if (countBadge) {
+                        countBadge.style.background = '#e2e8f0';
+                        countBadge.style.color = '#475569';
+                    }
+                }
+            });
+
+            // 4. If material form is open, re-render branch rate table for newGrade WITHOUT closing modal or losing inputs
+            if (materialFormContainer && materialFormContainer.style.display !== 'none') {
+                var branches = (currentMaterialsData && currentMaterialsData.branches) ? currentMaterialsData.branches : [];
+                renderBranchPricingRows(branches, newGrade);
+
+                var isEdit = materialIdInput && materialIdInput.value && materialIdInput.value !== '0';
+                if (materialFormTitle && !isEdit) {
+                    var gradeLabel = newGrade === 'PREMIUM' ? 'Premium' : (newGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
+                    materialFormTitle.textContent = 'Add Material to ' + gradeLabel;
+                }
+            }
+
+            // 5. Update materials list container below
+            renderMaterialsForGrade(newGrade);
         }
 
         function openMaterialForm(mat) {
@@ -2023,14 +2137,17 @@
             if (materialFormAlert) materialFormAlert.style.display = 'none';
 
             var isEdit = mat && mat.id;
+            var targetGrade = isEdit ? (mat.pricingGrade || activeMaterialsGrade) : activeMaterialsGrade;
+            activeMaterialsGrade = targetGrade;
+
             if (materialFormTitle) {
-                var gradeLabel = activeMaterialsGrade === 'PREMIUM' ? 'Premium' : (activeMaterialsGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
+                var gradeLabel = targetGrade === 'PREMIUM' ? 'Premium' : (targetGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
                 materialFormTitle.textContent = isEdit ? 'Edit Material' : ('Add Material to ' + gradeLabel);
             }
 
             if (materialIdInput) materialIdInput.value = isEdit ? mat.id : '';
             if (materialNameInput) materialNameInput.value = isEdit ? (mat.name || '') : '';
-            if (materialGradeSelect) materialGradeSelect.value = isEdit ? (mat.pricingGrade || activeMaterialsGrade) : activeMaterialsGrade;
+            if (materialGradeSelect) materialGradeSelect.value = targetGrade;
             if (materialFormulaSelect) {
                 materialFormulaSelect.value = isEdit ? (mat.formula || 'L × W') : 'L × W';
             }
@@ -2039,9 +2156,46 @@
             if (materialUnitSelect) materialUnitSelect.value = isEdit ? (mat.unit || 'Sq.ft') : 'Sq.ft';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
 
+            // Populate formBranchRates from saved material data
+            formBranchRates = {};
+            if (mat && mat.branchRates) {
+                Object.keys(mat.branchRates).forEach(function(bId) {
+                    formBranchRates[bId] = {};
+                    var rObj = mat.branchRates[bId];
+                    if (rObj) {
+                        if (rObj.PREMIUM != null && rObj.PREMIUM !== '') formBranchRates[bId]['PREMIUM'] = String(rObj.PREMIUM);
+                        if (rObj.MIDDLE != null && rObj.MIDDLE !== '') formBranchRates[bId]['MIDDLE'] = String(rObj.MIDDLE);
+                        if (rObj.ECONOMY != null && rObj.ECONOMY !== '') formBranchRates[bId]['ECONOMY'] = String(rObj.ECONOMY);
+                    }
+                });
+            }
+
             var branches = (currentMaterialsData && currentMaterialsData.branches) ? currentMaterialsData.branches : [];
-            var existingRates = (mat && mat.branchRates) ? mat.branchRates : null;
-            renderBranchPricingRows(branches, existingRates);
+            renderBranchPricingRows(branches, targetGrade);
+
+            // Sync top tab UI to targetGrade
+            var tabs = document.querySelectorAll('.grade-tab-btn');
+            tabs.forEach(function(btn) {
+                var g = btn.getAttribute('data-grade');
+                var countBadge = btn.querySelector('.grade-count-badge');
+                if (g === targetGrade) {
+                    btn.classList.add('active');
+                    btn.style.color = '#024541';
+                    btn.style.borderBottom = '3px solid #024541';
+                    if (countBadge) {
+                        countBadge.style.background = '#024541';
+                        countBadge.style.color = '#ffffff';
+                    }
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = '#64748b';
+                    btn.style.borderBottom = '3px solid transparent';
+                    if (countBadge) {
+                        countBadge.style.background = '#e2e8f0';
+                        countBadge.style.color = '#475569';
+                    }
+                }
+            });
 
             materialFormContainer.style.display = 'block';
             materialFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2228,7 +2382,7 @@
             }
         }
 
-        // Grade Tab switching event
+        // Grade Tab switching event (top bar)
         var gradeTabsContainer = document.querySelector('.materials-grade-tabs');
         if (gradeTabsContainer) {
             gradeTabsContainer.addEventListener('click', function(e) {
@@ -2236,9 +2390,18 @@
                 if (tabBtn) {
                     var grade = tabBtn.getAttribute('data-grade');
                     if (grade) {
-                        hideMaterialForm();
-                        renderMaterialsForGrade(grade);
+                        switchGradeTab(grade);
                     }
+                }
+            });
+        }
+
+
+        // Real-time input listener for branch rate inputs
+        if (branchPricingTableBody) {
+            branchPricingTableBody.addEventListener('input', function(e) {
+                if (e.target && e.target.classList.contains('branch-rate-field')) {
+                    syncVisibleInputsToState();
                 }
             });
         }
@@ -2268,6 +2431,9 @@
             saveMaterialBtn.addEventListener('click', function() {
                 if (!currentMaterialsWorkType) return;
 
+                // Sync current visible inputs to formBranchRates state
+                syncVisibleInputsToState();
+
                 var idVal = (materialIdInput ? materialIdInput.value : '').trim();
                 var nameVal = (materialNameInput ? materialNameInput.value : '').trim();
                 var gradeVal = (materialGradeSelect ? materialGradeSelect.value : activeMaterialsGrade).trim();
@@ -2283,27 +2449,25 @@
                     return;
                 }
 
-                // Collect and validate branch-wise rates
+                // Collect and validate branch-wise rates across ALL tabs (visible & hidden)
                 var branchRatesObj = {};
-                var branchRateFields = document.querySelectorAll('.branch-rate-field');
                 var hasAnyBranchRate = false;
                 var rateValidationError = null;
 
-                branchRateFields.forEach(function(field) {
-                    var bId = field.getAttribute('data-branch-id');
-                    var gr = field.getAttribute('data-grade');
-                    var val = (field.value || '').trim();
-
-                    if (val !== '') {
-                        var num = Number(val);
-                        if (isNaN(num) || num < 0) {
-                            rateValidationError = 'All branch rates must be numeric and non-negative (>= 0).';
-                            return;
+                Object.keys(formBranchRates).forEach(function(bId) {
+                    ['PREMIUM', 'MIDDLE', 'ECONOMY'].forEach(function(gr) {
+                        var val = formBranchRates[bId][gr];
+                        if (val != null && String(val).trim() !== '') {
+                            var num = Number(val);
+                            if (isNaN(num) || num < 0) {
+                                rateValidationError = 'All branch rates must be numeric and non-negative (>= 0).';
+                                return;
+                            }
+                            if (!branchRatesObj[bId]) branchRatesObj[bId] = {};
+                            branchRatesObj[bId][gr] = num;
+                            hasAnyBranchRate = true;
                         }
-                        if (!branchRatesObj[bId]) branchRatesObj[bId] = {};
-                        branchRatesObj[bId][gr] = num;
-                        hasAnyBranchRate = true;
-                    }
+                    });
                 });
 
                 if (rateValidationError) {
