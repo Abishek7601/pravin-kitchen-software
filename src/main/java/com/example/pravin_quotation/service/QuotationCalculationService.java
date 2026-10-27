@@ -715,9 +715,14 @@ public class QuotationCalculationService {
                     .orElse(null);
             if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
                 return money(dp.getRate());
-            } else {
-                throw new IllegalArgumentException("No rate has been configured for branch '" + quotation.getBranch().getName() + "' under " + pricingMode.name() + " pricing grade.");
             }
+
+            boolean hasBranchRates = districtPricingRepository.existsByPricingIdAndActiveTrue(pricing.getId());
+            if (!hasBranchRates && pricing.getRate() != null) {
+                return money(pricing.getRate());
+            }
+
+            throw new IllegalArgumentException("No rate has been configured for branch '" + quotation.getBranch().getName() + "' under " + pricingMode.name() + " pricing grade.");
         }
 
         return money(pricing.getRate());

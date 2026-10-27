@@ -76,6 +76,9 @@ public class CustomerDetailsCapitalizationTest {
     private PricingRepository pricingRepository;
 
     @Autowired
+    private com.example.pravin_quotation.repository.DistrictPricingRepository districtPricingRepository;
+
+    @Autowired
     private ITemplateEngine templateEngine;
 
     private User adminUser;
@@ -160,17 +163,27 @@ public class CustomerDetailsCapitalizationTest {
             return materialOptionRepository.save(opt);
         });
 
-        pricingRepository.findByMaterialOptionIdAndPricingMode(materialOption.getId(), PricingMode.MIDDLE)
+        Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOption.getId(), PricingMode.MIDDLE)
                 .orElseGet(() -> {
-                    Pricing p = new Pricing();
-                    p.setMaterialOption(materialOption);
-                    p.setPricingMode(PricingMode.MIDDLE);
-                    p.setRate(new BigDecimal("350.00"));
-                    p.setFormula("(L + W) * H");
-                    p.setUnit("SQFT");
-                    p.setActive(true);
-                    return pricingRepository.save(p);
+                    Pricing newP = new Pricing();
+                    newP.setMaterialOption(materialOption);
+                    newP.setPricingMode(PricingMode.MIDDLE);
+                    newP.setRate(new BigDecimal("350.00"));
+                    newP.setFormula("(L + W) * H");
+                    newP.setUnit("SQFT");
+                    newP.setActive(true);
+                    return pricingRepository.save(newP);
                 });
+
+        com.example.pravin_quotation.model.DistrictPricing dp = districtPricingRepository.findByBranchIdAndPricingId(branch.getId(), p.getId()).orElse(null);
+        if (dp == null) {
+            dp = new com.example.pravin_quotation.model.DistrictPricing();
+            dp.setBranch(branch);
+            dp.setPricing(p);
+            dp.setRate(new BigDecimal("350.00"));
+            dp.setActive(true);
+            districtPricingRepository.save(dp);
+        }
     }
 
     private AdminQuotationBuilderService.BuilderRequest createBuilderRequest(

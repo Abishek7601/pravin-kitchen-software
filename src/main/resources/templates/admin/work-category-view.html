@@ -449,7 +449,7 @@
       <!-- DIVISION TITLE ROW -->
       <div class="div-title-row">
         <div class="div-title">
-          <span th:text="${dStat.count} + '. ' + (dDto.division.name != null ? dDto.division.name.toUpperCase() : '')">1. SHOE CABINET</span>
+          <span th:text="${dStat.count + '. ' + (dDto.division.name != null ? dDto.division.name.toUpperCase() : '')}">1. SHOE CABINET</span>
           <span th:if="${dDto.division.description != null and !dDto.division.description.isBlank()}"
                 class="text-muted" style="font-size: 12px; font-weight: normal; text-transform: none;"
                 th:text="'— ' + ${dDto.division.description}"></span>

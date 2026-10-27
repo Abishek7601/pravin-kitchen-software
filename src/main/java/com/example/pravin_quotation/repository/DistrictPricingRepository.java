@@ -35,6 +35,8 @@ public interface DistrictPricingRepository extends JpaRepository<DistrictPricing
 
     boolean existsByPricingId(Long pricingId);
 
+    boolean existsByPricingIdAndActiveTrue(Long pricingId);
+
     List<DistrictPricing> findAllByOrderByCreatedAtDesc();
 
     List<DistrictPricing> findByActiveTrueOrderByCreatedAtDesc();

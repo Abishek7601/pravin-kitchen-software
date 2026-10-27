@@ -67,6 +67,9 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
     private PricingRepository pricingRepository;
 
     @Autowired
+    private com.example.pravin_quotation.repository.DistrictPricingRepository districtPricingRepository;
+
+    @Autowired
     private ITemplateEngine templateEngine;
 
     private User employeeA;
@@ -193,8 +196,13 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
         pricing.setRate(new BigDecimal("450.00"));
         pricing.setFormula("(L + W) * H");
         pricing.setUnit("SQFT");
-        pricing.setActive(true);
-        pricingRepository.save(pricing);
+        Pricing savedPricing = pricingRepository.save(pricing);
+        com.example.pravin_quotation.model.DistrictPricing dp = new com.example.pravin_quotation.model.DistrictPricing();
+        dp.setBranch(branch);
+        dp.setPricing(savedPricing);
+        dp.setRate(new BigDecimal("450.00"));
+        dp.setActive(true);
+        districtPricingRepository.save(dp);
 
         // Verify divisions endpoint
         List<Map<String, Object>> divisions = employeeQuotationController.builderDivisions(cat.getId());
@@ -268,17 +276,27 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
             return materialOptionRepository.save(o);
         });
 
-        pricingRepository.findByMaterialOptionIdAndPricingMode(opt.getId(), PricingMode.MIDDLE)
+        Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(opt.getId(), PricingMode.MIDDLE)
                 .orElseGet(() -> {
-                    Pricing p = new Pricing();
-                    p.setMaterialOption(opt);
-                    p.setPricingMode(PricingMode.MIDDLE);
-                    p.setRate(new BigDecimal("350.00"));
-                    p.setFormula("(L + W) * H");
-                    p.setUnit("SQFT");
-                    p.setActive(true);
-                    return pricingRepository.save(p);
+                    Pricing pNew = new Pricing();
+                    pNew.setMaterialOption(opt);
+                    pNew.setPricingMode(PricingMode.MIDDLE);
+                    pNew.setRate(new BigDecimal("350.00"));
+                    pNew.setFormula("(L + W) * H");
+                    pNew.setUnit("SQFT");
+                    pNew.setActive(true);
+                    return pricingRepository.save(pNew);
                 });
+
+        com.example.pravin_quotation.model.DistrictPricing dp2 = districtPricingRepository.findByBranchIdAndPricingId(branch.getId(), p.getId()).orElse(null);
+        if (dp2 == null) {
+            dp2 = new com.example.pravin_quotation.model.DistrictPricing();
+            dp2.setBranch(branch);
+            dp2.setPricing(p);
+            dp2.setRate(new BigDecimal("350.00"));
+            dp2.setActive(true);
+            districtPricingRepository.save(dp2);
+        }
 
         AdminQuotationBuilderService.SizeRequest size1 = new AdminQuotationBuilderService.SizeRequest(
                 new BigDecimal("24"), new BigDecimal("36"), new BigDecimal("30"), null
