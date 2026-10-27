@@ -16,8 +16,28 @@ public class QuotationCalculationService {
     private final QuotationRoomRepository quotationRoomRepository;
     private final QuotationItemRepository quotationItemRepository;
     private final PricingRepository pricingRepository;
+    private final DistrictPricingRepository districtPricingRepository;
     private final TravelChargeRepository travelChargeRepository;
     private final QuotationItemSizeService quotationItemSizeService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public QuotationCalculationService(
+            QuotationRepository quotationRepository,
+            QuotationRoomRepository quotationRoomRepository,
+            QuotationItemRepository quotationItemRepository,
+            PricingRepository pricingRepository,
+            DistrictPricingRepository districtPricingRepository,
+            TravelChargeRepository travelChargeRepository,
+            QuotationItemSizeService quotationItemSizeService) {
+
+        this.quotationRepository = quotationRepository;
+        this.quotationRoomRepository = quotationRoomRepository;
+        this.quotationItemRepository = quotationItemRepository;
+        this.pricingRepository = pricingRepository;
+        this.districtPricingRepository = districtPricingRepository;
+        this.travelChargeRepository = travelChargeRepository;
+        this.quotationItemSizeService = quotationItemSizeService;
+    }
 
     public QuotationCalculationService(
             QuotationRepository quotationRepository,
@@ -27,12 +47,8 @@ public class QuotationCalculationService {
             TravelChargeRepository travelChargeRepository,
             QuotationItemSizeService quotationItemSizeService) {
 
-        this.quotationRepository = quotationRepository;
-        this.quotationRoomRepository = quotationRoomRepository;
-        this.quotationItemRepository = quotationItemRepository;
-        this.pricingRepository = pricingRepository;
-        this.travelChargeRepository = travelChargeRepository;
-        this.quotationItemSizeService = quotationItemSizeService;
+        this(quotationRepository, quotationRoomRepository, quotationItemRepository,
+                pricingRepository, null, travelChargeRepository, quotationItemSizeService);
     }
 
 
@@ -692,6 +708,16 @@ public class QuotationCalculationService {
         if (!Boolean.TRUE.equals(pricing.getActive())) {
             throw new IllegalArgumentException(
                     "The selected standard pricing is inactive.");
+        }
+
+        if (quotation.getBranch() != null && districtPricingRepository != null) {
+            DistrictPricing dp = districtPricingRepository.findByBranchIdAndPricingId(quotation.getBranch().getId(), pricing.getId())
+                    .orElse(null);
+            if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
+                return money(dp.getRate());
+            } else {
+                throw new IllegalArgumentException("No rate has been configured for branch '" + quotation.getBranch().getName() + "' under " + pricingMode.name() + " pricing grade.");
+            }
         }
 
         return money(pricing.getRate());

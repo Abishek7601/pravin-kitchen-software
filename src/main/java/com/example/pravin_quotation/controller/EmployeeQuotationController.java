@@ -465,6 +465,7 @@ public class EmployeeQuotationController {
     @GetMapping("/builder/materials")
     @ResponseBody
     public List<Map<String, Object>> builderMaterials(
+            @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long itemId,
             @RequestParam(required = false) String pricingGrade) {
@@ -489,6 +490,7 @@ public class EmployeeQuotationController {
                 list = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
             }
         }
+        final PricingMode targetGrade = grade;
         return list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
@@ -496,7 +498,18 @@ public class EmployeeQuotationController {
             map.put("description", m.getDescription());
             map.put("specification", m.getSpecification() != null ? m.getSpecification() : (m.getDescription() != null ? m.getDescription() : ""));
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
-            map.put("rate", m.getRate());
+
+            BigDecimal resolvedRate = null;
+            if (branchId != null && targetGrade != null) {
+                try {
+                    resolvedRate = builderService.resolveRate(branchId, m.getId(), null, targetGrade);
+                } catch (Exception ignored) {}
+            }
+            if (resolvedRate == null && branchId == null) {
+                resolvedRate = m.getRate();
+            }
+
+            map.put("rate", resolvedRate);
             map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
             map.put("formula", m.getFormula());
             return map;
@@ -504,11 +517,15 @@ public class EmployeeQuotationController {
     }
 
     public List<Map<String, Object>> builderMaterials(Long itemId) {
-        return builderMaterials(null, itemId, (String) null);
+        return builderMaterials(null, null, itemId, (String) null);
     }
 
     public List<Map<String, Object>> builderMaterials(Long divisionId, Long itemId) {
-        return builderMaterials(divisionId, itemId, (String) null);
+        return builderMaterials(null, divisionId, itemId, (String) null);
+    }
+
+    public List<Map<String, Object>> builderMaterials(Long divisionId, Long itemId, String pricingGrade) {
+        return builderMaterials(null, divisionId, itemId, pricingGrade);
     }
 
     public ResponseEntity<?> builderRate(Long branchId, Long materialOptionId, PricingMode pricingMode) {
@@ -551,29 +568,17 @@ public class EmployeeQuotationController {
             @RequestParam(required = false) Long materialId,
             @RequestParam PricingMode pricingMode) {
         try {
-            BigDecimal rate = null;
+            if (branchId == null) {
+                return ResponseEntity.badRequest().body(mapData(
+                        "success", false,
+                        "message", "Please select a branch first to retrieve material rates."
+                ));
+            }
+
+            BigDecimal rate = builderService.resolveRate(branchId, materialId, materialOptionId, pricingMode);
             Material material = materialId != null ? materialRepository.findById(materialId).orElse(null) : null;
-            MaterialOption option = materialOptionId != null ? materialOptionRepository.findById(materialOptionId).orElse(null) : null;
-
-            if (materialOptionId != null) {
-                try {
-                    rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
-                } catch (Exception ignored) {}
-            }
-
-            if (rate == null && material != null && material.getRate() != null) {
-                rate = material.getRate();
-            }
-
-            if (rate == null && materialOptionId != null) {
-                rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
-            }
-
-            if (rate == null) {
-                rate = BigDecimal.ZERO;
-            }
-
             Pricing pricing = materialOptionId != null ? pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null) : null;
+            MaterialOption option = materialOptionId != null ? materialOptionRepository.findById(materialOptionId).orElse(null) : null;
 
             String formula = (material != null && material.getFormula() != null && !material.getFormula().isBlank() && !"(L + W) × H".equals(material.getFormula()))
                     ? material.getFormula()
@@ -583,20 +588,22 @@ public class EmployeeQuotationController {
                     ? option.getMaterial().getFormula()
                     : "(L + W) × H"));
 
-            String unit = (material != null && material.getUnit() != null) ? material.getUnit() : "SQFT";
-            String measurementUnit = unit;
-            String pricingUnit = "₹ / " + unit;
+            String unit = (material != null && material.getUnit() != null) ? material.getUnit() : "Sq.ft";
 
             Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("success", true);
             resp.put("rate", rate);
             resp.put("pricingMode", pricingMode.name());
             resp.put("formula", formula);
             resp.put("unit", unit);
-            resp.put("measurementUnit", measurementUnit);
-            resp.put("pricingUnit", pricingUnit);
+            resp.put("measurementUnit", unit);
+            resp.put("pricingUnit", "₹ / " + unit);
             return ResponseEntity.ok(resp);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(mapData("message", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(mapData(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to resolve rate for this branch and grade."
+            ));
         }
     }
 

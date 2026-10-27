@@ -68,6 +68,9 @@ public class DynamicCategoryMaterialFormulaTest {
     private BranchRepository branchRepository;
 
     @Autowired
+    private com.example.pravin_quotation.repository.DistrictPricingRepository districtPricingRepository;
+
+    @Autowired
     private CustomerRepository customerRepository;
 
     @Autowired
@@ -150,7 +153,16 @@ public class DynamicCategoryMaterialFormulaTest {
         pricing.setFormula(formula);
         pricing.setUnit("SQFT");
         pricing.setActive(true);
-        return pricingRepository.save(pricing);
+        Pricing saved = pricingRepository.save(pricing);
+        if (branch != null) {
+            com.example.pravin_quotation.model.DistrictPricing dp = new com.example.pravin_quotation.model.DistrictPricing();
+            dp.setBranch(branch);
+            dp.setPricing(saved);
+            dp.setRate(rate);
+            dp.setActive(true);
+            districtPricingRepository.save(dp);
+        }
+        return saved;
     }
 
     @Test

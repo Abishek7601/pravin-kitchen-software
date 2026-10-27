@@ -250,16 +250,34 @@ public class WorkCategoryController {
             @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
-            @RequestParam BigDecimal rate) {
+            @RequestParam(required = false) BigDecimal rate,
+            @RequestParam(required = false) String branchRatesJson,
+            @RequestParam(required = false) Map<String, String> allRequestParams) {
         try {
             String gradeStr = (grade != null && !grade.isBlank()) ? grade : pricingGrade;
             PricingMode mode = parsePricingGrade(gradeStr);
             String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, unit, rate, effectiveFormula);
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates = workCategoryService.parseBranchRates(branchRatesJson, allRequestParams);
+
+            if (rate != null && rate.compareTo(BigDecimal.ZERO) < 0) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Rate must be non-negative."
+                ));
+            }
+
+            if (branchRates.isEmpty() && rate == null) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Please configure at least one branch rate."
+                ));
+            }
+
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, unit, rate, effectiveFormula, branchRates);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
-            resp.put("message", "Material '" + material.getName() + "' added successfully under " + mode.name() + ".");
+            resp.put("message", "Material '" + material.getName() + "' added successfully with branch rates.");
             resp.put("materialId", material.getId());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
@@ -281,10 +299,14 @@ public class WorkCategoryController {
             @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
-            @RequestParam BigDecimal rate) {
+            @RequestParam(required = false) BigDecimal rate,
+            @RequestParam(required = false) String branchRatesJson,
+            @RequestParam(required = false) Map<String, String> allRequestParams) {
         try {
             String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, unit, rate, effectiveFormula);
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates = workCategoryService.parseBranchRates(branchRatesJson, allRequestParams);
+
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, unit, rate, effectiveFormula, branchRates);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)
@@ -327,19 +349,19 @@ public class WorkCategoryController {
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, rate);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, rate, null, null);
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, rate);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, rate);
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, rate);
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, rate, null, null);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {

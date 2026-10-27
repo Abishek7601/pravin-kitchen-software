@@ -471,11 +471,16 @@
       $('selectedItemLabel').textContent = `${categoryName} → ${divisionName}`;
       $('selectionPath').textContent = `${categoryName} / ${divisionName}`;
 
-      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}`);
+      const branchVal = $('branchId') ? $('branchId').value : '';
+      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
       if (!materials || materials.length === 0) {
           $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
       } else {
-          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${m.rate != null ? m.rate : ''}">${esc(m.name)}${m.rate != null ? ' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft') : ''}</option>`).join('');
+          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
+              const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
+              const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
+              return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
+          }).join('');
       }
       $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
       $('materialSpecificationId').innerHTML = '<option value="">Select specification (optional)</option>';
@@ -525,18 +530,24 @@
       state.draft.materialId = Number(e.target.value) || null;
       const selected = e.target.selectedOptions[0];
       const rawText = selected?.textContent || '';
-      state.draft.materialName = rawText.includes(' - ₹') ? rawText.split(' - ₹')[0].trim() : rawText.trim();
+      state.draft.materialName = rawText.includes(' - ') ? rawText.split(' - ')[0].trim() : rawText.trim();
       state.draft.formula = selected?.dataset?.formula || '(L + W) × H';
 
       const configuredRate = selected?.dataset?.rate;
       const configuredUnit = selected?.dataset?.unit || 'Sq.ft';
       const configuredSpec = selected?.dataset?.spec || '';
 
-      if (configuredRate !== undefined && configuredRate !== '' && configuredRate !== 'null') {
+      if (configuredRate !== undefined && configuredRate !== '' && configuredRate !== 'null' && Number(configuredRate) >= 0) {
           state.draft.rate = Number(configuredRate);
           state.draft.unit = configuredUnit;
           state.draft.measurementUnit = configuredUnit;
           state.draft.pricingUnit = '₹ / ' + configuredUnit;
+          $('pricingMessage').textContent = '';
+          $('pricingMessage').style.color = '';
+      } else {
+          state.draft.rate = null;
+          $('pricingMessage').textContent = 'No rate configured for the selected branch and grade.';
+          $('pricingMessage').style.color = '#dc2626';
       }
       if (configuredSpec && !$('specification').value.trim()) {
           $('specification').value = configuredSpec;
@@ -570,7 +581,7 @@
       }
       state.draft.materialSpecificationId = null; state.draft.materialSpecificationName = '';
       await loadSpecifications(state.draft.materialOptionId, state.draft.materialId);
-      if (state.draft.materialOptionId && (!state.draft.rate || state.draft.rate === 0)) {
+      if (state.draft.materialOptionId) {
           await refreshDraftRate();
       }
       renderMaterialDetails();
@@ -601,26 +612,27 @@
   });
 
   async function refreshDraftRate() {
-      if (state.draft?.rate && state.draft?.rate > 0 && (!state.draft?.materialOptionId || state.draft?.materialOptionName === state.draft?.materialName)) {
-          calculateDraft();
-          return;
-      }
-      if (!state.draft?.materialOptionId || !$('branchId').value) {
-          if (!state.draft?.rate) state.draft.rate = 0;
+      const branchVal = $('branchId') ? $('branchId').value : '';
+      if (!branchVal) {
+          state.draft.rate = null;
+          $('pricingMessage').textContent = 'Please select a branch first to retrieve material rates.';
+          $('pricingMessage').style.color = '#dc2626';
           calculateDraft();
           return;
       }
       try {
-          const data = await getJson(`${API_BASE}/rate?branchId=${$('branchId').value}&materialOptionId=${state.draft.materialOptionId}&materialId=${state.draft.materialId || ''}&pricingMode=${state.pricingMode}`);
+          const data = await getJson(`${API_BASE}/rate?branchId=${branchVal}&materialOptionId=${state.draft.materialOptionId || ''}&materialId=${state.draft.materialId || ''}&pricingMode=${state.pricingMode}`);
           state.draft.rate = Number(data.rate || 0);
           state.draft.formula = data.formula || '(L + W) × H';
           state.draft.unit = data.unit || 'SQFT';
           state.draft.measurementUnit = data.measurementUnit || 'sq.ft';
           state.draft.pricingUnit = data.pricingUnit || '₹ / SQFT';
           $('pricingMessage').textContent = '';
+          $('pricingMessage').style.color = '';
       } catch (e) {
-          if (!state.draft?.rate) state.draft.rate = 0;
-          $('pricingMessage').textContent = e.message;
+          state.draft.rate = null;
+          $('pricingMessage').textContent = e.message || 'No rate configured for the selected branch and grade.';
+          $('pricingMessage').style.color = '#dc2626';
       }
       calculateDraft();
   }
@@ -697,6 +709,13 @@
 
   function calculateDraft() {
       if (!state.draft) return;
+      if (state.draft.rate == null || isNaN(Number(state.draft.rate))) {
+          $('currentRate').textContent = 'Not configured';
+          $('currentRate').style.color = '#dc2626';
+          $('currentAmount').textContent = '₹0.00';
+          return;
+      }
+      $('currentRate').style.color = '';
       let totalMeas = 0, amount = 0;
       const configuredUnit = state.draft.unit || 'Sq.ft';
       const isSqft = configuredUnit.toLowerCase().includes('sq');
@@ -720,6 +739,9 @@
 
   function addDraftToRoom() {
       if (!state.draft || (!state.draft.materialId && !state.draft.materialOptionId)) return alert('Select a material.');
+      if (state.draft.rate == null || isNaN(Number(state.draft.rate)) || Number(state.draft.rate) <= 0) {
+          return alert('No rate has been configured for the selected branch and grade. Please configure a branch rate before adding this item.');
+      }
       const sizes=readSizes();
       if (sizes.length === 0) return alert('Add at least one size.');
       const formula = (state.draft.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
@@ -839,11 +861,16 @@
   async function recalculateAll() {
       state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
       if (state.draft && state.draft.divisionId) {
-          const materials = await getJson(`${API_BASE}/materials?divisionId=${state.draft.divisionId}&pricingGrade=${state.pricingMode}`);
+          const branchVal = $('branchId') ? $('branchId').value : '';
+          const materials = await getJson(`${API_BASE}/materials?divisionId=${state.draft.divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
           if (!materials || materials.length === 0) {
               $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
           } else {
-              $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${m.rate != null ? m.rate : ''}">${esc(m.name)}${m.rate != null ? ' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft') : ''}</option>`).join('');
+              $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
+                  const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
+                  const rateText = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
+                  return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateText}</option>`;
+              }).join('');
           }
       }
       if (!state.rooms.some(r=>r.items.length)) return;
@@ -855,7 +882,7 @@
           if (data.formula) item.formula = data.formula;
           if (data.unit) item.unit = data.unit;
       })())));
-      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message;}
+      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; $('pricingMessage').style.color=''; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message; $('pricingMessage').style.color='#dc2626';}
   }
 
   function initCustomers() {
@@ -1089,7 +1116,11 @@
   document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
   $('branchId').addEventListener('change', () => {
       reloadCustomersForBranch($('branchId').value);
-      if (state.draft) refreshDraftRate();
+      if (state.draft && state.draft.divisionId) {
+          selectDivision(state.draft.divisionId, state.draft.divisionName, state.draft.categoryId, state.draft.categoryName);
+      } else if (state.draft) {
+          refreshDraftRate();
+      }
   });
   $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });

@@ -21,6 +21,35 @@ public class WorkCategoryService {
     private final MaterialOptionRepository materialOptionRepository;
     private final PricingRepository pricingRepository;
     private final MaterialSpecificationRepository materialSpecificationRepository;
+    private final BranchRepository branchRepository;
+    private final DistrictPricingRepository districtPricingRepository;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public WorkCategoryService(
+            WorkCategoryRepository workCategoryRepository,
+            QuotationItemRepository quotationItemRepository,
+            QuotationRepository quotationRepository,
+            DivisionRepository divisionRepository,
+            ItemRepository itemRepository,
+            MaterialRepository materialRepository,
+            MaterialOptionRepository materialOptionRepository,
+            PricingRepository pricingRepository,
+            MaterialSpecificationRepository materialSpecificationRepository,
+            BranchRepository branchRepository,
+            DistrictPricingRepository districtPricingRepository) {
+
+        this.workCategoryRepository = workCategoryRepository;
+        this.quotationItemRepository = quotationItemRepository;
+        this.quotationRepository = quotationRepository;
+        this.divisionRepository = divisionRepository;
+        this.itemRepository = itemRepository;
+        this.materialRepository = materialRepository;
+        this.materialOptionRepository = materialOptionRepository;
+        this.pricingRepository = pricingRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
+        this.branchRepository = branchRepository;
+        this.districtPricingRepository = districtPricingRepository;
+    }
 
     public WorkCategoryService(
             WorkCategoryRepository workCategoryRepository,
@@ -33,15 +62,10 @@ public class WorkCategoryService {
             PricingRepository pricingRepository,
             MaterialSpecificationRepository materialSpecificationRepository) {
 
-        this.workCategoryRepository = workCategoryRepository;
-        this.quotationItemRepository = quotationItemRepository;
-        this.quotationRepository = quotationRepository;
-        this.divisionRepository = divisionRepository;
-        this.itemRepository = itemRepository;
-        this.materialRepository = materialRepository;
-        this.materialOptionRepository = materialOptionRepository;
-        this.pricingRepository = pricingRepository;
-        this.materialSpecificationRepository = materialSpecificationRepository;
+        this(workCategoryRepository, quotationItemRepository, quotationRepository,
+                divisionRepository, itemRepository, materialRepository,
+                materialOptionRepository, pricingRepository, materialSpecificationRepository,
+                null, null);
     }
 
 
@@ -597,6 +621,19 @@ public class WorkCategoryService {
         response.put("categoryId", category != null ? category.getId() : null);
         response.put("categoryName", catName);
 
+        // Dynamic branches loaded from MySQL
+        List<Branch> activeBranches = (branchRepository != null)
+                ? branchRepository.findByActiveTrueOrderByNameAsc()
+                : Collections.emptyList();
+        List<Map<String, Object>> branchList = new ArrayList<>();
+        for (Branch b : activeBranches) {
+            Map<String, Object> bm = new LinkedHashMap<>();
+            bm.put("id", b.getId());
+            bm.put("name", b.getName());
+            branchList.add(bm);
+        }
+        response.put("branches", branchList);
+
         Map<String, List<Map<String, Object>>> materialsByGrade = new LinkedHashMap<>();
         materialsByGrade.put("PREMIUM", new ArrayList<>());
         materialsByGrade.put("MIDDLE", new ArrayList<>());
@@ -604,23 +641,92 @@ public class WorkCategoryService {
 
         List<Material> allMaterials = materialRepository.findAllByDivisionIdUnified(workTypeId);
         for (Material m : allMaterials) {
-            PricingMode grade = m.getPricingGrade();
-            if (grade == null) {
-                grade = PricingMode.MIDDLE;
-            }
             Map<String, Object> matMap = new LinkedHashMap<>();
             matMap.put("id", m.getId());
             matMap.put("name", m.getName());
             matMap.put("specification", m.getSpecification() != null ? m.getSpecification() : (m.getDescription() != null ? m.getDescription() : ""));
             matMap.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
             matMap.put("rate", m.getRate() != null ? m.getRate() : BigDecimal.ZERO);
-            matMap.put("pricingGrade", grade.name());
+            matMap.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "MIDDLE");
             matMap.put("formula", m.getFormula());
             matMap.put("active", m.getActive());
 
-            List<Map<String, Object>> list = materialsByGrade.get(grade.name());
-            if (list != null) {
-                list.add(matMap);
+            // Fetch branch-specific rates for this material
+            Map<Long, Map<String, BigDecimal>> branchRates = new LinkedHashMap<>();
+            Map<String, Map<Long, BigDecimal>> gradeBranchRates = new LinkedHashMap<>();
+            gradeBranchRates.put("PREMIUM", new LinkedHashMap<>());
+            gradeBranchRates.put("MIDDLE", new LinkedHashMap<>());
+            gradeBranchRates.put("ECONOMY", new LinkedHashMap<>());
+
+            List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(m.getId());
+            if (!options.isEmpty()) {
+                MaterialOption option = options.get(0);
+                for (PricingMode mode : PricingMode.values()) {
+                    Optional<Pricing> pOpt = pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), mode);
+                    if (pOpt.isPresent()) {
+                        Pricing pricing = pOpt.get();
+                        if (districtPricingRepository != null) {
+                            List<DistrictPricing> dpList = districtPricingRepository.findByPricingIdOrderByCreatedAtDesc(pricing.getId());
+                            for (DistrictPricing dp : dpList) {
+                                if (dp.getBranch() != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
+                                    Long bId = dp.getBranch().getId();
+                                    branchRates.computeIfAbsent(bId, k -> new LinkedHashMap<>()).put(mode.name(), dp.getRate());
+                                    gradeBranchRates.get(mode.name()).put(bId, dp.getRate());
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Fallback for legacy materials if branch rates table is empty
+            if (branchRates.isEmpty() && m.getRate() != null) {
+                PricingMode mGrade = m.getPricingGrade() != null ? m.getPricingGrade() : PricingMode.MIDDLE;
+                for (Branch b : activeBranches) {
+                    branchRates.computeIfAbsent(b.getId(), k -> new LinkedHashMap<>()).put(mGrade.name(), m.getRate());
+                    gradeBranchRates.get(mGrade.name()).put(b.getId(), m.getRate());
+                }
+            }
+
+            List<Map<String, Object>> branchRatesList = new ArrayList<>();
+            for (Branch b : activeBranches) {
+                Map<String, Object> brItem = new LinkedHashMap<>();
+                brItem.put("branchId", b.getId());
+                brItem.put("branchName", b.getName());
+                Map<String, BigDecimal> ratesForBranch = branchRates.getOrDefault(b.getId(), Collections.emptyMap());
+                brItem.put("premiumRate", ratesForBranch.get("PREMIUM"));
+                brItem.put("middleRate", ratesForBranch.get("MIDDLE"));
+                brItem.put("economyRate", ratesForBranch.get("ECONOMY"));
+                branchRatesList.add(brItem);
+            }
+
+            matMap.put("branchRates", branchRates);
+            matMap.put("branchRatesList", branchRatesList);
+
+            boolean hasPremium = !gradeBranchRates.get("PREMIUM").isEmpty() || m.getPricingGrade() == PricingMode.PREMIUM;
+            boolean hasMiddle = !gradeBranchRates.get("MIDDLE").isEmpty() || m.getPricingGrade() == PricingMode.MIDDLE || m.getPricingGrade() == null;
+            boolean hasEconomy = !gradeBranchRates.get("ECONOMY").isEmpty() || m.getPricingGrade() == PricingMode.ECONOMY;
+
+            if (hasPremium) {
+                Map<String, Object> copy = new LinkedHashMap<>(matMap);
+                copy.put("pricingGrade", "PREMIUM");
+                BigDecimal rep = gradeBranchRates.get("PREMIUM").values().stream().findFirst().orElse(m.getRate() != null ? m.getRate() : BigDecimal.ZERO);
+                copy.put("rate", rep);
+                materialsByGrade.get("PREMIUM").add(copy);
+            }
+            if (hasMiddle) {
+                Map<String, Object> copy = new LinkedHashMap<>(matMap);
+                copy.put("pricingGrade", "MIDDLE");
+                BigDecimal rep = gradeBranchRates.get("MIDDLE").values().stream().findFirst().orElse(m.getRate() != null ? m.getRate() : BigDecimal.ZERO);
+                copy.put("rate", rep);
+                materialsByGrade.get("MIDDLE").add(copy);
+            }
+            if (hasEconomy) {
+                Map<String, Object> copy = new LinkedHashMap<>(matMap);
+                copy.put("pricingGrade", "ECONOMY");
+                BigDecimal rep = gradeBranchRates.get("ECONOMY").values().stream().findFirst().orElse(m.getRate() != null ? m.getRate() : BigDecimal.ZERO);
+                copy.put("rate", rep);
+                materialsByGrade.get("ECONOMY").add(copy);
             }
         }
 
@@ -636,93 +742,298 @@ public class WorkCategoryService {
         return response;
     }
 
-    @Transactional
-    public Material createWorkTypeMaterial(
-            Long workTypeId,
-            PricingMode grade,
-            String name,
-            String specification,
-            String unit,
-            BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, null);
+    public Map<Long, Map<PricingMode, BigDecimal>> parseBranchRates(String json, Map<String, String> formParams) {
+        Map<Long, Map<PricingMode, BigDecimal>> result = new LinkedHashMap<>();
+        if (json != null && !json.isBlank()) {
+            java.util.regex.Pattern branchPattern = java.util.regex.Pattern.compile("\"?(\\d+)\"?\\s*:\\s*\\{([^}]+)\\}");
+            java.util.regex.Matcher branchMatcher = branchPattern.matcher(json);
+            while (branchMatcher.find()) {
+                try {
+                    Long branchId = Long.parseLong(branchMatcher.group(1));
+                    String inner = branchMatcher.group(2);
+                    java.util.regex.Pattern gradePattern = java.util.regex.Pattern.compile("\"?(PREMIUM|MIDDLE|ECONOMY)\"?\\s*:\\s*\"?([0-9.]+)\"?");
+                    java.util.regex.Matcher gradeMatcher = gradePattern.matcher(inner);
+                    while (gradeMatcher.find()) {
+                        PricingMode mode = PricingMode.valueOf(gradeMatcher.group(1).trim().toUpperCase());
+                        BigDecimal rate = new BigDecimal(gradeMatcher.group(2).trim());
+                        if (rate.compareTo(BigDecimal.ZERO) < 0) {
+                            throw new IllegalArgumentException("Rates must be non-negative.");
+                        }
+                        result.computeIfAbsent(branchId, k -> new LinkedHashMap<>()).put(mode, rate);
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw e;
+                } catch (Exception ignored) {}
+            }
+        }
+
+        if (formParams != null && !formParams.isEmpty()) {
+            for (Map.Entry<String, String> entry : formParams.entrySet()) {
+                String key = entry.getKey();
+                String val = entry.getValue();
+                if (val != null && !val.isBlank() && (key.startsWith("rate_branch_") || key.startsWith("rate_"))) {
+                    try {
+                        String[] parts = key.split("_");
+                        Long branchId = null;
+                        PricingMode mode = null;
+                        if (parts.length >= 4 && "branch".equalsIgnoreCase(parts[1])) {
+                            branchId = Long.parseLong(parts[2]);
+                            mode = PricingMode.valueOf(parts[3].toUpperCase());
+                        } else if (parts.length >= 3) {
+                            branchId = Long.parseLong(parts[1]);
+                            mode = PricingMode.valueOf(parts[2].toUpperCase());
+                        }
+                        if (branchId != null && mode != null) {
+                            BigDecimal rate = new BigDecimal(val.trim());
+                            if (rate.compareTo(BigDecimal.ZERO) < 0) {
+                                throw new IllegalArgumentException("Rates must be non-negative.");
+                            }
+                            result.computeIfAbsent(branchId, k -> new LinkedHashMap<>()).put(mode, rate);
+                        }
+                    } catch (IllegalArgumentException e) {
+                        throw e;
+                    } catch (Exception ignored) {}
+                }
+            }
+        }
+        return result;
     }
 
     @Transactional
-    public Material createWorkTypeMaterial(
+    public Material saveWorkTypeMaterialWithBranchRates(
+            Long materialId,
             Long workTypeId,
-            PricingMode grade,
             String name,
             String specification,
             String unit,
-            BigDecimal rate,
-            String formula) {
-
-        if (workTypeId == null) {
-            throw new IllegalArgumentException("Work type ID is required.");
-        }
-        Division division = divisionRepository.findById(workTypeId)
-                .orElseThrow(() -> new IllegalArgumentException("Work type not found with ID: " + workTypeId));
-
-        if (grade == null) {
-            throw new IllegalArgumentException("Pricing grade is required (Premium, Middle / Standard, or Economy).");
-        }
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            PricingMode fallbackGrade,
+            BigDecimal fallbackRate) {
 
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Material name is required.");
         }
         String cleanName = name.trim();
 
-        if (rate == null || rate.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Rate must be a non-negative number.");
+        // Find representative rate
+        BigDecimal representativeRate = fallbackRate;
+        PricingMode representativeGrade = fallbackGrade != null ? fallbackGrade : PricingMode.MIDDLE;
+        if (branchRates != null && !branchRates.isEmpty()) {
+            for (Map<PricingMode, BigDecimal> gm : branchRates.values()) {
+                if (gm.containsKey(PricingMode.PREMIUM)) {
+                    representativeRate = gm.get(PricingMode.PREMIUM);
+                    representativeGrade = PricingMode.PREMIUM;
+                    break;
+                } else if (gm.containsKey(PricingMode.MIDDLE)) {
+                    representativeRate = gm.get(PricingMode.MIDDLE);
+                    representativeGrade = PricingMode.MIDDLE;
+                    break;
+                } else if (gm.containsKey(PricingMode.ECONOMY)) {
+                    representativeRate = gm.get(PricingMode.ECONOMY);
+                    representativeGrade = PricingMode.ECONOMY;
+                    break;
+                }
+            }
         }
 
+        if (branchRates != null && !branchRates.isEmpty()) {
+            for (Map<PricingMode, BigDecimal> gm : branchRates.values()) {
+                for (BigDecimal r : gm.values()) {
+                    if (r != null && r.compareTo(BigDecimal.ZERO) < 0) {
+                        throw new IllegalArgumentException("Material rate must be non-negative.");
+                    }
+                }
+            }
+        }
+        if (fallbackRate != null && fallbackRate.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException("Material rate must be non-negative.");
+        }
+
+        Material material;
+        Division division;
+
+        if (materialId != null) {
+            material = materialRepository.findById(materialId)
+                    .orElseThrow(() -> new IllegalArgumentException("Material not found with ID: " + materialId));
+            division = (workTypeId != null)
+                    ? divisionRepository.findById(workTypeId).orElse(material.getDivision())
+                    : material.getDivision();
+            if (division != null && materialRepository.existsByDivisionIdAndPricingGradeAndNameIgnoreCaseAndIdNot(division.getId(), representativeGrade, cleanName, materialId)) {
+                throw new IllegalArgumentException("Another material with name '" + cleanName + "' already exists in this work type under " + representativeGrade.name() + " grade.");
+            }
+        } else {
+            if (workTypeId == null) {
+                throw new IllegalArgumentException("Work type ID is required.");
+            }
+            division = divisionRepository.findById(workTypeId)
+                    .orElseThrow(() -> new IllegalArgumentException("Work type not found with ID: " + workTypeId));
+            if (materialRepository.existsByDivisionIdAndPricingGradeAndNameIgnoreCase(division.getId(), representativeGrade, cleanName)) {
+                throw new IllegalArgumentException("Material '" + cleanName + "' already exists in this work type under " + representativeGrade.name() + " grade.");
+            }
+            material = new Material();
+        }
         String cleanUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : "Sq.ft";
         String cleanSpec = cleanValue(specification);
         String cleanFormula = CalculationFormula.normalizeFormula(formula);
 
-        if (materialRepository.existsByDivisionIdAndPricingGradeAndNameIgnoreCase(workTypeId, grade, cleanName)) {
-            throw new IllegalArgumentException("A material named '" + cleanName + "' already exists under " + grade.name() + " for this work type.");
+        if (representativeRate == null) {
+            representativeRate = BigDecimal.ZERO;
         }
 
-        Material material = new Material();
         material.setName(cleanName);
         material.setDivision(division);
-        material.setPricingGrade(grade);
-        material.setRate(rate);
+        material.setPricingGrade(representativeGrade);
+        material.setRate(representativeRate);
         material.setUnit(cleanUnit);
         material.setFormula(cleanFormula);
         material.setSpecification(cleanSpec);
         material.setDescription(cleanSpec);
         material.setActive(true);
 
-        Material savedMaterial = materialRepository.save(material);
+        Material savedMaterial = materialRepository.saveAndFlush(material);
 
-        // Sync MaterialOption and Pricing
-        MaterialOption option = materialOptionRepository.findByNameIgnoreCaseAndMaterialId(cleanName, savedMaterial.getId())
-                .orElseGet(() -> {
-                    MaterialOption opt = new MaterialOption();
-                    opt.setName(cleanName);
-                    opt.setMaterial(savedMaterial);
-                    opt.setDescription(cleanSpec);
-                    opt.setActive(true);
-                    return materialOptionRepository.save(opt);
-                });
+        // Sync MaterialOption
+        List<MaterialOption> existingOpts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(savedMaterial.getId());
+        MaterialOption option;
+        if (!existingOpts.isEmpty()) {
+            option = existingOpts.get(0);
+        } else {
+            option = new MaterialOption();
+            option.setMaterial(savedMaterial);
+        }
+        option.setName(cleanName);
+        option.setDescription(cleanSpec);
+        option.setFormula(cleanFormula);
+        option.setActive(true);
+        MaterialOption savedOption = materialOptionRepository.saveAndFlush(option);
 
-        Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), grade)
-                .orElseGet(() -> {
-                    Pricing p = new Pricing();
-                    p.setMaterialOption(option);
-                    p.setPricingMode(grade);
-                    p.setUnit(cleanUnit);
-                    return p;
-                });
-        pricing.setRate(rate);
-        pricing.setUnit(cleanUnit);
-        pricing.setFormula(cleanFormula);
-        pricing.setActive(true);
-        pricingRepository.save(pricing);
+        // Save Pricing and DistrictPricing across branches
+        List<Branch> activeBranches = (branchRepository != null)
+                ? branchRepository.findByActiveTrueOrderByNameAsc()
+                : Collections.emptyList();
+
+        for (PricingMode mode : PricingMode.values()) {
+            Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), mode)
+                    .orElseGet(() -> {
+                        Pricing p = new Pricing();
+                        p.setMaterialOption(option);
+                        p.setPricingMode(mode);
+                        p.setUnit(cleanUnit);
+                        p.setFormula(cleanFormula);
+                        p.setActive(true);
+                        return p;
+                    });
+            pricing.setUnit(cleanUnit);
+            pricing.setFormula(cleanFormula);
+            pricing.setDescription(cleanSpec);
+            pricing.setActive(true);
+
+            // Compute default/base rate for pricing record
+            BigDecimal modeBaseRate = BigDecimal.ZERO;
+            if (branchRates != null && !branchRates.isEmpty()) {
+                for (Map<PricingMode, BigDecimal> gm : branchRates.values()) {
+                    if (gm.containsKey(mode) && gm.get(mode) != null) {
+                        modeBaseRate = gm.get(mode);
+                        break;
+                    }
+                }
+            } else if (fallbackRate != null && (fallbackGrade == null || fallbackGrade == mode)) {
+                modeBaseRate = fallbackRate;
+            }
+            pricing.setRate(modeBaseRate);
+            Pricing savedPricing = pricingRepository.saveAndFlush(pricing);
+
+            if (districtPricingRepository != null && !activeBranches.isEmpty()) {
+                for (Branch branch : activeBranches) {
+                    BigDecimal branchRate = null;
+                    if (branchRates != null) {
+                        if (branchRates.containsKey(branch.getId()) && branchRates.get(branch.getId()) != null) {
+                            branchRate = branchRates.get(branch.getId()).get(mode);
+                        }
+                    } else if (fallbackRate != null && (fallbackGrade == null || fallbackGrade == mode)) {
+                        branchRate = fallbackRate;
+                    }
+
+                    if (branchRate != null) {
+                        DistrictPricing dp = districtPricingRepository.findByBranchIdAndPricingId(branch.getId(), savedPricing.getId())
+                                .orElseGet(() -> {
+                                    DistrictPricing newDp = new DistrictPricing();
+                                    newDp.setBranch(branch);
+                                    newDp.setPricing(savedPricing);
+                                    return newDp;
+                                });
+                        dp.setBranch(branch);
+                        dp.setPricing(savedPricing);
+                        dp.setRate(branchRate);
+                        dp.setActive(true);
+                        districtPricingRepository.save(dp);
+                    } else {
+                        // Rate was unconfigured or cleared for this branch/grade
+                        Optional<DistrictPricing> existing = districtPricingRepository.findByBranchIdAndPricingId(branch.getId(), savedPricing.getId());
+                        existing.ifPresent(dp -> {
+                            dp.setActive(false);
+                            districtPricingRepository.save(dp);
+                        });
+                    }
+                }
+            }
+        }
+
+        if (districtPricingRepository != null) {
+            districtPricingRepository.flush();
+        }
+        pricingRepository.flush();
 
         return savedMaterial;
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates) {
+        return saveWorkTypeMaterialWithBranchRates(null, workTypeId, name, specification, unit, formula, branchRates, grade, rate);
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate) {
+        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, null, null);
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula) {
+        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, formula, null);
+    }
+
+    @Transactional
+    public Material updateWorkTypeMaterial(
+            Long materialId,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates) {
+        return saveWorkTypeMaterialWithBranchRates(materialId, null, name, specification, unit, formula, branchRates, null, rate);
     }
 
     @Transactional
@@ -732,7 +1043,7 @@ public class WorkCategoryService {
             String specification,
             String unit,
             BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, null);
+        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, null, null);
     }
 
     @Transactional
@@ -743,70 +1054,7 @@ public class WorkCategoryService {
             String unit,
             BigDecimal rate,
             String formula) {
-
-        if (materialId == null) {
-            throw new IllegalArgumentException("Material ID is required.");
-        }
-        Material material = materialRepository.findById(materialId)
-                .orElseThrow(() -> new IllegalArgumentException("Material not found with ID: " + materialId));
-
-        if (name == null || name.trim().isEmpty()) {
-            throw new IllegalArgumentException("Material name is required.");
-        }
-        String cleanName = name.trim();
-
-        if (rate == null || rate.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Rate must be a non-negative number.");
-        }
-
-        String cleanUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : "Sq.ft";
-        String cleanSpec = cleanValue(specification);
-
-        Long divisionId = material.getDivision() != null ? material.getDivision().getId() : null;
-        if (divisionId != null && material.getPricingGrade() != null) {
-            if (materialRepository.existsByDivisionIdAndPricingGradeAndNameIgnoreCaseAndIdNot(divisionId, material.getPricingGrade(), cleanName, materialId)) {
-                throw new IllegalArgumentException("Another material named '" + cleanName + "' already exists under " + material.getPricingGrade().name() + " for this work type.");
-            }
-        }
-
-        material.setName(cleanName);
-        material.setSpecification(cleanSpec);
-        material.setDescription(cleanSpec);
-        material.setUnit(cleanUnit);
-        material.setRate(rate);
-        if (formula != null && !formula.isBlank()) {
-            material.setFormula(CalculationFormula.normalizeFormula(formula));
-        }
-        Material savedMaterial = materialRepository.save(material);
-
-        // Update corresponding option & pricing
-        List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(materialId);
-        if (!options.isEmpty()) {
-            MaterialOption option = options.get(0);
-            option.setName(cleanName);
-            option.setDescription(cleanSpec);
-            materialOptionRepository.save(option);
-
-            if (material.getPricingGrade() != null) {
-                Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), material.getPricingGrade())
-                        .orElseGet(() -> {
-                            Pricing p = new Pricing();
-                            p.setMaterialOption(option);
-                            p.setPricingMode(material.getPricingGrade());
-                            p.setUnit(cleanUnit);
-                            return p;
-                        });
-                pricing.setRate(rate);
-                pricing.setUnit(cleanUnit);
-                if (formula != null && !formula.isBlank()) {
-                    pricing.setFormula(CalculationFormula.normalizeFormula(formula));
-                }
-                pricing.setActive(true);
-                pricingRepository.save(pricing);
-            }
-        }
-
-        return savedMaterial;
+        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, formula, null);
     }
 
     @Transactional
@@ -830,6 +1078,11 @@ public class WorkCategoryService {
             for (MaterialOption opt : options) {
                 List<Pricing> pricings = pricingRepository.findByMaterialOptionIdOrderByPricingModeAsc(opt.getId());
                 if (!pricings.isEmpty()) {
+                    for (Pricing p : pricings) {
+                        if (districtPricingRepository != null) {
+                            districtPricingRepository.deleteByPricingId(p.getId());
+                        }
+                    }
                     pricingRepository.deleteAll(pricings);
                 }
             }
