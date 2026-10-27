@@ -1361,21 +1361,16 @@ body {
 }
 
 .category-table th.col-sno {
-    width: 65px;
-    text-align: center;
-}
-
-.category-table th.col-icon {
-    width: 110px;
+    width: 70px;
     text-align: center;
 }
 
 .category-table th.col-name {
-    min-width: 260px;
+    min-width: 280px;
 }
 
 .category-table th.col-status {
-    width: 120px;
+    width: 130px;
     text-align: center;
 }
 
@@ -1410,29 +1405,6 @@ body {
     color: var(--text-soft);
     font-weight: 700;
     font-size: 12.5px;
-}
-
-.category-table td.col-icon {
-    text-align: center;
-}
-
-.category-icon-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 38px;
-    height: 38px;
-    background: #eef8f4;
-    border: 1px solid #d5ece2;
-    border-radius: 10px;
-    font-size: 20px;
-    box-shadow: 0 2px 6px rgba(2, 69, 65, 0.08);
-}
-
-.category-icon-pill.fallback {
-    background: #f1f5f9;
-    border-color: #e2e8f0;
-    color: #94a3b8;
 }
 
 .category-name-cell {
@@ -1639,18 +1611,20 @@ body {
     z-index: 1100;
     background: rgba(1, 40, 37, 0.5);
     backdrop-filter: blur(4px);
-    display: flex;
+    display: none;
     align-items: center;
     justify-content: center;
     padding: 16px;
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition: opacity 0.22s ease, visibility 0.22s ease;
 }
 
 .master-data-modal-overlay.active {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
 }
 
 .master-data-modal {
@@ -1670,6 +1644,61 @@ body {
 
 .master-data-modal-overlay.active .master-data-modal {
     transform: translateY(0) scale(1);
+}
+
+/* =========================================================
+   NESTED MODALS & WORK TYPE CARDS STYLES
+   ========================================================= */
+
+.master-data-modal-overlay.nested-modal {
+    z-index: 1250 !important;
+    background: rgba(1, 40, 37, 0.65) !important;
+}
+
+.master-data-modal-overlay.nested-modal .master-data-modal {
+    z-index: 1251 !important;
+    box-shadow: 0 30px 70px rgba(0, 0, 0, 0.45) !important;
+}
+
+.work-types-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 14px;
+}
+
+@media (max-width: 640px) {
+    .work-types-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.work-type-card {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 16px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.work-type-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(2, 69, 65, 0.08);
+    border-color: #cbd5e1;
+}
+
+.work-type-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #0f172a;
+    text-transform: uppercase;
+    line-height: 1.35;
+    white-space: normal !important;
+    word-break: break-word;
+    overflow-wrap: break-word;
 }
 
 .modal-header {

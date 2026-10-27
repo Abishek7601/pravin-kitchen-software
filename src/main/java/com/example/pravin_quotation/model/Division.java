@@ -32,6 +32,9 @@ public class Division {
     @ManyToMany(mappedBy = "divisions", fetch = FetchType.LAZY)
     private java.util.Set<Material> materials = new java.util.HashSet<>();
 
+    @Column(name = "icon", length = 50)
+    private String icon;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -137,5 +140,21 @@ public class Division {
 
     public void setMaterials(java.util.Set<Material> materials) {
         this.materials = materials;
+    }
+
+    public String getIcon() {
+        return icon;
+    }
+
+    public void setIcon(String icon) {
+        this.icon = icon;
+    }
+
+    public String getEmoji() {
+        return icon;
+    }
+
+    public void setEmoji(String emoji) {
+        this.icon = emoji;
     }
 }

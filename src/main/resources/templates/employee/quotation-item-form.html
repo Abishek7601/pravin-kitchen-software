@@ -768,16 +768,21 @@
       }
 
       function calculateItemMeasurement(formula, unit, L, W, H) {
-          const l = Number(L) || 0;
-          const w = Number(W) || 0;
-          const h = Number(H) || 0;
+          const l = Number(L);
+          const w = Number(W);
+          const h = Number(H);
+          const isFeet = (unit || '').toLowerCase() === 'ft' || (unit || '').toLowerCase() === 'feet';
+          const divisor = isFeet ? 1.0 : 144.0;
           const norm = normalizeFormula(formula);
           if (norm === "(L + W) × H") {
-              return ((l + w) * h) / 144.0;
+              if (isNaN(l) || l <= 0 || isNaN(w) || w <= 0 || isNaN(h) || h <= 0) return 0;
+              return ((l + w) * h) / divisor;
           } else if (norm === "L × H") {
-              return (l * h) / 144.0;
+              if (isNaN(l) || l <= 0 || isNaN(h) || h <= 0) return 0;
+              return (l * h) / divisor;
           } else {
-              return (l * w) / 144.0;
+              if (isNaN(l) || l <= 0 || isNaN(w) || w <= 0) return 0;
+              return (l * w) / divisor;
           }
       }
 

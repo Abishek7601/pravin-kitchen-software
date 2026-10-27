@@ -58,15 +58,7 @@ public class MaterialController {
 
     @GetMapping
     public String materials(Model model) {
-        model.addAttribute(
-                "materials",
-                materialService.getAllMaterials()
-        );
-        model.addAttribute(
-                "divisions",
-                divisionRepository.findByActiveTrueOrderByDisplayOrderAsc()
-        );
-        return "admin/materials";
+        return "redirect:/admin/work-categories";
     }
 
     @GetMapping("/new")

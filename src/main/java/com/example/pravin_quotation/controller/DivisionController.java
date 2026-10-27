@@ -48,13 +48,7 @@ public class DivisionController {
 
     @GetMapping
     public String divisions(Model model) {
-
-        model.addAttribute(
-                "divisions",
-                divisionService.getAllDivisions()
-        );
-
-        return "admin/divisions";
+        return "redirect:/admin/work-categories";
     }
 
     @GetMapping("/new")
@@ -148,13 +142,48 @@ public class DivisionController {
     }
 
     @PostMapping("/toggle/{id}")
-    public String toggleDivision(
-            @PathVariable Long id
+    public Object toggleDivision(
+            @PathVariable Long id,
+            @RequestParam(required = false) String redirectUrl,
+            jakarta.servlet.http.HttpServletRequest request,
+            org.springframework.web.servlet.mvc.support.RedirectAttributes redirectAttributes
     ) {
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
-        divisionService.toggleDivisionStatus(id);
+        try {
+            divisionService.toggleDivisionStatus(id);
+            Division division = divisionService.getDivisionById(id);
+            boolean nowActive = Boolean.TRUE.equals(division.getActive());
+            String statusText = nowActive ? "Active" : "Inactive";
+            String msg = "Work type '" + division.getName() + "' is now " + statusText + ".";
 
-        return "redirect:/admin/divisions";
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "active", nowActive,
+                        "message", msg
+                ));
+            }
+
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage", msg);
+            }
+        } catch (Exception e) {
+            if (wantsJson) {
+                return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                        "success", false,
+                        "message", "Failed to update work type status: " + e.getMessage()
+                ));
+            }
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", "Failed to update work type status: " + e.getMessage());
+            }
+        }
+
+        return "redirect:" + resolveRedirectUrl(redirectUrl, null, "/admin/divisions");
     }
 
     @PostMapping("/delete/{id}")

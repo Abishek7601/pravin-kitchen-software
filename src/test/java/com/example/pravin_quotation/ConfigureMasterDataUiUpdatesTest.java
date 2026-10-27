@@ -4,6 +4,7 @@ import com.example.pravin_quotation.controller.PricingController;
 import com.example.pravin_quotation.model.Pricing;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
 import com.example.pravin_quotation.service.PricingService;
 import com.example.pravin_quotation.util.CalculationFormula;
@@ -61,9 +62,16 @@ public class ConfigureMasterDataUiUpdatesTest {
     private WorkCategoryRepository workCategoryRepository;
 
     @Autowired
+    private com.example.pravin_quotation.service.WorkCategoryService workCategoryService;
+
+    @Autowired
     private ResourceLoader resourceLoader;
 
     private String loadTemplateContent(String templatePath) throws Exception {
+        java.nio.file.Path sourcePath = java.nio.file.Paths.get("src/main/resources/templates/" + templatePath);
+        if (java.nio.file.Files.exists(sourcePath)) {
+            return java.nio.file.Files.readString(sourcePath, StandardCharsets.UTF_8);
+        }
         Resource resource = resourceLoader.getResource("classpath:templates/" + templatePath);
         assertTrue(resource.exists(), "Template must exist: " + templatePath);
         try (InputStream is = resource.getInputStream()) {
@@ -193,15 +201,14 @@ public class ConfigureMasterDataUiUpdatesTest {
         for (String cat : expectedCategories) {
             assertTrue(pricingFormHtml.contains("data-tab=\"" + cat + "\""),
                     "pricing-form.html must have tab for " + cat);
-            assertTrue(categoryFormHtml.contains("data-tab=\"" + cat + "\""),
-                    "work-category-form.html must have tab for " + cat);
         }
+        assertFalse(categoryFormHtml.contains("data-tab="),
+                "work-category-form.html must have separate emoji tabs removed per requirement");
 
-        // Verify specific interior emojis are present
+        // Verify specific interior emojis are present in pricing-form.html
         String[] specificEmojis = {"🍳", "👞", "👟", "📺", "🛏️", "🚪", "📦", "🪟", "💡", "🔌", "🪑", "🚿", "💼", "🧘"};
         for (String emoji : specificEmojis) {
             assertTrue(pricingFormHtml.contains(emoji), "pricing-form.html must contain emoji " + emoji);
-            assertTrue(categoryFormHtml.contains(emoji), "work-category-form.html must contain emoji " + emoji);
         }
 
         // Test saving with a new emoji (e.g. 👞 for Shoe Rack)
@@ -268,52 +275,39 @@ public class ConfigureMasterDataUiUpdatesTest {
     }
 
     @Test
-    @DisplayName("Req 6: Category Page contains Configure Master Data modal with emoji selection, preview, and no page redirect")
+    @DisplayName("Req 6: Category Page contains Add Categories modal, single category name field with emoji, and 4-column table")
     public void testCategoryPageContainsConfigureMasterDataModal() throws Exception {
         String workCategoriesHtml = loadTemplateContent("admin/work-categories.html");
 
         // 1. Configure Master Data button is present above category table
         assertTrue(workCategoriesHtml.contains("id=\"openConfigureMasterDataBtn\""),
                 "Category page must have Configure Master Data button with id 'openConfigureMasterDataBtn'");
-        assertTrue(workCategoriesHtml.contains("Configure Master Data"),
-                "Category page must display Configure Master Data button label");
 
         // 2. Modal markup is present on the same page
         assertTrue(workCategoriesHtml.contains("id=\"masterDataModal\""),
                 "Category page must contain modal container 'masterDataModal'");
         assertTrue(workCategoriesHtml.contains("id=\"categoryNameInput\""),
                 "Modal must contain Category Name input field");
-        assertTrue(workCategoriesHtml.contains("id=\"categoryEmojiInput\""),
-                "Modal must contain Category Emoji input field");
         assertTrue(workCategoriesHtml.contains("id=\"modalSaveCategoryBtn\""),
                 "Modal must contain Save Category button");
         assertTrue(workCategoriesHtml.contains("id=\"modalCancelBtn\""),
                 "Modal must contain Cancel button");
 
-        // 3. Common interior-design and kitchen emojis
-        String[] requiredEmojis = {"🏠", "🍳", "🛏️", "🚪", "🪟", "🛋️", "💡", "🪵", "🎨", "🧱"};
-        for (String emoji : requiredEmojis) {
-            assertTrue(workCategoriesHtml.contains(emoji),
-                    "Category modal emoji picker must contain interior emoji: " + emoji);
-        }
-
-        // 4. Live preview element
-        assertTrue(workCategoriesHtml.contains("id=\"previewEmoji\""),
-                "Modal must display live emoji preview");
+        // 3. Live preview element for name
         assertTrue(workCategoriesHtml.contains("id=\"previewName\""),
                 "Modal must display live name preview");
 
-        // 5. Table displays emoji inline beside category name
-        assertTrue(workCategoriesHtml.contains("category-inline-emoji"),
-                "Category table must render inline emoji beside the category name");
+        // 4. Table headers match: S.NO | CATEGORY NAME | STATUS | ACTIONS (no separate EMOJI/ICON column)
+        assertTrue(workCategoriesHtml.contains("Category Name"),
+                "Category table must render Category Name column");
+        assertFalse(workCategoriesHtml.contains("<th class=\"col-icon\">"),
+                "Category table must NOT contain separate EMOJI / ICON table header column");
 
-        // 6. View action remains removed
-        assertFalse(workCategoriesHtml.contains("title=\"View\""),
-                "Category table must NOT contain View action button");
-        assertFalse(workCategoriesHtml.contains("/admin/work-categories/view/"),
-                "Category table must NOT link to category view page");
+        // 5. Actions column includes View button for work types
+        assertTrue(workCategoriesHtml.contains("js-view-category-btn"),
+                "Category table must contain View action button");
 
-        // 7. Verify pagination method correctness
+        // 6. Verify pagination method correctness
         assertFalse(workCategoriesHtml.contains("pagination.init()"),
                 "Category page must NOT call nonexistent 'pagination.init()'");
         assertTrue(workCategoriesHtml.contains("pagination.applyFilterAndRender"),
@@ -367,7 +361,7 @@ public class ConfigureMasterDataUiUpdatesTest {
     }
 
     @Test
-    @DisplayName("Req 8: Edit category modal elements present and duplicate emoji field removed")
+    @DisplayName("Req 8: Edit category modal elements present and single category name field used")
     public void testEditCategoryModalAndSingleEmojiFieldMarkup() throws Exception {
         String html = loadTemplateContent("admin/work-categories.html");
 
@@ -381,11 +375,9 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertTrue(html.contains("id=\"categoryIdInput\""),
                 "Modal form must contain hidden categoryIdInput to distinguish between create and update");
 
-        // 3. Duplicate emoji display box removed; only one Category Emoji field exists
-        assertFalse(html.contains("id=\"selectedEmojiDisplay\""),
-                "Duplicate emoji display box 'selectedEmojiDisplay' must be removed from modal");
-        assertTrue(html.contains("id=\"categoryEmojiInput\""),
-                "Modal must contain single categoryEmojiInput text input field");
+        // 3. Category Name input is the single field (including emoji)
+        assertTrue(html.contains("id=\"categoryNameInput\""),
+                "Modal must contain single categoryNameInput text input field");
 
         // 4. In-place table update function is defined for AJAX modal save
         assertTrue(html.contains("updateCategoryRowInTable"),
@@ -460,5 +452,321 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertEquals(updatedName.toUpperCase(), reloaded.getName(), "Category name must be updated and uppercase");
         assertEquals("🚪", reloaded.getIcon(), "Category emoji must be updated to 🚪");
         assertEquals(updatedDesc, reloaded.getDescription(), "Category description must be updated");
+    }
+
+    @Autowired
+    private com.example.pravin_quotation.repository.DivisionRepository divisionRepository;
+
+    @Autowired
+    private com.example.pravin_quotation.repository.ItemRepository itemRepository;
+
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
+    @Test
+    @DisplayName("Req 10: Category management page includes View button in Actions column alongside Edit and Delete")
+    public void testCategoryPageHasViewButtonAndActions() throws Exception {
+        Resource templateResource = resourceLoader.getResource("classpath:templates/admin/work-categories.html");
+        assertTrue(templateResource.exists(), "work-categories.html template must exist");
+
+        String html;
+        try (InputStream is = templateResource.getInputStream()) {
+            html = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        // 1. Actions column must contain View, Edit, and Delete
+        assertTrue(html.contains("js-view-category-btn"),
+                "Category page table must contain View button with class 'js-view-category-btn'");
+        assertTrue(html.contains("view-btn"),
+                "Category page table must contain 'view-btn' class on the View button");
+        assertTrue(html.contains("js-edit-category-btn"),
+                "Category page table must preserve 'js-edit-category-btn'");
+        assertTrue(html.contains("delete-btn"),
+                "Category page table must preserve 'delete-btn'");
+
+        // 2. Both existing table template and dynamic row creation include View button
+        assertTrue(html.contains("data-id=\"' + category.id + '\"") && html.contains("title=\"View Category Work Types\""),
+                "Dynamic JavaScript row creation in addCategoryRowToTable must also include the View button");
+    }
+
+    @Test
+    @DisplayName("Req 11: Category management page contains View Category Work Types modal popup")
+    public void testCategoryPageHasViewWorkTypesModal() throws Exception {
+        Resource templateResource = resourceLoader.getResource("classpath:templates/admin/work-categories.html");
+        assertTrue(templateResource.exists(), "work-categories.html template must exist");
+
+        String html;
+        try (InputStream is = templateResource.getInputStream()) {
+            html = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        // 1. View modal dialog exists
+        assertTrue(html.contains("id=\"viewWorkTypesModal\""),
+                "Category page must contain View Work Types modal with id 'viewWorkTypesModal'");
+
+        // 2. Header contains title, emoji badge, and close button
+        assertTrue(html.contains("id=\"viewModalTitle\""),
+                "View modal must contain 'viewModalTitle'");
+        assertTrue(html.contains("id=\"viewModalHeaderBadge\""),
+                "View modal must contain 'viewModalHeaderBadge'");
+        assertTrue(html.contains("id=\"viewModalCloseXBtn\""),
+                "View modal must contain 'viewModalCloseXBtn'");
+
+        // 3. Total count element exists
+        assertTrue(html.contains("id=\"viewWorkTypesCount\""),
+                "View modal must contain 'viewWorkTypesCount'");
+
+        // 4. Grid and empty state exist
+        assertTrue(html.contains("id=\"viewWorkTypesGrid\""),
+                "View modal must contain 'viewWorkTypesGrid'");
+        assertTrue(html.contains("id=\"viewWorkTypesEmpty\""),
+                "View modal must contain 'viewWorkTypesEmpty'");
+        assertTrue(html.contains("No work types found in this category"),
+                "View modal must contain clear empty state message: 'No work types found in this category'");
+
+        // 5. Footer Close button exists
+        assertTrue(html.contains("id=\"viewModalCloseBtn\""),
+                "View modal must contain 'viewModalCloseBtn'");
+    }
+
+    @Test
+    @DisplayName("Req 12: GET /admin/work-categories/{id}/work-types returns dynamically loaded work types from MySQL")
+    public void testViewCategoryWorkTypesEndpointReturnsAssociatedItems() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Use category Modular kitchen (or find an active category with divisions)
+        WorkCategory cat = workCategoryRepository.findAll().stream()
+                .filter(c -> c.getName() != null && c.getName().toLowerCase().contains("kitchen"))
+                .findFirst()
+                .orElseGet(() -> workCategoryRepository.findAll().get(0));
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + cat.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(cat.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity,
+                "viewCategory with AJAX/work-types route must return ResponseEntity");
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")));
+        assertEquals(cat.getId(), body.get("categoryId"));
+        assertNotNull(body.get("categoryName"));
+        assertNotNull(body.get("totalCount"));
+        assertTrue(body.get("workTypes") instanceof java.util.List);
+
+        int totalCount = (int) body.get("totalCount");
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> workTypes = (java.util.List<java.util.Map<String, Object>>) body.get("workTypes");
+        assertEquals(totalCount, workTypes.size(), "totalCount must match the actual workTypes list size");
+
+        // Verify each work type has id, name, emoji, active
+        for (java.util.Map<String, Object> wt : workTypes) {
+            assertNotNull(wt.get("name"), "Work type must have a name");
+            assertNotNull(wt.get("emoji"), "Work type must have an emoji");
+        }
+    }
+
+    @Test
+    @DisplayName("Req 13: View Category Work Types handles empty state for categories without items")
+    public void testViewCategoryWorkTypesEmptyState() {
+        assertNotNull(workCategoryController, "WorkCategoryController must be autowired");
+
+        // Create empty category with no divisions/items
+        WorkCategory emptyCat = new WorkCategory();
+        emptyCat.setName("BALCONY_EMPTY_" + System.currentTimeMillis());
+        emptyCat.setIcon("🌿");
+        emptyCat.setActive(true);
+        WorkCategory saved = workCategoryRepository.save(emptyCat);
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + saved.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(saved.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity);
+
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+        assertTrue(Boolean.TRUE.equals(body.get("success")));
+        assertEquals(0, body.get("totalCount"), "Empty category must have totalCount 0");
+        @SuppressWarnings("unchecked")
+        java.util.List<?> list = (java.util.List<?>) body.get("workTypes");
+        assertTrue(list.isEmpty(), "Empty category workTypes list must be empty");
+    }
+
+    @Test
+    @DisplayName("Req 14: Category View includes category emoji and work types display single number format")
+    public void testViewCategoryIncludesEmojiAndSingleNumberWorkTypes() throws Exception {
+        // Create category with emoji icon
+        WorkCategory cat = new WorkCategory();
+        cat.setName("PENTHOUSE_" + System.currentTimeMillis());
+        cat.setIcon("🏢");
+        cat.setActive(true);
+        WorkCategory savedCat = workCategoryRepository.save(cat);
+
+        // Add 2 work types (divisions)
+        workCategoryService.createWorkType(savedCat.getId(), "LIVING AREA", "🛋️", "Living area description");
+        workCategoryService.createWorkType(savedCat.getId(), "TERRACE", "🌿", "Terrace description");
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setRequestURI("/admin/work-categories/" + savedCat.getId() + "/work-types");
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+
+        Object response = workCategoryController.viewCategory(savedCat.getId(), request, new ConcurrentModel());
+        assertTrue(response instanceof org.springframework.http.ResponseEntity);
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) response;
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body = (java.util.Map<String, Object>) entity.getBody();
+        assertNotNull(body);
+
+        String categoryName = (String) body.get("categoryName");
+        assertNotNull(categoryName, "categoryName must not be null");
+        assertTrue(categoryName.contains("🏢"), "categoryName returned for View Category must include the emoji 🏢");
+
+        // Check work-categories.html template to ensure single number per work type and no work type icon
+        String html = loadTemplateContent("admin/work-categories.html");
+        assertTrue(html.contains("span class=\"work-type-number\""),
+                "View modal must use a single work-type-number for sequence display");
+        assertTrue(html.contains("var num = index + 1;"),
+                "Work type numbering must be 1-indexed dynamic number");
+    }
+
+    @Test
+    @DisplayName("Req 15: POST /update/{id} endpoint successfully updates category without creating duplicates")
+    public void testUpdateCategoryViaUpdateEndpointNoDuplicates() {
+        // Create category
+        WorkCategory cat = new WorkCategory();
+        String initialName = "STUDY_" + System.currentTimeMillis();
+        cat.setName(initialName);
+        cat.setIcon("📚");
+        cat.setDescription("Initial study description");
+        cat.setActive(true);
+        WorkCategory saved = workCategoryRepository.save(cat);
+        Long id = saved.getId();
+        long countBefore = workCategoryRepository.count();
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.addHeader("X-Requested-With", "XMLHttpRequest");
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes =
+                new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        String updatedName = "📚 EXECUTIVE STUDY";
+        String updatedDesc = "Updated study description";
+
+        Object updateResponse = workCategoryController.updateCategory(
+                id,
+                updatedName,
+                updatedDesc,
+                null,
+                null,
+                0,
+                request,
+                redirectAttributes
+        );
+
+        assertTrue(updateResponse instanceof org.springframework.http.ResponseEntity);
+        org.springframework.http.ResponseEntity<?> entity = (org.springframework.http.ResponseEntity<?>) updateResponse;
+        assertEquals(org.springframework.http.HttpStatus.OK, entity.getStatusCode());
+
+        // Count must remain the same
+        long countAfter = workCategoryRepository.count();
+        assertEquals(countBefore, countAfter, "Updating category via /update/{id} must not create duplicate records");
+
+        // Reload from database
+        WorkCategory updated = workCategoryRepository.findById(id).orElse(null);
+        assertNotNull(updated);
+        assertEquals(updatedName.toUpperCase(), updated.getName());
+        assertEquals("📚", updated.getIcon(), "Icon should be extracted from leading emoji if present");
+        assertEquals(updatedDesc, updated.getDescription());
+    }
+
+    @Test
+    @DisplayName("Req 16: Category template JavaScript contains valid syntax and event delegation")
+    public void testTemplateJavaScriptSyntaxIntegrity() throws Exception {
+        String html = loadTemplateContent("admin/work-categories.html");
+
+        // Verify the fix for line 933
+        assertFalse(html.contains("workTypeFormAlert.style.display             if"),
+                "work-categories.html must not contain broken JavaScript syntax");
+        assertTrue(html.contains("if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';"),
+                "work-categories.html must cleanly hide workTypeFormAlert on open");
+
+        // Verify event delegation for View and Edit buttons
+        assertTrue(html.contains("e.target.closest('.js-view-category-btn')"),
+                "work-categories.html must delegate click events for View button");
+        assertTrue(html.contains("e.target.closest('.js-edit-category-btn')"),
+                "work-categories.html must delegate click events for Edit button");
+    }
+
+    @Test
+    @DisplayName("Req 17: Work type activate/deactivate toggles directly without confirm or alert popups and persists in DB")
+    public void testDirectStatusToggleNoAlerts() throws Exception {
+        // 1. Verify in work-categories.html that work type toggle handler does NOT use confirm() or alert()
+        String html = loadTemplateContent("admin/work-categories.html");
+        int toggleHandlerStart = html.indexOf("var toggleBtn = e.target.closest('.js-toggle-work-type-btn');");
+        assertTrue(toggleHandlerStart > 0, "work-categories.html must contain toggleBtn handler");
+        int toggleHandlerEnd = html.indexOf("var delBtn = e.target.closest('.js-delete-work-type-btn');", toggleHandlerStart);
+        assertTrue(toggleHandlerEnd > toggleHandlerStart, "delBtn handler must follow toggleBtn handler");
+
+        String toggleHandlerBlock = html.substring(toggleHandlerStart, toggleHandlerEnd);
+        assertFalse(toggleHandlerBlock.contains("confirm("), "Work type toggle must NOT display confirm() popup. Block was: " + toggleHandlerBlock);
+        assertFalse(toggleHandlerBlock.contains("alert("), "Work type toggle must NOT display alert() popup");
+        assertTrue(toggleHandlerBlock.contains("card.querySelector('.status-badge')"), "Work type toggle must update card status badge in-place");
+        assertTrue(toggleHandlerBlock.contains("showViewModalAlert("), "Work type toggle must use non-blocking inline message");
+
+        // 2. Verify backend toggles status and persists in database without creating duplicates
+        WorkCategory cat = new WorkCategory();
+        cat.setName("TOGGLE_TEST_CAT_" + System.currentTimeMillis());
+        cat.setIcon("⚡");
+        cat.setActive(true);
+        WorkCategory savedCat = workCategoryRepository.save(cat);
+
+        Division division = workCategoryService.createWorkType(savedCat.getId(), "KITCHEN ISLAND", "🏝️", "Center cooking counter");
+        Long divisionId = division.getId();
+        assertTrue(Boolean.TRUE.equals(division.getActive()), "Initial work type status must be Active");
+
+        long divisionCountBefore = divisionRepository.count();
+
+        // 3. Toggle from Active -> Inactive
+        org.springframework.http.ResponseEntity<?> resp1 = (org.springframework.http.ResponseEntity<?>)
+                workCategoryController.toggleWorkType(savedCat.getId(), divisionId, null);
+        assertEquals(org.springframework.http.HttpStatus.OK, resp1.getStatusCode());
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body1 = (java.util.Map<String, Object>) resp1.getBody();
+        assertNotNull(body1);
+        assertEquals(Boolean.TRUE, body1.get("success"));
+        assertEquals(Boolean.FALSE, body1.get("active"), "After first toggle, work type status must be Inactive");
+
+        // Check DB
+        Division reloaded1 = divisionRepository.findById(divisionId).orElse(null);
+        assertNotNull(reloaded1);
+        assertFalse(reloaded1.getActive(), "Database record must reflect Inactive status");
+        assertEquals(divisionCountBefore, divisionRepository.count(), "Toggling status must not create new records");
+
+        // 4. Toggle from Inactive -> Active
+        org.springframework.http.ResponseEntity<?> resp2 = (org.springframework.http.ResponseEntity<?>)
+                workCategoryController.toggleWorkType(savedCat.getId(), divisionId, null);
+        assertEquals(org.springframework.http.HttpStatus.OK, resp2.getStatusCode());
+        @SuppressWarnings("unchecked")
+        java.util.Map<String, Object> body2 = (java.util.Map<String, Object>) resp2.getBody();
+        assertNotNull(body2);
+        assertEquals(Boolean.TRUE, body2.get("success"));
+        assertEquals(Boolean.TRUE, body2.get("active"), "After second toggle, work type status must be Active again");
+
+        // Check DB
+        Division reloaded2 = divisionRepository.findById(divisionId).orElse(null);
+        assertNotNull(reloaded2);
+        assertTrue(reloaded2.getActive(), "Database record must reflect Active status");
+        assertEquals(divisionCountBefore, divisionRepository.count(), "Toggling status must not create new records");
     }
 }

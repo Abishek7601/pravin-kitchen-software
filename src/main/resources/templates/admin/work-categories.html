@@ -64,7 +64,7 @@
 
 
     <!-- MAIN -->
-    <main class="category-container">
+    <div class="category-container">
 
         <!-- ALERTS -->
         <div th:if="${successMessage}" style="background: #dcfce7; color: #15803d; border: 1px solid #86efac; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 500; font-size: 13px; display: flex; align-items: center; gap: 8px;">
@@ -116,8 +116,10 @@
                 <button type="button"
                    id="openConfigureMasterDataBtn"
                    class="btn btn-primary"
+                   title="Add Categories"
+                   aria-label="Add Categories"
                    style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; border: none; cursor: pointer; background: #024541; color: #ffffff; transition: all 0.2s ease;">
-                    <span>+ Configure Master Data</span>
+                    <span>+ Add Categories</span>
                 </button>
             </div>
 
@@ -157,7 +159,6 @@
                     <thead>
                         <tr>
                             <th class="col-sno">S.No</th>
-                            <th class="col-icon">Emoji / Icon</th>
                             <th class="col-name">Category Name</th>
                             <th class="col-status">Status</th>
                             <th class="col-actions">Actions</th>
@@ -168,7 +169,7 @@
                             class="category-row"
                             th:id="'category-row-' + ${category.id}"
                             th:data-id="${category.id}"
-                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                             th:data-icon="${category.icon != null ? category.icon : ''}"
                             th:data-description="${category.description != null ? category.description : ''}"
                             th:data-status="${category.archived ? 'archived' : (category.active ? 'active' : 'inactive')}">
@@ -176,24 +177,11 @@
                             <!-- S.NO -->
                             <td class="col-sno serial-number" th:text="${stat.count}">1</td>
 
-                            <!-- EMOJI / ICON -->
-                            <td class="col-icon">
-                                <span class="category-icon-pill"
-                                      th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                                      th:text="${category.icon}">📁</span>
-                                <span class="category-icon-pill fallback"
-                                      th:unless="${category.icon != null and !#strings.isEmpty(category.icon)}">📁</span>
-                            </td>
-
                             <!-- CATEGORY NAME -->
                             <td class="col-name">
                                 <div class="category-name-cell">
-                                    <div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">
-                                        <span class="category-inline-emoji"
-                                              th:if="${category.icon != null and !#strings.isEmpty(category.icon)}"
-                                              th:text="${category.icon}"
-                                              style="font-size: 1.25rem; line-height: 1;">🏠</span>
-                                        <strong class="category-title" th:text="${category.name != null ? category.name.toUpperCase() : ''}">MODULAR KITCHEN</strong>
+                                    <div class="category-title-wrap">
+                                        <strong class="category-title" th:text="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}">MODULAR KITCHEN</strong>
                                     </div>
                                     <p class="category-description"
                                        th:if="${category.description != null and !#strings.isEmpty(category.description)}"
@@ -222,12 +210,23 @@
                             <!-- ACTIONS -->
                             <td class="col-actions">
                                 <div class="table-actions">
+                                    <!-- VIEW WORK TYPES IN MODAL -->
+                                    <button type="button"
+                                            class="action-btn view-btn js-view-category-btn"
+                                            th:data-id="${category.id}"
+                                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
+                                            th:data-icon="${category.icon != null ? category.icon : ''}"
+                                            th:data-description="${category.description != null ? category.description : ''}"
+                                            title="View Category Work Types">
+                                        View
+                                    </button>
+
                                     <!-- EDIT IN MODAL -->
                                     <button type="button"
                                             th:if="${!category.archived}"
                                             class="action-btn edit-btn js-edit-category-btn"
                                             th:data-id="${category.id}"
-                                            th:data-name="${category.name != null ? category.name.toUpperCase() : ''}"
+                                            th:data-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
                                             th:data-icon="${category.icon != null ? category.icon : ''}"
                                             th:data-description="${category.description != null ? category.description : ''}"
                                             title="Edit Category">
@@ -256,7 +255,7 @@
                                           th:action="@{/admin/work-categories/delete/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
+                                          th:data-category-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : 'this category')}"
                                           onsubmit="return confirmDeleteCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -273,7 +272,7 @@
                                           th:action="@{/admin/work-categories/unarchive/{id}(id=${category.id})}"
                                           method="post"
                                           class="action-form"
-                                          th:data-category-name="${category.name != null ? category.name.toUpperCase() : 'this category'}"
+                                          th:data-category-name="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : 'this category')}"
                                           onsubmit="return confirmUnarchiveCategory(this);">
                                         <input type="hidden"
                                                th:name="${_csrf.parameterName}"
@@ -290,7 +289,7 @@
 
                         <!-- NO MATCHES ROW -->
                         <tr id="noResultsRow" style="display: none;">
-                            <td colspan="5" class="no-results-cell">
+                            <td colspan="4" class="no-results-cell">
                                 <div class="no-results-content">
                                     <span class="no-results-icon">🔍</span>
                                     <strong>No matching categories found</strong>
@@ -328,8 +327,10 @@
                th:unless="${isArchivedView}"
                id="emptyConfigureMasterDataBtn"
                class="empty-add-btn"
+               title="Add Categories"
+               aria-label="Add Categories"
                style="cursor: pointer; border: none;">
-                + Configure Master Data
+                + Add Categories
             </button>
 
             <a th:if="${isArchivedView}"
@@ -340,7 +341,7 @@
 
         </div>
 
-    </main>
+    </div>
 
 </div>
 
@@ -350,15 +351,15 @@
 
 
 <!-- CONFIGURE MASTER DATA / EDIT CATEGORY MODAL -->
-<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true">
+<div id="masterDataModal" class="master-data-modal-overlay" aria-hidden="true" style="display: none; z-index: 1100;">
     <div class="master-data-modal" role="dialog" aria-labelledby="modalTitle" aria-modal="true">
         <!-- Modal Header -->
         <div class="modal-header">
             <div class="modal-title-wrap">
-                <div class="modal-icon-badge" id="modalHeaderBadge">✨</div>
+                <div class="modal-icon-badge" id="modalHeaderBadge">📁</div>
                 <div>
-                    <h3 id="modalTitle">Configure Master Data</h3>
-                    <p class="modal-subtitle" id="modalSubtitle">Add a new category with custom emoji and details</p>
+                    <h3 id="modalTitle">Add Categories</h3>
+                    <p class="modal-subtitle" id="modalSubtitle">Add a category with name (including emoji) and details</p>
                 </div>
             </div>
             <button type="button" class="modal-close-btn" id="modalCloseXBtn" aria-label="Close modal">&times;</button>
@@ -372,13 +373,13 @@
             <input type="hidden" th:if="${_csrf != null}" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" th:if="${_csrf != null}" id="csrfHeader" th:value="${_csrf.headerName}">
             <input type="hidden" id="categoryIdInput" name="id" value="">
+            <input type="hidden" id="categoryEmojiInput" name="icon" value="">
 
             <div class="modal-body">
                 <!-- Live Preview Bar -->
                 <div class="modal-live-preview">
                     <span class="preview-label">Live Preview:</span>
                     <div class="preview-badge">
-                        <span id="previewEmoji" class="preview-emoji">🏠</span>
                         <strong id="previewName" class="preview-name">NEW CATEGORY</strong>
                     </div>
                 </div>
@@ -392,61 +393,11 @@
                            id="categoryNameInput"
                            name="name"
                            class="modal-input"
-                           placeholder="e.g. MODULAR KITCHEN, BALCONY, POOJA ROOM"
+                           placeholder="e.g. 🍳 MODULAR KITCHEN, 🏠 FOYER, 🛏️ BEDROOM"
                            autocomplete="off"
-                           style="text-transform: uppercase;"
                            required>
                     <div id="nameValidationMsg" class="field-error" style="display: none;">Category name is required.</div>
-                </div>
-
-                <!-- Category Emoji Picker Section -->
-                <div class="modal-form-group">
-                    <label>
-                        Category Emoji <span class="badge-tag">Select or customize</span>
-                    </label>
-
-                    <!-- Selected Emoji Input Row (single field, no duplicate box) -->
-                    <div class="selected-emoji-row">
-                        <input type="text"
-                               id="categoryEmojiInput"
-                               name="icon"
-                               class="modal-emoji-input"
-                               value="🏠"
-                               placeholder="🏠"
-                               maxlength="8">
-                        <button type="button" id="clearSelectedEmojiBtn" class="btn-clear-emoji">Clear</button>
-                        <span class="emoji-help-text">Click an emoji below or type custom</span>
-                    </div>
-
-                    <!-- Preset Emoji Palette with common interior & kitchen items -->
-                    <div class="emoji-palette-card">
-                        <div class="palette-category-title">Common Interior &amp; Kitchen Emojis:</div>
-                        <div class="emoji-palette-grid">
-                            <!-- Emojis explicitly required: 🏠, 🍳, 🛏️, 🚪, 🪟, 🛋️, 💡, 🪵, 🎨, 🧱 -->
-                            <button type="button" class="palette-emoji-btn active" data-emoji="🏠" title="House / Foyer">🏠 <span class="emoji-label">Foyer</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🍳" title="Kitchen">🍳 <span class="emoji-label">Kitchen</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🛏️" title="Bedroom">🛏️ <span class="emoji-label">Bedroom</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🚪" title="Doors / Wardrobe">🚪 <span class="emoji-label">Doors</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪟" title="Windows / Balcony">🪟 <span class="emoji-label">Windows</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🛋️" title="Living / TV Unit">🛋️ <span class="emoji-label">Living</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="💡" title="Lighting / False Ceiling">💡 <span class="emoji-label">Lighting</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪵" title="Wood / Laminate">🪵 <span class="emoji-label">Woodwork</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🎨" title="Wall Paint / Finishes">🎨 <span class="emoji-label">Finishes</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🧱" title="Accent / Partition">🧱 <span class="emoji-label">Partition</span></button>
-
-                            <!-- Extended Popular Interior Choices -->
-                            <button type="button" class="palette-emoji-btn" data-emoji="📦" title="Storage / Loft">📦 <span class="emoji-label">Storage</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🗄️" title="Cabinets / Drawers">🗄️ <span class="emoji-label">Cabinets</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🍽️" title="Dining / Crockery">🍽️ <span class="emoji-label">Dining</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🪞" title="Dressing / Mirror">🪞 <span class="emoji-label">Vanity</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="👞" title="Shoe Rack">👞 <span class="emoji-label">Shoes</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🌿" title="Balcony / Greenery">🌿 <span class="emoji-label">Balcony</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🧘" title="Pooja Room">🧘 <span class="emoji-label">Pooja</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="💼" title="Office / Study">💼 <span class="emoji-label">Study</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="🚿" title="Bathroom">🚿 <span class="emoji-label">Bath</span></button>
-                            <button type="button" class="palette-emoji-btn" data-emoji="☕" title="Breakfast Counter">☕ <span class="emoji-label">Bar</span></button>
-                        </div>
-                    </div>
+                    <small style="font-size: 11px; color: #64748b; margin-top: 4px; display: block;">Include emoji directly in the category name (e.g. 🍳 MODULAR KITCHEN)</small>
                 </div>
 
                 <!-- Description Input (Optional) -->
@@ -471,6 +422,261 @@
                 </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- VIEW CATEGORY WORK TYPES MODAL -->
+<div id="viewWorkTypesModal" class="master-data-modal-overlay" aria-hidden="true" style="display: none; z-index: 1100;">
+    <div class="master-data-modal" role="dialog" aria-labelledby="viewModalTitle" aria-modal="true" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column;">
+        <!-- Modal Header -->
+        <div class="modal-header" style="flex-shrink: 0; background: linear-gradient(135deg, #024541 0%, #013A36 100%); color: #ffffff; padding: 18px 24px;">
+            <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 14px;">
+                <div class="modal-icon-badge" id="viewModalHeaderBadge" style="display: none;"></div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <h3 id="viewModalTitle" style="margin: 0; font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; color: #ffffff; text-transform: uppercase;">MODULAR KITCHEN</h3>
+                        <span id="viewModalBadge" class="work-types-count-badge" style="background: #e0f2fe; color: #0369a1; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 12px; text-transform: uppercase; letter-spacing: 0.5px;">0 Work Types</span>
+                    </div>
+                    <p class="modal-subtitle" id="viewModalSubtitle" style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.85);">Associated work types and items</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" id="viewModalCloseXBtn" aria-label="Close modal" style="color: #ffffff; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">&times;</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body" style="flex: 1; min-height: 0; padding: 20px 24px; overflow-y: auto; max-height: calc(88vh - 150px);">
+            <!-- Category Info Banner & Add Button -->
+            <div class="view-category-summary" style="display: flex; align-items: center; justify-content: space-between; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div>
+                        <span style="font-size: 12px; color: #64748b; font-weight: 500; display: block;">Total Work Types:</span>
+                        <strong id="viewWorkTypesCount" style="font-size: 16px; color: #024541; font-weight: 700;">0</strong>
+                    </div>
+                    <div id="viewCategoryDescText" style="font-size: 12px; color: #64748b; max-width: 280px; text-align: left; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; border-left: 1px solid #cbd5e1; padding-left: 12px;"></div>
+                </div>
+                <button type="button" id="openAddWorkTypeBtn" class="btn btn-sm" style="display: inline-flex; align-items: center; gap: 6px; background: #024541; color: #ffffff; border: none; padding: 7px 15px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; transition: all 0.2s ease;">
+                    <span>+ Add Work Type</span>
+                </button>
+            </div>
+
+            <!-- Feedback Alert for Work Type Operations -->
+            <div id="viewModalGlobalAlert" class="modal-alert" style="display: none; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; font-size: 13px;"></div>
+
+            <!-- Work Type Create / Edit Form Container -->
+            <div id="workTypeFormContainer" style="display: none; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 10px; padding: 16px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+                    <strong id="workTypeFormTitle" style="font-size: 14px; color: #0f172a; font-weight: 700;">Add Work Type</strong>
+                    <button type="button" id="cancelWorkTypeFormXBtn" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+                <div id="workTypeFormAlert" class="modal-alert" style="display: none; margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
+                <form id="workTypeForm" onsubmit="return false;">
+                    <input type="hidden" id="workTypeIdInput" value="">
+                    <input type="hidden" id="workTypeEmojiInput" value="">
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Work Type Name <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="workTypeNameInput" class="modal-input" placeholder="e.g. SHOE RACK, BOTTOM CABINET, WARDROBE" style="text-transform: uppercase; padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Description <span style="font-size: 11px; font-weight: 400; color: #64748b;">(Optional)</span>
+                        </label>
+                        <textarea id="workTypeDescriptionInput" class="modal-textarea" rows="2" placeholder="Optional details about this work type" style="padding: 6px 10px; font-size: 12px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;"></textarea>
+                    </div>
+                    <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                        <button type="button" id="cancelWorkTypeBtn" class="btn btn-sm" style="padding: 6px 14px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer;">Cancel</button>
+                        <button type="button" id="saveWorkTypeBtn" class="btn btn-sm" style="background: #024541; color: #fff; padding: 6px 18px; font-size: 12px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer;">Save</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading State -->
+            <div id="viewWorkTypesLoading" style="display: none; text-align: center; padding: 40px 20px;">
+                <div class="loading-spinner" style="display: inline-block; width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #024541; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <p style="margin-top: 12px; font-size: 13px; color: #64748b; font-weight: 500;">Loading work types...</p>
+            </div>
+
+            <!-- Empty State -->
+            <div id="viewWorkTypesEmpty" style="display: none; text-align: center; padding: 40px 20px; background: #fdfefe; border: 2px dashed #cbd5e1; border-radius: 12px;">
+                <div style="font-size: 40px; margin-bottom: 8px;">📭</div>
+                <h4 style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">No work types found in this category</h4>
+                <p style="font-size: 13px; color: #64748b; margin: 0 0 14px 0;">This category does not have any associated work types configured yet.</p>
+                <button type="button" id="emptyAddWorkTypeBtn" class="btn btn-sm" style="background: #024541; color: #ffffff; border: none; padding: 7px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                    + Add First Work Type
+                </button>
+            </div>
+
+            <!-- Work Types Grid -->
+            <div id="viewWorkTypesGrid" class="work-types-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px;">
+                <!-- Populated dynamically via AJAX -->
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer" style="flex-shrink: 0; padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: flex-end; background: #f8fafc; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;">
+            <button type="button" id="viewModalCloseBtn" class="btn btn-cancel" style="padding: 8px 22px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid #D6E4E1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.2s ease;">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Work Type Materials Modal -->
+<div id="workTypeMaterialsModal" class="master-data-modal-overlay nested-modal" aria-hidden="true" style="display: none; z-index: 1250;">
+    <div class="master-data-modal" role="dialog" aria-labelledby="materialsModalTitle" aria-modal="true" style="max-width: 860px; width: 94%; max-height: 88vh; display: flex; flex-direction: column; z-index: 1251;">
+        <!-- Modal Header -->
+        <div class="modal-header" style="flex-shrink: 0; background: linear-gradient(135deg, #024541 0%, #013A36 100%); color: #ffffff; padding: 18px 24px;">
+            <div class="modal-title-wrap" style="display: flex; align-items: center; gap: 14px;">
+                <div class="modal-icon-badge" id="materialsModalWorkTypeEmoji" style="width: 48px; height: 48px; border-radius: 12px; background: rgba(255, 255, 255, 0.15); display: flex; align-items: center; justify-content: center; font-size: 26px; border: 1px solid rgba(255, 255, 255, 0.25);">🗄️</div>
+                <div>
+                    <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                        <h3 id="materialsModalTitle" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #ffffff; text-transform: uppercase;">WORK TYPE MATERIALS</h3>
+                        <span id="materialsModalCategoryBadge" style="background: rgba(255, 255, 255, 0.2); color: #ffffff; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 12px; text-transform: uppercase;">CATEGORY</span>
+                    </div>
+                    <p class="modal-subtitle" style="margin: 4px 0 0 0; font-size: 13px; color: rgba(255, 255, 255, 0.85);">Configure materials across Premium, Middle / Standard, and Economy pricing grades</p>
+                </div>
+            </div>
+            <button type="button" class="modal-close-btn" id="materialsModalCloseXBtn" aria-label="Close modal" style="color: #ffffff; background: rgba(255, 255, 255, 0.1); border: none; border-radius: 8px; width: 32px; height: 32px; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">&times;</button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="modal-body" style="flex: 1; min-height: 0; padding: 20px 24px; overflow-y: auto; max-height: calc(88vh - 150px);">
+            <!-- Global Alert for Materials -->
+            <div id="materialsModalGlobalAlert" class="modal-alert" style="display: none; margin-bottom: 14px; padding: 10px 14px; border-radius: 8px; font-size: 13px;"></div>
+
+            <!-- Grade Tabs & Add Button Bar -->
+            <div style="display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #e2e8f0; margin-bottom: 18px; flex-wrap: wrap; gap: 10px;">
+                <div class="materials-grade-tabs" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                    <button type="button" class="grade-tab-btn active" data-grade="PREMIUM" style="padding: 10px 16px; border: none; background: none; font-size: 13px; font-weight: 700; color: #024541; border-bottom: 3px solid #024541; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: -2px; transition: all 0.2s ease;">
+                        <span>💎 Premium</span>
+                        <span id="tabCountPremium" class="grade-count-badge" style="background: #024541; color: #fff; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 700;">0</span>
+                    </button>
+                    <button type="button" class="grade-tab-btn" data-grade="MIDDLE" style="padding: 10px 16px; border: none; background: none; font-size: 13px; font-weight: 700; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: -2px; transition: all 0.2s ease;">
+                        <span>⚖️ Middle / Standard</span>
+                        <span id="tabCountMiddle" class="grade-count-badge" style="background: #e2e8f0; color: #475569; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 700;">0</span>
+                    </button>
+                    <button type="button" class="grade-tab-btn" data-grade="ECONOMY" style="padding: 10px 16px; border: none; background: none; font-size: 13px; font-weight: 700; color: #64748b; border-bottom: 3px solid transparent; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; margin-bottom: -2px; transition: all 0.2s ease;">
+                        <span>🌱 Economy</span>
+                        <span id="tabCountEconomy" class="grade-count-badge" style="background: #e2e8f0; color: #475569; font-size: 11px; padding: 2px 7px; border-radius: 10px; font-weight: 700;">0</span>
+                    </button>
+                </div>
+                <button type="button" id="openAddMaterialBtn" class="btn btn-sm" style="background: #024541; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 1px 2px rgba(2,69,65,0.2);">
+                    <span>+ Add Material</span>
+                </button>
+            </div>
+
+            <!-- Material Form Container (for Add / Edit) -->
+            <div id="materialFormContainer" style="display: none; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 10px; padding: 18px; margin-bottom: 20px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+                    <strong id="materialFormTitle" style="font-size: 14px; color: #0f172a; font-weight: 700;">Add Material</strong>
+                    <button type="button" id="cancelMaterialFormXBtn" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
+                </div>
+                <div id="materialFormAlert" class="modal-alert" style="display: none; margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
+                <form id="materialForm" onsubmit="return false;">
+                    <input type="hidden" id="materialIdInput" value="">
+                    
+                    <div style="display: grid; grid-template-columns: 2fr 1.3fr; gap: 14px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                                Material Name <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="text" id="materialNameInput" class="modal-input" placeholder="e.g. Premium Marine Plywood, Acrylic Finish" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                                Pricing Grade <span style="color: #dc2626;">*</span>
+                            </label>
+                            <select id="materialGradeSelect" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <option value="PREMIUM">💎 Premium</option>
+                                <option value="MIDDLE">⚖️ Middle / Standard</option>
+                                <option value="ECONOMY">🌱 Economy</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- MEASUREMENT FORMULA -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Measurement Formula <span style="color: #dc2626;">*</span>
+                        </label>
+                        <select id="materialFormulaSelect" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 600; color: #024541;" required>
+                            <option value="L × W">Formula 1: L × W — Length × Width (Area in Sq.ft)</option>
+                            <option value="(L + W) × H">Formula 2: (L + W) × H — (Length + Width) × Height (Combined Area)</option>
+                            <option value="L × H">Formula 3: L × H — Length × Height (Area in Sq.ft)</option>
+                        </select>
+                        <!-- Dynamic Formula Info Box -->
+                        <div id="formulaDescBox" style="margin-top: 6px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 12px; color: #166534; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 15px; line-height: 1;">📐</span>
+                            <div id="formulaDescContent" style="flex: 1;">
+                                <div style="font-weight: 700;" id="formulaDescTitle">Formula 1: L × W</div>
+                                <div style="color: #475569; font-size: 11px; margin-top: 2px;" id="formulaDescCalc">Calculation: Length × Width — Used to calculate area in square feet. Requires Length and Width inputs.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.2fr; gap: 14px; margin-bottom: 12px;">
+                        <div>
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                                Brand / Specification <span style="font-size: 11px; font-weight: 400; color: #64748b;">(Optional)</span>
+                            </label>
+                            <input type="text" id="materialSpecInput" class="modal-input" placeholder="e.g. Century Ply Club Prime 16mm" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                                Unit <span style="color: #dc2626;">*</span>
+                            </label>
+                            <select id="materialUnitSelect" style="padding: 8px 10px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <option value="Sq.ft">Sq.ft</option>
+                                <option value="Running ft">Running ft</option>
+                                <option value="Piece">Piece</option>
+                                <option value="Set">Set</option>
+                                <option value="Meter">Meter</option>
+                                <option value="Item">Item</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                                Rate (₹) <span style="color: #dc2626;">*</span>
+                            </label>
+                            <input type="number" id="materialRateInput" class="modal-input" min="0" step="0.01" placeholder="0.00" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600;" required>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
+                        <button type="button" id="cancelMaterialBtn" class="btn btn-sm" style="padding: 7px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer;">Cancel</button>
+                        <button type="button" id="saveMaterialBtn" class="btn btn-sm" style="background: #024541; color: #fff; padding: 7px 22px; font-size: 12px; font-weight: 600; border-radius: 6px; border: none; cursor: pointer;">Save Material</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Loading State for Materials -->
+            <div id="materialsLoading" style="display: none; text-align: center; padding: 40px 20px;">
+                <div class="loading-spinner" style="display: inline-block; width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #024541; border-radius: 50%; animation: spin 0.8s linear infinite;"></div>
+                <p style="margin-top: 12px; font-size: 13px; color: #64748b; font-weight: 500;">Loading materials...</p>
+            </div>
+
+            <!-- Empty State for Grade -->
+            <div id="materialsEmpty" style="display: none; text-align: center; padding: 36px 20px; background: #fdfefe; border: 2px dashed #cbd5e1; border-radius: 12px;">
+                <div style="font-size: 36px; margin-bottom: 8px;">📦</div>
+                <h4 id="materialsEmptyTitle" style="font-size: 15px; font-weight: 700; color: #1e293b; margin: 0 0 6px 0;">No materials configured for this grade</h4>
+                <p id="materialsEmptyDesc" style="font-size: 13px; color: #64748b; margin: 0 0 14px 0;">Add your first material with custom specification, unit, and rate.</p>
+                <button type="button" id="emptyAddMaterialBtn" class="btn btn-sm" style="background: #024541; color: #ffffff; border: none; padding: 7px 18px; border-radius: 8px; font-size: 12px; font-weight: 600; cursor: pointer;">
+                    + Add Material
+                </button>
+            </div>
+
+            <!-- Materials List Container -->
+            <div id="materialsListContainer" style="display: grid; gap: 10px;">
+                <!-- Populated dynamically via AJAX -->
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="modal-footer" style="flex-shrink: 0; padding: 14px 24px; border-top: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; background: #f8fafc; border-bottom-left-radius: 14px; border-bottom-right-radius: 14px;">
+            <div style="font-size: 12px; color: #64748b;">
+                Rates configured here serve as the pricing for new quotations.
+            </div>
+            <button type="button" id="materialsModalCloseBtn" class="btn btn-cancel" style="padding: 8px 22px; font-size: 13px; font-weight: 600; border-radius: 8px; border: 1px solid #D6E4E1; background: #ffffff; color: #475569; cursor: pointer; transition: all 0.2s ease;">Close</button>
+        </div>
     </div>
 </div>
 
@@ -580,22 +786,18 @@
         var saveBtnText = document.getElementById('saveBtnText');
         var saveBtnIcon = document.getElementById('saveBtnIcon');
         var nameInput = document.getElementById('categoryNameInput');
-        var emojiInput = document.getElementById('categoryEmojiInput');
         var descInput = document.getElementById('categoryDescriptionInput');
-        var previewEmoji = document.getElementById('previewEmoji');
         var previewName = document.getElementById('previewName');
         var nameValidationMsg = document.getElementById('nameValidationMsg');
         var modalAlert = document.getElementById('modalAlert');
-        var clearEmojiBtn = document.getElementById('clearSelectedEmojiBtn');
-        var paletteBtns = document.querySelectorAll('.palette-emoji-btn');
 
         function openAddModal() {
             if (!modalOverlay) return;
             resetModal();
             if (categoryIdInput) categoryIdInput.value = '';
-            if (modalTitle) modalTitle.textContent = 'Configure Master Data';
-            if (modalSubtitle) modalSubtitle.textContent = 'Add a new category with custom emoji and details';
-            if (modalHeaderBadge) modalHeaderBadge.textContent = '✨';
+            if (modalTitle) modalTitle.textContent = 'Add Categories';
+            if (modalSubtitle) modalSubtitle.textContent = 'Add a category with name (including emoji) and details';
+            if (modalHeaderBadge) modalHeaderBadge.textContent = '📁';
             if (saveBtnText) saveBtnText.textContent = 'Save Category';
             if (saveBtnIcon) saveBtnIcon.textContent = '💾';
 
@@ -612,21 +814,22 @@
             if (!modalOverlay) return;
             resetModal();
             var id = categoryData.id || '';
-            var name = categoryData.name || '';
-            var icon = categoryData.icon || '';
+            var rawName = (categoryData.name || '').trim().toUpperCase();
+            var icon = (categoryData.icon || '').trim();
             var desc = categoryData.description || '';
+
+            var displayName = (icon && !rawName.includes(icon)) ? (icon + ' ' + rawName) : rawName;
 
             if (categoryIdInput) categoryIdInput.value = id;
             if (modalTitle) modalTitle.textContent = 'Edit Category';
-            if (modalSubtitle) modalSubtitle.textContent = 'Update category details, emoji, and description';
+            if (modalSubtitle) modalSubtitle.textContent = 'Update category name (including emoji) and description';
             if (modalHeaderBadge) modalHeaderBadge.textContent = '✏️';
             if (saveBtnText) saveBtnText.textContent = 'Update Category';
             if (saveBtnIcon) saveBtnIcon.textContent = '💾';
 
-            if (nameInput) nameInput.value = name;
+            if (nameInput) nameInput.value = displayName;
             if (descInput) descInput.value = desc;
-            setEmoji(icon);
-            if (previewName) previewName.textContent = name || 'CATEGORY';
+            if (previewName) previewName.textContent = displayName || 'CATEGORY';
 
             modalOverlay.style.display = 'flex';
             setTimeout(function() {
@@ -651,8 +854,6 @@
             if (categoryIdInput) categoryIdInput.value = '';
             if (nameInput) nameInput.value = '';
             if (descInput) descInput.value = '';
-            if (emojiInput) emojiInput.value = '🏠';
-            if (previewEmoji) previewEmoji.textContent = '🏠';
             if (previewName) previewName.textContent = 'NEW CATEGORY';
             if (nameValidationMsg) nameValidationMsg.style.display = 'none';
             if (modalAlert) {
@@ -665,27 +866,6 @@
                 if (saveBtnText) saveBtnText.textContent = 'Save Category';
                 if (saveBtnIcon) saveBtnIcon.textContent = '💾';
             }
-            paletteBtns.forEach(function(btn) {
-                if (btn.getAttribute('data-emoji') === '🏠') {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
-        }
-
-        function setEmoji(emoji) {
-            var val = (emoji || '').trim();
-            if (emojiInput) emojiInput.value = val;
-            if (previewEmoji) previewEmoji.textContent = val || '📁';
-
-            paletteBtns.forEach(function(btn) {
-                if (btn.getAttribute('data-emoji') === val) {
-                    btn.classList.add('active');
-                } else {
-                    btn.classList.remove('active');
-                }
-            });
         }
 
         if (openBtn) {
@@ -713,7 +893,1018 @@
             openEditModal({ id: id, name: name, icon: icon, description: desc });
         });
 
-        // Close on backdrop click
+        // =========================================================
+        // VIEW CATEGORY WORK TYPES MODAL LOGIC
+        // =========================================================
+        var viewModalOverlay = document.getElementById('viewWorkTypesModal');
+        var viewModalCloseXBtn = document.getElementById('viewModalCloseXBtn');
+        var viewModalCloseBtn = document.getElementById('viewModalCloseBtn');
+        var viewModalHeaderBadge = document.getElementById('viewModalHeaderBadge');
+        var viewModalTitle = document.getElementById('viewModalTitle');
+        var viewModalBadge = document.getElementById('viewModalBadge');
+        var viewWorkTypesCount = document.getElementById('viewWorkTypesCount');
+        var viewCategoryDescText = document.getElementById('viewCategoryDescText');
+        var viewWorkTypesLoading = document.getElementById('viewWorkTypesLoading');
+        var viewWorkTypesEmpty = document.getElementById('viewWorkTypesEmpty');
+        var viewWorkTypesGrid = document.getElementById('viewWorkTypesGrid');
+        var viewModalGlobalAlert = document.getElementById('viewModalGlobalAlert');
+
+        // Work type form elements
+        var openAddWorkTypeBtn = document.getElementById('openAddWorkTypeBtn');
+        var emptyAddWorkTypeBtn = document.getElementById('emptyAddWorkTypeBtn');
+        var workTypeFormContainer = document.getElementById('workTypeFormContainer');
+        var workTypeFormTitle = document.getElementById('workTypeFormTitle');
+        var cancelWorkTypeFormXBtn = document.getElementById('cancelWorkTypeFormXBtn');
+        var workTypeFormAlert = document.getElementById('workTypeFormAlert');
+        var workTypeIdInput = document.getElementById('workTypeIdInput');
+        var workTypeNameInput = document.getElementById('workTypeNameInput');
+        var workTypeEmojiInput = document.getElementById('workTypeEmojiInput');
+        var workTypeDescriptionInput = document.getElementById('workTypeDescriptionInput');
+        var cancelWorkTypeBtn = document.getElementById('cancelWorkTypeBtn');
+        var saveWorkTypeBtn = document.getElementById('saveWorkTypeBtn');
+
+        var currentViewCategory = null;
+
+        function showViewModalAlert(msg, isError) {
+            if (!viewModalGlobalAlert) return;
+            viewModalGlobalAlert.textContent = msg;
+            viewModalGlobalAlert.className = 'modal-alert ' + (isError ? 'error' : 'success');
+            viewModalGlobalAlert.style.display = 'block';
+            setTimeout(function() {
+                if (viewModalGlobalAlert) viewModalGlobalAlert.style.display = 'none';
+            }, 6000);
+        }
+
+        function showWorkTypeFormAlert(msg, isError) {
+            if (!workTypeFormAlert) return;
+            workTypeFormAlert.textContent = msg;
+            workTypeFormAlert.className = 'modal-alert ' + (isError ? 'error' : 'success');
+            workTypeFormAlert.style.display = 'block';
+        }
+
+        function hideWorkTypeForm() {
+            if (workTypeFormContainer) workTypeFormContainer.style.display = 'none';
+            if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';
+            if (workTypeIdInput) workTypeIdInput.value = '';
+            if (workTypeNameInput) workTypeNameInput.value = '';
+            if (workTypeEmojiInput) workTypeEmojiInput.value = '';
+            if (workTypeDescriptionInput) workTypeDescriptionInput.value = '';
+        }
+
+        function openWorkTypeForm(item) {
+            if (!workTypeFormContainer) return;
+            if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';
+            if (item && item.id) {
+                // Edit Mode
+                if (workTypeFormTitle) workTypeFormTitle.textContent = 'Edit Work Type: ' + item.name;
+                if (workTypeIdInput) workTypeIdInput.value = item.id;
+                if (workTypeNameInput) workTypeNameInput.value = item.name || '';
+                if (workTypeEmojiInput) workTypeEmojiInput.value = '';
+                if (workTypeDescriptionInput) workTypeDescriptionInput.value = item.description || '';
+                if (saveWorkTypeBtn) saveWorkTypeBtn.textContent = 'Update Work Type';
+            } else {
+                // Add Mode
+                if (workTypeFormTitle) workTypeFormTitle.textContent = 'Add Work Type to ' + (currentViewCategory ? currentViewCategory.name : 'Category');
+                if (workTypeIdInput) workTypeIdInput.value = '';
+                if (workTypeNameInput) workTypeNameInput.value = '';
+                if (workTypeEmojiInput) workTypeEmojiInput.value = '';
+                if (workTypeDescriptionInput) workTypeDescriptionInput.value = '';
+                if (saveWorkTypeBtn) saveWorkTypeBtn.textContent = 'Save Work Type';
+            }
+
+            workTypeFormContainer.style.display = 'block';
+            if (workTypeNameInput) {
+                workTypeNameInput.focus();
+            }
+            workTypeFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
+        if (workTypeNameInput) {
+            workTypeNameInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase();
+                if (workTypeFormAlert) workTypeFormAlert.style.display = 'none';
+            });
+        }
+
+        if (openAddWorkTypeBtn) {
+            openAddWorkTypeBtn.addEventListener('click', function() {
+                openWorkTypeForm(null);
+            });
+        }
+        if (emptyAddWorkTypeBtn) {
+            emptyAddWorkTypeBtn.addEventListener('click', function() {
+                openWorkTypeForm(null);
+            });
+        }
+        if (cancelWorkTypeBtn) {
+            cancelWorkTypeBtn.addEventListener('click', hideWorkTypeForm);
+        }
+        if (cancelWorkTypeFormXBtn) {
+            cancelWorkTypeFormXBtn.addEventListener('click', hideWorkTypeForm);
+        }
+
+        function reloadWorkTypes(catId) {
+            if (!catId) return;
+            if (viewWorkTypesLoading) viewWorkTypesLoading.style.display = 'block';
+            if (viewWorkTypesEmpty) viewWorkTypesEmpty.style.display = 'none';
+
+            fetch('/admin/work-categories/' + catId + '/work-types', {
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(function(resp) {
+                if (!resp.ok) throw new Error('Status ' + resp.status);
+                return resp.json();
+            })
+            .then(function(data) {
+                if (viewWorkTypesLoading) viewWorkTypesLoading.style.display = 'none';
+                var total = (data && typeof data.totalCount === 'number') ? data.totalCount : (data.workTypes ? data.workTypes.length : 0);
+                var list = (data && data.workTypes) ? data.workTypes : [];
+
+                if (viewModalBadge) viewModalBadge.textContent = total + (total === 1 ? ' Work Type' : ' Work Types');
+                if (viewWorkTypesCount) viewWorkTypesCount.textContent = total;
+
+                if (data.categoryName && viewModalTitle) {
+                    var titleText = data.categoryName.toUpperCase();
+                    var emojiText = (data.categoryEmoji && data.categoryEmoji.trim()) ? data.categoryEmoji.trim() : '';
+                    if (emojiText && !titleText.includes(emojiText)) {
+                        titleText = emojiText + ' ' + titleText;
+                    }
+                    viewModalTitle.textContent = titleText;
+                }
+
+                if (total === 0 || list.length === 0) {
+                    if (viewWorkTypesEmpty) viewWorkTypesEmpty.style.display = 'block';
+                    if (viewWorkTypesGrid) viewWorkTypesGrid.innerHTML = '';
+                    return;
+                }
+
+                if (viewWorkTypesEmpty) viewWorkTypesEmpty.style.display = 'none';
+                if (viewWorkTypesGrid) {
+                    var html = '';
+                    list.forEach(function(item, index) {
+                        var num = index + 1;
+                        var name = item.name || '';
+                        var desc = item.description || '';
+                        var isActive = item.active !== false;
+
+                        html += '<div class="work-type-card" style="display: flex; flex-direction: column; justify-content: space-between; padding: 16px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); transition: all 0.2s ease;">' +
+                            '<!-- Top: Number, Full Work Type Name, and Status Badge -->' +
+                            '<div style="width: 100%; min-width: 0;">' +
+                                '<div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px;">' +
+                                    '<div style="display: flex; align-items: baseline; gap: 6px; min-width: 0; flex: 1;">' +
+                                        '<span class="work-type-number" style="font-size: 15px; font-weight: 700; color: #024541; flex-shrink: 0;">' + num + '.</span>' +
+                                        '<strong class="work-type-title" style="font-size: 14px; font-weight: 700; color: #0f172a; text-transform: uppercase; line-height: 1.35; white-space: normal !important; word-break: break-word; overflow-wrap: break-word;" title="' + escapeHtml(name) + '">' + escapeHtml(name) + '</strong>' +
+                                    '</div>' +
+                                    '<span class="status-badge ' + (isActive ? 'active' : 'inactive') + '" style="font-size: 11px; padding: 3px 9px; border-radius: 6px; font-weight: 600; flex-shrink: 0;">' + (isActive ? 'Active' : 'Inactive') + '</span>' +
+                                '</div>' +
+                                (desc ? '<div style="font-size: 12px; color: #64748b; margin-top: 6px; margin-left: 20px; line-height: 1.4; word-break: break-word;" title="' + escapeHtml(desc) + '">' + escapeHtml(desc) + '</div>' : '') +
+                            '</div>' +
+                            '<!-- Bottom: Actions -->' +
+                            '<div class="work-type-actions" style="display: flex; gap: 8px; align-items: center; justify-content: flex-end; margin-top: 14px; padding-top: 12px; border-top: 1px solid #f1f5f9; flex-wrap: wrap;">' +
+                                '<button type="button" class="js-manage-materials-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" title="Configure Materials for ' + escapeHtml(name) + '" style="padding: 6px 14px; border: 1px solid #024541; background: #024541; color: #ffffff; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; display: inline-flex; align-items: center; gap: 5px; transition: all 0.2s ease;">' +
+                                    '<span>+ Add Materials</span>' +
+                                '</button>' +
+                                '<button type="button" class="js-edit-work-type-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-description="' + escapeHtml(desc) + '" title="Edit Work Type" style="padding: 6px 12px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                (isActive
+                                    ? '<button type="button" class="js-toggle-work-type-btn btn-deactivate" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-active="true" title="Deactivate Work Type" style="padding: 6px 12px; border: 1px solid #fed7aa; background: #fff7ed; color: #c2410c; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Deactivate</button>'
+                                    : '<button type="button" class="js-toggle-work-type-btn btn-activate" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" data-active="false" title="Activate Work Type" style="padding: 6px 12px; border: 1px solid #bbf7d0; background: #f0fdf4; color: #15803d; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Activate</button>'
+                                ) +
+                                '<button type="button" class="js-delete-work-type-btn" data-id="' + item.id + '" data-name="' + escapeHtml(name) + '" title="Delete Work Type" style="padding: 6px 12px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 12px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
+                            '</div>' +
+                        '</div>';
+                    });
+                    viewWorkTypesGrid.innerHTML = html;
+                }
+            })
+            .catch(function(err) {
+                console.error('Failed to load category work types:', err);
+                if (viewWorkTypesLoading) viewWorkTypesLoading.style.display = 'none';
+                if (viewWorkTypesEmpty) {
+                    viewWorkTypesEmpty.style.display = 'block';
+                    var h4 = viewWorkTypesEmpty.querySelector('h4');
+                    if (h4) h4.textContent = 'Unable to load work types';
+                    var p = viewWorkTypesEmpty.querySelector('p');
+                    if (p) p.textContent = 'An error occurred while fetching work types from the database.';
+                }
+            });
+        }
+
+        // Save (Create or Update) Work Type Handler
+        if (saveWorkTypeBtn) {
+            saveWorkTypeBtn.addEventListener('click', function() {
+                if (!currentViewCategory) return;
+                var nameVal = (workTypeNameInput ? workTypeNameInput.value : '').trim().toUpperCase();
+                var descVal = (workTypeDescriptionInput ? workTypeDescriptionInput.value : '').trim();
+                var workTypeId = (workTypeIdInput ? workTypeIdInput.value : '').trim();
+                var isEdit = (workTypeId && workTypeId.length > 0 && workTypeId !== '0');
+
+                if (!nameVal) {
+                    showWorkTypeFormAlert('Work type name is required.', true);
+                    if (workTypeNameInput) workTypeNameInput.focus();
+                    return;
+                }
+
+                saveWorkTypeBtn.disabled = true;
+                saveWorkTypeBtn.textContent = isEdit ? 'Updating...' : 'Saving...';
+
+                var csrf = getCsrfInfo();
+                var url = isEdit
+                    ? ('/admin/work-categories/' + currentViewCategory.id + '/work-types/' + encodeURIComponent(workTypeId))
+                    : ('/admin/work-categories/' + currentViewCategory.id + '/work-types');
+
+                var params = new URLSearchParams();
+                if (isEdit) params.append('id', workTypeId);
+                params.append('name', nameVal);
+                if (descVal) params.append('description', descVal);
+
+                var headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (csrf.token) headers[csrf.header] = csrf.token;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: params.toString()
+                })
+                .then(function(resp) {
+                    return resp.json().then(function(data) {
+                        return { ok: resp.ok, status: resp.status, data: data };
+                    });
+                })
+                .then(function(res) {
+                    saveWorkTypeBtn.disabled = false;
+                    saveWorkTypeBtn.textContent = isEdit ? 'Update Work Type' : 'Save Work Type';
+
+                    if (!res.ok || !res.data.success) {
+                        var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to save work type.';
+                        showWorkTypeFormAlert(errMsg, true);
+                        return;
+                    }
+
+                    hideWorkTypeForm();
+                    showViewModalAlert(res.data.message || (isEdit ? 'Work type updated successfully.' : 'Work type added successfully.'), false);
+                    reloadWorkTypes(currentViewCategory.id);
+                })
+                .catch(function(err) {
+                    saveWorkTypeBtn.disabled = false;
+                    saveWorkTypeBtn.textContent = isEdit ? 'Update Work Type' : 'Save Work Type';
+                    showWorkTypeFormAlert(err.message || 'An unexpected network error occurred.', true);
+                });
+            });
+        }
+
+        // Delegate Manage Materials, Edit, Toggle Status & Delete clicks inside viewWorkTypesGrid
+        if (viewWorkTypesGrid) {
+            viewWorkTypesGrid.addEventListener('click', function(e) {
+                var matBtn = e.target.closest('.js-manage-materials-btn');
+                if (matBtn) {
+                    e.preventDefault();
+                    var id = matBtn.getAttribute('data-id');
+                    var name = matBtn.getAttribute('data-name') || '';
+                    var catName = (currentViewCategory && currentViewCategory.name) ? currentViewCategory.name : '';
+                    openMaterialsModal(id, name, '🗄️', catName);
+                    return;
+                }
+
+                var editBtn = e.target.closest('.js-edit-work-type-btn');
+                if (editBtn) {
+                    e.preventDefault();
+                    var id = editBtn.getAttribute('data-id');
+                    var name = editBtn.getAttribute('data-name') || '';
+                    var desc = editBtn.getAttribute('data-description') || '';
+                    openWorkTypeForm({ id: id, name: name, description: desc });
+                    return;
+                }
+
+                var toggleBtn = e.target.closest('.js-toggle-work-type-btn');
+                if (toggleBtn) {
+                    e.preventDefault();
+                    if (!currentViewCategory) return;
+                    var wtId = toggleBtn.getAttribute('data-id');
+                    var wtName = toggleBtn.getAttribute('data-name') || 'this work type';
+                    var isCurrentlyActive = toggleBtn.getAttribute('data-active') === 'true';
+
+                    // Direct status toggle without popups
+                    toggleBtn.disabled = true;
+                    toggleBtn.textContent = '...';
+
+                    var csrf = getCsrfInfo();
+                    var url = '/admin/work-categories/' + currentViewCategory.id + '/work-types/' + encodeURIComponent(wtId) + '/toggle';
+                    var headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (csrf.token) headers[csrf.header] = csrf.token;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return { ok: resp.ok, status: resp.status, data: data };
+                        });
+                    })
+                    .then(function(res) {
+                        toggleBtn.disabled = false;
+                        if (!res.ok || !res.data.success) {
+                            var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to update work type status.';
+                            showViewModalAlert(errMsg, true);
+                            toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
+                            return;
+                        }
+
+                        // Determine new active status from backend response
+                        var newActive = (typeof res.data.active === 'boolean') ? res.data.active : !isCurrentlyActive;
+
+                        // Update only the relevant work type card directly in-place
+                        var card = toggleBtn.closest('.work-type-card');
+                        if (card) {
+                            var badge = card.querySelector('.status-badge');
+                            if (badge) {
+                                badge.className = 'status-badge ' + (newActive ? 'active' : 'inactive');
+                                badge.textContent = newActive ? 'Active' : 'Inactive';
+                            }
+                        }
+
+                        // Update toggle button state & styles
+                        toggleBtn.setAttribute('data-active', newActive ? 'true' : 'false');
+                        if (newActive) {
+                            toggleBtn.className = 'js-toggle-work-type-btn btn-deactivate';
+                            toggleBtn.textContent = 'Deactivate';
+                            toggleBtn.title = 'Deactivate Work Type';
+                            toggleBtn.style.border = '1px solid #fed7aa';
+                            toggleBtn.style.background = '#fff7ed';
+                            toggleBtn.style.color = '#c2410c';
+                        } else {
+                            toggleBtn.className = 'js-toggle-work-type-btn btn-activate';
+                            toggleBtn.textContent = 'Activate';
+                            toggleBtn.title = 'Activate Work Type';
+                            toggleBtn.style.border = '1px solid #bbf7d0';
+                            toggleBtn.style.background = '#f0fdf4';
+                            toggleBtn.style.color = '#15803d';
+                        }
+
+                        // Show non-blocking feedback inside the View modal
+                        showViewModalAlert(res.data.message || ('Work type is now ' + (newActive ? 'Active' : 'Inactive') + '.'), false);
+                    })
+                    .catch(function(err) {
+                        toggleBtn.disabled = false;
+                        toggleBtn.textContent = isCurrentlyActive ? 'Deactivate' : 'Activate';
+                        showViewModalAlert(err.message || 'An unexpected error occurred while toggling work type status.', true);
+                    });
+                    return;
+                }
+
+                var delBtn = e.target.closest('.js-delete-work-type-btn');
+                if (delBtn) {
+                    e.preventDefault();
+                    if (!currentViewCategory) return;
+                    var delId = delBtn.getAttribute('data-id');
+                    var delName = delBtn.getAttribute('data-name') || 'this work type';
+
+                    var confirmed = confirm(
+                        "Are you sure you want to delete work type '" + delName + "'?\n\n" +
+                        "If it is referenced by existing quotations, it will be safely deactivated to protect quotation history."
+                    );
+                    if (!confirmed) return;
+
+                    delBtn.disabled = true;
+                    delBtn.textContent = '...';
+
+                    var csrf = getCsrfInfo();
+                    var url = '/admin/work-categories/' + currentViewCategory.id + '/work-types/' + encodeURIComponent(delId) + '/delete';
+
+                    var headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (csrf.token) headers[csrf.header] = csrf.token;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return { ok: resp.ok, status: resp.status, data: data };
+                        });
+                    })
+                    .then(function(res) {
+                        if (!res.ok || !res.data.success) {
+                            var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to delete work type.';
+                            alert(errMsg);
+                            delBtn.disabled = false;
+                            delBtn.textContent = 'Delete';
+                            return;
+                        }
+
+                        showViewModalAlert(res.data.message || 'Work type deleted successfully.', false);
+                        reloadWorkTypes(currentViewCategory.id);
+                    })
+                    .catch(function(err) {
+                        alert(err.message || 'An error occurred while deleting the work type.');
+                        delBtn.disabled = false;
+                        delBtn.textContent = 'Delete';
+                    });
+                }
+            });
+        }
+
+        function openViewModal(cat) {
+            if (!viewModalOverlay) return;
+            currentViewCategory = cat;
+            hideWorkTypeForm();
+            if (viewModalGlobalAlert) viewModalGlobalAlert.style.display = 'none';
+
+            var rawName = (cat.name || '').trim().toUpperCase();
+            var catIcon = (cat.icon && cat.icon.trim()) ? cat.icon.trim() : '';
+            var displayName = (catIcon && !rawName.includes(catIcon)) ? (catIcon + ' ' + rawName) : rawName;
+            var catDesc = cat.description || '';
+
+            if (viewModalHeaderBadge) viewModalHeaderBadge.textContent = catIcon || '📁';
+            if (viewModalTitle) viewModalTitle.textContent = displayName || 'CATEGORY';
+            if (viewModalBadge) viewModalBadge.textContent = 'Loading...';
+            if (viewWorkTypesCount) viewWorkTypesCount.textContent = '...';
+            if (viewCategoryDescText) {
+                viewCategoryDescText.textContent = catDesc;
+                viewCategoryDescText.title = catDesc;
+            }
+
+            if (viewWorkTypesGrid) viewWorkTypesGrid.innerHTML = '';
+            if (viewWorkTypesEmpty) viewWorkTypesEmpty.style.display = 'none';
+            if (viewWorkTypesLoading) viewWorkTypesLoading.style.display = 'block';
+
+            viewModalOverlay.style.display = 'flex';
+            viewModalOverlay.classList.add('active');
+            viewModalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+
+            reloadWorkTypes(cat.id);
+        }
+
+        function closeViewModal() {
+            if (!viewModalOverlay) return;
+            hideWorkTypeForm();
+            currentViewCategory = null;
+            viewModalOverlay.classList.remove('active');
+            viewModalOverlay.setAttribute('aria-hidden', 'true');
+            viewModalOverlay.style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Delegate click for View buttons in table rows
+        document.addEventListener('click', function(e) {
+            var viewBtn = e.target.closest('.js-view-category-btn');
+            if (!viewBtn) return;
+            e.preventDefault();
+            var id = viewBtn.getAttribute('data-id');
+            var name = viewBtn.getAttribute('data-name') || '';
+            var icon = viewBtn.getAttribute('data-icon') || '';
+            var desc = viewBtn.getAttribute('data-description') || '';
+            openViewModal({ id: id, name: name, icon: icon, description: desc });
+        });
+
+        if (viewModalCloseXBtn) {
+            viewModalCloseXBtn.addEventListener('click', closeViewModal);
+        }
+        if (viewModalCloseBtn) {
+            viewModalCloseBtn.addEventListener('click', closeViewModal);
+        }
+        if (viewModalOverlay) {
+            viewModalOverlay.addEventListener('click', function(e) {
+                if (e.target === viewModalOverlay) {
+                    closeViewModal();
+                }
+            });
+        }
+
+        // =========================================================
+        // WORK TYPE MATERIALS MODAL CONTROLLER
+        // =========================================================
+        var materialsModalOverlay = document.getElementById('workTypeMaterialsModal');
+        var materialsModalTitle = document.getElementById('materialsModalTitle');
+        var materialsModalWorkTypeEmoji = document.getElementById('materialsModalWorkTypeEmoji');
+        var materialsModalCategoryBadge = document.getElementById('materialsModalCategoryBadge');
+        var materialsModalGlobalAlert = document.getElementById('materialsModalGlobalAlert');
+        var materialsModalCloseXBtn = document.getElementById('materialsModalCloseXBtn');
+        var materialsModalCloseBtn = document.getElementById('materialsModalCloseBtn');
+
+        var openAddMaterialBtn = document.getElementById('openAddMaterialBtn');
+        var emptyAddMaterialBtn = document.getElementById('emptyAddMaterialBtn');
+        var materialFormContainer = document.getElementById('materialFormContainer');
+        var materialFormTitle = document.getElementById('materialFormTitle');
+        var materialFormAlert = document.getElementById('materialFormAlert');
+        var cancelMaterialFormXBtn = document.getElementById('cancelMaterialFormXBtn');
+        var cancelMaterialBtn = document.getElementById('cancelMaterialBtn');
+        var saveMaterialBtn = document.getElementById('saveMaterialBtn');
+
+        var materialIdInput = document.getElementById('materialIdInput');
+        var materialNameInput = document.getElementById('materialNameInput');
+        var materialGradeSelect = document.getElementById('materialGradeSelect');
+        var materialFormulaSelect = document.getElementById('materialFormulaSelect');
+        var formulaDescBox = document.getElementById('formulaDescBox');
+        var formulaDescTitle = document.getElementById('formulaDescTitle');
+        var formulaDescCalc = document.getElementById('formulaDescCalc');
+        var materialSpecInput = document.getElementById('materialSpecInput');
+        var materialUnitSelect = document.getElementById('materialUnitSelect');
+        var materialRateInput = document.getElementById('materialRateInput');
+
+        var materialsLoading = document.getElementById('materialsLoading');
+        var materialsEmpty = document.getElementById('materialsEmpty');
+        var materialsEmptyTitle = document.getElementById('materialsEmptyTitle');
+        var materialsEmptyDesc = document.getElementById('materialsEmptyDesc');
+        var materialsListContainer = document.getElementById('materialsListContainer');
+
+        var tabCountPremium = document.getElementById('tabCountPremium');
+        var tabCountMiddle = document.getElementById('tabCountMiddle');
+        var tabCountEconomy = document.getElementById('tabCountEconomy');
+
+        var currentMaterialsWorkType = null;
+        var currentMaterialsData = null;
+        var activeMaterialsGrade = 'PREMIUM';
+
+        function updateFormulaDescription() {
+            var val = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W') || 'L × W';
+            if (val === '(L + W) × H') {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 2: (L + W) × H';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: (Length + Width) × Height — Used to calculate the required area based on the combined length and width. Requires Length, Width, and Height inputs.';
+            } else if (val === 'L × H') {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 3: L × H';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: Length × Height — Used to calculate area in square feet. Requires Length and Height inputs (Width hidden).';
+            } else {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 1: L × W';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: Length × Width — Used to calculate area in square feet. Requires Length and Width inputs (Height hidden).';
+            }
+        }
+
+        if (materialFormulaSelect) {
+            materialFormulaSelect.addEventListener('change', updateFormulaDescription);
+        }
+
+        function showMaterialsGlobalAlert(message, isError) {
+            if (!materialsModalGlobalAlert) return;
+            materialsModalGlobalAlert.textContent = message;
+            materialsModalGlobalAlert.style.display = 'block';
+            if (isError) {
+                materialsModalGlobalAlert.style.background = '#fef2f2';
+                materialsModalGlobalAlert.style.border = '1px solid #fecaca';
+                materialsModalGlobalAlert.style.color = '#991b1b';
+            } else {
+                materialsModalGlobalAlert.style.background = '#f0fdf4';
+                materialsModalGlobalAlert.style.border = '1px solid #bbf7d0';
+                materialsModalGlobalAlert.style.color = '#166534';
+            }
+        }
+
+        function showMaterialFormAlert(message, isError) {
+            if (!materialFormAlert) return;
+            materialFormAlert.textContent = message;
+            materialFormAlert.style.display = 'block';
+            if (isError) {
+                materialFormAlert.style.background = '#fef2f2';
+                materialFormAlert.style.border = '1px solid #fecaca';
+                materialFormAlert.style.color = '#991b1b';
+            } else {
+                materialFormAlert.style.background = '#f0fdf4';
+                materialFormAlert.style.border = '1px solid #bbf7d0';
+                materialFormAlert.style.color = '#166534';
+            }
+        }
+
+        function hideMaterialForm() {
+            if (materialFormContainer) materialFormContainer.style.display = 'none';
+            if (materialFormAlert) materialFormAlert.style.display = 'none';
+            if (materialIdInput) materialIdInput.value = '';
+            if (materialNameInput) materialNameInput.value = '';
+            if (materialSpecInput) materialSpecInput.value = '';
+            if (materialRateInput) materialRateInput.value = '';
+            if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
+            if (materialFormulaSelect) materialFormulaSelect.value = 'L × W';
+            updateFormulaDescription();
+            if (saveMaterialBtn) {
+                saveMaterialBtn.disabled = false;
+                saveMaterialBtn.textContent = 'Save Material';
+            }
+        }
+
+        function openMaterialForm(mat) {
+            if (!materialFormContainer) return;
+            if (materialsModalGlobalAlert) materialsModalGlobalAlert.style.display = 'none';
+            if (materialFormAlert) materialFormAlert.style.display = 'none';
+
+            var isEdit = mat && mat.id;
+            if (materialFormTitle) {
+                var gradeLabel = activeMaterialsGrade === 'PREMIUM' ? 'Premium' : (activeMaterialsGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
+                materialFormTitle.textContent = isEdit ? 'Edit Material' : ('Add Material to ' + gradeLabel);
+            }
+
+            if (materialIdInput) materialIdInput.value = isEdit ? mat.id : '';
+            if (materialNameInput) materialNameInput.value = isEdit ? (mat.name || '') : '';
+            if (materialGradeSelect) materialGradeSelect.value = isEdit ? (mat.pricingGrade || activeMaterialsGrade) : activeMaterialsGrade;
+            if (materialFormulaSelect) {
+                materialFormulaSelect.value = isEdit ? (mat.formula || 'L × W') : 'L × W';
+            }
+            updateFormulaDescription();
+            if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
+            if (materialUnitSelect) materialUnitSelect.value = isEdit ? (mat.unit || 'Sq.ft') : 'Sq.ft';
+            if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
+
+            materialFormContainer.style.display = 'block';
+            materialFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            if (materialNameInput) materialNameInput.focus();
+        }
+
+        function updateGradeTabBadges(data) {
+            var prem = (data && data.premiumCount != null) ? data.premiumCount : 0;
+            var mid = (data && data.middleCount != null) ? data.middleCount : 0;
+            var eco = (data && data.economyCount != null) ? data.economyCount : 0;
+
+            if (tabCountPremium) tabCountPremium.textContent = prem;
+            if (tabCountMiddle) tabCountMiddle.textContent = mid;
+            if (tabCountEconomy) tabCountEconomy.textContent = eco;
+        }
+
+        function renderMaterialsForGrade(grade) {
+            activeMaterialsGrade = grade;
+
+            // Update tab UI styles
+            var tabs = document.querySelectorAll('.grade-tab-btn');
+            tabs.forEach(function(btn) {
+                var g = btn.getAttribute('data-grade');
+                var countBadge = btn.querySelector('.grade-count-badge');
+                if (g === grade) {
+                    btn.classList.add('active');
+                    btn.style.color = '#024541';
+                    btn.style.borderBottom = '3px solid #024541';
+                    if (countBadge) {
+                        countBadge.style.background = '#024541';
+                        countBadge.style.color = '#ffffff';
+                    }
+                } else {
+                    btn.classList.remove('active');
+                    btn.style.color = '#64748b';
+                    btn.style.borderBottom = '3px solid transparent';
+                    if (countBadge) {
+                        countBadge.style.background = '#e2e8f0';
+                        countBadge.style.color = '#475569';
+                    }
+                }
+            });
+
+            if (!currentMaterialsData || !currentMaterialsData.materials) return;
+            var list = currentMaterialsData.materials[grade] || [];
+
+            if (list.length === 0) {
+                if (materialsEmpty) {
+                    var gradeLabel = grade === 'PREMIUM' ? 'Premium' : (grade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
+                    if (materialsEmptyTitle) materialsEmptyTitle.textContent = 'No ' + gradeLabel + ' materials configured';
+                    if (materialsEmptyDesc) materialsEmptyDesc.textContent = 'Add materials under ' + gradeLabel + ' for ' + (currentMaterialsWorkType ? currentMaterialsWorkType.name : 'this work type') + '.';
+                    materialsEmpty.style.display = 'block';
+                }
+                if (materialsListContainer) materialsListContainer.innerHTML = '';
+                return;
+            }
+
+            if (materialsEmpty) materialsEmpty.style.display = 'none';
+            if (materialsListContainer) {
+                var html = '';
+                list.forEach(function(mat) {
+                    var name = mat.name || '';
+                    var spec = mat.specification || '';
+                    var unit = mat.unit || 'Sq.ft';
+                    var formula = mat.formula || 'L × W';
+                    var rateVal = Number(mat.rate || 0);
+                    var rateFmt = '₹ ' + rateVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    var isActive = mat.active !== false;
+
+                    html += '<div class="material-card" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;">' +
+                        '<div style="min-width: 0; flex: 1;">' +
+                            '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
+                                '<strong style="font-size: 14px; font-weight: 700; color: #0f172a;">' + escapeHtml(name) + '</strong>' +
+                                '<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📐 Formula: ' + escapeHtml(formula) + '</span>' +
+                                (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
+                            '</div>' +
+                            (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
+                        '</div>' +
+                        '<div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">' +
+                            '<div style="text-align: right;">' +
+                                '<div style="font-size: 15px; font-weight: 700; color: #024541;">' + rateFmt + '</div>' +
+                                '<div style="font-size: 11px; color: #64748b; font-weight: 500;">per ' + escapeHtml(unit) + '</div>' +
+                            '</div>' +
+                            '<div class="material-actions" style="display: flex; gap: 6px;">' +
+                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                '<button type="button" class="js-delete-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" title="Delete Material" style="padding: 5px 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>';
+                });
+                materialsListContainer.innerHTML = html;
+            }
+        }
+
+        function loadWorkTypeMaterials(workTypeId) {
+            if (!workTypeId) return;
+            if (materialsLoading) materialsLoading.style.display = 'block';
+            if (materialsEmpty) materialsEmpty.style.display = 'none';
+            if (materialsListContainer) materialsListContainer.innerHTML = '';
+
+            fetch('/admin/work-categories/work-types/' + encodeURIComponent(workTypeId) + '/materials', {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(function(resp) {
+                return resp.json().then(function(data) {
+                    return { ok: resp.ok, data: data };
+                });
+            })
+            .then(function(res) {
+                if (materialsLoading) materialsLoading.style.display = 'none';
+                if (!res.ok || !res.data || !res.data.success) {
+                    showMaterialsGlobalAlert((res.data && res.data.message) ? res.data.message : 'Failed to load materials.', true);
+                    return;
+                }
+                currentMaterialsData = res.data;
+                updateGradeTabBadges(res.data);
+                renderMaterialsForGrade(activeMaterialsGrade);
+            })
+            .catch(function(err) {
+                if (materialsLoading) materialsLoading.style.display = 'none';
+                showMaterialsGlobalAlert(err.message || 'Network error while loading materials.', true);
+            });
+        }
+
+        function openMaterialsModal(workTypeId, workTypeName, workTypeEmoji, categoryName) {
+            if (!materialsModalOverlay) return;
+            currentMaterialsWorkType = {
+                id: workTypeId,
+                name: workTypeName,
+                emoji: workTypeEmoji,
+                categoryName: categoryName
+            };
+
+            hideMaterialForm();
+            if (materialsModalGlobalAlert) materialsModalGlobalAlert.style.display = 'none';
+
+            if (materialsModalTitle) materialsModalTitle.textContent = (workTypeName || 'WORK TYPE').toUpperCase();
+            if (materialsModalWorkTypeEmoji) materialsModalWorkTypeEmoji.textContent = workTypeEmoji || '🗄️';
+            if (materialsModalCategoryBadge) materialsModalCategoryBadge.textContent = (categoryName || 'CATEGORY').toUpperCase();
+
+            materialsModalOverlay.style.zIndex = '1250';
+            materialsModalOverlay.style.display = 'flex';
+            setTimeout(function() {
+                materialsModalOverlay.classList.add('active');
+            }, 10);
+            materialsModalOverlay.setAttribute('aria-hidden', 'false');
+            document.body.style.overflow = 'hidden';
+
+            activeMaterialsGrade = 'PREMIUM';
+            loadWorkTypeMaterials(workTypeId);
+        }
+
+        function closeMaterialsModal() {
+            if (!materialsModalOverlay) return;
+            hideMaterialForm();
+            currentMaterialsWorkType = null;
+            currentMaterialsData = null;
+            materialsModalOverlay.classList.remove('active');
+            materialsModalOverlay.setAttribute('aria-hidden', 'true');
+            setTimeout(function() {
+                materialsModalOverlay.style.display = 'none';
+            }, 150);
+
+            // Maintain body scroll lock if viewWorkTypesModal is still open
+            if (viewModalOverlay && viewModalOverlay.classList.contains('active')) {
+                document.body.style.overflow = 'hidden';
+            } else {
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Grade Tab switching event
+        var gradeTabsContainer = document.querySelector('.materials-grade-tabs');
+        if (gradeTabsContainer) {
+            gradeTabsContainer.addEventListener('click', function(e) {
+                var tabBtn = e.target.closest('.grade-tab-btn');
+                if (tabBtn) {
+                    var grade = tabBtn.getAttribute('data-grade');
+                    if (grade) {
+                        hideMaterialForm();
+                        renderMaterialsForGrade(grade);
+                    }
+                }
+            });
+        }
+
+        // Open Add Material Form
+        if (openAddMaterialBtn) {
+            openAddMaterialBtn.addEventListener('click', function() {
+                openMaterialForm(null);
+            });
+        }
+        if (emptyAddMaterialBtn) {
+            emptyAddMaterialBtn.addEventListener('click', function() {
+                openMaterialForm(null);
+            });
+        }
+
+        // Cancel Material Form
+        if (cancelMaterialFormXBtn) {
+            cancelMaterialFormXBtn.addEventListener('click', hideMaterialForm);
+        }
+        if (cancelMaterialBtn) {
+            cancelMaterialBtn.addEventListener('click', hideMaterialForm);
+        }
+
+        // Save Material Handler
+        if (saveMaterialBtn) {
+            saveMaterialBtn.addEventListener('click', function() {
+                if (!currentMaterialsWorkType) return;
+
+                var idVal = (materialIdInput ? materialIdInput.value : '').trim();
+                var nameVal = (materialNameInput ? materialNameInput.value : '').trim();
+                var gradeVal = (materialGradeSelect ? materialGradeSelect.value : activeMaterialsGrade).trim();
+                var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
+                var specVal = (materialSpecInput ? materialSpecInput.value : '').trim();
+                var unitVal = (materialUnitSelect ? materialUnitSelect.value : 'Sq.ft').trim();
+                var rateVal = (materialRateInput ? materialRateInput.value : '').trim();
+
+                var isEdit = (idVal && idVal.length > 0 && idVal !== '0');
+
+                if (!nameVal) {
+                    showMaterialFormAlert('Material name is required.', true);
+                    if (materialNameInput) materialNameInput.focus();
+                    return;
+                }
+
+                if (!rateVal || isNaN(rateVal) || Number(rateVal) < 0) {
+                    showMaterialFormAlert('Rate must be a non-negative number.', true);
+                    if (materialRateInput) materialRateInput.focus();
+                    return;
+                }
+
+                saveMaterialBtn.disabled = true;
+                saveMaterialBtn.textContent = isEdit ? 'Updating...' : 'Saving...';
+
+                var csrf = getCsrfInfo();
+                var url = isEdit
+                    ? ('/admin/work-categories/work-types/materials/' + encodeURIComponent(idVal))
+                    : ('/admin/work-categories/work-types/' + encodeURIComponent(currentMaterialsWorkType.id) + '/materials');
+
+                var params = new URLSearchParams();
+                params.append('name', nameVal);
+                params.append('grade', gradeVal);
+                params.append('formula', formulaVal);
+                params.append('measurementFormula', formulaVal);
+                params.append('specification', specVal);
+                params.append('unit', unitVal);
+                params.append('rate', rateVal);
+                if (isEdit) {
+                    params.append('targetWorkTypeId', currentMaterialsWorkType.id);
+                }
+
+                var headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (csrf.token) headers[csrf.header] = csrf.token;
+
+                fetch(url, {
+                    method: 'POST',
+                    headers: headers,
+                    body: params.toString()
+                })
+                .then(function(resp) {
+                    return resp.json().then(function(data) {
+                        return { ok: resp.ok, status: resp.status, data: data };
+                    });
+                })
+                .then(function(res) {
+                    saveMaterialBtn.disabled = false;
+                    saveMaterialBtn.textContent = isEdit ? 'Update Material' : 'Save Material';
+
+                    if (!res.ok || !res.data.success) {
+                        var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to save material.';
+                        showMaterialFormAlert(errMsg, true);
+                        return;
+                    }
+
+                    hideMaterialForm();
+                    showMaterialsGlobalAlert(res.data.message || (isEdit ? 'Material updated successfully.' : 'Material added successfully.'), false);
+                    currentMaterialsData = res.data;
+                    updateGradeTabBadges(res.data);
+                    renderMaterialsForGrade(gradeVal);
+                })
+                .catch(function(err) {
+                    saveMaterialBtn.disabled = false;
+                    saveMaterialBtn.textContent = isEdit ? 'Update Material' : 'Save Material';
+                    showMaterialFormAlert(err.message || 'An unexpected network error occurred.', true);
+                });
+            });
+        }
+
+        // Delegate Edit & Delete clicks inside materialsListContainer
+        if (materialsListContainer) {
+            materialsListContainer.addEventListener('click', function(e) {
+                var editBtn = e.target.closest('.js-edit-material-btn');
+                if (editBtn) {
+                    e.preventDefault();
+                    var id = editBtn.getAttribute('data-id');
+                    var name = editBtn.getAttribute('data-name') || '';
+                    var spec = editBtn.getAttribute('data-spec') || '';
+                    var unit = editBtn.getAttribute('data-unit') || 'Sq.ft';
+                    var rate = editBtn.getAttribute('data-rate') || '0';
+                    var grade = editBtn.getAttribute('data-grade') || activeMaterialsGrade;
+                    var formula = editBtn.getAttribute('data-formula') || 'L × W';
+                    openMaterialForm({
+                        id: id,
+                        name: name,
+                        specification: spec,
+                        unit: unit,
+                        rate: rate,
+                        pricingGrade: grade,
+                        formula: formula
+                    });
+                    return;
+                }
+
+                var delBtn = e.target.closest('.js-delete-material-btn');
+                if (delBtn) {
+                    e.preventDefault();
+                    if (!currentMaterialsWorkType) return;
+                    var delId = delBtn.getAttribute('data-id');
+                    var delName = delBtn.getAttribute('data-name') || 'this material';
+
+                    var confirmed = confirm(
+                        "Are you sure you want to delete material '" + delName + "'?\n\n" +
+                        "If it is referenced in any quotation, it will be safely deactivated to protect historical quotation data."
+                    );
+                    if (!confirmed) return;
+
+                    delBtn.disabled = true;
+                    delBtn.textContent = '...';
+
+                    var csrf = getCsrfInfo();
+                    var url = '/admin/work-categories/work-types/materials/' + encodeURIComponent(delId) + '/delete?targetWorkTypeId=' + encodeURIComponent(currentMaterialsWorkType.id);
+
+                    var headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (csrf.token) headers[csrf.header] = csrf.token;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return { ok: resp.ok, status: resp.status, data: data };
+                        });
+                    })
+                    .then(function(res) {
+                        if (!res.ok || !res.data.success) {
+                            var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to delete material.';
+                            alert(errMsg);
+                            delBtn.disabled = false;
+                            delBtn.textContent = 'Delete';
+                            return;
+                        }
+
+                        showMaterialsGlobalAlert(res.data.message || 'Material deleted successfully.', false);
+                        currentMaterialsData = res.data;
+                        updateGradeTabBadges(res.data);
+                        renderMaterialsForGrade(activeMaterialsGrade);
+                    })
+                    .catch(function(err) {
+                        alert(err.message || 'An error occurred while deleting the material.');
+                        delBtn.disabled = false;
+                        delBtn.textContent = 'Delete';
+                    });
+                }
+            });
+        }
+
+        // Close modal buttons
+        if (materialsModalCloseXBtn) {
+            materialsModalCloseXBtn.addEventListener('click', closeMaterialsModal);
+        }
+        if (materialsModalCloseBtn) {
+            materialsModalCloseBtn.addEventListener('click', closeMaterialsModal);
+        }
+        if (materialsModalOverlay) {
+            materialsModalOverlay.addEventListener('click', function(e) {
+                if (e.target === materialsModalOverlay) {
+                    closeMaterialsModal();
+                }
+            });
+        }
         if (modalOverlay) {
             modalOverlay.addEventListener('click', function(e) {
                 if (e.target === modalOverlay) {
@@ -721,11 +1912,21 @@
                 }
             });
         }
-
-        // Close on Escape key
+        // Unified Escape key handler respecting modal stacking order
         document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape' && modalOverlay && modalOverlay.classList.contains('active')) {
-                closeModal();
+            if (e.key === 'Escape') {
+                if (materialsModalOverlay && materialsModalOverlay.classList.contains('active')) {
+                    closeMaterialsModal();
+                    return;
+                }
+                if (viewModalOverlay && viewModalOverlay.classList.contains('active')) {
+                    closeViewModal();
+                    return;
+                }
+                if (modalOverlay && modalOverlay.classList.contains('active')) {
+                    closeModal();
+                    return;
+                }
             }
         });
 
@@ -744,28 +1945,6 @@
                 if (modalAlert && modalAlert.classList.contains('error')) {
                     modalAlert.style.display = 'none';
                 }
-            });
-        }
-
-        // Preset emoji buttons
-        paletteBtns.forEach(function(btn) {
-            btn.addEventListener('click', function() {
-                var em = this.getAttribute('data-emoji');
-                setEmoji(em);
-            });
-        });
-
-        // Custom emoji typed into input
-        if (emojiInput) {
-            emojiInput.addEventListener('input', function() {
-                setEmoji(this.value);
-            });
-        }
-
-        // Clear emoji button
-        if (clearEmojiBtn) {
-            clearEmojiBtn.addEventListener('click', function() {
-                setEmoji('');
             });
         }
 
@@ -788,7 +1967,6 @@
                 var isEdit = (editId && editId.length > 0 && editId !== '0');
 
                 var nameVal = (nameInput ? nameInput.value : '').trim().toUpperCase();
-                var emojiVal = (emojiInput ? emojiInput.value : '').trim();
                 var descVal = (descInput ? descInput.value : '').trim();
 
                 // Validate name
@@ -840,7 +2018,6 @@
                     formData.append('id', editId);
                 }
                 formData.append('name', nameVal);
-                if (emojiVal) formData.append('icon', emojiVal);
                 if (descVal) formData.append('description', descVal);
                 if (csrf.token) formData.append('_csrf', csrf.token);
 
@@ -948,44 +2125,19 @@
             var nameUpper = (category.name || '').toUpperCase();
             var iconVal = (category.icon || '').trim();
             var descVal = category.description || '';
+            var displayName = (iconVal && !nameUpper.includes(iconVal) ? (iconVal + ' ') : '') + nameUpper;
 
             // Update row attributes
-            tr.setAttribute('data-name', nameUpper);
+            tr.setAttribute('data-name', displayName);
             tr.setAttribute('data-icon', iconVal);
             tr.setAttribute('data-description', descVal);
 
-            // Update icon pill in col-icon
-            var iconPill = tr.querySelector('.col-icon .category-icon-pill');
-            if (iconPill) {
-                iconPill.textContent = iconVal || '📁';
-                if (!iconVal) {
-                    iconPill.classList.add('fallback');
-                } else {
-                    iconPill.classList.remove('fallback');
-                }
-            }
-
-            // Update category title and inline emoji
+            // Update category title
             var titleWrap = tr.querySelector('.category-name-cell .category-title-wrap');
             if (titleWrap) {
-                var inlineEmoji = titleWrap.querySelector('.category-inline-emoji');
-                if (iconVal) {
-                    if (inlineEmoji) {
-                        inlineEmoji.textContent = iconVal;
-                    } else {
-                        var span = document.createElement('span');
-                        span.className = 'category-inline-emoji';
-                        span.style.cssText = 'font-size: 1.25rem; line-height: 1;';
-                        span.textContent = iconVal;
-                        titleWrap.insertBefore(span, titleWrap.firstChild);
-                    }
-                } else if (inlineEmoji) {
-                    inlineEmoji.remove();
-                }
-
                 var titleEl = titleWrap.querySelector('.category-title');
                 if (titleEl) {
-                    titleEl.textContent = nameUpper;
+                    titleEl.textContent = displayName;
                 }
             }
 
@@ -1010,15 +2162,23 @@
             // Update edit button data attributes
             var editBtn = tr.querySelector('.js-edit-category-btn');
             if (editBtn) {
-                editBtn.setAttribute('data-name', nameUpper);
+                editBtn.setAttribute('data-name', displayName);
                 editBtn.setAttribute('data-icon', iconVal);
                 editBtn.setAttribute('data-description', descVal);
+            }
+
+            // Update view button data attributes
+            var viewBtn = tr.querySelector('.js-view-category-btn');
+            if (viewBtn) {
+                viewBtn.setAttribute('data-name', displayName);
+                viewBtn.setAttribute('data-icon', iconVal);
+                viewBtn.setAttribute('data-description', descVal);
             }
 
             // Update delete form data-category-name
             var deleteForm = tr.querySelector('.col-actions form[action*="/delete/"]');
             if (deleteForm) {
-                deleteForm.setAttribute('data-category-name', nameUpper);
+                deleteForm.setAttribute('data-category-name', displayName);
             }
 
             // Flash highlight row smoothly
@@ -1044,7 +2204,6 @@
             if (toolbar) toolbar.style.display = '';
 
             if (!categoryTable) {
-                // If table didn't exist initially, reload cleanly to render the complete table structure
                 window.location.reload();
                 return;
             }
@@ -1052,34 +2211,33 @@
             var tbody = categoryTable.querySelector('tbody');
             if (!tbody) return;
 
+            var nameUpper = (category.name || '').toUpperCase();
+            var iconVal = (category.icon || '').trim();
+            var descVal = category.description || '';
+            var displayName = (iconVal && !nameUpper.includes(iconVal) ? (iconVal + ' ') : '') + nameUpper;
+
             var tr = document.createElement('tr');
             tr.className = 'category-row';
             tr.id = 'category-row-' + category.id;
             tr.setAttribute('data-id', category.id);
-            tr.setAttribute('data-name', (category.name || '').toUpperCase());
-            tr.setAttribute('data-icon', (category.icon || '').trim());
-            tr.setAttribute('data-description', category.description || '');
+            tr.setAttribute('data-name', displayName);
+            tr.setAttribute('data-icon', iconVal);
+            tr.setAttribute('data-description', descVal);
             tr.setAttribute('data-status', 'active');
             tr.style.backgroundColor = '#f0fdf4';
             tr.style.transition = 'background-color 1.5s ease';
 
             var csrf = getCsrfInfo();
-            var iconDisplay = (category.icon && category.icon.trim()) ? category.icon.trim() : '📁';
-
             var sNo = tbody.querySelectorAll('tr.category-row').length + 1;
 
             tr.innerHTML =
                 '<td class="col-sno serial-number">' + sNo + '</td>' +
-                '<td class="col-icon">' +
-                    '<span class="category-icon-pill">' + escapeHtml(iconDisplay) + '</span>' +
-                '</td>' +
                 '<td class="col-name">' +
                     '<div class="category-name-cell">' +
-                        '<div class="category-title-wrap" style="display: flex; align-items: center; gap: 8px;">' +
-                            ((category.icon && category.icon.trim()) ? '<span class="category-inline-emoji" style="font-size: 1.25rem; line-height: 1;">' + escapeHtml(category.icon.trim()) + '</span>' : '') +
-                            '<strong class="category-title">' + escapeHtml(category.name.toUpperCase()) + '</strong>' +
+                        '<div class="category-title-wrap">' +
+                            '<strong class="category-title">' + escapeHtml(displayName) + '</strong>' +
                         '</div>' +
-                        (category.description ? '<p class="category-description">' + escapeHtml(category.description) + '</p>' : '') +
+                        (descVal ? '<p class="category-description">' + escapeHtml(descVal) + '</p>' : '') +
                     '</div>' +
                 '</td>' +
                 '<td class="col-status">' +
@@ -1087,12 +2245,15 @@
                 '</td>' +
                 '<td class="col-actions">' +
                     '<div class="table-actions">' +
-                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(category.name.toUpperCase()) + '" data-icon="' + escapeHtml((category.icon || '').trim()) + '" data-description="' + escapeHtml(category.description || '') + '" title="Edit Category">Edit</button>' +
+                        '<button type="button" class="action-btn view-btn js-view-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(displayName) + '" data-icon="' + escapeHtml(iconVal) + '" data-description="' + escapeHtml(descVal) + '" title="View Category Work Types">View</button>' +
+                        '<button type="button" class="action-btn edit-btn js-edit-category-btn" data-id="' + category.id + '" data-name="' + escapeHtml(displayName) + '" data-icon="' + escapeHtml(iconVal) + '" data-description="' + escapeHtml(descVal) + '" title="Edit Category">Edit</button>' +
                         '<form action="/admin/work-categories/toggle/' + category.id + '" method="post" class="action-form">' +
+                            '<input type="hidden" name="' + csrf.header + '" value="' + csrf.token + '">' +
                             '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
                             '<button type="submit" class="action-btn toggle-btn btn-deactivate" title="Deactivate Category">Deactivate</button>' +
                         '</form>' +
-                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(category.name.toUpperCase()) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                        '<form action="/admin/work-categories/delete/' + category.id + '" method="post" class="action-form" data-category-name="' + escapeHtml(displayName) + '" onsubmit="return confirmDeleteCategory(this);">' +
+                            '<input type="hidden" name="' + csrf.header + '" value="' + csrf.token + '">' +
                             '<input type="hidden" name="_csrf" value="' + csrf.token + '">' +
                             '<button type="submit" class="action-btn delete-btn" title="Delete Category">Delete</button>' +
                         '</form>' +

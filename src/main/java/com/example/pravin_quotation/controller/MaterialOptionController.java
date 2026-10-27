@@ -24,13 +24,7 @@ public class MaterialOptionController {
 
     @GetMapping
     public String options(Model model) {
-
-        model.addAttribute(
-                "options",
-                materialOptionService.getAllOptions()
-        );
-
-        return "admin/material-options";
+        return "redirect:/admin/work-categories";
     }
 
     @GetMapping("/new")

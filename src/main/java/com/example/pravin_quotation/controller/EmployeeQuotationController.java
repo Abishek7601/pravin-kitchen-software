@@ -441,7 +441,16 @@ public class EmployeeQuotationController {
     @ResponseBody
     public List<Map<String, Object>> builderDivisions(@RequestParam Long workCategoryId) {
         return divisionRepository.findByWorkCategoryIdAndActiveTrueOrderByDisplayOrderAsc(workCategoryId)
-                .stream().map(d -> mapData("id", d.getId(), "name", d.getName() != null ? d.getName().toUpperCase() : "", "description", d.getDescription()))
+                .stream().map(d -> {
+                    String emoji = d.getIcon() != null && !d.getIcon().isBlank()
+                            ? d.getIcon().trim()
+                            : WorkCategoryService.resolveWorkTypeEmoji(d.getName(), "📁");
+                    return mapData("id", d.getId(),
+                            "name", d.getName() != null ? d.getName().toUpperCase() : "",
+                            "emoji", emoji,
+                            "icon", emoji,
+                            "description", d.getDescription());
+                })
                 .toList();
     }
 
@@ -457,25 +466,53 @@ public class EmployeeQuotationController {
     @ResponseBody
     public List<Map<String, Object>> builderMaterials(
             @RequestParam(required = false) Long divisionId,
-            @RequestParam(required = false) Long itemId) {
-        List<Material> list;
-        if (divisionId != null) {
-            list = materialRepository.findActiveByDivisionId(divisionId);
-        } else if (itemId != null) {
-            list = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId);
-        } else {
-            list = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
+            @RequestParam(required = false) Long itemId,
+            @RequestParam(required = false) String pricingGrade) {
+        PricingMode grade = null;
+        if (pricingGrade != null && !pricingGrade.isBlank()) {
+            String g = pricingGrade.trim().toUpperCase();
+            if (g.contains("PREMIUM")) grade = PricingMode.PREMIUM;
+            else if (g.contains("ECONOMY")) grade = PricingMode.ECONOMY;
+            else grade = PricingMode.MIDDLE;
         }
-        return list.stream().map(m -> mapData(
-                "id", m.getId(),
-                "name", m.getName() != null ? m.getName().toUpperCase() : "",
-                "description", m.getDescription(),
-                "formula", m.getFormula()
-        )).toList();
+
+        List<Material> list = null;
+        if (divisionId != null && grade != null) {
+            list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
+        }
+        if (list == null || list.isEmpty()) {
+            if (divisionId != null) {
+                list = materialRepository.findActiveByDivisionId(divisionId);
+            } else if (itemId != null) {
+                list = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId);
+            } else {
+                list = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
+            }
+        }
+        return list.stream().map(m -> {
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("id", m.getId());
+            map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
+            map.put("description", m.getDescription());
+            map.put("specification", m.getSpecification() != null ? m.getSpecification() : (m.getDescription() != null ? m.getDescription() : ""));
+            map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
+            map.put("rate", m.getRate());
+            map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
+            map.put("formula", m.getFormula());
+            return map;
+        }).toList();
     }
 
     public List<Map<String, Object>> builderMaterials(Long itemId) {
-        return builderMaterials(null, itemId);
+        return builderMaterials(null, itemId, (String) null);
+    }
+
+    public List<Map<String, Object>> builderMaterials(Long divisionId, Long itemId) {
+        return builderMaterials(divisionId, itemId, (String) null);
+    }
+
+    public ResponseEntity<?> builderRate(Long branchId, Long materialOptionId, PricingMode pricingMode) {
+        return builderRate(branchId, materialOptionId, null, pricingMode);
     }
 
     @GetMapping("/builder/material-options")
@@ -510,26 +547,45 @@ public class EmployeeQuotationController {
     @ResponseBody
     public ResponseEntity<?> builderRate(
             @RequestParam(required = false) Long branchId,
-            @RequestParam Long materialOptionId,
+            @RequestParam(required = false) Long materialOptionId,
+            @RequestParam(required = false) Long materialId,
             @RequestParam PricingMode pricingMode) {
         try {
-            BigDecimal rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
-            MaterialOption option = materialOptionRepository.findById(materialOptionId).orElse(null);
-            Pricing pricing = pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null);
+            BigDecimal rate = null;
+            Material material = materialId != null ? materialRepository.findById(materialId).orElse(null) : null;
+            MaterialOption option = materialOptionId != null ? materialOptionRepository.findById(materialOptionId).orElse(null) : null;
 
-            String formula;
-            if (option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null && !option.getMaterial().getFormula().isBlank() && !"(L + W) × H".equals(option.getMaterial().getFormula())) {
-                formula = option.getMaterial().getFormula();
-            } else if (pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank()) {
-                formula = pricing.getFormula();
-            } else if (option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null && !option.getMaterial().getFormula().isBlank()) {
-                formula = option.getMaterial().getFormula();
-            } else {
-                formula = "(L + W) × H";
+            if (materialOptionId != null) {
+                try {
+                    rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
+                } catch (Exception ignored) {}
             }
-            String unit = "SQFT";
-            String measurementUnit = "SQFT";
-            String pricingUnit = "₹ / SQFT";
+
+            if (rate == null && material != null && material.getRate() != null) {
+                rate = material.getRate();
+            }
+
+            if (rate == null && materialOptionId != null) {
+                rate = builderService.resolveRate(branchId, materialOptionId, pricingMode);
+            }
+
+            if (rate == null) {
+                rate = BigDecimal.ZERO;
+            }
+
+            Pricing pricing = materialOptionId != null ? pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null) : null;
+
+            String formula = (material != null && material.getFormula() != null && !material.getFormula().isBlank() && !"(L + W) × H".equals(material.getFormula()))
+                    ? material.getFormula()
+                    : ((pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
+                    ? pricing.getFormula()
+                    : ((option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null)
+                    ? option.getMaterial().getFormula()
+                    : "(L + W) × H"));
+
+            String unit = (material != null && material.getUnit() != null) ? material.getUnit() : "SQFT";
+            String measurementUnit = unit;
+            String pricingUnit = "₹ / " + unit;
 
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("rate", rate);

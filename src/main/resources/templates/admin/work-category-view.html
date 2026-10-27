@@ -445,12 +445,11 @@
     </div>
 
     <!-- LEVEL 2: DIVISIONS LIST -->
-    <div th:each="dDto : ${catDto.divisions}" class="div-box">
+    <div th:each="dDto, dStat : ${catDto.divisions}" class="div-box">
       <!-- DIVISION TITLE ROW -->
       <div class="div-title-row">
         <div class="div-title">
-          <span>📁</span>
-          <span th:text="${dDto.division.name != null ? dDto.division.name.toUpperCase() : ''}">SHOE CABINET</span>
+          <span th:text="${dStat.count} + '. ' + (dDto.division.name != null ? dDto.division.name.toUpperCase() : '')">1. SHOE CABINET</span>
           <span th:if="${dDto.division.description != null and !dDto.division.description.isBlank()}"
                 class="text-muted" style="font-size: 12px; font-weight: normal; text-transform: none;"
                 th:text="'— ' + ${dDto.division.description}"></span>
@@ -458,10 +457,23 @@
                 th:text="${dDto.division.active ? 'ACTIVE' : 'INACTIVE'}">ACTIVE</span>
         </div>
 
-        <div style="display: flex; gap: 6px; align-items: center;">
+        <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
           <a th:href="@{/admin/divisions/edit/{id}(id=${dDto.division.id}, redirectUrl=@{/admin/work-categories/view/{catId}(catId=${category.id})})}" class="btn-action-sm">
-            ✏️ Edit Division
+            Edit
           </a>
+          <form th:action="@{/admin/divisions/toggle/{id}(id=${dDto.division.id})}"
+                method="post"
+                style="display: inline; margin: 0;">
+            <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+            <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
+            <button type="submit"
+                    class="btn-action-sm"
+                    th:style="${dDto.division.active ? 'color: #b45309; background: #fffbeb; border-color: #fde68a;' : 'color: #15803d; background: #f0fdf4; border-color: #bbf7d0;'}"
+                    th:text="${dDto.division.active ? 'Deactivate' : 'Activate'}"
+                    th:title="${dDto.division.active ? 'Deactivate Work Type' : 'Activate Work Type'}">
+              Deactivate
+            </button>
+          </form>
           <form th:action="@{/admin/divisions/delete/{id}(id=${dDto.division.id})}"
                 method="post"
                 style="display: inline; margin: 0;"
@@ -470,7 +482,7 @@
             <input type="hidden" th:if="${_csrf != null}" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
             <input type="hidden" name="redirectUrl" th:value="@{/admin/work-categories/view/{id}(id=${category.id})}">
             <button type="submit" class="btn-action-danger" title="Delete Division">
-              🗑️ Delete
+              Delete
             </button>
           </form>
         </div>

@@ -703,4 +703,130 @@ public class DynamicCategoryMaterialFormulaTest {
         byte[] pdf = quotationPdfService.generateQuotationPdf(qId);
         assertThat(pdf).isNotEmpty();
     }
+
+    @Test
+    @DisplayName("Verify configurable measurement formulas for materials: L×W, (L+W)×H, L×H, persistence, update and calculations")
+    void testConfigurableMaterialMeasurementFormulas() {
+        WorkCategory cat = new WorkCategory();
+        cat.setName("Modular Kitchen Test");
+        cat.setEmoji("🍳");
+        cat.setActive(true);
+        cat = workCategoryRepository.save(cat);
+
+        Division wt = new Division();
+        wt.setName("Base Cabinets");
+        wt.setWorkCategory(cat);
+        wt.setActive(true);
+        wt = divisionRepository.save(wt);
+
+        // 1. Create materials with each of the three formulas
+        ResponseEntity<?> resp1 = workCategoryController.createWorkTypeMaterial(
+                wt.getId(), "PREMIUM", "Ply Base (L x W)", "18mm Marine Ply", "Sq.ft", new BigDecimal("250.00"), "L × W"
+        );
+        assertThat(resp1.getStatusCode().is2xxSuccessful()).isTrue();
+
+        ResponseEntity<?> resp2 = workCategoryController.createWorkTypeMaterial(
+                wt.getId(), "PREMIUM", "Carcass ((L+W) x H)", "Commercial Ply", "Sq.ft", new BigDecimal("300.00"), "(L + W) × H"
+        );
+        assertThat(resp2.getStatusCode().is2xxSuccessful()).isTrue();
+
+        ResponseEntity<?> resp3 = workCategoryController.createWorkTypeMaterial(
+                wt.getId(), "PREMIUM", "Shutter (L x H)", "Gloss Acrylic", "Sq.ft", new BigDecimal("400.00"), "L × H"
+        );
+        assertThat(resp3.getStatusCode().is2xxSuccessful()).isTrue();
+
+        // 2. Verify materials and formula persistence in database
+        List<Material> materials = materialRepository.findByDivisionsIdOrderByDisplayOrderAsc(wt.getId());
+        Material matLW = materials.stream().filter(m -> m.getName().contains("L x W")).findFirst().orElseThrow();
+        Material matComb = materials.stream().filter(m -> m.getName().contains("(L+W) x H")).findFirst().orElseThrow();
+        Material matLH = materials.stream().filter(m -> m.getName().contains("L x H")).findFirst().orElseThrow();
+
+        assertThat(matLW.getFormula()).isEqualTo("L × W");
+        assertThat(matComb.getFormula()).isEqualTo("(L + W) × H");
+        assertThat(matLH.getFormula()).isEqualTo("L × H");
+
+        // 3. Verify getWorkTypeMaterials returns the formula for each material
+        Map<String, Object> materialsMap = workCategoryService.getWorkTypeMaterials(wt.getId());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> premiumMaterials = (List<Map<String, Object>>) materialsMap.get("premium");
+        assertThat(premiumMaterials).isNotEmpty();
+
+        Map<String, Object> lwMap = premiumMaterials.stream().filter(m -> m.get("name").toString().contains("L x W")).findFirst().orElseThrow();
+        assertThat(lwMap.get("formula")).isEqualTo("L × W");
+
+        Map<String, Object> combMap = premiumMaterials.stream().filter(m -> m.get("name").toString().contains("(L+W) x H")).findFirst().orElseThrow();
+        assertThat(combMap.get("formula")).isEqualTo("(L + W) × H");
+
+        Map<String, Object> lhMap = premiumMaterials.stream().filter(m -> m.get("name").toString().contains("L x H")).findFirst().orElseThrow();
+        assertThat(lhMap.get("formula")).isEqualTo("L × H");
+
+        // 4. Update formula of a material and verify persistence
+        ResponseEntity<?> updateResp = workCategoryController.updateWorkTypeMaterial(
+                matLW.getId(), "Ply Base (Updated to L x H)", "18mm Marine Ply", "Sq.ft", new BigDecimal("275.00"), "L × H"
+        );
+        assertThat(updateResp.getStatusCode().is2xxSuccessful()).isTrue();
+        Material updatedMat = materialRepository.findById(matLW.getId()).orElseThrow();
+        assertThat(updatedMat.getFormula()).isEqualTo("L × H");
+        assertThat(updatedMat.getRate()).isEqualByComparingTo(new BigDecimal("275.00"));
+
+        // 5. Test formula calculation logic:
+        // Let L = 10 ft, W = 5 ft, H = 8 ft:
+        // - L × W: 10 * 5 = 50 sq.ft
+        // - (L + W) × H: (10 + 5) * 8 = 120 sq.ft
+        // - L × H: 10 * 8 = 80 sq.ft
+        BigDecimal lFeet = new BigDecimal("10");
+        BigDecimal wFeet = new BigDecimal("5");
+        BigDecimal hFeet = new BigDecimal("8");
+
+        BigDecimal areaLW = CalculationFormula.calculateArea("L × W", lFeet, wFeet, hFeet, "ft");
+        BigDecimal areaComb = CalculationFormula.calculateArea("(L + W) × H", lFeet, wFeet, hFeet, "ft");
+        BigDecimal areaLH = CalculationFormula.calculateArea("L × H", lFeet, wFeet, hFeet, "ft");
+
+        assertThat(areaLW).isEqualByComparingTo(new BigDecimal("50.00"));
+        assertThat(areaComb).isEqualByComparingTo(new BigDecimal("120.00"));
+        assertThat(areaLH).isEqualByComparingTo(new BigDecimal("80.00"));
+
+        // Amount calculation verification with rates:
+        // Rate 250 -> 50 sq.ft * 250 = 12500.00
+        BigDecimal rateLW = new BigDecimal("250.00");
+        BigDecimal amountLW = areaLW.multiply(rateLW).setScale(2, java.math.RoundingMode.HALF_UP);
+        assertThat(amountLW).isEqualByComparingTo(new BigDecimal("12500.00"));
+
+        // Rate 300 -> 120 sq.ft * 300 = 36000.00
+        BigDecimal rateComb = new BigDecimal("300.00");
+        BigDecimal amountComb = areaComb.multiply(rateComb).setScale(2, java.math.RoundingMode.HALF_UP);
+        assertThat(amountComb).isEqualByComparingTo(new BigDecimal("36000.00"));
+
+        // Rate 400 -> 80 sq.ft * 400 = 32000.00
+        BigDecimal rateLH = new BigDecimal("400.00");
+        BigDecimal amountLH = areaLH.multiply(rateLH).setScale(2, java.math.RoundingMode.HALF_UP);
+        assertThat(amountLH).isEqualByComparingTo(new BigDecimal("32000.00"));
+
+        // 6. Test inch to feet conversion:
+        // L = 120 inches (10 ft), W = 60 inches (5 ft), H = 96 inches (8 ft)
+        BigDecimal lInches = new BigDecimal("120");
+        BigDecimal wInches = new BigDecimal("60");
+        BigDecimal hInches = new BigDecimal("96");
+
+        BigDecimal areaLWInches = CalculationFormula.calculateArea("L × W", lInches, wInches, hInches, "in");
+        BigDecimal areaCombInches = CalculationFormula.calculateArea("(L + W) × H", lInches, wInches, hInches, "in");
+        BigDecimal areaLHInches = CalculationFormula.calculateArea("L × H", lInches, wInches, hInches, "in");
+
+        assertThat(areaLWInches).isEqualByComparingTo(new BigDecimal("50.00"));
+        assertThat(areaCombInches).isEqualByComparingTo(new BigDecimal("120.00"));
+        assertThat(areaLHInches).isEqualByComparingTo(new BigDecimal("80.00"));
+
+        // 7. Verify invalid/missing dimensions do not calculate area (returns 0.00)
+        // For L × W: missing or 0 width returns 0.00
+        assertThat(CalculationFormula.calculateArea("L × W", lFeet, BigDecimal.ZERO, hFeet, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(CalculationFormula.calculateArea("L × W", null, wFeet, hFeet, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+
+        // For (L + W) × H: missing H returns 0.00
+        assertThat(CalculationFormula.calculateArea("(L + W) × H", lFeet, wFeet, BigDecimal.ZERO, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(CalculationFormula.calculateArea("(L + W) × H", lFeet, BigDecimal.ZERO, hFeet, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+
+        // For L × H: missing H returns 0.00
+        assertThat(CalculationFormula.calculateArea("L × H", lFeet, wFeet, BigDecimal.ZERO, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+        assertThat(CalculationFormula.calculateArea("L × H", BigDecimal.ZERO, wFeet, hFeet, "ft")).isEqualByComparingTo(BigDecimal.ZERO);
+    }
 }
