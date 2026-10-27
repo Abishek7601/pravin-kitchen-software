@@ -1850,4 +1850,58 @@ button:disabled,
 .item-spec,
 .summary-item-name {
     text-transform: uppercase;
+}
+
+/* =========================================================
+   STEP 2: PRICING MODE & FLOOR/ROOM SPLIT
+   ========================================================= */
+
+.step-two-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px;
+    align-items: stretch;
+    margin-bottom: 22px;
+}
+
+.step-two-row .pricing-card,
+.step-two-row .room-setup-card {
+    margin-bottom: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+.step-two-row .pricing-card .pricing-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
+.step-two-row .pricing-option {
+    min-height: 72px;
+    padding: 12px 10px;
+}
+
+.step-two-row .pricing-option b {
+    font-size: 13px;
+}
+
+.step-two-row .pricing-option small {
+    font-size: 10px;
+}
+
+.choice-card.selected-category,
+.choice-card.selected-division {
+    border-color: var(--peacock-green) !important;
+    background: var(--peacock-pale) !important;
+    box-shadow: 0 0 0 3px rgba(2, 69, 65, 0.18), var(--shadow-sm) !important;
+}
+
+@media (max-width: 992px) {
+    .step-two-row {
+        grid-template-columns: 1fr;
+    }
 }

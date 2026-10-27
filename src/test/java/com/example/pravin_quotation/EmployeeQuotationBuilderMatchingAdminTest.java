@@ -147,6 +147,9 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
         assertTrue(renderedHtml.contains("Customer Details"));
         assertTrue(renderedHtml.contains("Pricing Mode"));
         assertTrue(renderedHtml.contains("Floor &amp; Room") || renderedHtml.contains("Floor & Room"));
+        assertTrue(renderedHtml.contains("step-two-row"));
+        assertFalse(renderedHtml.contains("id=\"workDescription\""));
+        assertTrue(renderedHtml.contains("Select Category"));
         assertTrue(renderedHtml.contains("Which Room Are You Working On?"));
         assertTrue(renderedHtml.contains("Material &amp; Size") || renderedHtml.contains("Material & Size"));
         assertFalse(renderedHtml.contains("Quote Summary"));
@@ -154,11 +157,15 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
         assertFalse(renderedHtml.contains("existingCustomerSelect"));
         assertTrue(renderedHtml.contains("admin-quotation-builder.css"));
 
-        // Also verify admin template has these sections removed
+        // Also verify admin template has these sections removed and new layout
         String adminRenderedHtml = templateEngine.process("admin/quotation-builder", context);
         assertNotNull(adminRenderedHtml);
         assertTrue(adminRenderedHtml.contains("Customer Details"));
         assertTrue(adminRenderedHtml.contains("Pricing Mode"));
+        assertTrue(adminRenderedHtml.contains("Floor &amp; Room") || adminRenderedHtml.contains("Floor & Room"));
+        assertTrue(adminRenderedHtml.contains("step-two-row"));
+        assertFalse(adminRenderedHtml.contains("id=\"workDescription\""));
+        assertTrue(adminRenderedHtml.contains("Select Category"));
         assertFalse(adminRenderedHtml.contains("Quote Summary"));
         assertFalse(adminRenderedHtml.contains("Final Details"));
         assertFalse(adminRenderedHtml.contains("existingCustomerSelect"));

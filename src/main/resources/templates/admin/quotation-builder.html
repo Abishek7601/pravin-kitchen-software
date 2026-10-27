@@ -67,55 +67,87 @@
       </div>
     </section>
 
-    <section class="card pricing-card">
-      <div class="section-heading"><span class="step">02</span><div><h2>Pricing Mode</h2><p>Changing the mode keeps the sizes and items and recalculates their prices.</p></div></div>
-      <div class="pricing-options" id="pricingModes">
-        <label class="pricing-option premium"><input type="radio" name="pricingMode" value="PREMIUM"><span><b>Premium</b><small>Highest material rate</small></span></label>
-        <label class="pricing-option middle"><input type="radio" name="pricingMode" value="MIDDLE" checked><span><b>Middle / Standard</b><small>Standard material rate</small></span></label>
-        <label class="pricing-option economy"><input type="radio" name="pricingMode" value="ECONOMY"><span><b>Economy</b><small>Economy material rate</small></span></label>
-      </div>
-      <div id="pricingMessage" class="inline-message"></div>
-    </section>
+    <!-- STEP 2: PRICING MODE AND FLOOR/ROOM SELECTION (HORIZONTAL ON DESKTOP) -->
+    <div class="step-two-row">
+      <section class="card pricing-card">
+        <div class="section-heading">
+          <span class="step">02</span>
+          <div>
+            <h2>Pricing Mode</h2>
+            <p>Select pricing mode; sizes and items are preserved and recalculated.</p>
+          </div>
+        </div>
+        <div class="pricing-options" id="pricingModes">
+          <label class="pricing-option premium"><input type="radio" name="pricingMode" value="PREMIUM"><span><b>Premium</b><small>Highest material rate</small></span></label>
+          <label class="pricing-option middle"><input type="radio" name="pricingMode" value="MIDDLE" checked><span><b>Middle / Standard</b><small>Standard material rate</small></span></label>
+          <label class="pricing-option economy"><input type="radio" name="pricingMode" value="ECONOMY"><span><b>Economy</b><small>Economy material rate</small></span></label>
+        </div>
+        <div id="pricingMessage" class="inline-message"></div>
+      </section>
 
-    <section class="card room-setup-card" id="roomSetupSection">
+      <section class="card room-setup-card" id="roomSetupSection">
+        <div class="section-heading">
+          <span class="step">02</span>
+          <div>
+            <h2>Floor &amp; Room Selection</h2>
+            <p>Select where work is being done or add another room.</p>
+          </div>
+          <button type="button" id="addAnotherRoomBtnStep3" class="btn btn-secondary btn-sm" style="margin-left: auto;">
+            + Add Another Room
+          </button>
+        </div>
+        <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+        <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #024541; font-weight: 600;"></div>
+        <div class="grid two">
+          <label class="field">Floor <span>*</span>
+            <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Terrace</option><option>Other</option></select>
+          </label>
+          <label class="field">Room Number <span>*</span>
+            <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
+          </label>
+        </div>
+      </section>
+    </div>
+
+    <!-- STEP 3: SELECT CATEGORY -->
+    <section class="card work-card" id="categorySection">
       <div class="section-heading">
         <span class="step">03</span>
         <div>
-          <h2>Floor & Room</h2>
-          <p>Select where the work is being done or add another room.</p>
+          <h2>Select Category</h2>
+          <p>Which Room Are You Working On? Categories are loaded from your existing database.</p>
         </div>
-        <button type="button" id="addAnotherRoomBtnStep3" class="btn btn-secondary btn-sm" style="margin-left: auto;">
-          + Add Another Room
-        </button>
       </div>
-      <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
-      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #024541; font-weight: 600;"></div>
-      <div class="grid two">
-        <label class="field">Floor <span>*</span>
-          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Terrace</option><option>Other</option></select>
-        </label>
-        <label class="field">Room Number <span>*</span>
-          <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
-        </label>
-      </div>
-      <label class="field full">Work Description<textarea id="workDescription" rows="2" placeholder="Optional room-level description"></textarea></label>
-    </section>
-
-    <section class="card work-card">
-      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Categories are loaded from your existing database.</p></div></div>
       <div id="categoryGrid" class="choice-grid">
         <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
           <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
-          <strong th:text="${category.displayName != null ? category.displayName.toUpperCase() : ''}">FOYER</strong>
+          <strong th:text="${category.displayName != null ? category.displayName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</strong>
           <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
         </button>
       </div>
-      <div id="divisionArea" class="dynamic-area hidden"></div>
-      <div id="itemArea" class="dynamic-area hidden"></div>
     </section>
 
+    <!-- STEP 4: WORK TYPES -->
+    <section class="card work-card hidden" id="divisionSection">
+      <div class="section-heading">
+        <span class="step">04</span>
+        <div>
+          <h2 id="divisionHeading">Work Types</h2>
+          <p id="divisionSubtitle">Select a work type belonging to the selected category.</p>
+        </div>
+      </div>
+      <div id="divisionArea"></div>
+    </section>
+
+    <!-- STEP 5: MATERIAL & SIZE -->
     <section id="itemBuilder" class="card item-builder hidden">
-      <div class="section-heading"><span class="step">05</span><div><h2>Material &amp; Size</h2><p id="selectedItemLabel">Select a division first.</p></div></div>
+      <div class="section-heading">
+        <span class="step">05</span>
+        <div>
+          <h2>Material &amp; Size</h2>
+          <p id="selectedItemLabel">Select a work type first.</p>
+        </div>
+      </div>
       <div class="selection-path" id="selectionPath"></div>
       <div id="materialFormulaBadge" style="display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; color: #166534; font-size: 13px;"></div>
       <div class="grid three">
@@ -289,10 +321,8 @@
       if (!floor || !room) return null;
       let existing = currentRoom();
       if (!existing) {
-          existing = {key: currentRoomKey(), floor, room, workDescription: $('workDescription').value, items: []};
+          existing = {key: currentRoomKey(), floor, room, workDescription: '', items: []};
           state.rooms.push(existing);
-      } else {
-          existing.workDescription = $('workDescription').value;
       }
       renderRoomPills();
       return existing;
@@ -329,8 +359,6 @@
           btn.addEventListener('click', () => {
               $('floor').value = btn.dataset.floor;
               $('roomNumber').value = btn.dataset.room;
-              const r = currentRoom();
-              $('workDescription').value = r && r.workDescription ? r.workDescription : '';
               renderRoomPills();
               showRoomNotice(`Switched to ${btn.dataset.floor} / Room ${btn.dataset.room}. You can add more items below.`);
           });
@@ -362,10 +390,8 @@
       } else {
           $('roomNumber').value = '';
       }
-      $('workDescription').value = '';
       hide('itemBuilder');
-      hide('itemArea');
-      hide('divisionArea');
+      if ($('divisionSection')) hide('divisionSection');
       state.draft = null;
       renderRoomPills();
       showRoomNotice(`Ready to configure another room (${currentFloor} - Room ${$('roomNumber').value || '?'}). Select items below.`);
@@ -385,13 +411,34 @@
   async function loadDivisions(categoryId, categoryName) {
       if (!$('floor').value || !$('roomNumber').value) { alert('Select Floor and Room Number first.'); return; }
       ensureRoom();
+
+      // Highlight selected category card
+      document.querySelectorAll('.category-choice').forEach(btn => {
+          btn.classList.toggle('selected-category', Number(btn.dataset.id) === categoryId);
+      });
+
+      // Clear previously selected work type and materials
+      state.draft = null;
+      hide('itemBuilder');
+
+      const divisionSection = $('divisionSection');
+      if (divisionSection) divisionSection.classList.remove('hidden');
+      if ($('divisionHeading')) $('divisionHeading').textContent = `${categoryName} — Work Types`;
+
       const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
-      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Work Type</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><div style="font-size: 24px; margin-bottom: 4px;">${esc(d.emoji || d.icon || '🛠️')}</div><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select work type')}</small></button>`).join('')}</div>`);
-      hide('itemArea'); hide('itemBuilder');
-      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => selectDivision(Number(btn.dataset.id), btn.dataset.name, categoryId, categoryName)));
+      if (!data || data.length === 0) {
+          showArea('divisionArea', `<div class="empty-state" style="padding: 24px; text-align: center; color: #687873; background: #F5F8F7; border-radius: 12px;">No active work types configured for <strong>${esc(categoryName)}</strong>.</div>`);
+      } else {
+          showArea('divisionArea', `<div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><div style="font-size: 24px; margin-bottom: 4px;">${esc(d.emoji || d.icon || '🛠️')}</div><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select work type')}</small></button>`).join('')}</div>`);
+          document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => selectDivision(Number(btn.dataset.id), btn.dataset.name, categoryId, categoryName)));
+      }
+      if (divisionSection) divisionSection.scrollIntoView({behavior:'smooth', block:'start'});
   }
 
   async function selectDivision(divisionId, divisionName, categoryId, categoryName) {
+      document.querySelectorAll('.division-choice').forEach(btn => {
+          btn.classList.toggle('selected-division', Number(btn.dataset.id) === divisionId);
+      });
       state.draft = {
           categoryId,
           categoryName,
@@ -856,7 +903,6 @@
   });
   $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
-  $('workDescription').addEventListener('input', () => { const r = currentRoom(); if (r) r.workDescription = $('workDescription').value; });
   $('saveQuotationBtn').addEventListener('click', saveQuotation);
 
   // Add Another Room buttons
@@ -916,7 +962,6 @@
               }));
               $('floor').value = state.rooms[0].floor;
               $('roomNumber').value = state.rooms[0].room;
-              $('workDescription').value = state.rooms[0].workDescription || '';
               renderRoomPills();
           }
       }).catch(err => {
