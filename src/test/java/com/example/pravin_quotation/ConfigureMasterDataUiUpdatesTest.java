@@ -858,9 +858,14 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertTrue(template.contains("branch-pricing-table"), "Template must contain branch pricing table");
         assertTrue(template.contains("branchPricingTableBody"), "Template must contain branchPricingTableBody tbody");
         assertTrue(template.contains("branchCountBadge"), "Template must contain branchCountBadge");
-        assertTrue(template.contains("Premium (₹)"), "Template must have Premium rate column");
-        assertTrue(template.contains("Middle (₹)"), "Template must have Middle rate column");
-        assertTrue(template.contains("Economy (₹)"), "Template must have Economy rate column");
+        assertTrue(template.contains("branchRateColumnHeader"), "Template must contain dynamic single-grade rate column header");
+        assertTrue(template.contains("materials-grade-tabs"), "Template must contain top grade tabs bar");
+        assertTrue(template.contains("switchGradeTab"), "Template must contain switchGradeTab function for dynamic tab switching");
+        assertTrue(template.contains("syncVisibleInputsToState"), "Template must contain syncVisibleInputsToState function to preserve input values across tabs");
+        assertTrue(template.contains("Premium Rate (₹)"), "Template must contain Premium rate column title");
+        assertTrue(template.contains("Middle / Standard Rate (₹)"), "Template must contain Middle / Standard rate column title");
+        assertTrue(template.contains("Economy Rate (₹)"), "Template must contain Economy rate column title");
+        assertFalse(template.contains("branch-grade-switch-btn"), "Duplicate grade switch buttons inside pricing section must be removed");
 
         // 2. Ensure test branches exist
         com.example.pravin_quotation.model.Branch nagercoil = branchRepository.findByName("Nagercoil")
