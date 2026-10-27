@@ -538,7 +538,16 @@ public class ConfigureMasterDataUiUpdatesTest {
         WorkCategory cat = workCategoryRepository.findAll().stream()
                 .filter(c -> c.getName() != null && c.getName().toLowerCase().contains("kitchen"))
                 .findFirst()
-                .orElseGet(() -> workCategoryRepository.findAll().get(0));
+                .orElseGet(() -> {
+                    java.util.List<WorkCategory> all = workCategoryRepository.findAll();
+                    if (!all.isEmpty()) {
+                        return all.get(0);
+                    }
+                    WorkCategory newCat = new WorkCategory();
+                    newCat.setName("🍳 MODULAR KITCHEN");
+                    newCat.setActive(true);
+                    return workCategoryRepository.save(newCat);
+                });
 
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setRequestURI("/admin/work-categories/" + cat.getId() + "/work-types");
@@ -768,5 +777,66 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertNotNull(reloaded2);
         assertTrue(reloaded2.getActive(), "Database record must reflect Active status");
         assertEquals(divisionCountBefore, divisionRepository.count(), "Toggling status must not create new records");
+    }
+
+    @Test
+    @DisplayName("Verify Category Emoji Picker, Emoji in Category Name, Persistence, and Update without Duplication")
+    void testCategoryEmojiPickerAndNamePersistence() throws Exception {
+        // 1. Verify Template UI elements
+        String template = loadTemplateContent("admin/work-categories.html");
+        assertTrue(template.contains("openEmojiPickerBtn"), "Template must contain openEmojiPickerBtn");
+        assertTrue(template.contains("Choose Emoji"), "Template must contain 'Choose Emoji' button label");
+        assertTrue(template.contains("categoryEmojiPickerPopup"), "Template must contain categoryEmojiPickerPopup");
+        assertTrue(template.contains("data-category=\"KITCHEN\""), "Emoji picker must contain Kitchen category");
+        assertTrue(template.contains("data-category=\"ROOMS\""), "Emoji picker must contain Rooms category");
+        assertTrue(template.contains("data-category=\"FURNITURE\""), "Emoji picker must contain Furniture category");
+        assertTrue(template.contains("data-category=\"STORAGE\""), "Emoji picker must contain Storage category");
+        assertTrue(template.contains("data-category=\"LIGHTING\""), "Emoji picker must contain Lighting category");
+        assertTrue(template.contains("data-category=\"BATHROOM\""), "Emoji picker must contain Bathroom category");
+        assertTrue(template.contains("data-category=\"DECOR\""), "Emoji picker must contain Decor category");
+        assertTrue(template.contains("data-category=\"CONSTRUCTION\""), "Emoji picker must contain Construction category");
+        assertTrue(template.contains("data-category=\"OFFICE\""), "Emoji picker must contain Office category");
+        assertTrue(template.contains("data-category=\"GENERAL\""), "Emoji picker must contain General category");
+
+        // Verify table headers (no separate icon/emoji column)
+        assertTrue(template.contains("col-sno"), "Table must contain S.No column");
+        assertTrue(template.contains("col-name"), "Table must contain Category Name column");
+        assertTrue(template.contains("col-status"), "Table must contain Status column");
+        assertTrue(template.contains("col-actions"), "Table must contain Actions column");
+        assertFalse(template.contains("<th class=\"col-icon\">"), "Table must NOT contain a separate col-icon column");
+        assertFalse(template.contains("<th class=\"col-emoji\">"), "Table must NOT contain a separate col-emoji column");
+
+        // 2. Verify emoji extraction logic for requested groups
+        assertEquals("🍳", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🍳 MODULAR KITCHEN"));
+        assertEquals("🏠", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🏠 FOYER"));
+        assertEquals("🛏️", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🛏️ BEDROOM"));
+        assertEquals("🛋️", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🛋️ LIVING ROOM"));
+        assertEquals("🚪", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🚪 DOORS & WINDOWS"));
+        assertEquals("🪴", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("🪴 INTERIOR DECOR"));
+        assertEquals("⭐", com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("⭐ SPECIAL CATEGORY"));
+        assertNull(com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("MODULAR KITCHEN"));
+
+        // 3. Test creating category with emoji directly in category name
+        WorkCategory cat1 = workCategoryService.createCategory("🍳 MODULAR KITCHEN", "Kitchen accessories and cabinets", null, 1);
+        assertNotNull(cat1.getId());
+        assertEquals("🍳 MODULAR KITCHEN", cat1.getName());
+        assertEquals("🍳", cat1.getIcon());
+
+        WorkCategory cat2 = workCategoryService.createCategory("🏠 FOYER", "Entrance and shoe storage", null, 2);
+        assertNotNull(cat2.getId());
+        assertEquals("🏠 FOYER", cat2.getName());
+        assertEquals("🏠", cat2.getIcon());
+
+        // 4. Test updating category with a new emoji (replacing leading emoji without duplication)
+        WorkCategory updatedCat1 = workCategoryService.updateCategory(cat1.getId(), "🥘 MODULAR KITCHEN", "Updated kitchen", null, 1);
+        assertEquals("🥘 MODULAR KITCHEN", updatedCat1.getName());
+        assertEquals("🥘", updatedCat1.getIcon());
+        assertFalse(updatedCat1.getName().contains("🍳"), "Previous emoji must be replaced without leaving duplicates");
+
+        // Check database reload
+        WorkCategory reloaded = workCategoryRepository.findById(cat1.getId()).orElse(null);
+        assertNotNull(reloaded);
+        assertEquals("🥘 MODULAR KITCHEN", reloaded.getName());
+        assertEquals("🥘", reloaded.getIcon());
     }
 }

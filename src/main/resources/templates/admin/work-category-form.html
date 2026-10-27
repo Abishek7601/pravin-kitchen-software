@@ -17,6 +17,8 @@
         th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/work-category-form.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/work-categories.css}">
 </head>
 
 <body>
@@ -95,26 +97,48 @@
 
 
         <!-- CATEGORY NAME -->
-        <div class="form-group">
+        <div class="form-group" style="position: relative;">
 
-          <label for="name">
-            Category Name
-            <span>*</span>
-          </label>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px;">
+            <label for="name" style="margin-bottom: 0;">
+              Category Name
+              <span>*</span>
+            </label>
+            <span id="activeEmojiIndicator" style="display: none; font-size: 12px; color: #024541; font-weight: 600; background: #e6f4f1; padding: 2px 8px; border-radius: 4px;">
+              Active Emoji: <span id="activeEmojiChar" style="font-size: 15px; margin-left: 2px;"></span>
+            </span>
+          </div>
 
-          <input type="text"
-                 id="name"
-                 name="name"
-                 class="form-control"
-                 placeholder="Example: 🍳 MODULAR KITCHEN, 🏠 FOYER"
-                 th:value="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
-                 style="text-transform: uppercase;"
-                 oninput="this.value = this.value.toUpperCase();"
-                 required>
+          <div style="position: relative; display: flex; align-items: center;">
+            <input type="text"
+                   id="name"
+                   name="name"
+                   class="form-control"
+                   placeholder="Example: 🍳 MODULAR KITCHEN, 🏠 FOYER"
+                   th:value="${(category.icon != null and !#strings.isEmpty(category.icon) and !category.name.contains(category.icon) ? (category.icon + ' ') : '') + (category.name != null ? category.name.toUpperCase() : '')}"
+                   style="text-transform: uppercase; padding-right: 145px; font-weight: 600;"
+                   oninput="this.value = this.value.toUpperCase();"
+                   required>
+            <button type="button"
+                    id="openEmojiPickerBtn"
+                    class="btn-choose-emoji"
+                    title="Choose Emoji"
+                    aria-label="Choose Emoji"
+                    style="position: absolute; right: 6px; top: 50%; transform: translateY(-50%); height: 34px; padding: 0 12px; font-size: 12px; font-weight: 700; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; color: #024541; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);">
+              <span>😊 Choose Emoji</span>
+            </button>
+          </div>
 
-          <small>
-            Enter category name with emoji (e.g. 🍳 MODULAR KITCHEN, 🏠 FOYER, 🛏️ BEDROOM).
-          </small>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px; flex-wrap: wrap; gap: 6px;">
+            <small>
+              Enter category name with emoji (e.g. 🍳 MODULAR KITCHEN, 🏠 FOYER, 🛏️ BEDROOM).
+            </small>
+            <button type="button"
+                    id="removeEmojiBtn"
+                    style="display: none; background: none; border: none; font-size: 11px; color: #ef4444; font-weight: 600; cursor: pointer; text-decoration: underline; padding: 0;">
+              ✕ Remove Emoji
+            </button>
+          </div>
 
         </div>
 
@@ -197,13 +221,389 @@
 
 </div>
 
+<!-- CATEGORY EMOJI PICKER POPUP -->
+<div id="emojiPickerBackdrop" class="emoji-picker-backdrop" style="display: none;"></div>
+<div id="categoryEmojiPickerPopup" class="category-emoji-picker-popup" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="emojiPickerTitle">
+    <div class="emoji-picker-header">
+        <div class="emoji-picker-title" id="emojiPickerTitle">
+            <span>😊 Choose Category Emoji</span>
+        </div>
+        <button type="button" id="closeEmojiPickerBtn" class="emoji-picker-close-btn" aria-label="Close emoji picker">&times;</button>
+    </div>
+
+    <!-- Search input -->
+    <div class="emoji-picker-search-wrap">
+        <span class="emoji-search-icon">🔍</span>
+        <input type="text" id="emojiSearchInput" class="emoji-search-input" placeholder="Search emojis (e.g. kitchen, bed, sofa, door, light)..." autocomplete="off">
+    </div>
+
+    <!-- Category Tabs -->
+    <div class="emoji-picker-tabs" id="emojiCategoryTabs">
+        <button type="button" class="emoji-tab-btn active" data-category="ALL">🌟 All</button>
+        <button type="button" class="emoji-tab-btn" data-category="KITCHEN">🍳 Kitchen</button>
+        <button type="button" class="emoji-tab-btn" data-category="ROOMS">🏠 Rooms</button>
+        <button type="button" class="emoji-tab-btn" data-category="FURNITURE">🪑 Furniture</button>
+        <button type="button" class="emoji-tab-btn" data-category="STORAGE">📦 Storage</button>
+        <button type="button" class="emoji-tab-btn" data-category="LIGHTING">💡 Lighting</button>
+        <button type="button" class="emoji-tab-btn" data-category="BATHROOM">🛁 Bathroom</button>
+        <button type="button" class="emoji-tab-btn" data-category="DECOR">🪴 Decor</button>
+        <button type="button" class="emoji-tab-btn" data-category="CONSTRUCTION">🧱 Construction</button>
+        <button type="button" class="emoji-tab-btn" data-category="OFFICE">📚 Office</button>
+        <button type="button" class="emoji-tab-btn" data-category="GENERAL">⭐ General</button>
+    </div>
+
+    <!-- Emoji Grid -->
+    <div class="emoji-picker-body" id="emojiGrid">
+        <!-- Injected via JavaScript -->
+    </div>
+
+    <!-- Footer -->
+    <div class="emoji-picker-footer">
+        <span class="emoji-picker-hint">💡 Tip: Clicking an emoji inserts or replaces it at the beginning of the Category Name.</span>
+        <button type="button" id="doneEmojiPickerBtn" class="emoji-picker-done-btn">Done</button>
+    </div>
+</div>
+
 <script>
   document.addEventListener('DOMContentLoaded', function () {
     var nameInput = document.getElementById('name');
+    var openEmojiPickerBtn = document.getElementById('openEmojiPickerBtn');
+    var closeEmojiPickerBtn = document.getElementById('closeEmojiPickerBtn');
+    var doneEmojiPickerBtn = document.getElementById('doneEmojiPickerBtn');
+    var emojiPickerPopup = document.getElementById('categoryEmojiPickerPopup');
+    var emojiPickerBackdrop = document.getElementById('emojiPickerBackdrop');
+    var emojiSearchInput = document.getElementById('emojiSearchInput');
+    var emojiGrid = document.getElementById('emojiGrid');
+    var removeEmojiBtn = document.getElementById('removeEmojiBtn');
+    var activeEmojiIndicator = document.getElementById('activeEmojiIndicator');
+    var activeEmojiChar = document.getElementById('activeEmojiChar');
+
+    var currentActiveEmojiCategory = 'ALL';
+    var currentEmojiSearchQuery = '';
+
+    var leadingEmojiRegex = /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|[\uD83C-\uD83E][\uDF00-\uDFFF]|[\u2600-\u27BF])+\s*/u;
+
+    function stripLeadingEmoji(str) {
+      if (!str) return '';
+      try {
+        return str.replace(leadingEmojiRegex, '').trim();
+      } catch (e) {
+        return str.replace(/^([\uD800-\uDBFF][\uDC00-\uDFFF]|[\u2600-\u27BF\uFE00-\uFE0F\u200D])+\s*/, '').trim();
+      }
+    }
+
+    function extractLeadingEmoji(str) {
+      if (!str) return '';
+      try {
+        var match = str.match(leadingEmojiRegex);
+        return match ? match[0].trim() : '';
+      } catch (e) {
+        return '';
+      }
+    }
+
+    var EMOJI_DATA = [
+      { emoji: '🍳', category: 'KITCHEN', keywords: 'kitchen pan fry modular cooking egg' },
+      { emoji: '🥘', category: 'KITCHEN', keywords: 'kitchen pot stew cooking pan shallow food' },
+      { emoji: '🍲', category: 'KITCHEN', keywords: 'kitchen soup pot bowl hot food cooking' },
+      { emoji: '🔪', category: 'KITCHEN', keywords: 'kitchen knife chef cutlery sharp cutting' },
+      { emoji: '🥄', category: 'KITCHEN', keywords: 'kitchen spoon cutlery utensil dining' },
+      { emoji: '🍽️', category: 'KITCHEN', keywords: 'kitchen dining plate fork knife table' },
+      { emoji: '🧂', category: 'KITCHEN', keywords: 'kitchen salt spice seasoning rack bottle shaker' },
+      { emoji: '🥣', category: 'KITCHEN', keywords: 'kitchen bowl cereal breakfast soup' },
+      { emoji: '🧑‍🍳', category: 'KITCHEN', keywords: 'kitchen chef cook cooking masterchef' },
+      { emoji: '☕', category: 'KITCHEN', keywords: 'kitchen coffee tea breakfast cafe cup mug' },
+      { emoji: '🫖', category: 'KITCHEN', keywords: 'kitchen teapot kettle tea brewing pot' },
+      { emoji: '🧊', category: 'KITCHEN', keywords: 'kitchen ice fridge refrigerator freezer cold' },
+      { emoji: '🧯', category: 'KITCHEN', keywords: 'kitchen extinguisher fire safety safety modular' },
+      { emoji: '🧼', category: 'KITCHEN', keywords: 'kitchen soap cleaning sink wash basin' },
+      { emoji: '🧽', category: 'KITCHEN', keywords: 'kitchen sponge wash cleaning scrub dish' },
+      { emoji: '🥢', category: 'KITCHEN', keywords: 'kitchen chopsticks dining cutlery asian' },
+      { emoji: '🍴', category: 'KITCHEN', keywords: 'kitchen cutlery fork knife dining restaurant' },
+      { emoji: '🥂', category: 'KITCHEN', keywords: 'kitchen bar counter glasses wine champagne cheers' },
+      { emoji: '🥤', category: 'KITCHEN', keywords: 'kitchen glass cup drink beverage straw' },
+      { emoji: '🧺', category: 'KITCHEN', keywords: 'kitchen basket storage vegetable pullout wire' },
+      { emoji: '🚰', category: 'KITCHEN', keywords: 'kitchen sink faucet water tap mixer sink' },
+      { emoji: '🏠', category: 'ROOMS', keywords: 'room house home foyer living building entrance' },
+      { emoji: '🏡', category: 'ROOMS', keywords: 'room villa home house garden residence exterior' },
+      { emoji: '🛋️', category: 'ROOMS', keywords: 'room living hall lounge sofa couch reception' },
+      { emoji: '🛏️', category: 'ROOMS', keywords: 'room bedroom master bed mattress sleep guest room' },
+      { emoji: '🚪', category: 'ROOMS', keywords: 'room door entrance doorway gateway wooden partition' },
+      { emoji: '🪟', category: 'ROOMS', keywords: 'room window glass ventilation view balcony french' },
+      { emoji: '🪑', category: 'ROOMS', keywords: 'room chair seating foyer balcony terrace' },
+      { emoji: '🏢', category: 'ROOMS', keywords: 'room office corporate building commercial workspace' },
+      { emoji: '🏬', category: 'ROOMS', keywords: 'room department store showroom commercial retail' },
+      { emoji: '🛖', category: 'ROOMS', keywords: 'room gazebo hut cottage outdoor farm terrace' },
+      { emoji: '🏛️', category: 'ROOMS', keywords: 'room hall atrium architecture classical pillar' },
+      { emoji: '🛁', category: 'ROOMS', keywords: 'room bathroom bath washroom tub shower master bath' },
+      { emoji: '🗝️', category: 'ROOMS', keywords: 'room key lock entrance foyer security brass' },
+      { emoji: '🪜', category: 'ROOMS', keywords: 'room ladder loft duplex stairs attic steps' },
+      { emoji: '🪑', category: 'FURNITURE', keywords: 'furniture chair seat armchair dining wooden ergonomic' },
+      { emoji: '🛋️', category: 'FURNITURE', keywords: 'furniture sofa couch lounge recliner settee leather' },
+      { emoji: '🛏️', category: 'FURNITURE', keywords: 'furniture bed cot mattress headboard king queen bunk' },
+      { emoji: '🗄️', category: 'FURNITURE', keywords: 'furniture cabinet wardrobe cupboard file drawer storage unit' },
+      { emoji: '🪞', category: 'FURNITURE', keywords: 'furniture mirror vanity dressing table glass full length' },
+      { emoji: '🪜', category: 'FURNITURE', keywords: 'furniture step stool ladder loft mezzanine library' },
+      { emoji: '🧺', category: 'FURNITURE', keywords: 'furniture laundry basket woven storage wicker pullout' },
+      { emoji: '🗃️', category: 'FURNITURE', keywords: 'furniture card file chest drawer divider organizer' },
+      { emoji: '🖼️', category: 'FURNITURE', keywords: 'furniture photo frame wall art hanging decor panel' },
+      { emoji: '📺', category: 'FURNITURE', keywords: 'furniture tv unit entertainment credenza panel media wall' },
+      { emoji: '🖥️', category: 'FURNITURE', keywords: 'furniture computer table workstation desk study console' },
+      { emoji: '🧸', category: 'FURNITURE', keywords: 'furniture kids room nursery play area toy storage' },
+      { emoji: '📦', category: 'STORAGE', keywords: 'storage box carton packing cargo crate modular loft' },
+      { emoji: '🧰', category: 'STORAGE', keywords: 'storage toolbox utility hardware storage kit tools' },
+      { emoji: '🗃️', category: 'STORAGE', keywords: 'storage archive chest drawer file storage organizer' },
+      { emoji: '🗄️', category: 'STORAGE', keywords: 'storage filing cabinet metal wooden wardrobe cupboard shutter' },
+      { emoji: '🧳', category: 'STORAGE', keywords: 'storage luggage suitcase travel wardrobe loft overhead' },
+      { emoji: '🧺', category: 'STORAGE', keywords: 'storage basket rack hamper pullout drawer wire wicker' },
+      { emoji: '🪣', category: 'STORAGE', keywords: 'storage bucket utility container plastic wash' },
+      { emoji: '🧴', category: 'STORAGE', keywords: 'storage bottle toiletries cleaning utility rack shelf' },
+      { emoji: '🏷️', category: 'STORAGE', keywords: 'storage tag label brand specification price model' },
+      { emoji: '🎒', category: 'STORAGE', keywords: 'storage backpack bag rack storage foyer kids' },
+      { emoji: '🛍️', category: 'STORAGE', keywords: 'storage shopping bag organizer wardrobe walkin' },
+      { emoji: '💡', category: 'LIGHTING', keywords: 'lighting light bulb led lamp fixture electrical cove profile' },
+      { emoji: '🔦', category: 'LIGHTING', keywords: 'lighting flashlight spotlight torch focus light track' },
+      { emoji: '🔌', category: 'LIGHTING', keywords: 'lighting electrical plug socket power point switch modular' },
+      { emoji: '⚡', category: 'LIGHTING', keywords: 'lighting electrical power high voltage circuit breaker wiring' },
+      { emoji: '🏮', category: 'LIGHTING', keywords: 'lighting lantern pendant lamp decorative hanging chandelier' },
+      { emoji: '🕯️', category: 'LIGHTING', keywords: 'lighting candle ambient warm lighting strip pooja' },
+      { emoji: '🔆', category: 'LIGHTING', keywords: 'lighting bright dimmer illumination lumen lux warm white' },
+      { emoji: '🪛', category: 'LIGHTING', keywords: 'lighting electrical screwdriver installation fitting switchboard' },
+      { emoji: '🔋', category: 'LIGHTING', keywords: 'lighting battery inverter ups power backup generator' },
+      { emoji: '🖲️', category: 'LIGHTING', keywords: 'lighting track ball sensor smart switch automation' },
+      { emoji: '🛁', category: 'BATHROOM', keywords: 'bathroom bathtub washroom shower bath tub acrylic jacuzzi' },
+      { emoji: '🚿', category: 'BATHROOM', keywords: 'bathroom shower enclosure rain shower head cubicle partition' },
+      { emoji: '🧼', category: 'BATHROOM', keywords: 'bathroom soap vanity wash basin dispenser counter' },
+      { emoji: '🪥', category: 'BATHROOM', keywords: 'bathroom toothbrush dental vanity mirror cabinet holder' },
+      { emoji: '🪞', category: 'BATHROOM', keywords: 'bathroom mirror vanity led mirror dressing defogger' },
+      { emoji: '🧴', category: 'BATHROOM', keywords: 'bathroom lotion shampoo dispenser bathroom counter shelf' },
+      { emoji: '🧻', category: 'BATHROOM', keywords: 'bathroom roll tissue paper holder sanitary roll' },
+      { emoji: '🪣', category: 'BATHROOM', keywords: 'bathroom bucket utility bathroom cleaning wash' },
+      { emoji: '🚰', category: 'BATHROOM', keywords: 'bathroom tap faucet water mixer basin diverter pillar' },
+      { emoji: '🚽', category: 'BATHROOM', keywords: 'bathroom toilet commode wc sanitary ware wall hung' },
+      { emoji: '🫧', category: 'BATHROOM', keywords: 'bathroom bubbles clean hygiene washing sparkle glass' },
+      { emoji: '🧽', category: 'BATHROOM', keywords: 'bathroom sponge clean scrub bathroom tile cleaner' },
+      { emoji: '🖼️', category: 'DECOR', keywords: 'decor picture frame painting wall art panel molding wainscoting' },
+      { emoji: '🎨', category: 'DECOR', keywords: 'decor paint palette color theme wallpaper texture finish duco' },
+      { emoji: '🪴', category: 'DECOR', keywords: 'decor potted plant indoor plant greenery planter aesthetic balcony' },
+      { emoji: '🌿', category: 'DECOR', keywords: 'decor leaf foliage botanical green biophilic accent nature' },
+      { emoji: '🌸', category: 'DECOR', keywords: 'decor cherry blossom flower floral wallpaper accent pink' },
+      { emoji: '🪷', category: 'DECOR', keywords: 'decor lotus spiritual pooja room mandir prayer sacred brass' },
+      { emoji: '🎍', category: 'DECOR', keywords: 'decor bamboo decoration pine arrangement zen corner focal' },
+      { emoji: '🎋', category: 'DECOR', keywords: 'decor tanabata plant foliage partition divider screen lattice' },
+      { emoji: '🌾', category: 'DECOR', keywords: 'decor grain pampas grass dried flowers boho decor vase' },
+      { emoji: '💐', category: 'DECOR', keywords: 'decor bouquet vase flowers dining table centerpiece floral' },
+      { emoji: '🏵️', category: 'DECOR', keywords: 'decor rosette ceiling medallion carving molding cornices gypsum' },
+      { emoji: '🏺', category: 'DECOR', keywords: 'decor amphora vase ceramic pottery artifact showcase niche' },
+      { emoji: '🕰️', category: 'DECOR', keywords: 'decor mantle clock wall clock antique timepiece vintage foyer' },
+      { emoji: '🪻', category: 'DECOR', keywords: 'decor hyacinth lavender floral purple accent wallpaper bedroom' },
+      { emoji: '🧱', category: 'CONSTRUCTION', keywords: 'construction brick masonry civil wall partition plaster tile' },
+      { emoji: '🪚', category: 'CONSTRUCTION', keywords: 'construction handsaw carpentry wood cutting ply timber saw' },
+      { emoji: '🔨', category: 'CONSTRUCTION', keywords: 'construction hammer carpenter hardware assembly joinery nail' },
+      { emoji: '🛠️', category: 'CONSTRUCTION', keywords: 'construction tools maintenance hardware fitting assemble' },
+      { emoji: '🪛', category: 'CONSTRUCTION', keywords: 'construction screwdriver fastener screw hinges hardware fittings' },
+      { emoji: '📐', category: 'CONSTRUCTION', keywords: 'construction triangle ruler measurement scale layout plan angle' },
+      { emoji: '📏', category: 'CONSTRUCTION', keywords: 'construction straight ruler tape measurement dimension scale tape' },
+      { emoji: '⛏️', category: 'CONSTRUCTION', keywords: 'construction pickaxe civil demolition renovation site civil' },
+      { emoji: '🔩', category: 'CONSTRUCTION', keywords: 'construction bolt nut hardware screw channels runner fitting' },
+      { emoji: '⚙', category: 'CONSTRUCTION', keywords: 'construction gear mechanism hydraulic liftup tandem sliding' },
+      { emoji: '🦺', category: 'CONSTRUCTION', keywords: 'construction safety vest site inspection contractor supervisor' },
+      { emoji: '🏗️', category: 'CONSTRUCTION', keywords: 'construction crane civil architecture fabrication structure site' },
+      { emoji: '🪵', category: 'CONSTRUCTION', keywords: 'construction wood timber plywood log laminate veneer mdf hdf' },
+      { emoji: '🪓', category: 'CONSTRUCTION', keywords: 'construction axe wood cutting carving timber' },
+      { emoji: '📚', category: 'OFFICE', keywords: 'office books bookshelf library study shelf reading unit' },
+      { emoji: '📖', category: 'OFFICE', keywords: 'office open book study table reading desktop shelf' },
+      { emoji: '🖥️', category: 'OFFICE', keywords: 'office desktop computer screen workstation study console monitor' },
+      { emoji: '💻', category: 'OFFICE', keywords: 'office laptop workspace modern desk home office study' },
+      { emoji: '📝', category: 'OFFICE', keywords: 'office memo notepad quotation estimate document paper specification' },
+      { emoji: '✏️', category: 'OFFICE', keywords: 'office pencil sketch drafting drawing 2d plan design elevation' },
+      { emoji: '📁', category: 'OFFICE', keywords: 'office file folder project documentation archive cabinet' },
+      { emoji: '📂', category: 'OFFICE', keywords: 'office open folder client files quotation items ledger' },
+      { emoji: '📑', category: 'OFFICE', keywords: 'office bookmark tabs index specifications catalog brochure' },
+      { emoji: '📊', category: 'OFFICE', keywords: 'office bar chart report analysis cost pricing summary analytics' },
+      { emoji: '📈', category: 'OFFICE', keywords: 'office chart trend growth performance forecast quotation' },
+      { emoji: '📌', category: 'OFFICE', keywords: 'office pushpin notice board memo cork board pin pinboard' },
+      { emoji: '📎', category: 'OFFICE', keywords: 'office paperclip attachment sample swatch documents' },
+      { emoji: '🖊️', category: 'OFFICE', keywords: 'office pen contract agreement sign specification quotation' },
+      { emoji: '🗂️', category: 'OFFICE', keywords: 'office card index dividers catalog swatches finish samples' },
+      { emoji: '⭐', category: 'GENERAL', keywords: 'general star favorite premium highlight popular top rating' },
+      { emoji: '✨', category: 'GENERAL', keywords: 'general sparkles luxury high-gloss finish polish acrylic sparkle' },
+      { emoji: '🔧', category: 'GENERAL', keywords: 'general wrench tool service maintenance installation hardware' },
+      { emoji: '🏷️', category: 'GENERAL', keywords: 'general tag label brand specification model unit grade' },
+      { emoji: '❤️', category: 'GENERAL', keywords: 'general red heart favorite recommended client choice loved like' },
+      { emoji: '🔹', category: 'GENERAL', keywords: 'general blue diamond bullet point indicator small marker' },
+      { emoji: '💎', category: 'GENERAL', keywords: 'general diamond gem premium luxury ultra high end exclusive gold' },
+      { emoji: '🔶', category: 'GENERAL', keywords: 'general orange diamond marker geometric design symbol' },
+      { emoji: '🔷', category: 'GENERAL', keywords: 'general blue diamond badge design geometric square' },
+      { emoji: '🔘', category: 'GENERAL', keywords: 'general button radio knob hardware circular marker' },
+      { emoji: '🟢', category: 'GENERAL', keywords: 'general green circle active verified standard approved' },
+      { emoji: '🟡', category: 'GENERAL', keywords: 'general yellow circle pending attention review notice' },
+      { emoji: '🎯', category: 'GENERAL', keywords: 'general target focus accuracy custom tailored precision goal' },
+      { emoji: '🏆', category: 'GENERAL', keywords: 'general trophy best seller top quality award winning winner' },
+      { emoji: '👑', category: 'GENERAL', keywords: 'general crown royal luxury master bedroom suite deluxe king' }
+    ];
+
+    function renderEmojiGrid() {
+      if (!emojiGrid) return;
+      emojiGrid.innerHTML = '';
+      var query = (currentEmojiSearchQuery || '').trim().toLowerCase();
+      var filtered = EMOJI_DATA.filter(function(item) {
+        var matchesCat = (currentActiveEmojiCategory === 'ALL' || item.category === currentActiveEmojiCategory);
+        var matchesQ = !query || item.emoji.includes(query) || (item.keywords && item.keywords.toLowerCase().includes(query));
+        return matchesCat && matchesQ;
+      });
+
+      if (filtered.length === 0) {
+        var emptyDiv = document.createElement('div');
+        emptyDiv.style.gridColumn = '1 / -1';
+        emptyDiv.style.textAlign = 'center';
+        emptyDiv.style.padding = '35px 12px';
+        emptyDiv.style.color = '#64748b';
+        emptyDiv.style.fontSize = '13px';
+        emptyDiv.textContent = 'No emojis matching your search.';
+        emojiGrid.appendChild(emptyDiv);
+        return;
+      }
+
+      filtered.forEach(function(item) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'emoji-btn';
+        btn.textContent = item.emoji;
+        btn.title = item.keywords || item.emoji;
+        btn.addEventListener('click', function(e) {
+          e.preventDefault();
+          setCategoryEmoji(item.emoji);
+          closeEmojiPicker();
+        });
+        emojiGrid.appendChild(btn);
+      });
+    }
+
+    function openEmojiPicker() {
+      if (!emojiPickerPopup) return;
+      currentActiveEmojiCategory = 'ALL';
+      currentEmojiSearchQuery = '';
+      if (emojiSearchInput) emojiSearchInput.value = '';
+      var tabBtns = document.querySelectorAll('.emoji-tab-btn');
+      tabBtns.forEach(function(btn) {
+        if (btn.getAttribute('data-category') === 'ALL') {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      renderEmojiGrid();
+      if (emojiPickerBackdrop) emojiPickerBackdrop.style.display = 'block';
+      emojiPickerPopup.style.display = 'flex';
+      if (emojiSearchInput) {
+        setTimeout(function() { emojiSearchInput.focus(); }, 60);
+      }
+    }
+
+    function closeEmojiPicker() {
+      if (emojiPickerPopup) emojiPickerPopup.style.display = 'none';
+      if (emojiPickerBackdrop) emojiPickerBackdrop.style.display = 'none';
+      if (nameInput) nameInput.focus();
+    }
+
+    function setCategoryEmoji(emojiChar) {
+      if (!nameInput) return;
+      var currentText = (nameInput.value || '').trim();
+      var cleanText = stripLeadingEmoji(currentText);
+      nameInput.value = cleanText ? (emojiChar + ' ' + cleanText) : (emojiChar + ' ');
+      updateEmojiState();
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      nameInput.focus();
+    }
+
+    function removeCategoryEmoji() {
+      if (!nameInput) return;
+      var currentText = (nameInput.value || '').trim();
+      nameInput.value = stripLeadingEmoji(currentText);
+      updateEmojiState();
+      nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+      nameInput.focus();
+    }
+
+    function updateEmojiState() {
+      var current = (nameInput ? nameInput.value : '').trim();
+      var detected = extractLeadingEmoji(current);
+      if (detected) {
+        if (activeEmojiIndicator) activeEmojiIndicator.style.display = 'inline-flex';
+        if (activeEmojiChar) activeEmojiChar.textContent = detected;
+        if (removeEmojiBtn) removeEmojiBtn.style.display = 'inline-block';
+      } else {
+        if (activeEmojiIndicator) activeEmojiIndicator.style.display = 'none';
+        if (activeEmojiChar) activeEmojiChar.textContent = '';
+        if (removeEmojiBtn) removeEmojiBtn.style.display = 'none';
+      }
+    }
+
+    if (openEmojiPickerBtn) {
+      openEmojiPickerBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        openEmojiPicker();
+      });
+    }
+    if (closeEmojiPickerBtn) {
+      closeEmojiPickerBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        closeEmojiPicker();
+      });
+    }
+    if (doneEmojiPickerBtn) {
+      doneEmojiPickerBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        closeEmojiPicker();
+      });
+    }
+    if (emojiPickerBackdrop) {
+      emojiPickerBackdrop.addEventListener('click', function(e) {
+        e.preventDefault();
+        closeEmojiPicker();
+      });
+    }
+    if (removeEmojiBtn) {
+      removeEmojiBtn.addEventListener('click', function(e) {
+        e.preventDefault();
+        removeCategoryEmoji();
+      });
+    }
+    if (emojiSearchInput) {
+      emojiSearchInput.addEventListener('input', function() {
+        currentEmojiSearchQuery = this.value;
+        renderEmojiGrid();
+      });
+    }
+
+    var emojiTabsContainer = document.getElementById('emojiCategoryTabs');
+    if (emojiTabsContainer) {
+      emojiTabsContainer.addEventListener('click', function(e) {
+        var btn = e.target.closest('.emoji-tab-btn');
+        if (!btn) return;
+        e.preventDefault();
+        emojiTabsContainer.querySelectorAll('.emoji-tab-btn').forEach(function(b) {
+          b.classList.remove('active');
+        });
+        btn.classList.add('active');
+        currentActiveEmojiCategory = btn.getAttribute('data-category') || 'ALL';
+        renderEmojiGrid();
+      });
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape' && emojiPickerPopup && emojiPickerPopup.style.display !== 'none') {
+        closeEmojiPicker();
+      }
+    });
+
     if (nameInput) {
       nameInput.addEventListener('input', function() {
         this.value = this.value.toUpperCase();
+        updateEmojiState();
       });
+      updateEmojiState();
     }
   });
 </script>
