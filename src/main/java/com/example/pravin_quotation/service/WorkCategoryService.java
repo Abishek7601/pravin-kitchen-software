@@ -159,9 +159,6 @@ public class WorkCategoryService {
         String updateIconVal = cleanValue(icon);
         if (updateIconVal == null) {
             updateIconVal = extractLeadingEmoji(categoryName);
-            if (updateIconVal == null && category.getIcon() != null && !category.getIcon().isBlank()) {
-                updateIconVal = category.getIcon();
-            }
         }
         category.setIcon(updateIconVal);
 
@@ -514,8 +511,10 @@ public class WorkCategoryService {
             int codePoint = text.codePointAt(i);
             int type = Character.getType(codePoint);
             if (type == Character.SURROGATE || type == Character.OTHER_SYMBOL || type == Character.MODIFIER_SYMBOL
-                    || (codePoint >= 0x1F300 && codePoint <= 0x1FAFF)
-                    || (codePoint >= 0x2600 && codePoint <= 0x27BF)
+                    || type == Character.FORMAT
+                    || codePoint == 0x200D
+                    || (codePoint >= 0x1F000 && codePoint <= 0x1FAFF)
+                    || (codePoint >= 0x2000 && codePoint <= 0x2BFF)
                     || (codePoint >= 0xFE00 && codePoint <= 0xFE0F)) {
                 emoji.append(Character.toChars(codePoint));
                 i += Character.charCount(codePoint);
