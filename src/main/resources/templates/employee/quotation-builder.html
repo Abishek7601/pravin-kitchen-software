@@ -56,45 +56,7 @@
         <span class="step">01</span>
         <div>
           <h2>Customer Details</h2>
-          <p>Choose an existing customer from your branch or create a new customer record.</p>
-        </div>
-      </div>
-
-      <div class="customer-selection-mode" style="margin-bottom: 18px; padding: 12px 16px; background: #f0faf6; border: 1px solid #D6E4E1; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-        <span style="font-size: 13px; font-weight: 700; color: #013A36; text-transform: uppercase; letter-spacing: 0.5px;">Customer Option:</span>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="EXISTING" checked style="accent-color: #024541; width: 17px; height: 17px;">
-          <span>Existing Customer</span>
-        </label>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="NEW" style="accent-color: #024541; width: 17px; height: 17px;">
-          <span>New Customer</span>
-        </label>
-      </div>
-
-      <div id="existingCustomerBlock" style="margin-bottom: 20px; padding: 16px; background: #ffffff; border: 1.5px solid #024541; border-radius: 10px; box-shadow: 0 2px 8px rgba(2, 69, 65, 0.08);">
-        <label style="display: block; font-weight: 600; font-size: 13px; color: #024541; margin-bottom: 8px;">
-          Search &amp; Select Existing Customer <span>*</span>
-        </label>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <input type="text" id="customerSearchInput" placeholder="🔍 Search by name or phone..." 
-                 style="flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; outline: none; background: #fdfdfd;">
-          <select id="existingCustomerSelect" style="flex: 2; min-width: 280px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; background: #ffffff;">
-            <option value="">-- Choose an existing customer --</option>
-            <option th:each="c : ${customers}"
-                    th:value="${c.id}"
-                    th:data-name="${c.name}"
-                    th:data-phone="${c.phone}"
-                    th:data-email="${c.email != null ? c.email : ''}"
-                    th:data-address="${c.address != null ? c.address : ''}"
-                    th:data-branch="${c.branch != null ? c.branch.id : ''}"
-                    th:text="${c.name + ' (' + c.phone + ')'}">
-            </option>
-          </select>
-        </div>
-        <div id="customerSelectionFeedback" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-          <small id="customerSearchCount" style="color: #71847b; font-size: 12px;"></small>
-          <small id="selectedCustomerBadge" style="display: none; color: #024541; font-weight: 600; font-size: 12px; background: #EAF3F1; padding: 3px 8px; border-radius: 4px;">✓ Customer details auto-populated</small>
+          <p>Enter customer details for this quotation.</p>
         </div>
       </div>
 
@@ -272,9 +234,7 @@
             <option>98</option>
             <option>99</option>
             <option>100</option>
-
           </select>
-
         </label>
       </div>
       <label class="field full">Work Description<textarea id="workDescription" rows="2" placeholder="Optional room-level description"></textarea></label>
@@ -317,35 +277,13 @@
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
 
-    <section class="card summary-card" id="summaryCard">
-      <div class="section-heading">
-        <span class="step">06</span>
-        <div>
-          <h2>Quote Summary</h2>
-          <p>Items and individual subtotals grouped by floor and room.</p>
-        </div>
-        <button type="button" id="addAnotherRoomBtnSummary" class="btn btn-secondary btn-sm" style="margin-left: auto;">
-          + Add Another Room
-        </button>
+    <div class="form-actions-card" style="margin-top: 24px; padding: 20px 24px; background: #ffffff; border: 1px solid #D6E4E1; border-radius: 14px; box-shadow: 0 4px 14px rgba(2, 69, 65, 0.05); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+      <div id="saveMessage" class="save-message" style="margin: 0; font-weight: 600; color: #024541;"></div>
+      <div class="final-actions" style="margin: 0; padding: 0; border: none; display: flex; gap: 12px; align-items: center;">
+        <a th:href="@{/employee/quotations}" class="btn btn-light">Cancel</a>
+        <button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button>
       </div>
-      <div id="summaryEmpty" class="summary-empty"><div class="empty-icon">&#9638;</div><h3>No items added yet</h3><p>Select a room, item, material and size to build the quotation.</p></div>
-      <div id="roomsSummary"></div>
-      <div id="addAnotherRoomBottomArea" style="margin-top: 14px; display: none; justify-content: flex-end;">
-        <button type="button" id="addAnotherRoomBtnBottom" class="btn btn-outline-primary btn-sm">
-          + Add Another Room to Quotation
-        </button>
-      </div>
-    </section>
-
-    <section class="card notes-card">
-      <div class="section-heading"><span class="step">07</span><div><h2>Final Details</h2><p>Optional notes for the quotation.</p></div></div>
-      <div class="grid two">
-        <label class="field">Customer Requirements<textarea id="customerRequirements" rows="3"></textarea></label>
-        <label class="field">Notes<textarea id="notes" rows="3"></textarea></label>
-      </div>
-      <div id="saveMessage" class="save-message"></div>
-      <div class="final-actions"><a th:href="@{/employee/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
-    </section>
+    </div>
   </main>
 </div>
   </main>
@@ -358,8 +296,8 @@
   const state = {
       quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
       selectedCustomerId: null,
-      customerMode: 'EXISTING',
-      customersList: [],
+      customerRequirements: '',
+      notes: '',
       rooms: [],
       draft: null,
       pricingMode: 'MIDDLE'
@@ -919,82 +857,12 @@
           state.draft.specification = state.draft.materialSpecificationName;
       }
       state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
-      room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
+      room.items.push(state.draft); state.draft=null; hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
       $('materialSpecificationId').innerHTML='<option value="">Select specification (optional)</option>';
       if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       renderRoomPills();
-      $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function renderSummary() {
-      const container=$('roomsSummary'); container.innerHTML=''; let total=0;
-      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
-      $('summaryEmpty').classList.toggle('hidden', roomsWithItems.length > 0);
-      $('addAnotherRoomBottomArea').style.display = roomsWithItems.length > 0 ? 'flex' : 'none';
-
-      roomsWithItems.forEach((room, ri) => {
-          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
-              const meas = Math.round(calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height) * 100) / 100;
-              return s + Math.round(meas * Number(item.rate || 0) * 100) / 100;
-          }, 0), 0);
-          total += roomTotal;
-          const block = document.createElement('div');
-          block.className = 'summary-room';
-          block.innerHTML = `<div class="summary-room-head">
-            <div>
-              <span>${esc(room.floor)} · ROOM ${esc(room.room)}</span>
-              <h3>${esc(room.floor)} / Room ${esc(room.room)}</h3>
-              ${room.workDescription ? `<small style="color: #64748b; display: block; margin-top: 2px;">${esc(room.workDescription)}</small>` : ''}
-            </div>
-            <div style="text-align: right;">
-              <span style="font-size: 11px; color: #64748b; display: block;">Room Subtotal</span>
-              <strong style="color: #024541; font-size: 1.15rem;">${money(roomTotal)}</strong>
-            </div>
-          </div>`;
-          const table = document.createElement('div');
-          table.className = 'summary-table';
-          room.items.forEach((item, ii) => {
-              const uLabel = 'sq.ft';
-              item.sizes.forEach((z, si) => {
-                  const rawMeas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
-                  const meas = Math.round(rawMeas * 100) / 100;
-                  const amount = Math.round(meas * Number(item.rate || 0) * 100) / 100;
-                  const formula = (item.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
-                  let dimStr;
-                  if (formula === 'L × W' || (formula.includes('L') && formula.includes('W') && !formula.includes('H'))) {
-                      dimStr = `${z.length} × ${z.width} (L × W)`;
-                  } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
-                      dimStr = `${z.length} × ${z.height} (L × H)`;
-                  } else {
-                      dimStr = `${z.length} × ${z.width} × ${z.height}`;
-                  }
-                  const specText = item.materialSpecificationName ? ` — [${esc(item.materialSpecificationName)}]` : '';
-                  const row = document.createElement('div');
-                  row.className = 'summary-row';
-                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName || item.divisionName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}${specText} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${dimStr}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
-                  table.appendChild(row);
-              });
-          });
-          block.appendChild(table);
-          container.appendChild(block);
-      });
-
-      if ($('combinedSubtotal')) $('combinedSubtotal').textContent = money(total);
-      if ($('grandTotal')) $('grandTotal').textContent = money(total);
-
-      document.querySelectorAll('.summary-delete').forEach(btn => {
-          btn.addEventListener('click', () => {
-              const r = state.rooms.find(rm => rm.key === btn.dataset.roomKey);
-              if (!r) return;
-              const itemIndex = Number(btn.dataset.item);
-              const sizeIndex = Number(btn.dataset.size);
-              r.items[itemIndex].sizes.splice(sizeIndex, 1);
-              if (!r.items[itemIndex].sizes.length) r.items.splice(itemIndex, 1);
-              renderSummary();
-              renderRoomPills();
-          });
-      });
+      showRoomNotice(`Added item to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
   }
 
   async function recalculateAll() {
@@ -1021,117 +889,19 @@
           if (data.formula) item.formula = data.formula;
           if (data.unit) item.unit = data.unit;
       })())));
-      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; $('pricingMessage').style.color=''; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message; $('pricingMessage').style.color='#dc2626';}
-  }
-
-  function initCustomers() {
-      const select = $('existingCustomerSelect');
-      if (!select) return;
-      const options = Array.from(select.options).slice(1);
-      state.customersList = options.map(opt => ({
-          id: Number(opt.value),
-          name: opt.dataset.name || '',
-          phone: opt.dataset.phone || '',
-          email: opt.dataset.email || '',
-          address: opt.dataset.address || '',
-          branchId: opt.dataset.branch ? Number(opt.dataset.branch) : null,
-          label: opt.textContent
-      }));
-      updateCustomerMatchCount(state.customersList.length);
-  }
-
-  function updateCustomerMatchCount(count) {
-      if ($('customerSearchCount')) {
-          $('customerSearchCount').textContent = count > 0 ? `Showing ${count} customer(s)` : 'No matching customers found';
-      }
-  }
-
-  function renderCustomerDropdown(customersToRender, selectedId) {
-      const select = $('existingCustomerSelect');
-      if (!select) return;
-      select.innerHTML = '<option value="">-- Choose an existing customer --</option>';
-      customersToRender.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.label || `${c.name} (${c.phone})`;
-          opt.dataset.name = c.name;
-          opt.dataset.phone = c.phone;
-          opt.dataset.email = c.email || '';
-          opt.dataset.address = c.address || '';
-          if (c.branchId) opt.dataset.branch = c.branchId;
-          if (selectedId && Number(selectedId) === c.id) {
-              opt.selected = true;
-          }
-          select.appendChild(opt);
-      });
-      updateCustomerMatchCount(customersToRender.length);
-  }
-
-  function filterCustomers() {
-      const query = ($('customerSearchInput') ? $('customerSearchInput').value.trim().toLowerCase() : '');
-      let filtered = state.customersList;
-      if (query) {
-          filtered = filtered.filter(c =>
-              (c.name && c.name.toLowerCase().includes(query)) ||
-              (c.phone && c.phone.includes(query)) ||
-              (c.email && c.email.toLowerCase().includes(query))
-          );
-      }
-      renderCustomerDropdown(filtered, state.selectedCustomerId);
-  }
-
-  function onCustomerSelected(customerId) {
-      if (!customerId) {
-          state.selectedCustomerId = null;
-          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
-          $('customerName').value = '';
-          $('customerPhone').value = '';
-          $('customerEmail').value = '';
-          $('customerAddress').value = '';
-          return;
-      }
-      const c = state.customersList.find(x => x.id === Number(customerId));
-      if (c) {
-          state.selectedCustomerId = c.id;
-          $('customerName').value = toTitleCase(c.name || '');
-          $('customerPhone').value = c.phone || '';
-          $('customerEmail').value = c.email ? c.email.toLowerCase() : '';
-          $('customerAddress').value = toTitleCase(c.address || '');
-          if ($('selectedCustomerBadge')) {
-              $('selectedCustomerBadge').style.display = 'inline-block';
-              $('selectedCustomerBadge').textContent = '✓ ' + $('customerName').value + ' selected';
-          }
-      }
-  }
-
-  function setCustomerMode(mode) {
-      state.customerMode = mode;
-      if (mode === 'NEW') {
-          state.selectedCustomerId = null;
-          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'none';
-          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
-          $('customerName').value = '';
-          $('customerPhone').value = '';
-          $('customerEmail').value = '';
-          $('customerAddress').value = '';
-      } else {
-          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
-          if ($('existingCustomerSelect') && $('existingCustomerSelect').value) {
-              onCustomerSelected($('existingCustomerSelect').value);
-          } else {
-              $('customerName').value = '';
-              $('customerPhone').value = '';
-              $('customerEmail').value = '';
-              $('customerAddress').value = '';
-          }
+      try {
+          await Promise.all(requests);
+          $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.';
+          $('pricingMessage').style.color='';
+          renderRoomPills();
+          if(state.draft) {await refreshDraftRate(); renderMaterialDetails();}
+      } catch(e){
+          $('pricingMessage').textContent=e.message;
+          $('pricingMessage').style.color='#dc2626';
       }
   }
 
   async function saveQuotation() {
-      const isNew = state.customerMode === 'NEW';
-      if (!isNew && !state.selectedCustomerId) {
-          return alert('Please select an existing customer or switch to "New Customer".');
-      }
       if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
       if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
       if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
@@ -1151,17 +921,17 @@
       const payload = {
           quotationId: state.quotationId,
           customer: {
-              id: isNew ? null : state.selectedCustomerId,
+              id: state.selectedCustomerId || null,
               name,
               phone,
-              email: $('customerEmail').value.trim(),
-              address: $('customerAddress').value.trim()
+              email: $('customerEmail') ? $('customerEmail').value.trim() : '',
+              address: $('customerAddress') ? $('customerAddress').value.trim() : ''
           },
           branchId,
           quotationDate: $('quotationDate').value,
           pricingMode: state.pricingMode,
-          customerRequirements: $('customerRequirements').value.trim(),
-          notes: $('notes').value.trim(),
+          customerRequirements: state.customerRequirements || '',
+          notes: state.notes || '',
           rooms: state.rooms.filter(r => r.items.length).map(r => ({
               floor: r.floor,
               room: r.room,
@@ -1244,15 +1014,6 @@
       });
   }
 
-  document.querySelectorAll('input[name="customerMode"]').forEach(r => {
-      r.addEventListener('change', () => setCustomerMode(r.value));
-  });
-  if ($('existingCustomerSelect')) {
-      $('existingCustomerSelect').addEventListener('change', (e) => onCustomerSelected(e.target.value));
-  }
-  if ($('customerSearchInput')) {
-      $('customerSearchInput').addEventListener('input', filterCustomers);
-  }
   document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
   $('addSizeBtn').addEventListener('click', () => addSizeRow());
   $('addItemBtn').addEventListener('click', addDraftToRoom);
@@ -1272,12 +1033,9 @@
 
   // Add Another Room buttons
   $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
-  $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
-  $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
 
   if ($('quoteNumberPreview')) $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
-  initCustomers();
 
   // Load existing quotation if editing
   if (state.quotationId) {
@@ -1290,35 +1048,12 @@
           if (data.address) $('customerAddress').value = toTitleCase(data.address);
           if (data.quotationDate) $('quotationDate').value = data.quotationDate;
           if (data.branchId) $('branchId').value = data.branchId;
-          if (data.customerRequirements) $('customerRequirements').value = data.customerRequirements;
-          if (data.notes) $('notes').value = data.notes;
+          if (data.customerRequirements) state.customerRequirements = data.customerRequirements;
+          if (data.notes) state.notes = data.notes;
+          if (data.customerId) state.selectedCustomerId = data.customerId;
           if (data.pricingMode) {
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
               if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
-          }
-
-          if (data.customerId) {
-              state.selectedCustomerId = data.customerId;
-              state.customerMode = 'EXISTING';
-              const rExist = document.querySelector('input[name="customerMode"][value="EXISTING"]');
-              if (rExist) rExist.checked = true;
-              if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
-              if (!state.customersList.some(c => c.id === data.customerId)) {
-                  state.customersList.unshift({
-                      id: data.customerId,
-                      name: data.customerName,
-                      phone: data.phone,
-                      email: data.email || '',
-                      address: data.address || '',
-                      branchId: data.branchId,
-                      label: `${data.customerName} (${data.phone})`
-                  });
-              }
-              renderCustomerDropdown(state.customersList, data.customerId);
-              if ($('selectedCustomerBadge')) {
-                  $('selectedCustomerBadge').style.display = 'inline-block';
-                  $('selectedCustomerBadge').textContent = '✓ ' + data.customerName + ' selected';
-              }
           }
 
           if (data.rooms && data.rooms.length > 0) {
@@ -1354,7 +1089,6 @@
               $('floor').value = state.rooms[0].floor;
               $('roomNumber').value = state.rooms[0].room;
               $('workDescription').value = state.rooms[0].workDescription || '';
-              renderSummary();
               renderRoomPills();
           }
       }).catch(err => {

@@ -149,9 +149,19 @@ public class EmployeeQuotationBuilderMatchingAdminTest {
         assertTrue(renderedHtml.contains("Floor &amp; Room") || renderedHtml.contains("Floor & Room"));
         assertTrue(renderedHtml.contains("Which Room Are You Working On?"));
         assertTrue(renderedHtml.contains("Material &amp; Size") || renderedHtml.contains("Material & Size"));
-        assertTrue(renderedHtml.contains("Quote Summary"));
-        assertTrue(renderedHtml.contains("Final Details"));
+        assertFalse(renderedHtml.contains("Quote Summary"));
+        assertFalse(renderedHtml.contains("Final Details"));
+        assertFalse(renderedHtml.contains("existingCustomerSelect"));
         assertTrue(renderedHtml.contains("admin-quotation-builder.css"));
+
+        // Also verify admin template has these sections removed
+        String adminRenderedHtml = templateEngine.process("admin/quotation-builder", context);
+        assertNotNull(adminRenderedHtml);
+        assertTrue(adminRenderedHtml.contains("Customer Details"));
+        assertTrue(adminRenderedHtml.contains("Pricing Mode"));
+        assertFalse(adminRenderedHtml.contains("Quote Summary"));
+        assertFalse(adminRenderedHtml.contains("Final Details"));
+        assertFalse(adminRenderedHtml.contains("existingCustomerSelect"));
     }
 
     @Test
