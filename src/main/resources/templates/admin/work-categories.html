@@ -593,6 +593,26 @@
                         </div>
                     </div>
 
+                    <!-- MEASUREMENT FORMULA -->
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Measurement Formula <span style="color: #dc2626;">*</span>
+                        </label>
+                        <select id="materialFormulaSelect" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 600; color: #024541;" required>
+                            <option value="L × W">Formula 1: L × W — Length × Width (Area in Sq.ft)</option>
+                            <option value="(L + W) × H">Formula 2: (L + W) × H — (Length + Width) × Height (Combined Area)</option>
+                            <option value="L × H">Formula 3: L × H — Length × Height (Area in Sq.ft)</option>
+                        </select>
+                        <!-- Dynamic Formula Info Box -->
+                        <div id="formulaDescBox" style="margin-top: 6px; padding: 10px 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; font-size: 12px; color: #166534; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 15px; line-height: 1;">📐</span>
+                            <div id="formulaDescContent" style="flex: 1;">
+                                <div style="font-weight: 700;" id="formulaDescTitle">Formula 1: L × W</div>
+                                <div style="color: #475569; font-size: 11px; margin-top: 2px;" id="formulaDescCalc">Calculation: Length × Width — Used to calculate area in square feet. Requires Length and Width inputs.</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.2fr; gap: 14px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
@@ -1388,6 +1408,10 @@
         var materialIdInput = document.getElementById('materialIdInput');
         var materialNameInput = document.getElementById('materialNameInput');
         var materialGradeSelect = document.getElementById('materialGradeSelect');
+        var materialFormulaSelect = document.getElementById('materialFormulaSelect');
+        var formulaDescBox = document.getElementById('formulaDescBox');
+        var formulaDescTitle = document.getElementById('formulaDescTitle');
+        var formulaDescCalc = document.getElementById('formulaDescCalc');
         var materialSpecInput = document.getElementById('materialSpecInput');
         var materialUnitSelect = document.getElementById('materialUnitSelect');
         var materialRateInput = document.getElementById('materialRateInput');
@@ -1405,6 +1429,24 @@
         var currentMaterialsWorkType = null;
         var currentMaterialsData = null;
         var activeMaterialsGrade = 'PREMIUM';
+
+        function updateFormulaDescription() {
+            var val = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W') || 'L × W';
+            if (val === '(L + W) × H') {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 2: (L + W) × H';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: (Length + Width) × Height — Used to calculate the required area based on the combined length and width. Requires Length, Width, and Height inputs.';
+            } else if (val === 'L × H') {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 3: L × H';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: Length × Height — Used to calculate area in square feet. Requires Length and Height inputs (Width hidden).';
+            } else {
+                if (formulaDescTitle) formulaDescTitle.textContent = 'Formula 1: L × W';
+                if (formulaDescCalc) formulaDescCalc.textContent = 'Calculation: Length × Width — Used to calculate area in square feet. Requires Length and Width inputs (Height hidden).';
+            }
+        }
+
+        if (materialFormulaSelect) {
+            materialFormulaSelect.addEventListener('change', updateFormulaDescription);
+        }
 
         function showMaterialsGlobalAlert(message, isError) {
             if (!materialsModalGlobalAlert) return;
@@ -1444,6 +1486,8 @@
             if (materialSpecInput) materialSpecInput.value = '';
             if (materialRateInput) materialRateInput.value = '';
             if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
+            if (materialFormulaSelect) materialFormulaSelect.value = 'L × W';
+            updateFormulaDescription();
             if (saveMaterialBtn) {
                 saveMaterialBtn.disabled = false;
                 saveMaterialBtn.textContent = 'Save Material';
@@ -1464,6 +1508,10 @@
             if (materialIdInput) materialIdInput.value = isEdit ? mat.id : '';
             if (materialNameInput) materialNameInput.value = isEdit ? (mat.name || '') : '';
             if (materialGradeSelect) materialGradeSelect.value = isEdit ? (mat.pricingGrade || activeMaterialsGrade) : activeMaterialsGrade;
+            if (materialFormulaSelect) {
+                materialFormulaSelect.value = isEdit ? (mat.formula || 'L × W') : 'L × W';
+            }
+            updateFormulaDescription();
             if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
             if (materialUnitSelect) materialUnitSelect.value = isEdit ? (mat.unit || 'Sq.ft') : 'Sq.ft';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
@@ -1531,6 +1579,7 @@
                     var name = mat.name || '';
                     var spec = mat.specification || '';
                     var unit = mat.unit || 'Sq.ft';
+                    var formula = mat.formula || 'L × W';
                     var rateVal = Number(mat.rate || 0);
                     var rateFmt = '₹ ' + rateVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     var isActive = mat.active !== false;
@@ -1539,6 +1588,7 @@
                         '<div style="min-width: 0; flex: 1;">' +
                             '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
                                 '<strong style="font-size: 14px; font-weight: 700; color: #0f172a;">' + escapeHtml(name) + '</strong>' +
+                                '<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📐 Formula: ' + escapeHtml(formula) + '</span>' +
                                 (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
                             '</div>' +
                             (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
@@ -1549,7 +1599,7 @@
                                 '<div style="font-size: 11px; color: #64748b; font-weight: 500;">per ' + escapeHtml(unit) + '</div>' +
                             '</div>' +
                             '<div class="material-actions" style="display: flex; gap: 6px;">' +
-                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
                                 '<button type="button" class="js-delete-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" title="Delete Material" style="padding: 5px 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
                             '</div>' +
                         '</div>' +
@@ -1679,6 +1729,7 @@
                 var idVal = (materialIdInput ? materialIdInput.value : '').trim();
                 var nameVal = (materialNameInput ? materialNameInput.value : '').trim();
                 var gradeVal = (materialGradeSelect ? materialGradeSelect.value : activeMaterialsGrade).trim();
+                var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
                 var specVal = (materialSpecInput ? materialSpecInput.value : '').trim();
                 var unitVal = (materialUnitSelect ? materialUnitSelect.value : 'Sq.ft').trim();
                 var rateVal = (materialRateInput ? materialRateInput.value : '').trim();
@@ -1708,6 +1759,8 @@
                 var params = new URLSearchParams();
                 params.append('name', nameVal);
                 params.append('grade', gradeVal);
+                params.append('formula', formulaVal);
+                params.append('measurementFormula', formulaVal);
                 params.append('specification', specVal);
                 params.append('unit', unitVal);
                 params.append('rate', rateVal);
@@ -1768,13 +1821,15 @@
                     var unit = editBtn.getAttribute('data-unit') || 'Sq.ft';
                     var rate = editBtn.getAttribute('data-rate') || '0';
                     var grade = editBtn.getAttribute('data-grade') || activeMaterialsGrade;
+                    var formula = editBtn.getAttribute('data-formula') || 'L × W';
                     openMaterialForm({
                         id: id,
                         name: name,
                         specification: spec,
                         unit: unit,
                         rate: rate,
-                        pricingGrade: grade
+                        pricingGrade: grade,
+                        formula: formula
                     });
                     return;
                 }

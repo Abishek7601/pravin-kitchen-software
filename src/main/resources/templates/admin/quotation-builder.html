@@ -318,16 +318,24 @@
   }
 
   function calculateItemMeasurement(formula, unit, L, W, H) {
-      const l = Number(L) || 0;
-      const w = Number(W) || 0;
-      const h = Number(H) || 0;
+      const l = Number(L);
+      const w = Number(W);
+      const h = Number(H);
       const f = (formula || '').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+
+      const isFeet = (unit || '').toLowerCase() === 'ft' || (unit || '').toLowerCase() === 'feet';
+      const divisor = isFeet ? 1.0 : 144.0;
+
       if (f.includes('+') || f.includes('(L + W)')) {
-          return ((l + w) * h) / 144.0;
+          if (isNaN(l) || l <= 0 || isNaN(w) || w <= 0 || isNaN(h) || h <= 0) return 0;
+          return ((l + w) * h) / divisor;
       } else if (f.includes('H')) {
-          return (l * h) / 144.0;
+          if (isNaN(l) || l <= 0 || isNaN(h) || h <= 0) return 0;
+          return (l * h) / divisor;
       } else {
-          return (l * w) / 144.0;
+          // L × W
+          if (isNaN(l) || l <= 0 || isNaN(w) || w <= 0) return 0;
+          return (l * w) / divisor;
       }
   }
 
@@ -644,13 +652,13 @@
           if (hField) hField.style.display = '';
       } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
           if (wField) wField.style.display = 'none';
-          if (wInput) wInput.value = '0';
+          if (wInput) wInput.value = '';
           if (hField) hField.style.display = '';
       } else {
           // L × W
           if (wField) wField.style.display = '';
           if (hField) hField.style.display = 'none';
-          if (hInput) hInput.value = '0';
+          if (hInput) hInput.value = '';
       }
   }
 
@@ -661,10 +669,17 @@
 
   function addSizeRow(size = {}) {
       const row = document.createElement('div'); row.className='size-row';
-      const uLabel = 'sq.ft';
-      row.innerHTML = `<div class="size-field field-length"><label>Length (IN)</label><input class="length" type="number" min="0" step="0.01" value="${size.length || ''}"></div><div class="size-field field-width"><label>Width (IN)</label><input class="width" type="number" min="0" step="0.01" value="${size.width || ''}"></div><div class="size-field field-height"><label>Height (IN)</label><input class="height" type="number" min="0" step="0.01" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
+      const configuredUnit = state.draft?.unit || 'Sq.ft';
+      const isSqft = configuredUnit.toLowerCase().includes('sq');
+      const uLabel = isSqft ? 'sq.ft' : configuredUnit;
+      row.innerHTML = `<div class="size-field field-length"><label>Length (L)</label><input class="length" type="number" min="0" step="0.01" placeholder="Length" value="${size.length || ''}"></div><div class="size-field field-width"><label>Width (W)</label><input class="width" type="number" min="0" step="0.01" placeholder="Width" value="${size.width || ''}"></div><div class="size-field field-height"><label>Height (H)</label><input class="height" type="number" min="0" step="0.01" placeholder="Height" value="${size.height || ''}"></div><div class="size-result"><span>MEASUREMENT</span><strong class="sqft">0.00 ${uLabel}</strong><button type="button" class="remove-size">×</button></div>`;
       $('sizeRows').appendChild(row);
-      row.querySelectorAll('input').forEach(i => i.addEventListener('input', calculateDraft));
+      row.querySelectorAll('input').forEach(i => {
+          i.addEventListener('input', () => {
+              if (Number(i.value) < 0) i.value = '0';
+              calculateDraft();
+          });
+      });
       row.querySelector('.remove-size').addEventListener('click', () => { if ($('sizeRows').children.length > 1) { row.remove(); calculateDraft(); } });
       applyFormulaToRow(row);
       calculateDraft();
@@ -672,28 +687,35 @@
 
   function readSizes() {
       return [...document.querySelectorAll('.size-row')].map(row => ({
-          length:Number(row.querySelector('.length').value || 0), width:Number(row.querySelector('.width').value || 0), height:Number(row.querySelector('.height').value || 0), offerPrice: null, row
+          length: Math.max(0, Number(row.querySelector('.length').value || 0)),
+          width: Math.max(0, Number(row.querySelector('.width').value || 0)),
+          height: Math.max(0, Number(row.querySelector('.height').value || 0)),
+          offerPrice: null,
+          row
       }));
   }
 
   function calculateDraft() {
       if (!state.draft) return;
-      let totalMeas=0, amount=0;
-      const uLabel = 'sq.ft';
+      let totalMeas = 0, amount = 0;
+      const configuredUnit = state.draft.unit || 'Sq.ft';
+      const isSqft = configuredUnit.toLowerCase().includes('sq');
+      const uLabel = isSqft ? 'sq.ft' : configuredUnit;
       readSizes().forEach(s => {
-          const rawVal = (s.length > 0 || s.width > 0 || s.height > 0)
-              ? calculateItemMeasurement(state.draft.formula, state.draft.unit, s.length, s.width, s.height)
-              : 0;
-          const value = Math.round(rawVal * 100) / 100;
+          let value = 0;
+          if (s.length > 0 || s.width > 0 || s.height > 0) {
+              const rawVal = calculateItemMeasurement(state.draft.formula, state.draft.unit, s.length, s.width, s.height);
+              value = (typeof rawVal === 'number' && !isNaN(rawVal)) ? Math.round(rawVal * 100) / 100 : 0;
+          }
           totalMeas += value;
           const lineAmount = Math.round(value * Number(state.draft.rate || 0) * 100) / 100;
           amount += lineAmount;
           const sqftEl = s.row.querySelector('.sqft');
-          if (sqftEl) sqftEl.textContent = value.toFixed(2) + ' ' + uLabel;
+          if (sqftEl) sqftEl.textContent = (isNaN(value) ? '0.00' : value.toFixed(2)) + ' ' + uLabel;
       });
       $('currentRate').textContent = money(state.draft.rate);
-      $('currentSqft').textContent = totalMeas.toFixed(2) + ' ' + uLabel;
-      $('currentAmount').textContent = money(amount);
+      $('currentSqft').textContent = (isNaN(totalMeas) ? '0.00' : totalMeas.toFixed(2)) + ' ' + uLabel;
+      $('currentAmount').textContent = money(isNaN(amount) ? 0 : amount);
   }
 
   function addDraftToRoom() {

@@ -2,6 +2,7 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
+import com.example.pravin_quotation.util.CalculationFormula;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -615,6 +616,7 @@ public class WorkCategoryService {
             matMap.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
             matMap.put("rate", m.getRate() != null ? m.getRate() : BigDecimal.ZERO);
             matMap.put("pricingGrade", grade.name());
+            matMap.put("formula", m.getFormula());
             matMap.put("active", m.getActive());
 
             List<Map<String, Object>> list = materialsByGrade.get(grade.name());
@@ -643,6 +645,18 @@ public class WorkCategoryService {
             String specification,
             String unit,
             BigDecimal rate) {
+        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, null);
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula) {
 
         if (workTypeId == null) {
             throw new IllegalArgumentException("Work type ID is required.");
@@ -665,6 +679,7 @@ public class WorkCategoryService {
 
         String cleanUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : "Sq.ft";
         String cleanSpec = cleanValue(specification);
+        String cleanFormula = CalculationFormula.normalizeFormula(formula);
 
         if (materialRepository.existsByDivisionIdAndPricingGradeAndNameIgnoreCase(workTypeId, grade, cleanName)) {
             throw new IllegalArgumentException("A material named '" + cleanName + "' already exists under " + grade.name() + " for this work type.");
@@ -676,6 +691,7 @@ public class WorkCategoryService {
         material.setPricingGrade(grade);
         material.setRate(rate);
         material.setUnit(cleanUnit);
+        material.setFormula(cleanFormula);
         material.setSpecification(cleanSpec);
         material.setDescription(cleanSpec);
         material.setActive(true);
@@ -703,6 +719,7 @@ public class WorkCategoryService {
                 });
         pricing.setRate(rate);
         pricing.setUnit(cleanUnit);
+        pricing.setFormula(cleanFormula);
         pricing.setActive(true);
         pricingRepository.save(pricing);
 
@@ -716,6 +733,17 @@ public class WorkCategoryService {
             String specification,
             String unit,
             BigDecimal rate) {
+        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, null);
+    }
+
+    @Transactional
+    public Material updateWorkTypeMaterial(
+            Long materialId,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula) {
 
         if (materialId == null) {
             throw new IllegalArgumentException("Material ID is required.");
@@ -747,6 +775,9 @@ public class WorkCategoryService {
         material.setDescription(cleanSpec);
         material.setUnit(cleanUnit);
         material.setRate(rate);
+        if (formula != null && !formula.isBlank()) {
+            material.setFormula(CalculationFormula.normalizeFormula(formula));
+        }
         Material savedMaterial = materialRepository.save(material);
 
         // Update corresponding option & pricing
@@ -768,6 +799,9 @@ public class WorkCategoryService {
                         });
                 pricing.setRate(rate);
                 pricing.setUnit(cleanUnit);
+                if (formula != null && !formula.isBlank()) {
+                    pricing.setFormula(CalculationFormula.normalizeFormula(formula));
+                }
                 pricing.setActive(true);
                 pricingRepository.save(pricing);
             }

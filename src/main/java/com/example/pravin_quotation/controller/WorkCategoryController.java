@@ -246,13 +246,16 @@ public class WorkCategoryController {
             @RequestParam(required = false) String grade,
             @RequestParam(required = false) String pricingGrade,
             @RequestParam String name,
+            @RequestParam(required = false) String formula,
+            @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
             @RequestParam BigDecimal rate) {
         try {
             String gradeStr = (grade != null && !grade.isBlank()) ? grade : pricingGrade;
             PricingMode mode = parsePricingGrade(gradeStr);
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, unit, rate);
+            String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, unit, rate, effectiveFormula);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -274,11 +277,14 @@ public class WorkCategoryController {
             @PathVariable(required = false) Long workTypeId,
             @RequestParam(required = false) Long targetWorkTypeId,
             @RequestParam String name,
+            @RequestParam(required = false) String formula,
+            @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
             @RequestParam BigDecimal rate) {
         try {
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, unit, rate);
+            String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, unit, rate, effectiveFormula);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)
@@ -321,11 +327,19 @@ public class WorkCategoryController {
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, specification, unit, rate);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, rate);
+    }
+
+    public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, rate);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, specification, unit, rate);
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, rate);
+    }
+
+    public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, rate);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {

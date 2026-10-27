@@ -117,15 +117,24 @@ public final class CalculationFormula {
         BigDecimal divisor = isFeet ? BigDecimal.ONE : divisor144;
 
         if (FORMULA_L_PLUS_W_X_H.equals(norm)) {
+            if (l.compareTo(BigDecimal.ZERO) <= 0 || w.compareTo(BigDecimal.ZERO) <= 0 || h.compareTo(BigDecimal.ZERO) <= 0) {
+                return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
             return l.add(w).multiply(h)
                     .divide(divisor, 6, RoundingMode.HALF_UP)
                     .setScale(2, RoundingMode.HALF_UP);
         } else if (FORMULA_L_X_H.equals(norm)) {
+            if (l.compareTo(BigDecimal.ZERO) <= 0 || h.compareTo(BigDecimal.ZERO) <= 0) {
+                return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
             return l.multiply(h)
                     .divide(divisor, 6, RoundingMode.HALF_UP)
                     .setScale(2, RoundingMode.HALF_UP);
         } else {
             // FORMULA_L_X_W
+            if (l.compareTo(BigDecimal.ZERO) <= 0 || w.compareTo(BigDecimal.ZERO) <= 0) {
+                return BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
+            }
             return l.multiply(w)
                     .divide(divisor, 6, RoundingMode.HALF_UP)
                     .setScale(2, RoundingMode.HALF_UP);
