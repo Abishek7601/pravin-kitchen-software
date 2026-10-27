@@ -645,7 +645,7 @@
                 <form id="materialForm" onsubmit="return false;">
                     <input type="hidden" id="materialIdInput" value="">
                     
-                    <div style="display: grid; grid-template-columns: 2fr 1.3fr; gap: 14px; margin-bottom: 12px;">
+                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 12px;">
                         <div>
                             <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
                                 Material Name <span style="color: #dc2626;">*</span>
@@ -654,12 +654,15 @@
                         </div>
                         <div>
                             <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Pricing Grade <span style="color: #dc2626;">*</span>
+                                Unit <span style="color: #dc2626;">*</span>
                             </label>
-                            <select id="materialGradeSelect" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                <option value="PREMIUM">💎 Premium</option>
-                                <option value="MIDDLE">⚖️ Middle / Standard</option>
-                                <option value="ECONOMY">🌱 Economy</option>
+                            <select id="materialUnitSelect" style="padding: 8px 10px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
+                                <option value="Sq.ft">Sq.ft</option>
+                                <option value="Running ft">Running ft</option>
+                                <option value="Piece">Piece</option>
+                                <option value="Set">Set</option>
+                                <option value="Meter">Meter</option>
+                                <option value="Item">Item</option>
                             </select>
                         </div>
                     </div>
@@ -684,33 +687,47 @@
                         </div>
                     </div>
 
-                    <div style="display: grid; grid-template-columns: 2fr 1.2fr 1.2fr; gap: 14px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Brand / Specification <span style="font-size: 11px; font-weight: 400; color: #64748b;">(Optional)</span>
-                            </label>
-                            <input type="text" id="materialSpecInput" class="modal-input" placeholder="e.g. Century Ply Club Prime 16mm" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Brand / Specification <span style="font-size: 11px; font-weight: 400; color: #64748b;">(Optional)</span>
+                        </label>
+                        <input type="text" id="materialSpecInput" class="modal-input" placeholder="e.g. Century Ply Club Prime 16mm, IS:710 Marine Grade" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;">
+                    </div>
+
+                    <!-- BRANCH-WISE PRICING SECTION -->
+                    <div style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
+                            <div>
+                                <strong style="font-size: 13px; color: #024541; display: flex; align-items: center; gap: 5px;">
+                                    <span>🏬</span> Branch-Wise Material Rates <span style="color: #dc2626;">*</span>
+                                </strong>
+                                <div style="font-size: 11px; color: #64748b; margin-top: 2px;">
+                                    Set separate rates (₹) for each branch across Premium, Middle / Standard, and Economy grades.
+                                </div>
+                            </div>
+                            <span id="branchCountBadge" style="font-size: 11px; background: #e0f2fe; color: #0369a1; padding: 2px 8px; border-radius: 12px; font-weight: 600;">Loading branches...</span>
                         </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Unit <span style="color: #dc2626;">*</span>
-                            </label>
-                            <select id="materialUnitSelect" style="padding: 8px 10px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                <option value="Sq.ft">Sq.ft</option>
-                                <option value="Running ft">Running ft</option>
-                                <option value="Piece">Piece</option>
-                                <option value="Set">Set</option>
-                                <option value="Meter">Meter</option>
-                                <option value="Item">Item</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Rate (₹) <span style="color: #dc2626;">*</span>
-                            </label>
-                            <input type="number" id="materialRateInput" class="modal-input" min="0" step="0.01" placeholder="0.00" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600;" required>
+
+                        <div style="overflow-x: auto; max-height: 280px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 6px; background: #ffffff;">
+                            <table class="branch-pricing-table" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+                                <thead style="background: #f1f5f9; border-bottom: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 1;">
+                                    <tr>
+                                        <th style="padding: 8px 12px; text-align: left; font-weight: 700; color: #334155; font-size: 11px; text-transform: uppercase;">Branch</th>
+                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #065f46; font-size: 11px; text-transform: uppercase;">💎 Premium (₹)</th>
+                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #0284c7; font-size: 11px; text-transform: uppercase;">⚖️ Middle (₹)</th>
+                                        <th style="padding: 8px 10px; text-align: right; font-weight: 700; color: #166534; font-size: 11px; text-transform: uppercase;">🌱 Economy (₹)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="branchPricingTableBody">
+                                    <!-- Populated dynamically via JS from MySQL branches -->
+                                </tbody>
+                            </table>
                         </div>
                     </div>
+
+                    <!-- Hidden fallback inputs for legacy compatibility -->
+                    <input type="hidden" id="materialRateInput" value="">
+                    <input type="hidden" id="materialGradeSelect" value="PREMIUM">
 
                     <div style="display: flex; gap: 8px; justify-content: flex-end; margin-top: 14px;">
                         <button type="button" id="cancelMaterialBtn" class="btn btn-sm" style="padding: 7px 16px; font-size: 12px; font-weight: 600; border-radius: 6px; background: #ffffff; border: 1px solid #cbd5e1; color: #475569; cursor: pointer;">Cancel</button>
@@ -1931,6 +1948,58 @@
             }
         }
 
+        var branchPricingTableBody = document.getElementById('branchPricingTableBody');
+        var branchCountBadge = document.getElementById('branchCountBadge');
+
+        function renderBranchPricingRows(branches, existingRates) {
+            if (!branchPricingTableBody) return;
+            branchPricingTableBody.innerHTML = '';
+
+            var bList = (branches && Array.isArray(branches)) ? branches : [];
+            if (bList.length === 0) {
+                if (branchCountBadge) branchCountBadge.textContent = '0 Branches';
+                branchPricingTableBody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #64748b; padding: 14px;">No active branches found in database.</td></tr>';
+                return;
+            }
+
+            if (branchCountBadge) {
+                branchCountBadge.textContent = bList.length + ' Active Branch' + (bList.length === 1 ? '' : 'es');
+            }
+
+            bList.forEach(function(branch) {
+                var bId = branch.id;
+                var bName = branch.name || ('Branch #' + bId);
+                var ratesForBranch = (existingRates && (existingRates[bId] || existingRates[String(bId)])) || {};
+
+                var pVal = (ratesForBranch.PREMIUM != null && ratesForBranch.PREMIUM !== '') ? ratesForBranch.PREMIUM : '';
+                var mVal = (ratesForBranch.MIDDLE != null && ratesForBranch.MIDDLE !== '') ? ratesForBranch.MIDDLE : '';
+                var eVal = (ratesForBranch.ECONOMY != null && ratesForBranch.ECONOMY !== '') ? ratesForBranch.ECONOMY : '';
+
+                var tr = document.createElement('tr');
+                tr.style.borderBottom = '1px solid #f1f5f9';
+                tr.innerHTML =
+                    '<td style="padding: 10px 12px; font-weight: 600; color: #1e293b; vertical-align: middle;">' +
+                        '<span style="font-size: 13px; display: flex; align-items: center; gap: 4px;">📍 ' + escapeHtml(bName) + '</span>' +
+                    '</td>' +
+                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
+                        '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
+                            'data-branch-id="' + bId + '" data-grade="PREMIUM" value="' + (pVal !== '' ? Number(pVal) : '') + '" ' +
+                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #065f46; background: #fafdfb;">' +
+                    '</td>' +
+                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
+                        '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
+                            'data-branch-id="' + bId + '" data-grade="MIDDLE" value="' + (mVal !== '' ? Number(mVal) : '') + '" ' +
+                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #0284c7; background: #fafcff;">' +
+                    '</td>' +
+                    '<td style="padding: 6px 10px; vertical-align: middle;">' +
+                        '<input type="number" step="0.01" min="0" placeholder="0.00" class="branch-rate-field" ' +
+                            'data-branch-id="' + bId + '" data-grade="ECONOMY" value="' + (eVal !== '' ? Number(eVal) : '') + '" ' +
+                            'style="width: 100%; text-align: right; padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; font-weight: 600; color: #166534; background: #fcfdfa;">' +
+                    '</td>';
+                branchPricingTableBody.appendChild(tr);
+            });
+        }
+
         function hideMaterialForm() {
             if (materialFormContainer) materialFormContainer.style.display = 'none';
             if (materialFormAlert) materialFormAlert.style.display = 'none';
@@ -1941,6 +2010,7 @@
             if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
             if (materialFormulaSelect) materialFormulaSelect.value = 'L × W';
             updateFormulaDescription();
+            renderBranchPricingRows(currentMaterialsData ? currentMaterialsData.branches : [], null);
             if (saveMaterialBtn) {
                 saveMaterialBtn.disabled = false;
                 saveMaterialBtn.textContent = 'Save Material';
@@ -1968,6 +2038,10 @@
             if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
             if (materialUnitSelect) materialUnitSelect.value = isEdit ? (mat.unit || 'Sq.ft') : 'Sq.ft';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
+
+            var branches = (currentMaterialsData && currentMaterialsData.branches) ? currentMaterialsData.branches : [];
+            var existingRates = (mat && mat.branchRates) ? mat.branchRates : null;
+            renderBranchPricingRows(branches, existingRates);
 
             materialFormContainer.style.display = 'block';
             materialFormContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -2037,6 +2111,20 @@
                     var rateFmt = '₹ ' + rateVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     var isActive = mat.active !== false;
 
+                    // Branch rate pills for this grade
+                    var branchRatesHtml = '';
+                    if (mat.branchRatesList && mat.branchRatesList.length > 0) {
+                        branchRatesHtml = '<div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px;">';
+                        mat.branchRatesList.forEach(function(br) {
+                            var r = (grade === 'PREMIUM') ? br.premiumRate : ((grade === 'ECONOMY') ? br.economyRate : br.middleRate);
+                            if (r != null && Number(r) >= 0) {
+                                var rFmt = '₹' + Number(r).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                branchRatesHtml += '<span style="font-size: 11px; background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; padding: 2px 7px; border-radius: 4px;">📍 ' + escapeHtml(br.branchName) + ': <strong style="color: #024541;">' + rFmt + '</strong></span>';
+                            }
+                        });
+                        branchRatesHtml += '</div>';
+                    }
+
                     html += '<div class="material-card" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;">' +
                         '<div style="min-width: 0; flex: 1;">' +
                             '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
@@ -2045,6 +2133,7 @@
                                 (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
                             '</div>' +
                             (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
+                            branchRatesHtml +
                         '</div>' +
                         '<div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">' +
                             '<div style="text-align: right;">' +
@@ -2185,7 +2274,6 @@
                 var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
                 var specVal = (materialSpecInput ? materialSpecInput.value : '').trim();
                 var unitVal = (materialUnitSelect ? materialUnitSelect.value : 'Sq.ft').trim();
-                var rateVal = (materialRateInput ? materialRateInput.value : '').trim();
 
                 var isEdit = (idVal && idVal.length > 0 && idVal !== '0');
 
@@ -2195,9 +2283,36 @@
                     return;
                 }
 
-                if (!rateVal || isNaN(rateVal) || Number(rateVal) < 0) {
-                    showMaterialFormAlert('Rate must be a non-negative number.', true);
-                    if (materialRateInput) materialRateInput.focus();
+                // Collect and validate branch-wise rates
+                var branchRatesObj = {};
+                var branchRateFields = document.querySelectorAll('.branch-rate-field');
+                var hasAnyBranchRate = false;
+                var rateValidationError = null;
+
+                branchRateFields.forEach(function(field) {
+                    var bId = field.getAttribute('data-branch-id');
+                    var gr = field.getAttribute('data-grade');
+                    var val = (field.value || '').trim();
+
+                    if (val !== '') {
+                        var num = Number(val);
+                        if (isNaN(num) || num < 0) {
+                            rateValidationError = 'All branch rates must be numeric and non-negative (>= 0).';
+                            return;
+                        }
+                        if (!branchRatesObj[bId]) branchRatesObj[bId] = {};
+                        branchRatesObj[bId][gr] = num;
+                        hasAnyBranchRate = true;
+                    }
+                });
+
+                if (rateValidationError) {
+                    showMaterialFormAlert(rateValidationError, true);
+                    return;
+                }
+
+                if (!hasAnyBranchRate) {
+                    showMaterialFormAlert('Please configure at least one branch rate.', true);
                     return;
                 }
 
@@ -2216,7 +2331,15 @@
                 params.append('measurementFormula', formulaVal);
                 params.append('specification', specVal);
                 params.append('unit', unitVal);
-                params.append('rate', rateVal);
+                params.append('branchRatesJson', JSON.stringify(branchRatesObj));
+
+                // Also append individual params for backward compatibility
+                Object.keys(branchRatesObj).forEach(function(bId) {
+                    Object.keys(branchRatesObj[bId]).forEach(function(gr) {
+                        params.append('rate_branch_' + bId + '_' + gr, branchRatesObj[bId][gr]);
+                    });
+                });
+
                 if (isEdit) {
                     params.append('targetWorkTypeId', currentMaterialsWorkType.id);
                 }
@@ -2269,21 +2392,33 @@
                 if (editBtn) {
                     e.preventDefault();
                     var id = editBtn.getAttribute('data-id');
-                    var name = editBtn.getAttribute('data-name') || '';
-                    var spec = editBtn.getAttribute('data-spec') || '';
-                    var unit = editBtn.getAttribute('data-unit') || 'Sq.ft';
-                    var rate = editBtn.getAttribute('data-rate') || '0';
-                    var grade = editBtn.getAttribute('data-grade') || activeMaterialsGrade;
-                    var formula = editBtn.getAttribute('data-formula') || 'L × W';
-                    openMaterialForm({
-                        id: id,
-                        name: name,
-                        specification: spec,
-                        unit: unit,
-                        rate: rate,
-                        pricingGrade: grade,
-                        formula: formula
-                    });
+                    var fullMat = null;
+                    if (currentMaterialsData && currentMaterialsData.materials) {
+                        ['PREMIUM', 'MIDDLE', 'ECONOMY'].forEach(function(g) {
+                            if (!fullMat && currentMaterialsData.materials[g]) {
+                                fullMat = currentMaterialsData.materials[g].find(function(m) { return String(m.id) === String(id); });
+                            }
+                        });
+                    }
+                    if (fullMat) {
+                        openMaterialForm(fullMat);
+                    } else {
+                        var name = editBtn.getAttribute('data-name') || '';
+                        var spec = editBtn.getAttribute('data-spec') || '';
+                        var unit = editBtn.getAttribute('data-unit') || 'Sq.ft';
+                        var rate = editBtn.getAttribute('data-rate') || '0';
+                        var grade = editBtn.getAttribute('data-grade') || activeMaterialsGrade;
+                        var formula = editBtn.getAttribute('data-formula') || 'L × W';
+                        openMaterialForm({
+                            id: id,
+                            name: name,
+                            specification: spec,
+                            unit: unit,
+                            rate: rate,
+                            pricingGrade: grade,
+                            formula: formula
+                        });
+                    }
                     return;
                 }
 

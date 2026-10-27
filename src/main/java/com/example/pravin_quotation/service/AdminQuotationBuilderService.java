@@ -26,10 +26,48 @@ public class AdminQuotationBuilderService {
     private final MaterialOptionRepository materialOptionRepository;
     private final MaterialSpecificationRepository materialSpecificationRepository;
     private final PricingRepository pricingRepository;
+    private final DistrictPricingRepository districtPricingRepository;
     private final QuotationRoomService quotationRoomService;
     private final QuotationItemService quotationItemService;
     private final QuotationItemSizeService quotationItemSizeService;
     private final QuotationCalculationService quotationCalculationService;
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public AdminQuotationBuilderService(
+            QuotationRepository quotationRepository,
+            CustomerRepository customerRepository,
+            UserRepository userRepository,
+            BranchRepository branchRepository,
+            WorkCategoryRepository workCategoryRepository,
+            DivisionRepository divisionRepository,
+            ItemRepository itemRepository,
+            MaterialRepository materialRepository,
+            MaterialOptionRepository materialOptionRepository,
+            MaterialSpecificationRepository materialSpecificationRepository,
+            PricingRepository pricingRepository,
+            DistrictPricingRepository districtPricingRepository,
+            QuotationRoomService quotationRoomService,
+            QuotationItemService quotationItemService,
+            QuotationItemSizeService quotationItemSizeService,
+            QuotationCalculationService quotationCalculationService) {
+
+        this.quotationRepository = quotationRepository;
+        this.customerRepository = customerRepository;
+        this.userRepository = userRepository;
+        this.branchRepository = branchRepository;
+        this.workCategoryRepository = workCategoryRepository;
+        this.divisionRepository = divisionRepository;
+        this.itemRepository = itemRepository;
+        this.materialRepository = materialRepository;
+        this.materialOptionRepository = materialOptionRepository;
+        this.materialSpecificationRepository = materialSpecificationRepository;
+        this.pricingRepository = pricingRepository;
+        this.districtPricingRepository = districtPricingRepository;
+        this.quotationRoomService = quotationRoomService;
+        this.quotationItemService = quotationItemService;
+        this.quotationItemSizeService = quotationItemSizeService;
+        this.quotationCalculationService = quotationCalculationService;
+    }
 
     public AdminQuotationBuilderService(
             QuotationRepository quotationRepository,
@@ -48,21 +86,12 @@ public class AdminQuotationBuilderService {
             QuotationItemSizeService quotationItemSizeService,
             QuotationCalculationService quotationCalculationService) {
 
-        this.quotationRepository = quotationRepository;
-        this.customerRepository = customerRepository;
-        this.userRepository = userRepository;
-        this.branchRepository = branchRepository;
-        this.workCategoryRepository = workCategoryRepository;
-        this.divisionRepository = divisionRepository;
-        this.itemRepository = itemRepository;
-        this.materialRepository = materialRepository;
-        this.materialOptionRepository = materialOptionRepository;
-        this.materialSpecificationRepository = materialSpecificationRepository;
-        this.pricingRepository = pricingRepository;
-        this.quotationRoomService = quotationRoomService;
-        this.quotationItemService = quotationItemService;
-        this.quotationItemSizeService = quotationItemSizeService;
-        this.quotationCalculationService = quotationCalculationService;
+        this(quotationRepository, customerRepository, userRepository,
+                branchRepository, workCategoryRepository, divisionRepository,
+                itemRepository, materialRepository, materialOptionRepository,
+                materialSpecificationRepository, pricingRepository, null,
+                quotationRoomService, quotationItemService, quotationItemSizeService,
+                quotationCalculationService);
     }
 
     // =========================================================
@@ -72,34 +101,72 @@ public class AdminQuotationBuilderService {
     @Transactional(readOnly = true)
     public BigDecimal resolveRate(
             Long branchId,
+            Long materialId,
             Long materialOptionId,
             PricingMode mode) {
 
-        if (materialOptionId == null || mode == null) {
-            throw new IllegalArgumentException(
-                    "Material option and pricing mode are required."
-            );
+        if (mode == null) {
+            throw new IllegalArgumentException("Pricing grade is required.");
         }
 
-        Pricing pricing =
-                pricingRepository
-                        .findByMaterialOptionIdAndPricingMode(
-                                materialOptionId,
-                                mode
+        if (materialOptionId == null && materialId != null) {
+            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId);
+            if (opts.isEmpty()) {
+                opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(materialId);
+            }
+            if (!opts.isEmpty()) {
+                materialOptionId = opts.get(0).getId();
+            }
+        }
+
+        if (materialOptionId == null) {
+            throw new IllegalArgumentException("Material or material option is required.");
+        }
+
+        Pricing pricing = pricingRepository
+                .findByMaterialOptionIdAndPricingMode(materialOptionId, mode)
+                .orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "No pricing configured for material under " + mode.name() + " grade."
                         )
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "No pricing is configured for this material option and pricing mode."
-                                )
-                        );
+                );
 
         if (!Boolean.TRUE.equals(pricing.getActive())) {
-            throw new IllegalArgumentException(
-                    "The selected pricing is inactive."
-            );
+            throw new IllegalArgumentException("The selected pricing is inactive.");
         }
 
-        return money(pricing.getRate());
+        if (branchId != null) {
+            Branch branch = branchRepository.findById(branchId)
+                    .orElseThrow(() -> new IllegalArgumentException("Selected branch not found with ID: " + branchId));
+
+            DistrictPricing dp = (districtPricingRepository != null)
+                    ? districtPricingRepository.findByBranchIdAndPricingId(branchId, pricing.getId()).orElse(null)
+                    : null;
+
+            if (dp == null || dp.getRate() == null || !Boolean.TRUE.equals(dp.getActive())) {
+                MaterialOption opt = materialOptionRepository.findById(materialOptionId).orElse(null);
+                String matName = opt != null ? opt.getName() : "selected material";
+                throw new IllegalArgumentException(
+                        "No rate has been configured for branch '" + branch.getName() + "' for material '" + matName + "' under " + mode.name() + " pricing grade."
+                );
+            }
+
+            return money(dp.getRate());
+        }
+
+        if (pricing.getRate() != null) {
+            return money(pricing.getRate());
+        }
+
+        throw new IllegalArgumentException("Please select a branch first to retrieve material rates.");
+    }
+
+    @Transactional(readOnly = true)
+    public BigDecimal resolveRate(
+            Long branchId,
+            Long materialOptionId,
+            PricingMode mode) {
+        return resolveRate(branchId, null, materialOptionId, mode);
     }
 
     // =========================================================
@@ -388,21 +455,12 @@ public class AdminQuotationBuilderService {
                 // Resolve rate ONCE for this item
                 // -------------------------------------------------
 
-                BigDecimal rate = null;
-                if (material.getRate() != null && (material.getPricingGrade() == null || material.getPricingGrade() == request.pricingMode())) {
-                    rate = material.getRate();
-                }
-                if (rate == null) {
-                    try {
-                        rate = resolveRate(
-                                request.branchId(),
-                                option.getId(),
-                                request.pricingMode()
-                        );
-                    } catch (Exception e) {
-                        rate = material.getRate() != null ? material.getRate() : BigDecimal.ZERO;
-                    }
-                }
+                BigDecimal rate = resolveRate(
+                        request.branchId(),
+                        material.getId(),
+                        option.getId(),
+                        request.pricingMode()
+                );
 
                 Pricing itemPricing = pricingRepository
                         .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())

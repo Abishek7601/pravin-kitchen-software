@@ -817,26 +817,183 @@ public class ConfigureMasterDataUiUpdatesTest {
         assertNull(com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji("MODULAR KITCHEN"));
 
         // 3. Test creating category with emoji directly in category name
-        WorkCategory cat1 = workCategoryService.createCategory("🍳 MODULAR KITCHEN", "Kitchen accessories and cabinets", null, 1);
+        String suffix = String.valueOf(System.currentTimeMillis());
+        WorkCategory cat1 = workCategoryService.createCategory("🍳 MODULAR KITCHEN " + suffix, "Kitchen accessories and cabinets", null, 1);
         assertNotNull(cat1.getId());
-        assertEquals("🍳 MODULAR KITCHEN", cat1.getName());
+        assertEquals("🍳 MODULAR KITCHEN " + suffix, cat1.getName());
         assertEquals("🍳", cat1.getIcon());
 
-        WorkCategory cat2 = workCategoryService.createCategory("🏠 FOYER", "Entrance and shoe storage", null, 2);
+        WorkCategory cat2 = workCategoryService.createCategory("🏠 FOYER " + suffix, "Entrance and shoe storage", null, 2);
         assertNotNull(cat2.getId());
-        assertEquals("🏠 FOYER", cat2.getName());
+        assertEquals("🏠 FOYER " + suffix, cat2.getName());
         assertEquals("🏠", cat2.getIcon());
 
         // 4. Test updating category with a new emoji (replacing leading emoji without duplication)
-        WorkCategory updatedCat1 = workCategoryService.updateCategory(cat1.getId(), "🥘 MODULAR KITCHEN", "Updated kitchen", null, 1);
-        assertEquals("🥘 MODULAR KITCHEN", updatedCat1.getName());
+        WorkCategory updatedCat1 = workCategoryService.updateCategory(cat1.getId(), "🥘 MODULAR KITCHEN " + suffix, "Updated kitchen", null, 1);
+        assertEquals("🥘 MODULAR KITCHEN " + suffix, updatedCat1.getName());
         assertEquals("🥘", updatedCat1.getIcon());
         assertFalse(updatedCat1.getName().contains("🍳"), "Previous emoji must be replaced without leaving duplicates");
 
         // Check database reload
         WorkCategory reloaded = workCategoryRepository.findById(cat1.getId()).orElse(null);
         assertNotNull(reloaded);
-        assertEquals("🥘 MODULAR KITCHEN", reloaded.getName());
+        assertEquals("🥘 MODULAR KITCHEN " + suffix, reloaded.getName());
         assertEquals("🥘", reloaded.getIcon());
     }
+
+    @Autowired
+    private com.example.pravin_quotation.repository.BranchRepository branchRepository;
+
+    @Autowired
+    private com.example.pravin_quotation.repository.DistrictPricingRepository districtPricingRepository;
+
+    @Autowired
+    private com.example.pravin_quotation.service.AdminQuotationBuilderService adminQuotationBuilderService;
+
+    @Test
+    @DisplayName("Verify Branch-Specific Material Pricing: Dynamic branches, distinct branch rates, strict branch lookup, error on unconfigured rate, and duplicate prevention")
+    void testBranchSpecificMaterialPricing() throws Exception {
+        // 1. Verify Template UI elements
+        String template = loadTemplateContent("admin/work-categories.html");
+        assertTrue(template.contains("branch-pricing-table"), "Template must contain branch pricing table");
+        assertTrue(template.contains("branchPricingTableBody"), "Template must contain branchPricingTableBody tbody");
+        assertTrue(template.contains("branchCountBadge"), "Template must contain branchCountBadge");
+        assertTrue(template.contains("Premium (₹)"), "Template must have Premium rate column");
+        assertTrue(template.contains("Middle (₹)"), "Template must have Middle rate column");
+        assertTrue(template.contains("Economy (₹)"), "Template must have Economy rate column");
+
+        // 2. Ensure test branches exist
+        com.example.pravin_quotation.model.Branch nagercoil = branchRepository.findByName("Nagercoil")
+                .orElseGet(() -> {
+                    com.example.pravin_quotation.model.Branch b = new com.example.pravin_quotation.model.Branch();
+                    b.setName("Nagercoil");
+                    b.setActive(true);
+                    return branchRepository.save(b);
+                });
+
+        com.example.pravin_quotation.model.Branch thuckalay = branchRepository.findByName("Thuckalay")
+                .orElseGet(() -> {
+                    com.example.pravin_quotation.model.Branch b = new com.example.pravin_quotation.model.Branch();
+                    b.setName("Thuckalay");
+                    b.setActive(true);
+                    return branchRepository.save(b);
+                });
+
+        com.example.pravin_quotation.model.Branch marthandam = branchRepository.findByName("Marthandam")
+                .orElseGet(() -> {
+                    com.example.pravin_quotation.model.Branch b = new com.example.pravin_quotation.model.Branch();
+                    b.setName("Marthandam");
+                    b.setActive(true);
+                    return branchRepository.save(b);
+                });
+
+        // 3. Create a work category and work type
+        String bpSuffix = String.valueOf(System.currentTimeMillis());
+        WorkCategory cat = workCategoryService.createCategory("🍳 KITCHEN PRICING TEST " + bpSuffix, "Kitchen for branch test", null, 1);
+        Division workType = workCategoryService.createWorkType(cat.getId(), "BASE UNITS " + bpSuffix, "Base units test", "🗄️");
+
+        // 4. Verify getWorkTypeMaterials returns dynamic branches from MySQL
+        java.util.Map<String, Object> workTypeData = workCategoryService.getWorkTypeMaterials(workType.getId());
+        assertNotNull(workTypeData.get("branches"), "getWorkTypeMaterials must return branches list");
+        @SuppressWarnings("unchecked")
+        java.util.List<java.util.Map<String, Object>> returnedBranches = (java.util.List<java.util.Map<String, Object>>) workTypeData.get("branches");
+        assertFalse(returnedBranches.isEmpty(), "Returned branches must not be empty");
+        assertTrue(returnedBranches.stream().anyMatch(b -> "Nagercoil".equals(b.get("name"))), "Nagercoil branch must be present");
+        assertTrue(returnedBranches.stream().anyMatch(b -> "Thuckalay".equals(b.get("name"))), "Thuckalay branch must be present");
+
+        // 5. Build branch rates map:
+        // Nagercoil: Premium 250, Middle 200, Economy 150
+        // Thuckalay: Premium 260, Middle 210, Economy 160
+        // Marthandam: unconfigured initially
+        java.util.Map<Long, java.util.Map<PricingMode, BigDecimal>> branchRates = new java.util.LinkedHashMap<>();
+        java.util.Map<PricingMode, BigDecimal> nglRates = new java.util.LinkedHashMap<>();
+        nglRates.put(PricingMode.PREMIUM, new BigDecimal("250.00"));
+        nglRates.put(PricingMode.MIDDLE, new BigDecimal("200.00"));
+        nglRates.put(PricingMode.ECONOMY, new BigDecimal("150.00"));
+        branchRates.put(nagercoil.getId(), nglRates);
+
+        java.util.Map<PricingMode, BigDecimal> tckRates = new java.util.LinkedHashMap<>();
+        tckRates.put(PricingMode.PREMIUM, new BigDecimal("260.00"));
+        tckRates.put(PricingMode.MIDDLE, new BigDecimal("210.00"));
+        tckRates.put(PricingMode.ECONOMY, new BigDecimal("160.00"));
+        branchRates.put(thuckalay.getId(), tckRates);
+
+        com.example.pravin_quotation.model.Material material = workCategoryService.createWorkTypeMaterial(
+                workType.getId(),
+                PricingMode.PREMIUM,
+                "BWP Plywood",
+                "IS:710 Marine Grade",
+                "Sq.ft",
+                new BigDecimal("250.00"),
+                "L × W",
+                branchRates
+        );
+
+        assertNotNull(material.getId(), "Material must be saved with an ID");
+
+        // 6. Test Rate lookup by branch and grade
+        // Nagercoil Premium should be 250
+        BigDecimal nglPremRate = adminQuotationBuilderService.resolveRate(nagercoil.getId(), material.getId(), null, PricingMode.PREMIUM);
+        assertEquals(new BigDecimal("250.00"), nglPremRate, "Nagercoil Premium rate must be exactly 250.00");
+
+        // Thuckalay Premium should be 260 (different from Nagercoil)
+        BigDecimal tckPremRate = adminQuotationBuilderService.resolveRate(thuckalay.getId(), material.getId(), null, PricingMode.PREMIUM);
+        assertEquals(new BigDecimal("260.00"), tckPremRate, "Thuckalay Premium rate must be exactly 260.00");
+        assertNotEquals(nglPremRate, tckPremRate, "Nagercoil and Thuckalay must have distinct rates");
+
+        // Nagercoil Middle should be 200
+        BigDecimal nglMidRate = adminQuotationBuilderService.resolveRate(nagercoil.getId(), material.getId(), null, PricingMode.MIDDLE);
+        assertEquals(new BigDecimal("200.00"), nglMidRate);
+
+        // Thuckalay Middle should be 210
+        BigDecimal tckMidRate = adminQuotationBuilderService.resolveRate(thuckalay.getId(), material.getId(), null, PricingMode.MIDDLE);
+        assertEquals(new BigDecimal("210.00"), tckMidRate);
+
+        // 7. Verify unconfigured branch rate throws clear validation message and does NOT silently default or substitute
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class, () -> {
+            adminQuotationBuilderService.resolveRate(marthandam.getId(), material.getId(), null, PricingMode.PREMIUM);
+        });
+        assertTrue(ex.getMessage().contains("No rate has been configured for branch 'Marthandam'"),
+                "Validation message must clearly mention branch name: " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("PREMIUM"),
+                "Validation message must clearly mention pricing grade: " + ex.getMessage());
+
+        // 8. Test Edit Material updates branch rates without duplicate pricing records
+        long initialDistrictPricingCount = districtPricingRepository.count();
+
+        // Update Thuckalay rate to 275 and configure Marthandam rate 255
+        java.util.Map<PricingMode, BigDecimal> mrmRates = new java.util.LinkedHashMap<>();
+        mrmRates.put(PricingMode.PREMIUM, new BigDecimal("255.00"));
+        mrmRates.put(PricingMode.MIDDLE, new BigDecimal("205.00"));
+        mrmRates.put(PricingMode.ECONOMY, new BigDecimal("155.00"));
+        branchRates.put(marthandam.getId(), mrmRates);
+
+        tckRates.put(PricingMode.PREMIUM, new BigDecimal("275.00"));
+
+        com.example.pravin_quotation.model.Material updatedMat = workCategoryService.updateWorkTypeMaterial(
+                material.getId(),
+                "BWP Plywood Superior",
+                "IS:710 Marine Grade Updated",
+                "Sq.ft",
+                new BigDecimal("250.00"),
+                "L × W",
+                branchRates
+        );
+
+        assertEquals("BWP Plywood Superior", updatedMat.getName());
+
+        // Check updated rates
+        BigDecimal updatedTckRate = adminQuotationBuilderService.resolveRate(thuckalay.getId(), material.getId(), null, PricingMode.PREMIUM);
+        assertEquals(new BigDecimal("275.00"), updatedTckRate, "Thuckalay rate must be updated to 275.00");
+
+        BigDecimal newMrmRate = adminQuotationBuilderService.resolveRate(marthandam.getId(), material.getId(), null, PricingMode.PREMIUM);
+        assertEquals(new BigDecimal("255.00"), newMrmRate, "Marthandam rate must now be 255.00");
+
+        // Verify no duplicate records created for existing branches
+        long finalDistrictPricingCount = districtPricingRepository.count();
+        // Added 3 records for Marthandam (PREMIUM, MIDDLE, ECONOMY) and 0 duplicates for NGL/TCK
+        assertEquals(initialDistrictPricingCount + 3, finalDistrictPricingCount,
+                "Only newly configured branch pricing records should be added without duplicates");
+    }
 }
+
