@@ -222,6 +222,138 @@
       </div>
     </section>
 
+    <!-- FINANCIAL FIELDS & SUMMARY (REUSED FROM QUOTATION VIEW) -->
+    <section class="card financial-card" id="financialCard" data-subtotal="0">
+      <div class="financial-header">
+        <div>
+          <p class="eyebrow">QUOTATION FINANCIALS</p>
+          <h3>Quotation Amount Summary</h3>
+          <p class="financial-description">
+            Update accessories, travel charges, other charges, discount and GST for this quotation.
+          </p>
+        </div>
+      </div>
+
+      <div class="financial-body-layout">
+        <!-- CHARGES INPUT FORM -->
+        <div class="charges-form" id="chargesForm">
+          <!-- ACCESSORIES -->
+          <div class="charge-input-group">
+            <label for="accessoriesAmount">Accessories</label>
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input type="number" id="accessoriesAmount" name="accessoriesAmount" min="0" step="0.01" value="0">
+            </div>
+          </div>
+
+          <!-- TRAVEL CHARGE -->
+          <div class="charge-input-group">
+            <label for="travelCharge">Travel Charges</label>
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input type="number" id="travelCharge" name="travelCharge" min="0" step="0.01" value="0">
+            </div>
+          </div>
+
+          <!-- OTHER CHARGES -->
+          <div class="charge-input-group">
+            <label for="otherCharges">Other Charges</label>
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input type="number" id="otherCharges" name="otherCharges" min="0" step="0.01" value="0">
+            </div>
+          </div>
+
+          <!-- DISCOUNT -->
+          <div class="charge-input-group">
+            <label for="discountAmount">Discount</label>
+            <div class="input-with-prefix">
+              <span>₹</span>
+              <input type="number" id="discountAmount" name="discountAmount" min="0" step="0.01" value="0">
+            </div>
+          </div>
+
+          <!-- GST -->
+          <div class="charge-input-group full-width">
+            <label for="gstPercentage">GST Percentage</label>
+            <div class="input-with-prefix">
+              <input type="number" id="gstPercentage" name="gstPercentage" min="0" step="0.01" value="0">
+              <span>%</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- CURRENT CALCULATED SUMMARY -->
+        <div class="financial-summary">
+          <!-- SUBTOTAL -->
+          <div class="amount-row">
+            <span>Subtotal</span>
+            <strong id="displaySubtotal">₹ 0.00</strong>
+          </div>
+
+          <!-- ACCESSORIES -->
+          <div class="amount-row">
+            <span>Accessories</span>
+            <strong id="displayAccessories">₹ 0.00</strong>
+          </div>
+
+          <!-- TRAVEL -->
+          <div class="amount-row">
+            <span>Travel Charges</span>
+            <strong id="displayTravel">₹ 0.00</strong>
+          </div>
+
+          <!-- OTHER -->
+          <div class="amount-row">
+            <span>Other Charges</span>
+            <strong id="displayOther">₹ 0.00</strong>
+          </div>
+
+          <!-- DISCOUNT -->
+          <div class="amount-row discount-row">
+            <span>Discount</span>
+            <strong id="displayDiscount">- ₹ 0.00</strong>
+          </div>
+
+          <!-- GST -->
+          <div class="amount-row">
+            <span>GST (<span id="displayGstPercentage">0.00</span>%)</span>
+            <strong id="displayGstAmount">₹ 0.00</strong>
+          </div>
+
+          <!-- TOTAL AMOUNT -->
+          <div class="amount-row total-amount-row">
+            <span>Total Amount</span>
+            <strong id="displayTotalAmount">₹ 0.00</strong>
+          </div>
+
+          <!-- OFFER PERCENTAGE -->
+          <div class="amount-row offer-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+            <label for="offerPercentage" style="font-weight: 700; color: var(--peacock-dark); margin: 0; font-size: 13px;">
+              Offer Percentage (%)
+            </label>
+            <div class="input-with-prefix" style="max-width: 130px; display: inline-flex; align-items: center;">
+              <input type="number" id="offerPercentage" name="offerPercentage" min="0" max="100" step="0.01" value="0"
+                     style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #024541; border-radius: 6px; font-weight: 700; font-size: 14px; color: #024541; background: #f0fdfa;">
+              <span style="margin-left: 6px; font-weight: 700; color: #024541;">%</span>
+            </div>
+          </div>
+
+          <!-- OFFER AMOUNT -->
+          <div class="amount-row offer-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+            <span style="color: #059669; font-weight: 600;">Offer Amount</span>
+            <strong id="displayOfferAmount" style="color: #059669; font-size: 14px; font-weight: 800;">- ₹ 0.00</strong>
+          </div>
+
+          <!-- GRAND TOTAL -->
+          <div class="amount-row grand-total">
+            <span>Grand Total</span>
+            <strong id="displayGrandTotal">₹ 0.00</strong>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- PAYMENT TERMS & AMOUNT SPLIT (Screenshot 2) -->
     <section class="payment-section-wrapper" id="paymentSectionWrapper">
       <div class="card payment-terms-card">
@@ -1308,7 +1440,62 @@
       </tr>`;
 
       tbody.innerHTML = html;
-      renderPaymentTerms(grandBase, grandOffer);
+      state.currentSubtotal = grandBase;
+      recalculateFinancials(grandBase);
+  }
+
+  function recalculateFinancials(explicitSubtotal) {
+      const subtotal = explicitSubtotal !== undefined ? Number(explicitSubtotal) : (Number(state.currentSubtotal) || 0);
+      state.currentSubtotal = subtotal;
+
+      const acc = Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0);
+      const travel = Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0);
+      const other = Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0);
+      const disc = Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0);
+
+      let gstPct = parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0;
+      if (gstPct < 0) gstPct = 0;
+
+      let offerPct = parseFloat($('offerPercentage') ? $('offerPercentage').value : 0);
+      if (isNaN(offerPct) || offerPct < 0) {
+          offerPct = 0;
+      } else if (offerPct > 100) {
+          offerPct = 100;
+      }
+
+      const totalBeforeDiscount = subtotal + acc + travel + other;
+      const taxable = Math.max(0, totalBeforeDiscount - disc);
+      const gstAmount = taxable * (gstPct / 100);
+      const totalAmount = taxable + gstAmount;
+
+      // Formulas matching quotation-view & QuotationCalculationService:
+      // Offer Amount = Total Amount * Offer Percentage / 100
+      // Grand Total = Total Amount - Offer Amount
+      const offerAmount = totalAmount * (offerPct / 100);
+      const grandTotal = Math.max(0, totalAmount - offerAmount);
+
+      function formatInr(val, isNegative) {
+          const num = Math.abs(Number(val) || 0);
+          const formatted = num.toLocaleString("en-IN", {
+              minimumFractionDigits: 2,
+              maximumFractionDigits: 2
+          });
+          return (isNegative ? "- ₹ " : "₹ ") + formatted;
+      }
+
+      if ($('displaySubtotal')) $('displaySubtotal').textContent = formatInr(subtotal);
+      if ($('displayAccessories')) $('displayAccessories').textContent = formatInr(acc);
+      if ($('displayTravel')) $('displayTravel').textContent = formatInr(travel);
+      if ($('displayOther')) $('displayOther').textContent = formatInr(other);
+      if ($('displayDiscount')) $('displayDiscount').textContent = formatInr(disc, true);
+      if ($('displayGstPercentage')) $('displayGstPercentage').textContent = gstPct.toFixed(2);
+      if ($('displayGstAmount')) $('displayGstAmount').textContent = formatInr(gstAmount);
+      if ($('displayTotalAmount')) $('displayTotalAmount').textContent = formatInr(totalAmount);
+      if ($('displayOfferAmount')) $('displayOfferAmount').textContent = formatInr(offerAmount, true);
+      if ($('displayGrandTotal')) $('displayGrandTotal').textContent = formatInr(grandTotal);
+
+      // Update Payment Terms & Amount Split
+      renderPaymentTerms(grandTotal);
   }
 
   function toggleItemOffer(roomKey, itemIdx, sizeIdx, isChecked) {
@@ -1350,8 +1537,8 @@
       renderQuoteSummary();
   }
 
-  function renderPaymentTerms(grandBase, grandOffer) {
-      const effectiveGrand = (grandOffer !== undefined && grandOffer > 0 ? grandOffer : grandBase) || 0;
+  function renderPaymentTerms(grandTotal) {
+      const effectiveGrand = (grandTotal !== undefined && grandTotal > 0 ? grandTotal : Number(state.currentSubtotal || 0)) || 0;
       const token = Math.round(effectiveGrand * 0.10);
       const advance = Math.round(effectiveGrand * 0.50);
       const part = Math.round(effectiveGrand * 0.35);
@@ -1453,6 +1640,12 @@
           pricingMode: state.pricingMode,
           customerRequirements: state.customerRequirements || '',
           notes: notesVal,
+          accessoriesAmount: Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0),
+          travelCharge: Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0),
+          otherCharges: Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0),
+          discountAmount: Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0),
+          gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
+          offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
           rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
               floor: r.floor,
               room: r.room,
@@ -1557,8 +1750,12 @@
           state.rooms = [];
           state.draft = null;
           if ($('quoteNotes')) $('quoteNotes').value = '';
+          ['accessoriesAmount', 'travelCharge', 'otherCharges', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
+              if ($(id)) $(id).value = '0';
+          });
           renderRoomPills();
           renderQuoteSummary();
+          recalculateFinancials(0);
           showRoomNotice('Quotation cleared. You can add new items above.');
       }
   }
@@ -1588,6 +1785,22 @@
   $('addSizeBtn').addEventListener('click', () => addSizeRow());
   $('addItemBtn').addEventListener('click', addDraftToRoom);
   $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));
+
+  ['accessoriesAmount', 'travelCharge', 'otherCharges', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
+      const inp = $(id);
+      if (inp) {
+          inp.addEventListener('input', () => recalculateFinancials());
+          inp.addEventListener('change', () => recalculateFinancials());
+      }
+  });
+  if ($('offerPercentage')) {
+      $('offerPercentage').addEventListener('blur', function() {
+          let v = parseFloat(this.value);
+          if (isNaN(v) || v < 0) this.value = '0';
+          else if (v > 100) this.value = '100';
+          recalculateFinancials();
+      });
+  }
   document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
   $('branchId').addEventListener('change', () => {
       if (state.draft && state.draft.divisionId) {
@@ -1691,6 +1904,12 @@
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
               if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
           }
+          if (data.accessoriesAmount != null && $('accessoriesAmount')) $('accessoriesAmount').value = data.accessoriesAmount;
+          if (data.travelCharge != null && $('travelCharge')) $('travelCharge').value = data.travelCharge;
+          if (data.otherCharges != null && $('otherCharges')) $('otherCharges').value = data.otherCharges;
+          if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = data.discountAmount;
+          if (data.gstPercentage != null && $('gstPercentage')) $('gstPercentage').value = data.gstPercentage;
+          if (data.offerPercentage != null && $('offerPercentage')) $('offerPercentage').value = data.offerPercentage;
 
           if (data.rooms && data.rooms.length > 0) {
               state.rooms = data.rooms.map(r => ({
