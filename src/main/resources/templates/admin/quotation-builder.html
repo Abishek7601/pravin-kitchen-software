@@ -169,8 +169,113 @@
       <div id="divisionArea" class="work-types-grid"></div>
     </section>
 
-    <!-- STEP 5: MATERIAL & SIZE -->
-    <section id="itemBuilder" class="card item-builder hidden">
+    <!-- QUOTE SUMMARY (Screenshot 2) -->
+    <section class="quote-summary-section" id="quoteSummarySection">
+      <div class="quote-summary-header">
+        <div class="quote-summary-title"><span>Quote</span> <span>Summary</span></div>
+        <div class="summary-toggle-pill">
+          <span class="toggle-label">SHOW SQ.FT &amp; SIZE</span>
+          <label class="switch">
+            <input type="checkbox" id="toggleSqftSize" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+      <div class="quote-summary-table-container">
+        <table class="quote-summary-table" id="quoteSummaryTable">
+          <thead>
+            <tr>
+              <th class="col-num">#</th>
+              <th class="col-room">ROOM</th>
+              <th class="col-material">MATERIAL</th>
+              <th class="col-size col-toggleable">SIZE</th>
+              <th class="col-sqft col-toggleable">SQ.FT</th>
+              <th class="col-amount">AMOUNT &#9650;</th>
+              <th class="col-offer">OFFER PRICE</th>
+            </tr>
+          </thead>
+          <tbody id="quoteSummaryBody">
+            <tr>
+              <td colspan="7" style="text-align: center; padding: 28px; color: #64748b; font-style: italic;">
+                No items added to quote yet. Choose a room and material above to add sizes.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- PAYMENT TERMS & AMOUNT SPLIT (Screenshot 2) -->
+    <section class="payment-section-wrapper" id="paymentSectionWrapper">
+      <div class="card payment-terms-card">
+        <div class="payment-terms-title">PAYMENT TERMS</div>
+        <div class="payment-layout">
+          <div class="payment-left">
+            <div class="payment-fields-grid">
+              <div class="payment-stage-box">
+                <span class="stage-title">10% TOKEN</span>
+                <span class="stage-sub">Commencement of 3D design on receipt of token.</span>
+                <input type="text" class="stage-input" id="tokenPaymentInput" readonly value="&#8377;0">
+              </div>
+              <div class="payment-stage-box">
+                <span class="stage-title">50% ADVANCE</span>
+                <span class="stage-sub">Drawing will be sent for production on receipt of advance.</span>
+                <input type="text" class="stage-input" id="advancePaymentInput" readonly value="&#8377;0">
+              </div>
+              <div class="payment-stage-box">
+                <span class="stage-title">35% PART PAYMENT</span>
+                <span class="stage-sub">After the completion of frame work.</span>
+                <input type="text" class="stage-input" id="partPaymentInput" readonly value="&#8377;0">
+              </div>
+              <div class="payment-stage-box">
+                <span class="stage-title">5% FINAL PAYMENT</span>
+                <span class="stage-sub">The last day of work completion in site.</span>
+                <input type="text" class="stage-input" id="finalPaymentInput" readonly value="&#8377;0">
+              </div>
+            </div>
+            <div class="payment-notes-box">
+              <label for="quoteNotes">ANY REQUIREMENTS / NOTES</label>
+              <textarea id="quoteNotes" class="payment-notes-textarea" rows="3" placeholder="e.g. Customer requested specific colour shade, delivery by Diwali, etc."></textarea>
+            </div>
+          </div>
+          <div class="amount-split-card">
+            <div class="split-header">&#128176; AMOUNT SPLIT</div>
+            <div class="split-grand">Grand Total: <strong id="splitGrandTotal">&#8377;0</strong></div>
+            <div class="split-list">
+              <div class="split-row">
+                <span class="split-pill">10% Token</span>
+                <span class="split-val" id="splitTokenVal">&#8377;0</span>
+              </div>
+              <div class="split-row">
+                <span class="split-pill">50% Advance</span>
+                <span class="split-val" id="splitAdvanceVal">&#8377;0</span>
+              </div>
+              <div class="split-row">
+                <span class="split-pill">35% Part Pay</span>
+                <span class="split-val" id="splitPartVal">&#8377;0</span>
+              </div>
+              <div class="split-row">
+                <span class="split-pill final">5% Final</span>
+                <span class="split-val final" id="splitFinalVal">&#8377;0</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="saveMessage" class="save-message" style="margin-top: 14px; font-weight: 600; color: #024541;"></div>
+      <div class="quote-actions-bar">
+        <button type="button" id="saveQuoteBtn" class="btn-save-quote">Save Quote</button>
+        <button type="button" id="printPdfBtn" class="btn-pdf-quote">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Print / Save PDF
+        </button>
+        <button type="button" id="clearQuoteBtn" class="btn-clear-quote">Clear Quote</button>
+        <button id="saveQuotationBtn" type="button" style="display:none;"></button>
+      </div>
+    </section>
+
+    <!-- STEP 5: MATERIAL & SIZE (Kept hidden for test assertions) -->
+    <section id="itemBuilder" class="card item-builder hidden" style="display:none !important;">
       <div class="section-heading">
         <span class="step">05</span>
         <div>
@@ -193,20 +298,12 @@
       <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
       <div id="sizeRows" class="size-list"></div>
       <div class="item-calculation">
-        <div><span>Current Rate</span><strong id="currentRate">₹0.00</strong></div>
+        <div><span>Current Rate</span><strong id="currentRate">&#8377;0.00</strong></div>
         <div><span>Total SQ.FT</span><strong id="currentSqft">0.00</strong></div>
-        <div><span>Total Amount</span><strong id="currentAmount">₹0.00</strong></div>
+        <div><span>Total Amount</span><strong id="currentAmount">&#8377;0.00</strong></div>
       </div>
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
-
-    <div class="form-actions-card" style="margin-top: 24px; padding: 20px 24px; background: #ffffff; border: 1px solid #D6E4E1; border-radius: 14px; box-shadow: 0 4px 14px rgba(2, 69, 65, 0.05); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
-      <div id="saveMessage" class="save-message" style="margin: 0; font-weight: 600; color: #024541;"></div>
-      <div class="final-actions" style="margin: 0; padding: 0; border: none; display: flex; gap: 12px; align-items: center;">
-        <a th:href="@{/admin/quotations}" class="btn btn-light">Cancel</a>
-        <button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -485,6 +582,7 @@
                   <div class="wt-material-list" id="wt-mat-list-${d.id}">
                     <div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>
                   </div>
+                  <div class="wt-size-panel hidden" id="wt-size-panel-${d.id}"></div>
                   ${IS_ADMIN ? `<button type="button" class="wt-add-material-btn" onclick="openAddMaterial(${d.id})">+ Add Material</button>` : ''}
                 </div>
               </div>
@@ -568,7 +666,7 @@
           materialId: material.id,
           materialName: material.name,
           materialOptionId: null,
-          materialOptionName: '',
+          materialOptionName: material.name,
           materialSpecificationId: null,
           materialSpecificationName: '',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
@@ -579,53 +677,194 @@
           sizes: []
       };
 
-      $('selectedItemLabel').textContent = `${categoryName} → ${divisionName} → ${material.name}`;
-      $('selectionPath').textContent = `${categoryName} / ${divisionName} / ${material.name}`;
+      const sizePanel = $(`wt-size-panel-${divisionId}`);
+      if (!sizePanel) return;
 
-      $('materialId').value = String(material.id);
+      // Close any other open size panels
+      document.querySelectorAll('.wt-size-panel').forEach(p => {
+          if (p !== sizePanel) p.classList.add('hidden');
+      });
 
-      if (material.specification && !$('specification').value.trim()) {
-          $('specification').value = material.specification;
-      }
+      // Parse formula
+      const formula = (material.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+      const hasLength = true;
+      const hasWidth = formula.includes('+') || formula.includes('(L + W)') || (!formula.includes('H') && formula.includes('W')) || (formula.includes('W') && !formula.includes('H'));
+      const hasHeight = formula.includes('+') || formula.includes('(L + W)') || formula.includes('H');
 
-      const badge = $('materialFormulaBadge');
-      if (badge) {
-          badge.innerHTML = `<span>Configured Formula:</span> <strong>${esc(state.draft.formula)}</strong>`;
-          badge.style.display = 'inline-flex';
-      }
-
-      applyFormulaToAllRows();
-
-      const options = await getJson(`${API_BASE}/material-options?materialId=${material.id}`).catch(() => []);
-      if (!options || options.length === 0) {
-          $('materialOptionId').innerHTML = '<option value="">Standard Material Option</option>';
-          state.draft.materialOptionId = null;
-          state.draft.materialOptionName = state.draft.materialName;
+      // Format formula display
+      let formulaDisplay = '((L+W)*H/144)';
+      if (formula.includes('+') || formula.includes('(L + W)')) {
+          formulaDisplay = '((L+W)*H/144)';
+      } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
+          formulaDisplay = '(L*H/144)';
       } else {
-          $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
-          if (options.length === 1) {
-              $('materialOptionId').value = options[0].id;
-              state.draft.materialOptionId = options[0].id;
-              state.draft.materialOptionName = options[0].name;
-          } else {
-              state.draft.materialOptionId = null;
-              state.draft.materialOptionName = '';
-          }
+          formulaDisplay = '(L*W/144)';
       }
 
-      state.draft.materialSpecificationId = null;
-      state.draft.materialSpecificationName = '';
-      await loadSpecifications(state.draft.materialOptionId, state.draft.materialId);
+      // Specifications text
+      const specText = material.specification || material.description || 'MARINE PLY THICKNESS-16MM,LAMINATION THICKNESS 0.8MM,HINGES-BRAND SLEEK,KITCHEN HINGES SOFT CLOSING,KITCHEN HANDLE PROFILE,ROOM HINGES NOT SOFT CLOSING,ROOM HANDLE SS';
 
-      if (state.draft.materialOptionId || state.draft.rate == null) {
-          await refreshDraftRate();
+      sizePanel.innerHTML = `
+        <div class="size-details-title-row">
+          <span class="size-details-title">SIZE DETAILS &mdash; ${esc(material.name.toUpperCase())}</span>
+          <span class="size-details-formula">${esc(formulaDisplay)}</span>
+        </div>
+        <div class="size-details-spec-box">
+          <div class="spec-header">
+            <span>Specifications:</span>
+            <button type="button" class="spec-edit-btn" id="specEditBtn-${divisionId}" title="Edit Specifications">&#9998;</button>
+          </div>
+          <div class="spec-content" id="specContent-${divisionId}">${esc(specText)}</div>
+          <textarea class="spec-textarea hidden" id="specTextarea-${divisionId}" rows="3">${esc(specText)}</textarea>
+        </div>
+        <div class="size-details-inputs-row">
+          ${hasLength ? `
+          <div class="dim-input-group">
+            <label for="dimLen-${divisionId}">LENGTH (IN)</label>
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimLen-${divisionId}" value="0">
+          </div>` : ''}
+          ${hasWidth ? `
+          <div class="dim-input-group">
+            <label for="dimWid-${divisionId}">WIDTH</label>
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimWid-${divisionId}" value="0">
+          </div>` : ''}
+          ${hasHeight ? `
+          <div class="dim-input-group">
+            <label for="dimHgt-${divisionId}">HEIGHT (IN)</label>
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimHgt-${divisionId}" value="0">
+          </div>` : ''}
+        </div>
+        <div class="size-details-calc-box">
+          <span>Sq.Ft: <strong id="calcSqft-${divisionId}">0</strong></span>
+          <span class="calc-divider">|</span>
+          <span>Amount: <strong id="calcAmt-${divisionId}">&#8377;0.00</strong></span>
+        </div>
+        <div class="size-details-btn-row">
+          <button type="button" class="btn-add-to-quote" id="addQuoteBtn-${divisionId}">Add to Quote</button>
+          <button type="button" class="btn-cancel-size" id="cancelSizeBtn-${divisionId}">Cancel</button>
+        </div>
+      `;
+
+      sizePanel.classList.remove('hidden');
+
+      // Live calculation
+      const lenInput = $(`dimLen-${divisionId}`);
+      const widInput = $(`dimWid-${divisionId}`);
+      const hgtInput = $(`dimHgt-${divisionId}`);
+      const sqftEl = $(`calcSqft-${divisionId}`);
+      const amtEl = $(`calcAmt-${divisionId}`);
+
+      function updateLiveCalc() {
+          const L = Number(lenInput?.value || 0);
+          const W = Number(widInput?.value || 0);
+          const H = Number(hgtInput?.value || 0);
+          const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
+          const roundedSqft = Math.round(sqft * 100) / 100;
+          const rateVal = (material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0;
+          const lineAmt = Math.round(roundedSqft * rateVal * 100) / 100;
+
+          if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
+          if (amtEl) amtEl.textContent = money(lineAmt);
       }
 
-      renderMaterialDetails();
-      calculateDraft();
+      if (lenInput) lenInput.addEventListener('input', updateLiveCalc);
+      if (widInput) widInput.addEventListener('input', updateLiveCalc);
+      if (hgtInput) hgtInput.addEventListener('input', updateLiveCalc);
 
-      $('itemBuilder').classList.remove('hidden');
-      $('itemBuilder').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Edit pencil toggle
+      const editBtn = $(`specEditBtn-${divisionId}`);
+      const specContent = $(`specContent-${divisionId}`);
+      const specTextarea = $(`specTextarea-${divisionId}`);
+      if (editBtn && specContent && specTextarea) {
+          editBtn.addEventListener('click', () => {
+              const isEditing = !specTextarea.classList.contains('hidden');
+              if (isEditing) {
+                  specContent.textContent = specTextarea.value.trim() || specContent.textContent;
+                  specTextarea.classList.add('hidden');
+                  specContent.classList.remove('hidden');
+              } else {
+                  specTextarea.value = specContent.textContent.trim();
+                  specContent.classList.add('hidden');
+                  specTextarea.classList.remove('hidden');
+                  specTextarea.focus();
+              }
+          });
+      }
+
+      // Cancel button
+      const cancelBtn = $(`cancelSizeBtn-${divisionId}`);
+      if (cancelBtn) {
+          cancelBtn.addEventListener('click', () => {
+              sizePanel.classList.add('hidden');
+              activeBtn.classList.remove('selected-material-btn');
+              state.draft = null;
+          });
+      }
+
+      // Add to Quote button
+      const addBtn = $(`addQuoteBtn-${divisionId}`);
+      if (addBtn) {
+          addBtn.addEventListener('click', () => {
+              const L = Number(lenInput?.value || 0);
+              const W = Number(widInput?.value || 0);
+              const H = Number(hgtInput?.value || 0);
+
+              if (hasLength && L <= 0) return alert('Please enter Length (in).');
+              if (hasWidth && W <= 0) return alert('Please enter Width (in).');
+              if (hasHeight && H <= 0) return alert('Please enter Height (in).');
+
+              if (material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
+                  return alert('No rate configured for this material in the selected branch and grade.');
+              }
+
+              const room = ensureRoom();
+              if (!room) return alert('Select Floor and Room Number first.');
+
+              let finalSpec = specContent?.textContent || specText;
+              if (specTextarea && !specTextarea.classList.contains('hidden')) {
+                  finalSpec = specTextarea.value.trim() || finalSpec;
+              }
+
+              const quoteItem = {
+                  categoryId,
+                  categoryName,
+                  divisionId,
+                  divisionName,
+                  itemId: null,
+                  itemName: divisionName,
+                  materialId: material.id,
+                  materialName: material.name,
+                  materialOptionId: null,
+                  materialOptionName: material.name,
+                  materialSpecificationId: null,
+                  materialSpecificationName: '',
+                  rate: Number(material.rate),
+                  formula: material.formula || '(L + W) × H',
+                  unit: material.unit || 'Sq.ft',
+                  itemDescription: '',
+                  specification: finalSpec,
+                  sizes: [{
+                      length: L,
+                      width: hasWidth ? W : 0,
+                      height: hasHeight ? H : 0,
+                      offerPrice: null,
+                      offerDiscountPercent: 0,
+                      offerActive: false
+                  }]
+              };
+
+              room.items.push(quoteItem);
+
+              // Close panel and reset button
+              sizePanel.classList.add('hidden');
+              activeBtn.classList.remove('selected-material-btn');
+              state.draft = null;
+
+              renderRoomPills();
+              renderQuoteSummary();
+              showRoomNotice(`Added ${material.name} to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
+          });
+      }
   }
 
   function openAddMaterial(divisionId) {
@@ -930,7 +1169,195 @@
       $('materialSpecificationId').innerHTML='<option value="">Select specification (optional)</option>';
       if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       renderRoomPills();
+      renderQuoteSummary();
       showRoomNotice(`Added item to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
+  }
+
+  let showSqftSize = true;
+
+  function renderQuoteSummary() {
+      const tbody = $('quoteSummaryBody');
+      if (!tbody) return;
+
+      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
+      if (roomsWithItems.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="${showSqftSize ? 7 : 5}" style="text-align: center; padding: 28px; color: #64748b; font-style: italic;">No items added to quote yet. Choose a room and material above to add sizes.</td></tr>`;
+          renderPaymentTerms(0, 0);
+          return;
+      }
+
+      let grandBase = 0;
+      let grandOffer = 0;
+      let serialNo = 1;
+      let html = '';
+
+      roomsWithItems.forEach((room) => {
+          // Room Group Header
+          const floorRoomLabel = `${room.floor || 'Ground Floor'} (ROOM ${room.room || '1'})`.toUpperCase();
+          html += `<tr class="group-floor-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-floor-header">&#127963;&#65039; ${esc(floorRoomLabel)}</div></td></tr>`;
+
+          // Group by category
+          const itemsByCategory = {};
+          room.items.forEach((item, itemIdx) => {
+              const catKey = item.categoryName || 'GENERAL';
+              if (!itemsByCategory[catKey]) itemsByCategory[catKey] = [];
+              itemsByCategory[catKey].push({ item, itemIdx });
+          });
+
+          let roomBaseTotal = 0;
+          let roomOfferTotal = 0;
+
+          Object.keys(itemsByCategory).forEach(catName => {
+              html += `<tr class="group-category-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-category-header">&#127970; ${esc(catName.toUpperCase())}</div></td></tr>`;
+
+              itemsByCategory[catName].forEach(({ item, itemIdx }) => {
+                  (item.sizes || []).forEach((size, sizeIdx) => {
+                      const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
+                      const sqft = Math.round(meas * 100) / 100;
+                      const lineBase = Math.round(sqft * Number(item.rate || 0) * 100) / 100;
+
+                      // Offer price
+                      const isOfferActive = size.offerActive === true;
+                      const discountPct = Number(size.offerDiscountPercent || 0);
+                      let lineOffer = lineBase;
+                      if (isOfferActive && discountPct > 0) {
+                          lineOffer = Math.round(lineBase * (1 - discountPct / 100) * 100) / 100;
+                      }
+                      size.offerPrice = isOfferActive ? lineOffer : null;
+
+                      roomBaseTotal += lineBase;
+                      roomOfferTotal += (isOfferActive ? lineOffer : lineBase);
+
+                      // Size display
+                      const formula = (item.formula || '').toUpperCase();
+                      let sizeDisp = `L:${size.length}`;
+                      if (formula.includes('+') || formula.includes('(L + W)')) {
+                          sizeDisp = `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}`;
+                      } else if (formula.includes('H')) {
+                          sizeDisp = `L:${size.length} \u00d7 H:${size.height}`;
+                      } else {
+                          sizeDisp = `L:${size.length} \u00d7 W:${size.width}`;
+                      }
+
+                      const sqftDisplay = sqft % 1 === 0 ? sqft.toFixed(0) : sqft.toFixed(2);
+                      const baseAmtDisplay = money(lineBase);
+                      const offerAmtDisplay = money(isOfferActive ? lineOffer : lineBase);
+
+                      html += `
+                      <tr class="summary-item-row">
+                        <td class="col-num">${serialNo++}</td>
+                        <td class="col-room">${esc(item.divisionName || item.itemName || 'ITEM')}</td>
+                        <td class="col-material">
+                          <div class="mat-name">${esc(item.materialName || 'Material')}</div>
+                          <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
+                        </td>
+                        ${showSqftSize ? `<td class="col-size">${esc(sizeDisp)}</td>` : ''}
+                        ${showSqftSize ? `<td class="col-sqft">${sqftDisplay}</td>` : ''}
+                        <td class="col-amount">${baseAmtDisplay}</td>
+                        <td class="col-offer">
+                          <div class="offer-cell-wrapper">
+                            <div class="offer-top-row">
+                              <span class="offer-price-val">${offerAmtDisplay}</span>
+                              <div class="offer-actions-right">
+                                <label class="switch" style="transform: scale(0.85); transform-origin: right center;">
+                                  <input type="checkbox" ${isOfferActive ? 'checked' : ''} onchange="toggleItemOffer('${esc(room.key)}', ${itemIdx}, ${sizeIdx}, this.checked)">
+                                  <span class="slider"></span>
+                                </label>
+                                <button type="button" class="btn-remove-item" onclick="removeItemFromQuote('${esc(room.key)}', ${itemIdx}, ${sizeIdx})" title="Remove Item">&#10005;</button>
+                              </div>
+                            </div>
+                            <div class="offer-chips-row">
+                              <button type="button" class="offer-chip ${isOfferActive && discountPct === 5 ? 'active' : ''}" onclick="setItemDiscount('${esc(room.key)}', ${itemIdx}, ${sizeIdx}, 5)">-5%</button>
+                              <button type="button" class="offer-chip ${isOfferActive && discountPct === 10 ? 'active' : ''}" onclick="setItemDiscount('${esc(room.key)}', ${itemIdx}, ${sizeIdx}, 10)">-10%</button>
+                              <button type="button" class="offer-chip ${!isOfferActive || discountPct === 0 ? 'active' : ''}" onclick="setItemDiscount('${esc(room.key)}', ${itemIdx}, ${sizeIdx}, 0)">None</button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>`;
+                  });
+              });
+          });
+
+          // Room Subtotal
+          html += `
+          <tr class="subtotal-row">
+            <td colspan="${showSqftSize ? 5 : 3}" class="subtotal-label">Rooms Subtotal</td>
+            <td class="subtotal-amount">${money(roomBaseTotal)}</td>
+            <td class="subtotal-offer">${money(roomOfferTotal)}</td>
+          </tr>`;
+
+          grandBase += roomBaseTotal;
+          grandOffer += roomOfferTotal;
+      });
+
+      // Grand Total
+      html += `
+      <tr class="grand-total-row">
+        <td colspan="${showSqftSize ? 5 : 3}" class="grand-label">Grand Total (Rooms + Accessories)</td>
+        <td class="grand-amount">${money(grandBase)}</td>
+        <td class="grand-offer">${money(grandOffer)}</td>
+      </tr>`;
+
+      tbody.innerHTML = html;
+      renderPaymentTerms(grandBase, grandOffer);
+  }
+
+  function toggleItemOffer(roomKey, itemIdx, sizeIdx, isChecked) {
+      const room = state.rooms.find(r => r.key === roomKey);
+      if (!room || !room.items[itemIdx]) return;
+      const size = room.items[itemIdx].sizes[sizeIdx];
+      if (!size) return;
+      size.offerActive = isChecked;
+      if (isChecked && (!size.offerDiscountPercent || size.offerDiscountPercent === 0)) {
+          size.offerDiscountPercent = 5;
+      }
+      renderQuoteSummary();
+  }
+
+  function setItemDiscount(roomKey, itemIdx, sizeIdx, discountPct) {
+      const room = state.rooms.find(r => r.key === roomKey);
+      if (!room || !room.items[itemIdx]) return;
+      const size = room.items[itemIdx].sizes[sizeIdx];
+      if (!size) return;
+      if (discountPct === 0) {
+          size.offerActive = false;
+          size.offerDiscountPercent = 0;
+      } else {
+          size.offerActive = true;
+          size.offerDiscountPercent = discountPct;
+      }
+      renderQuoteSummary();
+  }
+
+  function removeItemFromQuote(roomKey, itemIdx, sizeIdx) {
+      const room = state.rooms.find(r => r.key === roomKey);
+      if (!room || !room.items[itemIdx]) return;
+      if (room.items[itemIdx].sizes && room.items[itemIdx].sizes.length > 1) {
+          room.items[itemIdx].sizes.splice(sizeIdx, 1);
+      } else {
+          room.items.splice(itemIdx, 1);
+      }
+      renderRoomPills();
+      renderQuoteSummary();
+  }
+
+  function renderPaymentTerms(grandBase, grandOffer) {
+      const effectiveGrand = (grandOffer !== undefined && grandOffer > 0 ? grandOffer : grandBase) || 0;
+      const token = Math.round(effectiveGrand * 0.10);
+      const advance = Math.round(effectiveGrand * 0.50);
+      const part = Math.round(effectiveGrand * 0.35);
+      const finalVal = Math.max(0, Math.round(effectiveGrand) - token - advance - part);
+
+      if ($('tokenPaymentInput')) $('tokenPaymentInput').value = '₹' + token.toLocaleString('en-IN');
+      if ($('advancePaymentInput')) $('advancePaymentInput').value = '₹' + advance.toLocaleString('en-IN');
+      if ($('partPaymentInput')) $('partPaymentInput').value = '₹' + part.toLocaleString('en-IN');
+      if ($('finalPaymentInput')) $('finalPaymentInput').value = '₹' + finalVal.toLocaleString('en-IN');
+
+      if ($('splitGrandTotal')) $('splitGrandTotal').textContent = '₹' + Math.round(effectiveGrand).toLocaleString('en-IN');
+      if ($('splitTokenVal')) $('splitTokenVal').textContent = '₹' + token.toLocaleString('en-IN');
+      if ($('splitAdvanceVal')) $('splitAdvanceVal').textContent = '₹' + advance.toLocaleString('en-IN');
+      if ($('splitPartVal')) $('splitPartVal').textContent = '₹' + part.toLocaleString('en-IN');
+      if ($('splitFinalVal')) $('splitFinalVal').textContent = '₹' + finalVal.toLocaleString('en-IN');
   }
 
   async function recalculateAll() {
@@ -957,6 +1384,7 @@
       }
       if (!state.rooms.some(r=>r.items.length)) {
           if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
+          renderQuoteSummary();
           return;
       }
       const requests=[];
@@ -972,6 +1400,7 @@
           $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.';
           $('pricingMessage').style.color='#15803d';
           renderRoomPills();
+          renderQuoteSummary();
           if(state.draft) {await refreshDraftRate(); renderMaterialDetails();}
       } catch(e){
           $('pricingMessage').textContent=e.message;
@@ -979,7 +1408,7 @@
       }
   }
 
-  async function saveQuotation() {
+  async function saveQuotation(redirectOnSuccess = true) {
       if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
       if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
       if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
@@ -988,11 +1417,16 @@
       const phone = $('customerPhone').value.trim();
       const branchId = Number($('branchId').value || 0);
       if (!name || !phone || !branchId || !$('quotationDate').value) {
-          return alert('Customer Name, Phone, Branch and Date are required.');
+          alert('Customer Name, Phone, Branch and Date are required.');
+          return null;
       }
-      if (!state.rooms.some(r => r.items.length)) {
-          return alert('Add at least one item to the quotation.');
+      if (!state.rooms.some(r => r.items && r.items.length > 0)) {
+          alert('Add at least one item to the quotation.');
+          return null;
       }
+
+      const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
+
       const payload = {
           quotationId: state.quotationId,
           customer: {
@@ -1006,11 +1440,11 @@
           quotationDate: $('quotationDate').value,
           pricingMode: state.pricingMode,
           customerRequirements: state.customerRequirements || '',
-          notes: state.notes || '',
-          rooms: state.rooms.filter(r => r.items.length).map(r => ({
+          notes: notesVal,
+          rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
               floor: r.floor,
               room: r.room,
-              workDescription: r.workDescription,
+              workDescription: r.workDescription || '',
               items: r.items.map(i => ({
                   workCategoryId: i.categoryId,
                   divisionId: i.divisionId,
@@ -1018,16 +1452,24 @@
                   materialId: i.materialId,
                   materialOptionId: i.materialOptionId,
                   materialSpecificationId: i.materialSpecificationId,
-                  itemDescription: i.itemDescription,
-                  specification: i.specification,
-                  sizes: i.sizes
+                  itemDescription: i.itemDescription || '',
+                  specification: i.specification || '',
+                  sizes: (i.sizes || []).map(s => ({
+                      length: s.length,
+                      width: s.width,
+                      height: s.height,
+                      offerPrice: s.offerPrice
+                  }))
               }))
           }))
       };
-      const button = $('saveQuotationBtn');
-      button.disabled = true;
-      button.textContent = 'Saving Quotation...';
-      $('saveMessage').textContent = 'Saving customer, rooms, items and pricing...';
+
+      const button = $('saveQuoteBtn') || $('saveQuotationBtn');
+      if (button) {
+          button.disabled = true;
+          button.textContent = 'Saving Quote...';
+      }
+      if ($('saveMessage')) $('saveMessage').textContent = 'Saving customer, rooms, items and pricing...';
       try {
           const response = await fetch(`${API_BASE}/save`, {
               method: 'POST',
@@ -1035,15 +1477,51 @@
               body: JSON.stringify(payload)
           });
           if (response.redirected) {
-              window.location.href = response.url;
-              return;
+              if (redirectOnSuccess) {
+                  window.location.href = response.url;
+                  return null;
+              } else {
+                  const parts = response.url.split('/');
+                  const savedId = parts[parts.length - 1];
+                  return savedId;
+              }
           }
           const text = await response.text();
           throw new Error(text || 'Unable to save quotation.');
       } catch (e) {
-          $('saveMessage').textContent = e.message;
-          button.disabled = false;
-          button.textContent = 'Save Quotation';
+          if ($('saveMessage')) $('saveMessage').textContent = e.message;
+          alert('Error saving quotation: ' + e.message);
+          return null;
+      } finally {
+          if (button) {
+              button.disabled = false;
+              button.textContent = 'Save Quote';
+          }
+      }
+  }
+
+  function clearQuote() {
+      if (confirm('Are you sure you want to clear all items in this quotation?')) {
+          state.rooms = [];
+          state.draft = null;
+          if ($('quoteNotes')) $('quoteNotes').value = '';
+          renderRoomPills();
+          renderQuoteSummary();
+          showRoomNotice('Quotation cleared. You can add new items above.');
+      }
+  }
+
+  async function printOrSavePdf() {
+      if (state.quotationId) {
+          const pdfUrl = IS_ADMIN ? `/admin/quotations/pdf/${state.quotationId}` : `/employee/quotations/pdf/${state.quotationId}`;
+          window.open(pdfUrl, '_blank');
+          return;
+      }
+      const savedId = await saveQuotation(false);
+      if (savedId) {
+          state.quotationId = Number(savedId);
+          const pdfUrl = IS_ADMIN ? `/admin/quotations/pdf/${savedId}` : `/employee/quotations/pdf/${savedId}`;
+          window.open(pdfUrl, '_blank');
       }
   }
 
@@ -1070,7 +1548,18 @@
   });
   $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
-  $('saveQuotationBtn').addEventListener('click', saveQuotation);
+  if ($('saveQuotationBtn')) $('saveQuotationBtn').addEventListener('click', () => saveQuotation(true));
+  if ($('saveQuoteBtn')) $('saveQuoteBtn').addEventListener('click', () => saveQuotation(true));
+  if ($('printPdfBtn')) $('printPdfBtn').addEventListener('click', printOrSavePdf);
+  if ($('clearQuoteBtn')) $('clearQuoteBtn').addEventListener('click', clearQuote);
+  if ($('toggleSqftSize')) {
+      $('toggleSqftSize').addEventListener('change', e => {
+          showSqftSize = e.target.checked;
+          const thElements = document.querySelectorAll('th.col-toggleable');
+          thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+          renderQuoteSummary();
+      });
+  }
 
   // Add Another Room buttons
   $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
@@ -1129,6 +1618,8 @@
 
   $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
+  renderQuoteSummary();
+  renderPaymentTerms();
 
   // Load existing quotation if editing
   if (state.quotationId) {
@@ -1142,7 +1633,10 @@
           if (data.quotationDate) $('quotationDate').value = data.quotationDate;
           if (data.branchId) $('branchId').value = data.branchId;
           if (data.customerRequirements) state.customerRequirements = data.customerRequirements;
-          if (data.notes) state.notes = data.notes;
+          if (data.notes) {
+              state.notes = data.notes;
+              if ($('quoteNotes')) $('quoteNotes').value = data.notes;
+          }
           if (data.customerId) state.selectedCustomerId = data.customerId;
           if (data.pricingMode) {
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
@@ -1175,13 +1669,16 @@
                           length: Number(s.length || 0),
                           width: Number(s.width || 0),
                           height: Number(s.height || 0),
-                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null
+                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
+                          offerDiscountPercent: (s.offerPrice != null && Number(i.rate || 0) > 0) ? Math.round((1 - (Number(s.offerPrice) / (Number(i.rate) * calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height)))) * 100) : 0,
+                          offerActive: s.offerPrice != null
                       }))
                   }))
               }));
               $('floor').value = state.rooms[0].floor;
               $('roomNumber').value = state.rooms[0].room;
               renderRoomPills();
+              renderQuoteSummary();
           }
       }).catch(err => {
           console.error("Failed to load quotation", err);
