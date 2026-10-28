@@ -251,7 +251,9 @@ public class AdminQuotationBuilderController {
                     ? option.getMaterial().getFormula()
                     : "(L + W) × H"));
 
-            String unit = (material != null && material.getUnit() != null) ? material.getUnit() : "Sq.ft";
+            String unit = (pricing != null && pricing.getUnit() != null)
+                    ? pricing.getUnit()
+                    : ((material != null && material.getUnit() != null) ? material.getUnit() : "Sq.ft");
 
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("success", true);

@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="_csrf" th:content="${_csrf.token}">
+  <meta name="_csrf" th:content="${_csrf != null ? _csrf.token : ''}">
+  <meta name="_csrf_header" th:content="${_csrf != null ? _csrf.headerName : 'X-CSRF-TOKEN'}">
   <link rel="stylesheet" th:href="@{/css/admin-nav.css}">
   <link rel="stylesheet" th:href="@{/css/admin-quotation-builder.css}">
   <script th:src="@{/js/title-capitalization.js}"></script>
@@ -44,45 +45,7 @@
         <span class="step">01</span>
         <div>
           <h2>Customer Details</h2>
-          <p>Choose an existing customer or create a new customer record.</p>
-        </div>
-      </div>
-
-      <div class="customer-selection-mode" style="margin-bottom: 18px; padding: 12px 16px; background: #f0faf6; border: 1px solid #D6E4E1; border-radius: 10px; display: flex; flex-wrap: wrap; gap: 20px; align-items: center;">
-        <span style="font-size: 13px; font-weight: 700; color: #013A36; text-transform: uppercase; letter-spacing: 0.5px;">Customer Option:</span>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="EXISTING" checked style="accent-color: #024541; width: 17px; height: 17px;">
-          <span>Existing Customer</span>
-        </label>
-        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; font-size: 14px; color: #102c25;">
-          <input type="radio" name="customerMode" value="NEW" style="accent-color: #024541; width: 17px; height: 17px;">
-          <span>New Customer</span>
-        </label>
-      </div>
-
-      <div id="existingCustomerBlock" style="margin-bottom: 20px; padding: 16px; background: #ffffff; border: 1.5px solid #024541; border-radius: 10px; box-shadow: 0 2px 8px rgba(2, 69, 65, 0.08);">
-        <label style="display: block; font-weight: 600; font-size: 13px; color: #024541; margin-bottom: 8px;">
-          Search &amp; Select Existing Customer <span>*</span>
-        </label>
-        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-          <input type="text" id="customerSearchInput" placeholder="🔍 Search by name or phone..." 
-                 style="flex: 1; min-width: 220px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; outline: none; background: #fdfdfd;">
-          <select id="existingCustomerSelect" style="flex: 2; min-width: 280px; padding: 9px 12px; border: 1px solid #D6E4E1; border-radius: 8px; font-size: 14px; background: #ffffff;">
-            <option value="">-- Choose an existing customer --</option>
-            <option th:each="c : ${customers}"
-                    th:value="${c.id}"
-                    th:data-name="${c.name}"
-                    th:data-phone="${c.phone}"
-                    th:data-email="${c.email != null ? c.email : ''}"
-                    th:data-address="${c.address != null ? c.address : ''}"
-                    th:data-branch="${c.branch != null ? c.branch.id : ''}"
-                    th:text="${c.name + ' (' + c.phone + ')' + (c.branch != null ? ' - ' + c.branch.name : '')}">
-            </option>
-          </select>
-        </div>
-        <div id="customerSelectionFeedback" style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
-          <small id="customerSearchCount" style="color: #71847b; font-size: 12px;"></small>
-          <small id="selectedCustomerBadge" style="display: none; color: #024541; font-weight: 600; font-size: 12px; background: #EAF3F1; padding: 3px 8px; border-radius: 4px;">✓ Customer details auto-populated</small>
+          <p>Enter customer details for this quotation.</p>
         </div>
       </div>
 
@@ -104,55 +67,117 @@
       </div>
     </section>
 
-    <section class="card pricing-card">
-      <div class="section-heading"><span class="step">02</span><div><h2>Pricing Mode</h2><p>Changing the mode keeps the sizes and items and recalculates their prices.</p></div></div>
-      <div class="pricing-options" id="pricingModes">
-        <label class="pricing-option premium"><input type="radio" name="pricingMode" value="PREMIUM"><span><b>Premium</b><small>Highest material rate</small></span></label>
-        <label class="pricing-option middle"><input type="radio" name="pricingMode" value="MIDDLE" checked><span><b>Middle / Standard</b><small>Standard material rate</small></span></label>
-        <label class="pricing-option economy"><input type="radio" name="pricingMode" value="ECONOMY"><span><b>Economy</b><small>Economy material rate</small></span></label>
+    <!-- PRICING MODE -->
+    <section class="card pricing-mode-panel" id="pricingModeSection">
+      <div class="pricing-mode-bar">
+        <span class="pricing-mode-title">Pricing Mode:</span>
+        <div class="pricing-segmented-control" id="pricingModes">
+          <label class="segmented-pill premium">
+            <input type="radio" name="pricingMode" value="PREMIUM">
+            <span>Premium</span>
+          </label>
+          <label class="segmented-pill middle">
+            <input type="radio" name="pricingMode" value="MIDDLE" checked>
+            <span>Middle / Standard</span>
+          </label>
+          <label class="segmented-pill economy">
+            <input type="radio" name="pricingMode" value="ECONOMY">
+            <span>Economy</span>
+          </label>
+        </div>
       </div>
       <div id="pricingMessage" class="inline-message"></div>
     </section>
 
-    <section class="card room-setup-card" id="roomSetupSection">
-      <div class="section-heading">
-        <span class="step">03</span>
-        <div>
-          <h2>Floor & Room</h2>
-          <p>Select where the work is being done or add another room.</p>
+    <!-- HELPER NOTE BANNER -->
+    <div class="builder-helper-banner">
+      <span class="helper-accent-bar"></span>
+      <span>Pick an item below, choose the material, then click <strong>Add Size</strong> to enter measurements. Rates are managed by the admin and locked for safety.</span>
+    </div>
+
+    <!-- STEP 2: FLOOR & ROOM SELECTION & HORIZONTAL CATEGORY NAVIGATION -->
+    <div class="step-two-row">
+      <section class="card room-panel-card" id="roomSetupSection">
+        <span class="visually-hidden">Floor &amp; Room</span>
+        <span class="visually-hidden">Select Category</span>
+        <div class="room-panel-top">
+          <h2 class="room-panel-heading">Which Room Are You Working On?</h2>
+          <div class="room-dropdowns-group">
+            <div class="compact-dropdown-field">
+              <label for="floor">FLOOR</label>
+              <select id="floor">
+                <option value="">Select floor</option>
+                <option selected>Ground Floor</option>
+                <option>First Floor</option>
+                <option>Second Floor</option>
+                <option>Third Floor</option>
+                <option>Fourth Floor</option>
+                <option>Terrace</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div class="compact-dropdown-field">
+              <label for="roomNumber">ROOM NO.</label>
+              <select id="roomNumber">
+                <option value="">Select room</option>
+                <option selected>1</option>
+                <option>2</option>
+                <option>3</option>
+                <option>4</option>
+                <option>5</option>
+                <option>6</option>
+                <option>7</option>
+                <option>8</option>
+                <option>9</option>
+                <option>10</option>
+              </select>
+            </div>
+            <button type="button" id="addAnotherRoomBtnStep3" class="btn-compact-add-room" title="Add Another Room">
+              + Add Room
+            </button>
+          </div>
         </div>
-        <button type="button" id="addAnotherRoomBtnStep3" class="btn btn-secondary btn-sm" style="margin-left: auto;">
-          + Add Another Room
-        </button>
-      </div>
-      <div id="roomPillsContainer" style="display: none; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
-      <div id="roomNotice" class="inline-message" style="display: none; margin-bottom: 12px; color: #024541; font-weight: 600;"></div>
-      <div class="grid two">
-        <label class="field">Floor <span>*</span>
-          <select id="floor"><option value="">Select floor</option><option>Ground Floor</option><option>First Floor</option><option>Second Floor</option><option>Third Floor</option><option>Fourth Floor</option><option>Terrace</option><option>Other</option></select>
-        </label>
-        <label class="field">Room Number <span>*</span>
-          <select id="roomNumber"><option value="">Select room</option><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option><option>9</option><option>10</option></select>
-        </label>
-      </div>
-      <label class="field full">Work Description<textarea id="workDescription" rows="2" placeholder="Optional room-level description"></textarea></label>
+
+        <div id="roomPillsContainer" style="display: none; margin-top: 10px; margin-bottom: 6px; flex-wrap: wrap; gap: 8px; align-items: center;"></div>
+        <div id="roomNotice" class="inline-message" style="display: none; margin-top: 8px; color: #024541; font-weight: 600;"></div>
+
+        <!-- HORIZONTAL CATEGORY NAVIGATION -->
+        <div class="category-scroll-wrapper" id="categorySection">
+          <div class="category-scroll-track" id="categoryGrid">
+            <button th:each="category : ${workCategories}" 
+                    type="button" 
+                    class="category-choice-btn category-choice" 
+                    th:data-id="${category.id}" 
+                    th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
+              <span class="cat-btn-icon" th:text="${category.icon != null && !category.icon.isBlank() ? category.icon : '⌂'}">⌂</span>
+              <span class="cat-btn-label" th:text="${category.displayName != null ? category.displayName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</span>
+            </button>
+          </div>
+          <div class="category-scroll-indicators">
+            <button type="button" class="cat-scroll-arrow" id="catScrollLeft" aria-label="Scroll left">&#9666;</button>
+            <div class="cat-scroll-progress-track">
+              <div class="cat-scroll-progress-thumb" id="catScrollThumb"></div>
+            </div>
+            <button type="button" class="cat-scroll-arrow" id="catScrollRight" aria-label="Scroll right">&#9656;</button>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- WORK TYPES GRID -->
+    <section class="work-types-section" id="divisionSection">
+      <div id="divisionArea" class="work-types-grid"></div>
     </section>
 
-    <section class="card work-card">
-      <div class="section-heading"><span class="step">04</span><div><h2>Which Room Are You Working On?</h2><p>Categories are loaded from your existing database.</p></div></div>
-      <div id="categoryGrid" class="choice-grid">
-        <button th:each="category : ${workCategories}" type="button" class="choice-card category-choice" th:data-id="${category.id}" th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
-          <span class="choice-icon" th:text="${category.icon != null ? category.icon : '⌂'}">⌂</span>
-          <strong th:text="${category.displayName != null ? category.displayName.toUpperCase() : ''}">FOYER</strong>
-          <small th:text="${category.description != null ? category.description : 'Select category'}">Select category</small>
-        </button>
-      </div>
-      <div id="divisionArea" class="dynamic-area hidden"></div>
-      <div id="itemArea" class="dynamic-area hidden"></div>
-    </section>
-
+    <!-- STEP 5: MATERIAL & SIZE -->
     <section id="itemBuilder" class="card item-builder hidden">
-      <div class="section-heading"><span class="step">05</span><div><h2>Material &amp; Size</h2><p id="selectedItemLabel">Select a division first.</p></div></div>
+      <div class="section-heading">
+        <span class="step">05</span>
+        <div>
+          <h2>Material &amp; Size</h2>
+          <p id="selectedItemLabel">Select a work type first.</p>
+        </div>
+      </div>
       <div class="selection-path" id="selectionPath"></div>
       <div id="materialFormulaBadge" style="display: none; align-items: center; gap: 8px; margin-bottom: 12px; padding: 8px 14px; background: #f0fdf4; border: 1px solid #86efac; border-radius: 8px; color: #166534; font-size: 13px;"></div>
       <div class="grid three">
@@ -175,35 +200,13 @@
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
 
-    <section class="card summary-card" id="summaryCard">
-      <div class="section-heading">
-        <span class="step">06</span>
-        <div>
-          <h2>Quote Summary</h2>
-          <p>Items and individual subtotals grouped by floor and room.</p>
-        </div>
-        <button type="button" id="addAnotherRoomBtnSummary" class="btn btn-secondary btn-sm" style="margin-left: auto;">
-          + Add Another Room
-        </button>
+    <div class="form-actions-card" style="margin-top: 24px; padding: 20px 24px; background: #ffffff; border: 1px solid #D6E4E1; border-radius: 14px; box-shadow: 0 4px 14px rgba(2, 69, 65, 0.05); display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px;">
+      <div id="saveMessage" class="save-message" style="margin: 0; font-weight: 600; color: #024541;"></div>
+      <div class="final-actions" style="margin: 0; padding: 0; border: none; display: flex; gap: 12px; align-items: center;">
+        <a th:href="@{/admin/quotations}" class="btn btn-light">Cancel</a>
+        <button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button>
       </div>
-      <div id="summaryEmpty" class="summary-empty"><div class="empty-icon">▦</div><h3>No items added yet</h3><p>Select a room, item, material and size to build the quotation.</p></div>
-      <div id="roomsSummary"></div>
-      <div id="addAnotherRoomBottomArea" style="margin-top: 14px; display: none; justify-content: flex-end;">
-        <button type="button" id="addAnotherRoomBtnBottom" class="btn btn-outline-primary btn-sm">
-          + Add Another Room to Quotation
-        </button>
-      </div>
-    </section>
-
-    <section class="card notes-card">
-      <div class="section-heading"><span class="step">07</span><div><h2>Final Details</h2><p>Optional notes for the quotation.</p></div></div>
-      <div class="grid two">
-        <label class="field">Customer Requirements<textarea id="customerRequirements" rows="3"></textarea></label>
-        <label class="field">Notes<textarea id="notes" rows="3"></textarea></label>
-      </div>
-      <div id="saveMessage" class="save-message"></div>
-      <div class="final-actions"><a th:href="@{/admin/quotations}" class="btn btn-light">Cancel</a><button id="saveQuotationBtn" type="button" class="btn btn-primary btn-large">Save Quotation</button></div>
-    </section>
+    </div>
   </div>
 </div>
 
@@ -212,14 +215,14 @@
 </div>
 
 <script th:inline="javascript">
-  const csrfToken = /*[[${_csrf.token}]]*/ '';
+  const csrfToken = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
   const API_BASE = /*[[@{/admin/quotations/builder}]]*/ '/admin/quotations/builder';
   const editQuotationId = /*[[${editQuotationId}]]*/ '';
   const state = {
       quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
       selectedCustomerId: null,
-      customerMode: 'EXISTING',
-      customersList: [],
+      customerRequirements: '',
+      notes: '',
       rooms: [],
       draft: null,
       pricingMode: 'MIDDLE'
@@ -348,10 +351,8 @@
       if (!floor || !room) return null;
       let existing = currentRoom();
       if (!existing) {
-          existing = {key: currentRoomKey(), floor, room, workDescription: $('workDescription').value, items: []};
+          existing = {key: currentRoomKey(), floor, room, workDescription: '', items: []};
           state.rooms.push(existing);
-      } else {
-          existing.workDescription = $('workDescription').value;
       }
       renderRoomPills();
       return existing;
@@ -388,8 +389,6 @@
           btn.addEventListener('click', () => {
               $('floor').value = btn.dataset.floor;
               $('roomNumber').value = btn.dataset.room;
-              const r = currentRoom();
-              $('workDescription').value = r && r.workDescription ? r.workDescription : '';
               renderRoomPills();
               showRoomNotice(`Switched to ${btn.dataset.floor} / Room ${btn.dataset.room}. You can add more items below.`);
           });
@@ -421,10 +420,8 @@
       } else {
           $('roomNumber').value = '';
       }
-      $('workDescription').value = '';
       hide('itemBuilder');
-      hide('itemArea');
-      hide('divisionArea');
+      if ($('divisionSection')) hide('divisionSection');
       state.draft = null;
       renderRoomPills();
       showRoomNotice(`Ready to configure another room (${currentFloor} - Room ${$('roomNumber').value || '?'}). Select items below.`);
@@ -441,16 +438,126 @@
   function showArea(id, html) { $(id).classList.remove('hidden'); $(id).innerHTML = html; }
   function hide(id) { $(id).classList.add('hidden'); }
 
+  const IS_ADMIN = true;
+  let activeDivisionId = null;
+
   async function loadDivisions(categoryId, categoryName) {
-      if (!$('floor').value || !$('roomNumber').value) { alert('Select Floor and Room Number first.'); return; }
+      if (!$('floor').value || !$('roomNumber').value) {
+          $('floor').value = 'Ground Floor';
+          $('roomNumber').value = '1';
+      }
       ensureRoom();
+
+      // Highlight selected category card
+      document.querySelectorAll('.category-choice').forEach(btn => {
+          const isSelected = Number(btn.dataset.id) === categoryId;
+          btn.classList.toggle('selected-category', isSelected);
+          if (isSelected) {
+              btn.scrollIntoView({ inline: 'nearest', behavior: 'smooth', block: 'nearest' });
+          }
+      });
+
+      // Clear previously selected work type and materials
+      state.draft = null;
+      hide('itemBuilder');
+      activeDivisionId = null;
+
+      const divisionSection = $('divisionSection');
+      if (divisionSection) divisionSection.classList.remove('hidden');
+
       const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
-      showArea('divisionArea', `<div class="dynamic-title">${esc(categoryName)} — Choose Work Type</div><div class="choice-grid compact">${data.map(d => `<button type="button" class="choice-card division-choice" data-id="${d.id}" data-name="${esc(d.name)}"><div style="font-size: 24px; margin-bottom: 4px;">${esc(d.emoji || d.icon || '🛠️')}</div><strong>${esc(d.name)}</strong><small>${esc(d.description || 'Select work type')}</small></button>`).join('')}</div>`);
-      hide('itemArea'); hide('itemBuilder');
-      document.querySelectorAll('.division-choice').forEach(btn => btn.addEventListener('click', () => selectDivision(Number(btn.dataset.id), btn.dataset.name, categoryId, categoryName)));
+      if (!data || data.length === 0) {
+          showArea('divisionArea', `<div class="empty-state" style="grid-column: 1 / -1; padding: 28px; text-align: center; color: #687873; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">No active work types configured for <strong>${esc(categoryName)}</strong>.</div>`);
+      } else {
+          showArea('divisionArea', data.map((d, index) => `
+              <div class="work-type-card" id="wt-card-${d.id}" data-id="${d.id}" data-name="${esc(d.name)}">
+                <div class="wt-card-header">
+                  <span class="wt-badge">${index + 1}</span>
+                  <span class="wt-name">${esc(d.name)}</span>
+                </div>
+                <div class="wt-divider"></div>
+                <div class="wt-actions">
+                  <button type="button" class="wt-click-me-btn" id="wt-click-btn-${d.id}">Click Me</button>
+                </div>
+                <div class="wt-material-container hidden" id="wt-mat-container-${d.id}">
+                  <div class="wt-material-divider"></div>
+                  <div class="wt-material-heading">CHOOSE MATERIAL</div>
+                  <div class="wt-material-list" id="wt-mat-list-${d.id}">
+                    <div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>
+                  </div>
+                  ${IS_ADMIN ? `<button type="button" class="wt-add-material-btn" onclick="openAddMaterial(${d.id})">+ Add Material</button>` : ''}
+                </div>
+              </div>
+          `).join(''));
+
+          data.forEach(d => {
+              const btn = $(`wt-click-btn-${d.id}`);
+              if (btn) {
+                  btn.addEventListener('click', () => toggleWorkTypeCard(d.id, d.name, categoryId, categoryName));
+              }
+          });
+      }
   }
 
-  async function selectDivision(divisionId, divisionName, categoryId, categoryName) {
+  async function toggleWorkTypeCard(divisionId, divisionName, categoryId, categoryName) {
+      const container = $(`wt-mat-container-${divisionId}`);
+      if (!container) return;
+
+      const isCurrentlyOpen = !container.classList.contains('hidden');
+      document.querySelectorAll('.wt-material-container').forEach(c => c.classList.add('hidden'));
+
+      if (isCurrentlyOpen) {
+          activeDivisionId = null;
+          return;
+      }
+
+      container.classList.remove('hidden');
+      activeDivisionId = divisionId;
+      await loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName);
+  }
+
+  async function loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName) {
+      const listEl = $(`wt-mat-list-${divisionId}`);
+      if (!listEl) return;
+
+      listEl.innerHTML = '<div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>';
+      const branchVal = $('branchId') ? $('branchId').value : '';
+
+      try {
+          const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
+          if (!materials || materials.length === 0) {
+              listEl.innerHTML = `<div style="font-size: 12px; color: #94a3b8; font-style: italic; padding: 6px 0;">No materials available for ${esc(state.pricingMode)} grade</div>`;
+              return;
+          }
+
+          // Populate select id="materialId" for compatibility
+          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
+              const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
+              const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
+              return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
+          }).join('');
+
+          listEl.innerHTML = materials.map(m => {
+              const isSelected = state.draft && state.draft.divisionId === divisionId && state.draft.materialId === m.id;
+              return `<button type="button" class="wt-material-btn ${isSelected ? 'selected-material-btn' : ''}" id="mat-btn-${divisionId}-${m.id}" data-mat-id="${m.id}">${esc(m.name)}</button>`;
+          }).join('');
+
+          materials.forEach(m => {
+              const btn = $(`mat-btn-${divisionId}-${m.id}`);
+              if (btn) {
+                  btn.addEventListener('click', () => selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, m));
+              }
+          });
+      } catch (e) {
+          listEl.innerHTML = `<div style="font-size: 12px; color: #dc2626; padding: 6px 0;">Failed to load materials</div>`;
+      }
+  }
+
+  async function selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, material) {
+      document.querySelectorAll('.wt-material-btn').forEach(b => b.classList.remove('selected-material-btn'));
+      const activeBtn = $(`mat-btn-${divisionId}-${material.id}`);
+      if (activeBtn) activeBtn.classList.add('selected-material-btn');
+
       state.draft = {
           categoryId,
           categoryName,
@@ -458,38 +565,76 @@
           divisionName,
           itemId: null,
           itemName: divisionName,
-          materialId: null,
-          materialName: '',
+          materialId: material.id,
+          materialName: material.name,
           materialOptionId: null,
           materialOptionName: '',
           materialSpecificationId: null,
           materialSpecificationName: '',
-          rate: 0,
-          formula: '(L + W) × H',
+          rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
+          formula: material.formula || '(L + W) × H',
+          unit: material.unit || 'Sq.ft',
+          measurementUnit: material.unit || 'Sq.ft',
+          pricingUnit: '₹ / ' + (material.unit || 'Sq.ft'),
           sizes: []
       };
-      $('selectedItemLabel').textContent = `${categoryName} → ${divisionName}`;
-      $('selectionPath').textContent = `${categoryName} / ${divisionName}`;
 
-      const branchVal = $('branchId') ? $('branchId').value : '';
-      const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
-      if (!materials || materials.length === 0) {
-          $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
-      } else {
-          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
-              const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
-              const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
-              return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
-          }).join('');
+      $('selectedItemLabel').textContent = `${categoryName} → ${divisionName} → ${material.name}`;
+      $('selectionPath').textContent = `${categoryName} / ${divisionName} / ${material.name}`;
+
+      $('materialId').value = String(material.id);
+
+      if (material.specification && !$('specification').value.trim()) {
+          $('specification').value = material.specification;
       }
-      $('materialOptionId').innerHTML = '<option value="">Select material option</option>';
-      $('materialSpecificationId').innerHTML = '<option value="">Select specification (optional)</option>';
-      $('materialDetails').classList.add('hidden');
-      if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
-      $('sizeRows').innerHTML = '';
-      addSizeRow();
+
+      const badge = $('materialFormulaBadge');
+      if (badge) {
+          badge.innerHTML = `<span>Configured Formula:</span> <strong>${esc(state.draft.formula)}</strong>`;
+          badge.style.display = 'inline-flex';
+      }
+
+      applyFormulaToAllRows();
+
+      const options = await getJson(`${API_BASE}/material-options?materialId=${material.id}`).catch(() => []);
+      if (!options || options.length === 0) {
+          $('materialOptionId').innerHTML = '<option value="">Standard Material Option</option>';
+          state.draft.materialOptionId = null;
+          state.draft.materialOptionName = state.draft.materialName;
+      } else {
+          $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
+          if (options.length === 1) {
+              $('materialOptionId').value = options[0].id;
+              state.draft.materialOptionId = options[0].id;
+              state.draft.materialOptionName = options[0].name;
+          } else {
+              state.draft.materialOptionId = null;
+              state.draft.materialOptionName = '';
+          }
+      }
+
+      state.draft.materialSpecificationId = null;
+      state.draft.materialSpecificationName = '';
+      await loadSpecifications(state.draft.materialOptionId, state.draft.materialId);
+
+      if (state.draft.materialOptionId || state.draft.rate == null) {
+          await refreshDraftRate();
+      }
+
+      renderMaterialDetails();
+      calculateDraft();
+
       $('itemBuilder').classList.remove('hidden');
-      $('itemBuilder').scrollIntoView({behavior:'smooth', block:'start'});
+      $('itemBuilder').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }
+
+  function openAddMaterial(divisionId) {
+      const url = '/admin/materials/new' + (divisionId ? ('?divisionId=' + divisionId) : '');
+      window.open(url, '_blank');
+  }
+
+  async function selectDivision(divisionId, divisionName, categoryId, categoryName) {
+      return toggleWorkTypeCard(divisionId, divisionName, categoryId, categoryName);
   }
 
   async function loadItems(divisionId, divisionName, categoryId, categoryName) {
@@ -780,87 +925,24 @@
           state.draft.specification = state.draft.materialSpecificationName;
       }
       state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
-      room.items.push(state.draft); state.draft=null; renderSummary(); hide('itemBuilder'); $('sizeRows').innerHTML='';
+      room.items.push(state.draft); state.draft=null; hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
       $('materialSpecificationId').innerHTML='<option value="">Select specification (optional)</option>';
       if ($('materialFormulaBadge')) $('materialFormulaBadge').style.display = 'none';
       renderRoomPills();
-      $('summaryCard').scrollIntoView({behavior:'smooth',block:'start'});
-  }
-
-  function renderSummary() {
-      const container=$('roomsSummary'); container.innerHTML=''; let total=0;
-      const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
-      $('summaryEmpty').classList.toggle('hidden', roomsWithItems.length > 0);
-      $('addAnotherRoomBottomArea').style.display = roomsWithItems.length > 0 ? 'flex' : 'none';
-
-      roomsWithItems.forEach((room, ri) => {
-          const roomTotal = room.items.reduce((sum, item) => sum + item.sizes.reduce((s, z) => {
-              const meas = Math.round(calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height) * 100) / 100;
-              return s + Math.round(meas * Number(item.rate || 0) * 100) / 100;
-          }, 0), 0);
-          total += roomTotal;
-          const block = document.createElement('div');
-          block.className = 'summary-room';
-          block.innerHTML = `<div class="summary-room-head">
-            <div>
-              <span>${esc(room.floor)} · ROOM ${esc(room.room)}</span>
-              <h3>${esc(room.floor)} / Room ${esc(room.room)}</h3>
-              ${room.workDescription ? `<small style="color: #64748b; display: block; margin-top: 2px;">${esc(room.workDescription)}</small>` : ''}
-            </div>
-            <div style="text-align: right;">
-              <span style="font-size: 11px; color: #64748b; display: block;">Room Subtotal</span>
-              <strong style="color: #024541; font-size: 1.15rem;">${money(roomTotal)}</strong>
-            </div>
-          </div>`;
-          const table = document.createElement('div');
-          table.className = 'summary-table';
-          room.items.forEach((item, ii) => {
-              const uLabel = 'sq.ft';
-              item.sizes.forEach((z, si) => {
-                  const rawMeas = calculateItemMeasurement(item.formula, item.unit, z.length, z.width, z.height);
-                  const meas = Math.round(rawMeas * 100) / 100;
-                  const amount = Math.round(meas * Number(item.rate || 0) * 100) / 100;
-                  const formula = (item.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
-                  let dimStr;
-                  if (formula === 'L × W' || (formula.includes('L') && formula.includes('W') && !formula.includes('H'))) {
-                      dimStr = `${z.length} × ${z.width} (L × W)`;
-                  } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
-                      dimStr = `${z.length} × ${z.height} (L × H)`;
-                  } else {
-                      dimStr = `${z.length} × ${z.width} × ${z.height}`;
-                  }
-                  const specText = item.materialSpecificationName ? ` — [${esc(item.materialSpecificationName)}]` : '';
-                  const row = document.createElement('div');
-                  row.className = 'summary-row';
-                  row.innerHTML = `<div><b>${esc(item.categoryName)} / ${esc(item.itemName || item.divisionName)}</b><small>${esc(item.materialName)} — ${esc(item.materialOptionName)}${specText} [${esc(item.formula || '(L + W) × H')}]</small></div><div>${dimStr}<small>${meas.toFixed(2)} ${uLabel}</small></div><div>${money(amount)}<small>Rate ${money(item.rate)}</small></div><button type="button" class="summary-delete" data-room-key="${esc(room.key)}" data-item="${ii}" data-size="${si}" title="Remove item">×</button>`;
-                  table.appendChild(row);
-              });
-          });
-          block.appendChild(table);
-          container.appendChild(block);
-      });
-
-      if ($('combinedSubtotal')) $('combinedSubtotal').textContent = money(total);
-      if ($('grandTotal')) $('grandTotal').textContent = money(total);
-
-      document.querySelectorAll('.summary-delete').forEach(btn => {
-          btn.addEventListener('click', () => {
-              const r = state.rooms.find(rm => rm.key === btn.dataset.roomKey);
-              if (!r) return;
-              const itemIndex = Number(btn.dataset.item);
-              const sizeIndex = Number(btn.dataset.size);
-              r.items[itemIndex].sizes.splice(sizeIndex, 1);
-              if (!r.items[itemIndex].sizes.length) r.items.splice(itemIndex, 1);
-              renderSummary();
-              renderRoomPills();
-          });
-      });
+      showRoomNotice(`Added item to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
   }
 
   async function recalculateAll() {
-      state.pricingMode=document.querySelector('input[name="pricingMode"]:checked').value;
-      if (state.draft && state.draft.divisionId) {
+      state.pricingMode = document.querySelector('input[name="pricingMode"]:checked').value;
+      if (activeDivisionId) {
+          const activeCard = $(`wt-card-${activeDivisionId}`);
+          const divName = activeCard?.dataset?.name || '';
+          const catBtn = document.querySelector('.category-choice.selected-category');
+          const catId = catBtn ? Number(catBtn.dataset.id) : null;
+          const catName = catBtn ? catBtn.dataset.name : '';
+          await loadMaterialsForWorkType(activeDivisionId, divName, catId, catName);
+      } else if (state.draft && state.draft.divisionId) {
           const branchVal = $('branchId') ? $('branchId').value : '';
           const materials = await getJson(`${API_BASE}/materials?divisionId=${state.draft.divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
           if (!materials || materials.length === 0) {
@@ -873,7 +955,10 @@
               }).join('');
           }
       }
-      if (!state.rooms.some(r=>r.items.length)) return;
+      if (!state.rooms.some(r=>r.items.length)) {
+          if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
+          return;
+      }
       const requests=[];
       state.rooms.forEach(room=>room.items.forEach(item=>requests.push((async()=>{
           if(!$('branchId').value)return;
@@ -882,148 +967,19 @@
           if (data.formula) item.formula = data.formula;
           if (data.unit) item.unit = data.unit;
       })())));
-      try { await Promise.all(requests); $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.'; $('pricingMessage').style.color=''; renderSummary(); if(state.draft) {await refreshDraftRate(); renderMaterialDetails();} } catch(e){$('pricingMessage').textContent=e.message; $('pricingMessage').style.color='#dc2626';}
-  }
-
-  function initCustomers() {
-      const select = $('existingCustomerSelect');
-      if (!select) return;
-      const options = Array.from(select.options).slice(1);
-      state.customersList = options.map(opt => ({
-          id: Number(opt.value),
-          name: opt.dataset.name || '',
-          phone: opt.dataset.phone || '',
-          email: opt.dataset.email || '',
-          address: opt.dataset.address || '',
-          branchId: opt.dataset.branch ? Number(opt.dataset.branch) : null,
-          label: opt.textContent
-      }));
-      updateCustomerMatchCount(state.customersList.length);
-  }
-
-  function updateCustomerMatchCount(count) {
-      if ($('customerSearchCount')) {
-          $('customerSearchCount').textContent = count > 0 ? `Showing ${count} customer(s)` : 'No matching customers found';
-      }
-  }
-
-  function renderCustomerDropdown(customersToRender, selectedId) {
-      const select = $('existingCustomerSelect');
-      if (!select) return;
-      select.innerHTML = '<option value="">-- Choose an existing customer --</option>';
-      customersToRender.forEach(c => {
-          const opt = document.createElement('option');
-          opt.value = c.id;
-          opt.textContent = c.label || `${c.name} (${c.phone})`;
-          opt.dataset.name = c.name;
-          opt.dataset.phone = c.phone;
-          opt.dataset.email = c.email || '';
-          opt.dataset.address = c.address || '';
-          if (c.branchId) opt.dataset.branch = c.branchId;
-          if (selectedId && Number(selectedId) === c.id) {
-              opt.selected = true;
-          }
-          select.appendChild(opt);
-      });
-      updateCustomerMatchCount(customersToRender.length);
-  }
-
-  function filterCustomers() {
-      const query = ($('customerSearchInput') ? $('customerSearchInput').value.trim().toLowerCase() : '');
-      const branchVal = $('branchId') ? $('branchId').value : '';
-      const selectedBranch = branchVal ? Number(branchVal) : null;
-
-      let filtered = state.customersList;
-      if (selectedBranch) {
-          filtered = filtered.filter(c => !c.branchId || c.branchId === selectedBranch);
-      }
-      if (query) {
-          filtered = filtered.filter(c =>
-              (c.name && c.name.toLowerCase().includes(query)) ||
-              (c.phone && c.phone.includes(query)) ||
-              (c.email && c.email.toLowerCase().includes(query))
-          );
-      }
-      renderCustomerDropdown(filtered, state.selectedCustomerId);
-  }
-
-  function onCustomerSelected(customerId) {
-      if (!customerId) {
-          state.selectedCustomerId = null;
-          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
-          $('customerName').value = '';
-          $('customerPhone').value = '';
-          $('customerEmail').value = '';
-          $('customerAddress').value = '';
-          return;
-      }
-      const c = state.customersList.find(x => x.id === Number(customerId));
-      if (c) {
-          state.selectedCustomerId = c.id;
-          $('customerName').value = toTitleCase(c.name || '');
-          $('customerPhone').value = c.phone || '';
-          $('customerEmail').value = c.email ? c.email.toLowerCase() : '';
-          $('customerAddress').value = toTitleCase(c.address || '');
-          if ($('selectedCustomerBadge')) {
-              $('selectedCustomerBadge').style.display = 'inline-block';
-              $('selectedCustomerBadge').textContent = '✓ ' + $('customerName').value + ' selected';
-          }
-          if (c.branchId && $('branchId') && !$('branchId').value) {
-              $('branchId').value = c.branchId;
-              if (state.draft) refreshDraftRate();
-          }
-      }
-  }
-
-  function setCustomerMode(mode) {
-      state.customerMode = mode;
-      if (mode === 'NEW') {
-          state.selectedCustomerId = null;
-          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'none';
-          if ($('selectedCustomerBadge')) $('selectedCustomerBadge').style.display = 'none';
-          $('customerName').value = '';
-          $('customerPhone').value = '';
-          $('customerEmail').value = '';
-          $('customerAddress').value = '';
-      } else {
-          if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
-          if ($('existingCustomerSelect') && $('existingCustomerSelect').value) {
-              onCustomerSelected($('existingCustomerSelect').value);
-          } else {
-              $('customerName').value = '';
-              $('customerPhone').value = '';
-              $('customerEmail').value = '';
-              $('customerAddress').value = '';
-          }
-      }
-  }
-
-  async function reloadCustomersForBranch(branchId) {
       try {
-          const url = branchId ? `${API_BASE}/customers?branchId=${branchId}` : `${API_BASE}/customers`;
-          const list = await getJson(url);
-          if (Array.isArray(list)) {
-              state.customersList = list.map(c => ({
-                  id: c.id,
-                  name: c.name,
-                  phone: c.phone,
-                  email: c.email || '',
-                  address: c.address || '',
-                  branchId: c.branchId,
-                  label: `${c.name} (${c.phone})${c.branchName ? ' - ' + c.branchName : ''}`
-              }));
-              filterCustomers();
-          }
-      } catch (err) {
-          console.error('Failed to load customers for branch', err);
+          await Promise.all(requests);
+          $('pricingMessage').textContent='Pricing updated. Existing sizes and items were kept.';
+          $('pricingMessage').style.color='#15803d';
+          renderRoomPills();
+          if(state.draft) {await refreshDraftRate(); renderMaterialDetails();}
+      } catch(e){
+          $('pricingMessage').textContent=e.message;
+          $('pricingMessage').style.color='#dc2626';
       }
   }
 
   async function saveQuotation() {
-      const isNew = state.customerMode === 'NEW';
-      if (!isNew && !state.selectedCustomerId) {
-          return alert('Please select an existing customer or switch to "New Customer".');
-      }
       if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
       if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
       if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
@@ -1040,17 +996,17 @@
       const payload = {
           quotationId: state.quotationId,
           customer: {
-              id: isNew ? null : state.selectedCustomerId,
+              id: state.selectedCustomerId || null,
               name,
               phone,
-              email: $('customerEmail').value.trim(),
-              address: $('customerAddress').value.trim()
+              email: $('customerEmail') ? $('customerEmail').value.trim() : '',
+              address: $('customerAddress') ? $('customerAddress').value.trim() : ''
           },
           branchId,
           quotationDate: $('quotationDate').value,
           pricingMode: state.pricingMode,
-          customerRequirements: $('customerRequirements').value.trim(),
-          notes: $('notes').value.trim(),
+          customerRequirements: state.customerRequirements || '',
+          notes: state.notes || '',
           rooms: state.rooms.filter(r => r.items.length).map(r => ({
               floor: r.floor,
               room: r.room,
@@ -1100,22 +1056,12 @@
       });
   }
 
-  document.querySelectorAll('input[name="customerMode"]').forEach(r => {
-      r.addEventListener('change', () => setCustomerMode(r.value));
-  });
-  if ($('existingCustomerSelect')) {
-      $('existingCustomerSelect').addEventListener('change', (e) => onCustomerSelected(e.target.value));
-  }
-  if ($('customerSearchInput')) {
-      $('customerSearchInput').addEventListener('input', filterCustomers);
-  }
   document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
   $('addSizeBtn').addEventListener('click', () => addSizeRow());
   $('addItemBtn').addEventListener('click', addDraftToRoom);
   $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));
   document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
   $('branchId').addEventListener('change', () => {
-      reloadCustomersForBranch($('branchId').value);
       if (state.draft && state.draft.divisionId) {
           selectDivision(state.draft.divisionId, state.draft.divisionName, state.draft.categoryId, state.draft.categoryName);
       } else if (state.draft) {
@@ -1124,17 +1070,65 @@
   });
   $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
-  $('workDescription').addEventListener('input', () => { const r = currentRoom(); if (r) r.workDescription = $('workDescription').value; });
   $('saveQuotationBtn').addEventListener('click', saveQuotation);
 
   // Add Another Room buttons
   $('addAnotherRoomBtnStep3').addEventListener('click', triggerAddAnotherRoom);
-  $('addAnotherRoomBtnSummary').addEventListener('click', triggerAddAnotherRoom);
-  $('addAnotherRoomBtnBottom').addEventListener('click', triggerAddAnotherRoom);
+
+  // Horizontal category scroll indicators
+  const catScrollTrack = $('categoryGrid');
+  const catScrollThumb = $('catScrollThumb');
+  const catScrollLeft = $('catScrollLeft');
+  const catScrollRight = $('catScrollRight');
+
+  if (catScrollTrack && catScrollThumb) {
+      function updateCatScrollThumb() {
+          const maxScroll = catScrollTrack.scrollWidth - catScrollTrack.clientWidth;
+          if (maxScroll <= 0) {
+              catScrollThumb.style.width = '100%';
+              catScrollThumb.style.left = '0%';
+          } else {
+              const ratio = catScrollTrack.clientWidth / catScrollTrack.scrollWidth;
+              const thumbWidth = Math.max(16, ratio * 100);
+              catScrollThumb.style.width = thumbWidth + '%';
+              const scrollPercent = catScrollTrack.scrollLeft / maxScroll;
+              const maxThumbLeft = 100 - thumbWidth;
+              catScrollThumb.style.left = (scrollPercent * maxThumbLeft) + '%';
+          }
+      }
+
+      catScrollTrack.addEventListener('scroll', updateCatScrollThumb, { passive: true });
+      window.addEventListener('resize', updateCatScrollThumb);
+      setTimeout(updateCatScrollThumb, 120);
+
+      if (catScrollLeft) {
+          catScrollLeft.addEventListener('click', () => {
+              catScrollTrack.scrollBy({ left: -260, behavior: 'smooth' });
+          });
+      }
+      if (catScrollRight) {
+          catScrollRight.addEventListener('click', () => {
+              catScrollTrack.scrollBy({ left: 260, behavior: 'smooth' });
+          });
+      }
+  }
+
+  // Auto-select initial category (matches Screenshot 1 where MODULAR KITCHEN or first category is active)
+  function initInitialCategory() {
+      if (state.quotationId) return; // If editing quotation, let load data handle it
+      const catButtons = Array.from(document.querySelectorAll('.category-choice'));
+      if (catButtons.length === 0) return;
+      let target = catButtons.find(b => (b.dataset.name || '').toUpperCase().includes('MODULAR KITCHEN'))
+                || catButtons.find(b => (b.dataset.name || '').toUpperCase().includes('KITCHEN'))
+                || catButtons[0];
+      if (target) {
+          loadDivisions(Number(target.dataset.id), target.dataset.name);
+      }
+  }
+  setTimeout(initInitialCategory, 80);
 
   $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
-  initCustomers();
 
   // Load existing quotation if editing
   if (state.quotationId) {
@@ -1147,35 +1141,12 @@
           if (data.address) $('customerAddress').value = toTitleCase(data.address);
           if (data.quotationDate) $('quotationDate').value = data.quotationDate;
           if (data.branchId) $('branchId').value = data.branchId;
-          if (data.customerRequirements) $('customerRequirements').value = data.customerRequirements;
-          if (data.notes) $('notes').value = data.notes;
+          if (data.customerRequirements) state.customerRequirements = data.customerRequirements;
+          if (data.notes) state.notes = data.notes;
+          if (data.customerId) state.selectedCustomerId = data.customerId;
           if (data.pricingMode) {
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
               if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
-          }
-
-          if (data.customerId) {
-              state.selectedCustomerId = data.customerId;
-              state.customerMode = 'EXISTING';
-              const rExist = document.querySelector('input[name="customerMode"][value="EXISTING"]');
-              if (rExist) rExist.checked = true;
-              if ($('existingCustomerBlock')) $('existingCustomerBlock').style.display = 'block';
-              if (!state.customersList.some(c => c.id === data.customerId)) {
-                  state.customersList.unshift({
-                      id: data.customerId,
-                      name: data.customerName,
-                      phone: data.phone,
-                      email: data.email || '',
-                      address: data.address || '',
-                      branchId: data.branchId,
-                      label: `${data.customerName} (${data.phone})`
-                  });
-              }
-              renderCustomerDropdown(state.customersList, data.customerId);
-              if ($('selectedCustomerBadge')) {
-                  $('selectedCustomerBadge').style.display = 'inline-block';
-                  $('selectedCustomerBadge').textContent = '✓ ' + data.customerName + ' selected';
-              }
           }
 
           if (data.rooms && data.rooms.length > 0) {
@@ -1210,8 +1181,6 @@
               }));
               $('floor').value = state.rooms[0].floor;
               $('roomNumber').value = state.rooms[0].room;
-              $('workDescription').value = state.rooms[0].workDescription || '';
-              renderSummary();
               renderRoomPills();
           }
       }).catch(err => {

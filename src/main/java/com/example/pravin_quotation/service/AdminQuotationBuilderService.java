@@ -143,15 +143,22 @@ public class AdminQuotationBuilderService {
                     ? districtPricingRepository.findByBranchIdAndPricingId(branchId, pricing.getId()).orElse(null)
                     : null;
 
-            if (dp == null || dp.getRate() == null || !Boolean.TRUE.equals(dp.getActive())) {
-                MaterialOption opt = materialOptionRepository.findById(materialOptionId).orElse(null);
-                String matName = opt != null ? opt.getName() : "selected material";
-                throw new IllegalArgumentException(
-                        "No rate has been configured for branch '" + branch.getName() + "' for material '" + matName + "' under " + mode.name() + " pricing grade."
-                );
+            if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
+                return money(dp.getRate());
             }
 
-            return money(dp.getRate());
+            boolean hasBranchRates = (districtPricingRepository != null)
+                    && districtPricingRepository.existsByPricingIdAndActiveTrue(pricing.getId());
+
+            if (!hasBranchRates && pricing.getRate() != null) {
+                return money(pricing.getRate());
+            }
+
+            MaterialOption opt = materialOptionRepository.findById(materialOptionId).orElse(null);
+            String matName = opt != null ? opt.getName() : "selected material";
+            throw new IllegalArgumentException(
+                    "No rate has been configured for branch '" + branch.getName() + "' for material '" + matName + "' under " + mode.name() + " pricing grade."
+            );
         }
 
         if (pricing.getRate() != null) {
