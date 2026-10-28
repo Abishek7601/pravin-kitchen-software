@@ -793,7 +793,7 @@
           materialId: material.id,
           materialName: material.name,
           materialOptionId: null,
-          materialOptionName: material.name,
+          materialOptionName: '',
           materialSpecificationId: null,
           materialSpecificationName: '',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
@@ -828,8 +828,9 @@
           formulaDisplay = '(L*W/144)';
       }
 
-      // Specifications text
-      const specText = material.specification || material.description || 'MARINE PLY THICKNESS-16MM,LAMINATION THICKNESS 0.8MM,HINGES-BRAND SLEEK,KITCHEN HINGES SOFT CLOSING,KITCHEN HANDLE PROFILE,ROOM HINGES NOT SOFT CLOSING,ROOM HANDLE SS';
+      // Specifications text (display only saved material specification)
+      const specText = (material.specification || '').trim();
+      const specDisplay = specText || '-';
 
       sizePanel.innerHTML = `
         <div class="size-details-title-row">
@@ -841,8 +842,8 @@
             <span>Specifications:</span>
             <button type="button" class="spec-edit-btn" id="specEditBtn-${divisionId}" title="Edit Specifications">&#9998;</button>
           </div>
-          <div class="spec-content" id="specContent-${divisionId}">${esc(specText)}</div>
-          <textarea class="spec-textarea hidden" id="specTextarea-${divisionId}" rows="3">${esc(specText)}</textarea>
+          <div class="spec-content" id="specContent-${divisionId}">${esc(specDisplay)}</div>
+          <textarea class="spec-textarea hidden" id="specTextarea-${divisionId}" rows="3" placeholder="Enter specifications (optional)">${esc(specText)}</textarea>
         </div>
         <div class="size-details-inputs-row">
           ${hasLength ? `
@@ -862,6 +863,8 @@
           </div>` : ''}
         </div>
         <div class="size-details-calc-box">
+          <span>Rate: <strong>${(material.rate != null && Number(material.rate) > 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || 'Sq.ft')) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span class="calc-divider">|</span>
           <span>Sq.Ft: <strong id="calcSqft-${divisionId}">0</strong></span>
           <span class="calc-divider">|</span>
           <span>Amount: <strong id="calcAmt-${divisionId}">&#8377;0.00</strong></span>
@@ -947,10 +950,9 @@
               const room = ensureRoom();
               if (!room) return alert('Select Floor and Room Number first.');
 
-              let finalSpec = specContent?.textContent || specText;
-              if (specTextarea && !specTextarea.classList.contains('hidden')) {
-                  finalSpec = specTextarea.value.trim() || finalSpec;
-              }
+              let finalSpec = specTextarea && !specTextarea.classList.contains('hidden')
+                  ? specTextarea.value.trim()
+                  : (specContent ? (specContent.textContent.trim() === '-' ? '' : specContent.textContent.trim()) : (specText || ''));
 
               const quoteItem = {
                   categoryId,
@@ -962,7 +964,7 @@
                   materialId: material.id,
                   materialName: material.name,
                   materialOptionId: null,
-                  materialOptionName: material.name,
+                  materialOptionName: '',
                   materialSpecificationId: null,
                   materialSpecificationName: '',
                   rate: Number(material.rate),
@@ -1073,13 +1075,13 @@
       if (!options || options.length === 0) {
           $('materialOptionId').innerHTML = '<option value="">Standard Material Option</option>';
           state.draft.materialOptionId = null;
-          state.draft.materialOptionName = state.draft.materialName;
+          state.draft.materialOptionName = '';
       } else {
           $('materialOptionId').innerHTML = '<option value="">Select material option</option>' + options.map(o => `<option value="${o.id}" data-description="${esc(o.description || '')}">${esc(o.name)}</option>`).join('');
           if (options.length === 1) {
               $('materialOptionId').value = options[0].id;
               state.draft.materialOptionId = options[0].id;
-              state.draft.materialOptionName = options[0].name;
+              state.draft.materialOptionName = (options[0].name && options[0].name.trim().toLowerCase() !== (state.draft.materialName || '').trim().toLowerCase()) ? options[0].name : '';
           } else {
               state.draft.materialOptionId = null;
               state.draft.materialOptionName = '';

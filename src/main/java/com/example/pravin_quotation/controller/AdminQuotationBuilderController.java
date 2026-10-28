@@ -166,7 +166,7 @@ public class AdminQuotationBuilderController {
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
             map.put("description", m.getDescription());
-            map.put("specification", m.getSpecification() != null ? m.getSpecification() : (m.getDescription() != null ? m.getDescription() : ""));
+            map.put("specification", m.getSpecification() != null ? m.getSpecification().trim() : "");
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
 
             BigDecimal resolvedRate = null;

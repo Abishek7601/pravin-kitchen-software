@@ -621,7 +621,7 @@
                                         Marine Ply
                                     </div>
 
-                                    <small th:if="${item.materialOption != null}"
+                                    <small th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
                                            th:text="${item.materialOption.name}">
                                         Lamination
                                     </small>
