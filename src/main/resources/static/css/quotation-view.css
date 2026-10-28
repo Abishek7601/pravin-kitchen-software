@@ -1,4 +1,4 @@
-﻿
+
 
 :root {
 --primary: #024541;
@@ -1046,6 +1046,46 @@ font-size: 13px;
     font-weight: 750;
     font-size: 13px;
     white-space: nowrap;
+}
+
+.breakdown-table tfoot .tfoot-charge-row td {
+    background: #fbfdfc;
+    border-top: 1px solid #e8eeec;
+    padding: 9px 14px;
+    font-size: 12.5px;
+}
+
+.tfoot-charge-label {
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-size: 12.5px;
+}
+
+.tfoot-charge-val {
+    color: var(--text-primary);
+    font-weight: 700;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
+.breakdown-table tfoot .discount-charge-row .tfoot-charge-label,
+.breakdown-table tfoot .discount-charge-row .tfoot-charge-val,
+.breakdown-table tfoot .offer-charge-row .tfoot-charge-label,
+.breakdown-table tfoot .offer-charge-row .tfoot-charge-val {
+    color: #13795b;
+    font-weight: 700;
+}
+
+.breakdown-table tfoot .total-amount-row td {
+    background: #f4f8f7;
+    border-top: 1px solid #cce2dc;
+    border-bottom: 1px solid #cce2dc;
+}
+
+.breakdown-table tfoot .total-amount-row .tfoot-charge-label,
+.breakdown-table tfoot .total-amount-row .tfoot-charge-val {
+    color: var(--peacock-dark);
+    font-weight: 800;
 }
 
 .breakdown-table tfoot .tfoot-grand-total-row td {

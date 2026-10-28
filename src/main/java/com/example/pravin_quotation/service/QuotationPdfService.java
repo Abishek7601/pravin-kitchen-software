@@ -39,6 +39,7 @@ public class QuotationPdfService {
     private final NumberToWordsService numberToWordsService;
     private final BranchRepository branchRepository;
     private final PricingRepository pricingRepository;
+    private final QuotationCalculationService quotationCalculationService;
 
     /*
      * Design Colors matching the Reference Document (1.pdf)
@@ -61,13 +62,15 @@ public class QuotationPdfService {
     private Font rupeeGoldBoldFont;
     private boolean hasUnicodeRupee = false;
 
+    @org.springframework.beans.factory.annotation.Autowired
     public QuotationPdfService(
             QuotationRepository quotationRepository,
             QuotationRoomRepository quotationRoomRepository,
             QuotationItemRepository quotationItemRepository,
             NumberToWordsService numberToWordsService,
             BranchRepository branchRepository,
-            PricingRepository pricingRepository
+            PricingRepository pricingRepository,
+            QuotationCalculationService quotationCalculationService
     ) {
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
@@ -75,6 +78,7 @@ public class QuotationPdfService {
         this.numberToWordsService = numberToWordsService;
         this.branchRepository = branchRepository;
         this.pricingRepository = pricingRepository;
+        this.quotationCalculationService = quotationCalculationService;
 
         try {
             BaseFont rupeeBaseFont = BaseFont.createFont(
@@ -94,14 +98,31 @@ public class QuotationPdfService {
         }
     }
 
+    public QuotationPdfService(
+            QuotationRepository quotationRepository,
+            QuotationRoomRepository quotationRoomRepository,
+            QuotationItemRepository quotationItemRepository,
+            NumberToWordsService numberToWordsService,
+            BranchRepository branchRepository,
+            PricingRepository pricingRepository
+    ) {
+        this(quotationRepository, quotationRoomRepository, quotationItemRepository,
+             numberToWordsService, branchRepository, pricingRepository, null);
+    }
+
     // ============================================================
     // GENERATE 7-PAGE REFERENCE-BASED QUOTATION PDF
     // ============================================================
 
     public byte[] generateQuotationPdf(Long quotationId) {
         try {
-            Quotation quotation = quotationRepository.findById(quotationId)
-                    .orElseThrow(() -> new RuntimeException("Quotation not found with ID: " + quotationId));
+            Quotation quotation;
+            if (quotationCalculationService != null) {
+                quotation = quotationCalculationService.calculateQuotation(quotationId);
+            } else {
+                quotation = quotationRepository.findById(quotationId)
+                        .orElseThrow(() -> new RuntimeException("Quotation not found with ID: " + quotationId));
+            }
 
             // Fetch branch dynamically from Branch Management data
             Branch branch = quotation.getBranch();
@@ -521,56 +542,108 @@ public class QuotationPdfService {
             activeItemCount++;
         }
 
-        // --- PDF FINANCIAL VALUES ---
-        // 1. PDF Total Amount: Sum of quotation items' Total Amount values before applying Offer Percentage
-        BigDecimal pdfTotalAmount = itemsTotalAmount;
-        if (pdfTotalAmount.compareTo(BigDecimal.ZERO) == 0 && quotation.getSubtotal() != null && quotation.getSubtotal().compareTo(BigDecimal.ZERO) > 0) {
-            pdfTotalAmount = quotation.getSubtotal();
+        // --- PDF FINANCIAL VALUES (SINGLE SOURCE OF TRUTH) ---
+        BigDecimal subtotal = quotation.getSubtotal() != null && quotation.getSubtotal().compareTo(BigDecimal.ZERO) > 0
+                ? quotation.getSubtotal()
+                : itemsTotalAmount;
+
+        BigDecimal accessories = zeroIfNull(quotation.getAccessoriesAmount());
+        BigDecimal travel = zeroIfNull(quotation.getTravelCharge());
+        BigDecimal otherCharges = zeroIfNull(quotation.getOtherCharges());
+        BigDecimal discount = zeroIfNull(quotation.getDiscountAmount());
+        BigDecimal gstAmount = zeroIfNull(quotation.getGstAmount());
+        BigDecimal totalAmount = quotation.getTotalAmount();
+        BigDecimal offerAmount = zeroIfNull(quotation.getOfferAmount());
+        BigDecimal grandTotal = quotation.getGrandTotal();
+
+        // Fallback calculation using the exact business rules if fields were not pre-calculated
+        if (grandTotal == null) {
+            BigDecimal taxable = subtotal.add(accessories).add(travel).add(otherCharges).subtract(discount);
+            if (taxable.compareTo(BigDecimal.ZERO) < 0) taxable = BigDecimal.ZERO;
+            BigDecimal gstPct = zeroIfNull(quotation.getGstPercentage());
+            if (gstAmount.compareTo(BigDecimal.ZERO) == 0 && gstPct.compareTo(BigDecimal.ZERO) > 0) {
+                gstAmount = taxable.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            }
+            totalAmount = taxable.add(gstAmount);
+            BigDecimal offerPct = zeroIfNull(quotation.getOfferPercentage());
+            if (offerPct.compareTo(BigDecimal.ZERO) < 0) offerPct = BigDecimal.ZERO;
+            if (offerPct.compareTo(new BigDecimal("100")) > 0) offerPct = new BigDecimal("100");
+            offerAmount = totalAmount.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            grandTotal = totalAmount.subtract(offerAmount);
+        } else if (totalAmount == null) {
+            totalAmount = grandTotal.add(offerAmount);
         }
-
-        // 2. PDF Offer Price: PDF Total Amount * Offer Percentage / 100
-        BigDecimal offerPercentage = zeroIfNull(quotation.getOfferPercentage());
-        if (offerPercentage.compareTo(BigDecimal.ZERO) < 0) {
-            offerPercentage = BigDecimal.ZERO;
-        } else if (offerPercentage.compareTo(new BigDecimal("100")) > 0) {
-            offerPercentage = new BigDecimal("100");
-        }
-
-        BigDecimal pdfOfferPrice = pdfTotalAmount.multiply(offerPercentage)
-                .divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-
-        // 3. PDF Grand Total: PDF Total Amount - PDF Offer Price
-        BigDecimal pdfGrandTotal = pdfTotalAmount.subtract(pdfOfferPrice);
 
         // --- SUMMARY ROWS INTEGRATED AT TABLE FOOTER ---
-        // Unwanted rows (Travel Charge, Other Charges, Discount, GST, Accessories, Taxable Amount) removed.
-        // Row 1: Total Amount
-        addSummaryRow(itemTable, "Total Amount", rupees(pdfTotalAmount), true);
+        boolean hasConfiguredExtraCharges = accessories.compareTo(BigDecimal.ZERO) > 0
+                || travel.compareTo(BigDecimal.ZERO) > 0
+                || otherCharges.compareTo(BigDecimal.ZERO) > 0
+                || discount.compareTo(BigDecimal.ZERO) > 0
+                || gstAmount.compareTo(BigDecimal.ZERO) > 0;
 
-        // Row 2: Offer Price
-        String offerPriceStr = pdfOfferPrice.compareTo(BigDecimal.ZERO) > 0
-                ? "- " + rupees(pdfOfferPrice)
+        if (hasConfiguredExtraCharges) {
+            // Row 1: Subtotal
+            addSummaryRow(itemTable, "Subtotal", rupees(subtotal), false);
+
+            // Row 2: Accessories (if configured)
+            if (accessories.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Accessories", rupees(accessories), false);
+            }
+
+            // Row 3: Travel Charges (if configured)
+            if (travel.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Travel Charges", rupees(travel), false);
+            }
+
+            // Row 4: Other Charges (if configured)
+            if (otherCharges.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Other Charges", rupees(otherCharges), false);
+            }
+
+            // Row 5: Discount (if configured)
+            if (discount.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Discount", "- " + rupees(discount), false);
+            }
+
+            // Row 6: GST (if configured)
+            if (gstAmount.compareTo(BigDecimal.ZERO) > 0) {
+                String gstLabel = (quotation.getGstPercentage() != null && quotation.getGstPercentage().compareTo(BigDecimal.ZERO) > 0)
+                        ? "GST (" + quotation.getGstPercentage().stripTrailingZeros().toPlainString() + "%)"
+                        : "GST";
+                addSummaryRow(itemTable, gstLabel, rupees(gstAmount), false);
+            }
+
+            // Row 7: Total Amount
+            addSummaryRow(itemTable, "Total Amount", rupees(totalAmount), true);
+        } else {
+            // Standard case: Total Amount equals subtotal
+            addSummaryRow(itemTable, "Total Amount", rupees(totalAmount != null ? totalAmount : subtotal), true);
+        }
+
+        // Row: Offer Price (always present)
+        String offerPriceStr = offerAmount.compareTo(BigDecimal.ZERO) > 0
+                ? "- " + rupees(offerAmount)
                 : rupees(BigDecimal.ZERO);
         addSummaryRow(itemTable, "Offer Price", offerPriceStr, false);
 
-        // Row 3: GRAND TOTAL (Highlighted with dark teal header fill and gold text)
-        addGrandTotalRow(itemTable, "GRAND TOTAL", pdfGrandTotal);
+        // Row: GRAND TOTAL (Highlighted with dark teal header fill and gold text)
+        addGrandTotalRow(itemTable, "GRAND TOTAL", grandTotal);
 
         document.add(itemTable);
 
         // ========================================================
-        // 4. AMOUNT IN WORDS (Matching PDF-specific Grand Total)
+        // 4. AMOUNT IN WORDS (Matching exact quotation Grand Total)
         // ========================================================
         Paragraph wordsPar = new Paragraph();
         wordsPar.setSpacingBefore(2f);
         wordsPar.setSpacingAfter(4f);
         wordsPar.add(new Chunk("AMOUNT IN WORDS - ", new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_NAVY)));
-        String wordsText = numberToWordsService.convertRupees(pdfGrandTotal).toUpperCase();
+        String wordsText = numberToWordsService.convertRupees(grandTotal).toUpperCase();
         wordsPar.add(new Chunk(wordsText, new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK)));
         document.add(wordsPar);
 
         // ========================================================
-        // 5. PAYMENT TERMS BOX
+        // 5. PAYMENT TERMS BOX (Calculated from Grand Total)
         // ========================================================
         PdfPTable termsTable = new PdfPTable(1);
         termsTable.setWidthPercentage(100);
@@ -590,10 +663,20 @@ public class QuotationPdfService {
         Font bulletTitleFont = new Font(Font.HELVETICA, 7.5f, Font.BOLD, COLOR_TEXT_DARK);
         Font bulletTextFont = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK);
 
-        termsCell.addElement(buildBullet("-  10% Token: ", "Commencement of 3D design on receipt of token.", bulletTitleFont, bulletTextFont));
-        termsCell.addElement(buildBullet("-  50% Advance: ", "Drawing will be sent for production on receipt of advance.", bulletTitleFont, bulletTextFont));
-        termsCell.addElement(buildBullet("-  35% Part Payment: ", "After the completion of frame work.", bulletTitleFont, bulletTextFont));
-        termsCell.addElement(buildBullet("-  5% Final Payment: ", "The last day of work completion in site.", bulletTitleFont, bulletTextFont));
+        BigDecimal effectiveGrand = grandTotal != null ? grandTotal : BigDecimal.ZERO;
+        BigDecimal tokenVal = effectiveGrand.multiply(new BigDecimal("0.10")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal advanceVal = effectiveGrand.multiply(new BigDecimal("0.50")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal partVal = effectiveGrand.multiply(new BigDecimal("0.35")).setScale(0, RoundingMode.HALF_UP);
+        BigDecimal finalPaymentVal = effectiveGrand.setScale(0, RoundingMode.HALF_UP)
+                .subtract(tokenVal).subtract(advanceVal).subtract(partVal);
+        if (finalPaymentVal.compareTo(BigDecimal.ZERO) < 0) {
+            finalPaymentVal = BigDecimal.ZERO;
+        }
+
+        termsCell.addElement(buildBullet("-  10% Token: ", rupees(tokenVal) + " - Commencement of 3D design on receipt of token.", bulletTitleFont, bulletTextFont));
+        termsCell.addElement(buildBullet("-  50% Advance: ", rupees(advanceVal) + " - Drawing will be sent for production on receipt of advance.", bulletTitleFont, bulletTextFont));
+        termsCell.addElement(buildBullet("-  35% Part Payment: ", rupees(partVal) + " - After the completion of frame work.", bulletTitleFont, bulletTextFont));
+        termsCell.addElement(buildBullet("-  5% Final Payment: ", rupees(finalPaymentVal) + " - The last day of work completion in site.", bulletTitleFont, bulletTextFont));
 
         termsTable.addCell(termsCell);
         document.add(termsTable);

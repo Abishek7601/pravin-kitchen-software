@@ -1669,7 +1669,9 @@
           }))
       };
 
+      if (state.isSaving) return null;
       const button = $('saveQuoteBtn') || $('saveQuotationBtn');
+      state.isSaving = true;
       if (button) {
           button.disabled = true;
           button.textContent = 'Saving Quote...';
@@ -1738,6 +1740,7 @@
           alert('Error saving quotation: ' + e.message);
           return null;
       } finally {
+          state.isSaving = false;
           if (button) {
               button.disabled = false;
               button.textContent = 'Save Quote';

@@ -272,16 +272,35 @@ public class AdminQuotationBuilderController {
     }
 
     @PostMapping("/builder/save")
-    public String save(
+    public Object save(
             @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
+        boolean acceptsJson = httpRequest != null
+                && httpRequest.getHeader("Accept") != null
+                && httpRequest.getHeader("Accept").contains(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
         try {
             Quotation quotation = builderService.save(request, authentication.getName());
+            String redirectUrl = "/admin/quotations/view/" + quotation.getId();
+            if (acceptsJson) {
+                Map<String, Object> resp = new LinkedHashMap<>();
+                resp.put("success", true);
+                resp.put("redirectUrl", redirectUrl);
+                resp.put("quotationId", quotation.getId());
+                resp.put("quotationNumber", quotation.getQuotationNumber());
+                return ResponseEntity.ok(resp);
+            }
             redirectAttributes.addFlashAttribute("successMessage",
                     "Quotation " + quotation.getQuotationNumber() + " created successfully.");
-            return "redirect:/admin/quotations/view/" + quotation.getId();
+            return "redirect:" + redirectUrl;
         } catch (Exception e) {
+            if (acceptsJson) {
+                Map<String, Object> errResp = new LinkedHashMap<>();
+                errResp.put("success", false);
+                errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to save quotation.");
+                return ResponseEntity.badRequest().body(errResp);
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/quotations/builder";
         }

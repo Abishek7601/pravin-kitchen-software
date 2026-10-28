@@ -1657,7 +1657,9 @@
           }))
       };
 
+      if (state.isSaving) return null;
       const button = $('saveQuoteBtn') || $('saveQuotationBtn');
+      state.isSaving = true;
       if (button) {
           button.disabled = true;
           button.textContent = 'Saving Quote...';
@@ -1666,7 +1668,11 @@
       try {
           const response = await fetch(`${API_BASE}/save`, {
               method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken },
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json, text/plain, */*',
+                  'X-CSRF-TOKEN': csrfToken
+              },
               body: JSON.stringify(payload)
           });
           if (response.redirected) {
@@ -1680,12 +1686,28 @@
               }
           }
           const text = await response.text();
-          throw new Error(text || 'Unable to save quotation.');
+          let data = null;
+          try {
+              data = JSON.parse(text);
+          } catch (_) {}
+
+          if (response.ok) {
+              const redirectUrl = (data && data.redirectUrl) || (IS_ADMIN ? '/admin/quotations' : '/employee/quotations');
+              const savedId = (data && data.quotationId) ? data.quotationId : null;
+              if (redirectOnSuccess) {
+                  window.location.href = redirectUrl;
+                  return null;
+              }
+              return savedId;
+          }
+          const errMsg = (data && data.message) ? data.message : (text || 'Unable to save quotation.');
+          throw new Error(errMsg);
       } catch (e) {
           if ($('saveMessage')) $('saveMessage').textContent = e.message;
           alert('Error saving quotation: ' + e.message);
           return null;
       } finally {
+          state.isSaving = false;
           if (button) {
               button.disabled = false;
               button.textContent = 'Save Quote';
