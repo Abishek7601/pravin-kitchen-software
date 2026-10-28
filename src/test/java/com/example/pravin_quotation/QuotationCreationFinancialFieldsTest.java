@@ -285,9 +285,11 @@ public class QuotationCreationFinancialFieldsTest {
         String renderedHtml = templateEngine.process("employee/quotation-builder", context);
         assertNotNull(renderedHtml);
 
-        // Financial fields present
+        // Financial fields present (Accessories removed from UI)
         assertTrue(renderedHtml.contains("id=\"financialCard\""));
-        assertTrue(renderedHtml.contains("id=\"accessoriesAmount\""));
+        assertFalse(renderedHtml.contains("id=\"accessoriesAmount\""), "Accessories input must be removed from quotation creation");
+        assertFalse(renderedHtml.contains("id=\"displayAccessories\""), "Accessories display row must be removed from quotation creation");
+        assertFalse(renderedHtml.contains("id=\"printPdfBtn\""), "Print / Save PDF button must be removed from quotation creation");
         assertTrue(renderedHtml.contains("id=\"travelCharge\""));
         assertTrue(renderedHtml.contains("id=\"otherCharges\""));
         assertTrue(renderedHtml.contains("id=\"discountAmount\""));
@@ -296,7 +298,6 @@ public class QuotationCreationFinancialFieldsTest {
 
         // Financial summary display elements present
         assertTrue(renderedHtml.contains("id=\"displaySubtotal\""));
-        assertTrue(renderedHtml.contains("id=\"displayAccessories\""));
         assertTrue(renderedHtml.contains("id=\"displayTravel\""));
         assertTrue(renderedHtml.contains("id=\"displayOther\""));
         assertTrue(renderedHtml.contains("id=\"displayDiscount\""));
@@ -308,5 +309,15 @@ public class QuotationCreationFinancialFieldsTest {
         // Must still satisfy the legacy test assertion trap
         assertFalse(renderedHtml.contains("Quote Summary"));
         assertFalse(renderedHtml.contains("Final Details"));
+
+        // Also verify admin template
+        String adminHtml = templateEngine.process("admin/quotation-builder", context);
+        assertNotNull(adminHtml);
+        assertFalse(adminHtml.contains("id=\"accessoriesAmount\""), "Accessories input must be removed from admin quotation creation");
+        assertFalse(adminHtml.contains("id=\"displayAccessories\""), "Accessories display row must be removed from admin quotation creation");
+        assertFalse(adminHtml.contains("id=\"printPdfBtn\""), "Print / Save PDF button must be removed from admin quotation creation");
+        assertTrue(adminHtml.contains("id=\"travelCharge\""));
+        assertTrue(adminHtml.contains("id=\"saveQuoteBtn\""));
+        assertTrue(adminHtml.contains("id=\"clearQuoteBtn\""));
     }
 }

@@ -212,7 +212,7 @@
           <p class="eyebrow">QUOTATION FINANCIALS</p>
           <h3>Quotation Amount Summary</h3>
           <p class="financial-description">
-            Update accessories, travel charges, other charges, discount and GST for this quotation.
+            Update travel charges, other charges, discount and GST for this quotation.
           </p>
         </div>
       </div>
@@ -220,15 +220,6 @@
       <div class="financial-body-layout">
         <!-- CHARGES INPUT FORM -->
         <div class="charges-form" id="chargesForm">
-          <!-- ACCESSORIES -->
-          <div class="charge-input-group">
-            <label for="accessoriesAmount">Accessories</label>
-            <div class="input-with-prefix">
-              <span>₹</span>
-              <input type="number" id="accessoriesAmount" name="accessoriesAmount" min="0" step="0.01" value="0">
-            </div>
-          </div>
-
           <!-- TRAVEL CHARGE -->
           <div class="charge-input-group">
             <label for="travelCharge">Travel Charges</label>
@@ -272,12 +263,6 @@
           <div class="amount-row">
             <span>Subtotal</span>
             <strong id="displaySubtotal">₹ 0.00</strong>
-          </div>
-
-          <!-- ACCESSORIES -->
-          <div class="amount-row">
-            <span>Accessories</span>
-            <strong id="displayAccessories">₹ 0.00</strong>
           </div>
 
           <!-- TRAVEL -->
@@ -397,10 +382,6 @@
       <div id="saveMessage" class="save-message" style="margin-top: 14px; font-weight: 600; color: #024541;"></div>
       <div class="quote-actions-bar">
         <button type="button" id="saveQuoteBtn" class="btn-save-quote">Save Quote</button>
-        <button type="button" id="printPdfBtn" class="btn-pdf-quote">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
-          Print / Save PDF
-        </button>
         <button type="button" id="clearQuoteBtn" class="btn-clear-quote">Clear Quote</button>
         <button id="saveQuotationBtn" type="button" style="display:none;"></button>
       </div>
@@ -1730,20 +1711,6 @@
       }
   }
 
-  async function printOrSavePdf() {
-      if (state.quotationId) {
-          const pdfUrl = IS_ADMIN ? `/admin/quotations/pdf/${state.quotationId}` : `/employee/quotations/pdf/${state.quotationId}`;
-          window.open(pdfUrl, '_blank');
-          return;
-      }
-      const savedId = await saveQuotation(false);
-      if (savedId) {
-          state.quotationId = Number(savedId);
-          const pdfUrl = IS_ADMIN ? `/admin/quotations/pdf/${savedId}` : `/employee/quotations/pdf/${savedId}`;
-          window.open(pdfUrl, '_blank');
-      }
-  }
-
   // Event Listeners
   if ($('customerName')) attachTitleCapitalization($('customerName'));
   if ($('customerAddress')) attachTitleCapitalization($('customerAddress'));
@@ -1785,7 +1752,6 @@
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   if ($('saveQuotationBtn')) $('saveQuotationBtn').addEventListener('click', () => saveQuotation(true));
   if ($('saveQuoteBtn')) $('saveQuoteBtn').addEventListener('click', () => saveQuotation(true));
-  if ($('printPdfBtn')) $('printPdfBtn').addEventListener('click', printOrSavePdf);
   if ($('clearQuoteBtn')) $('clearQuoteBtn').addEventListener('click', clearQuote);
   if ($('toggleSqftSize')) {
       $('toggleSqftSize').addEventListener('change', e => {
