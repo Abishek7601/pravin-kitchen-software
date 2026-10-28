@@ -36,6 +36,7 @@ public class AdminQuotationBuilderController {
     private final QuotationItemRepository quotationItemRepository;
     private final QuotationItemSizeRepository quotationItemSizeRepository;
     private final PricingRepository pricingRepository;
+    private final com.example.pravin_quotation.service.FileUploadService fileUploadService;
 
     public AdminQuotationBuilderController(
             BranchRepository branchRepository,
@@ -51,7 +52,8 @@ public class AdminQuotationBuilderController {
             QuotationRoomRepository quotationRoomRepository,
             QuotationItemRepository quotationItemRepository,
             QuotationItemSizeRepository quotationItemSizeRepository,
-            PricingRepository pricingRepository) {
+            PricingRepository pricingRepository,
+            com.example.pravin_quotation.service.FileUploadService fileUploadService) {
         this.branchRepository = branchRepository;
         this.customerRepository = customerRepository;
         this.workCategoryRepository = workCategoryRepository;
@@ -66,6 +68,7 @@ public class AdminQuotationBuilderController {
         this.quotationItemRepository = quotationItemRepository;
         this.quotationItemSizeRepository = quotationItemSizeRepository;
         this.pricingRepository = pricingRepository;
+        this.fileUploadService = fileUploadService;
     }
 
     @GetMapping("/builder")
@@ -182,6 +185,8 @@ public class AdminQuotationBuilderController {
             map.put("rate", resolvedRate);
             map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
             map.put("formula", m.getFormula());
+            map.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
+            map.put("imageUrl", m.getImageUrl());
             return map;
         }).toList();
     }
@@ -262,6 +267,8 @@ public class AdminQuotationBuilderController {
             resp.put("unit", unit);
             resp.put("measurementUnit", unit);
             resp.put("pricingUnit", "₹ / " + unit);
+            resp.put("measurementType", (material != null && material.getMeasurementType() != null) ? material.getMeasurementType().name() : "SQFT");
+            resp.put("imageUrl", material != null ? material.getImageUrl() : null);
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -361,6 +368,9 @@ public class AdminQuotationBuilderController {
                     iMap.put("rate", item.getRate());
                     iMap.put("itemDescription", item.getItemDescription());
                     iMap.put("specification", item.getSpecification());
+                    iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
+                    iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
+                    iMap.put("imageUrl", item.getImageUrl());
 
                     List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdAndActiveTrueOrderByDisplayOrderAsc(item.getId());
                     List<Map<String, Object>> sizeList = new ArrayList<>();
@@ -372,6 +382,14 @@ public class AdminQuotationBuilderController {
                         sMap.put("offerPrice", s.getOfferPrice());
                         sizeList.add(sMap);
                     }
+                    if (sizeList.isEmpty() && (item.getMeasurementType() == MeasurementType.QUANTITY || item.getMeasurementType() == MeasurementType.FILES)) {
+                        Map<String, Object> sMap = new LinkedHashMap<>();
+                        sMap.put("length", BigDecimal.ZERO);
+                        sMap.put("width", BigDecimal.ZERO);
+                        sMap.put("height", BigDecimal.ZERO);
+                        sMap.put("offerPrice", item.getOfferPrice() != null ? item.getOfferPrice() : item.getAmount());
+                        sizeList.add(sMap);
+                    }
                     iMap.put("sizes", sizeList);
                     itemList.add(iMap);
                 }
@@ -381,6 +399,17 @@ public class AdminQuotationBuilderController {
             data.put("rooms", roomList);
             return ResponseEntity.ok(data);
         }).orElse(ResponseEntity.notFound().build());
+    }
+
+    @PostMapping("/builder/upload-image")
+    @ResponseBody
+    public ResponseEntity<?> uploadItemImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            String url = fileUploadService.storeFile(file, "quotation-items");
+            return ResponseEntity.ok(Map.of("success", true, "url", url));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("success", false, "message", e.getMessage() != null ? e.getMessage() : "Failed to upload image."));
+        }
     }
 
     private Map<String, Object> map(Object... values) {

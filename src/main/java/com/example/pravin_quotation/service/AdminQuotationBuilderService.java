@@ -524,73 +524,102 @@ public class AdminQuotationBuilderService {
                 BigDecimal firstWidth = null;
                 BigDecimal firstHeight = null;
 
+                MeasurementType effectiveType = itemRequest.measurementType();
+                if (effectiveType == null && material != null) {
+                    effectiveType = material.getMeasurementType();
+                }
+                if (effectiveType == null) {
+                    effectiveType = MeasurementType.SQFT;
+                }
+
+                BigDecimal effectiveQuantity = (itemRequest.quantity() != null && itemRequest.quantity().compareTo(BigDecimal.ZERO) > 0)
+                        ? itemRequest.quantity()
+                        : BigDecimal.ONE;
+
+                String effectiveImageUrl = (itemRequest.imageUrl() != null && !itemRequest.imageUrl().isBlank())
+                        ? itemRequest.imageUrl()
+                        : (material != null ? material.getImageUrl() : null);
+
                 // -------------------------------------------------
                 // First pass:
                 // Calculate all sizes and totals
                 // -------------------------------------------------
 
-                for (int sizeIndex = 0;
-                     sizeIndex < itemRequest.sizes().size();
-                     sizeIndex++) {
+                if (effectiveType.isSqft()) {
+                    if (itemRequest.sizes() != null) {
+                        for (int sizeIndex = 0;
+                             sizeIndex < itemRequest.sizes().size();
+                             sizeIndex++) {
 
-                    SizeRequest size =
-                            itemRequest.sizes()
-                                    .get(sizeIndex);
+                            SizeRequest size =
+                                    itemRequest.sizes()
+                                            .get(sizeIndex);
 
-                    String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
-                    boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
-                    boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
+                            String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
+                            boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
+                            boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                    BigDecimal length = positive(size.length(), "Length");
-                    BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
-                    BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
-                    com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                            BigDecimal length = positive(size.length(), "Length");
+                            BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                            BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                            com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
 
-                    // Save first size in parent item
-                    // for backward compatibility.
-                    if (sizeIndex == 0) {
-                        firstLength = length;
-                        firstWidth = width;
-                        firstHeight = height;
-                    }
+                            // Save first size in parent item
+                            // for backward compatibility.
+                            if (sizeIndex == 0) {
+                                firstLength = length;
+                                firstWidth = width;
+                                firstHeight = height;
+                            }
 
-                    BigDecimal sqft =
-                            quotationItemSizeService
-                                    .calculateSqft(
-                                            itemFormula,
-                                            length,
-                                            width,
-                                            height,
-                                            "in"
+                            BigDecimal sqft =
+                                    quotationItemSizeService
+                                            .calculateSqft(
+                                                    itemFormula,
+                                                    length,
+                                                    width,
+                                                    height,
+                                                    "in"
+                                            );
+
+                            BigDecimal amount =
+                                    money(
+                                            sqft.multiply(rate)
                                     );
 
-                    BigDecimal amount =
-                            money(
-                                    sqft.multiply(rate)
-                            );
+                            BigDecimal offerPrice;
 
-                    BigDecimal offerPrice;
+                            if (size.offerPrice() == null) {
+                                offerPrice = amount;
+                            } else {
+                                offerPrice =
+                                        nonNegative(
+                                                size.offerPrice(),
+                                                "Offer price"
+                                        );
+                            }
 
-                    if (size.offerPrice() == null) {
-                        offerPrice = amount;
-                    } else {
-                        offerPrice =
-                                nonNegative(
-                                        size.offerPrice(),
-                                        "Offer price"
+                            totalSqft =
+                                    totalSqft.add(sqft);
+
+                            totalAmount =
+                                    totalAmount.add(amount);
+
+                            totalOfferPrice =
+                                    totalOfferPrice.add(
+                                            offerPrice
                                     );
+                        }
                     }
-
-                    totalSqft =
-                            totalSqft.add(sqft);
-
-                    totalAmount =
-                            totalAmount.add(amount);
-
-                    totalOfferPrice =
-                            totalOfferPrice.add(
-                                    offerPrice
-                            );
+                } else {
+                    // QUANTITY or FILES based item:
+                    totalAmount = money(effectiveQuantity.multiply(rate));
+                    BigDecimal offerPrice = totalAmount;
+                    if (itemRequest.sizes() != null && !itemRequest.sizes().isEmpty() && itemRequest.sizes().get(0).offerPrice() != null) {
+                        offerPrice = nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
+                    }
+                    totalOfferPrice = offerPrice;
+                    totalSqft = BigDecimal.ZERO;
                 }
 
                 totalSqft =
@@ -631,68 +660,73 @@ public class AdminQuotationBuilderService {
                                 totalAmount,
                                 totalOfferPrice,
 
-                                itemFormula,
+                                effectiveType.isSqft() ? itemFormula : null,
 
-                                specText
+                                specText,
+                                effectiveType,
+                                effectiveQuantity,
+                                effectiveImageUrl
                         );
 
                 // =================================================
-                // Create child QuotationItemSize rows
+                // Create child QuotationItemSize rows (only for Sq.ft)
                 // =================================================
 
-                for (int sizeIndex = 0;
-                     sizeIndex < itemRequest.sizes().size();
-                     sizeIndex++) {
+                if (effectiveType.isSqft() && itemRequest.sizes() != null) {
+                    for (int sizeIndex = 0;
+                         sizeIndex < itemRequest.sizes().size();
+                         sizeIndex++) {
 
-                    SizeRequest size =
-                            itemRequest.sizes()
-                                    .get(sizeIndex);
+                        SizeRequest size =
+                                itemRequest.sizes()
+                                        .get(sizeIndex);
 
-                    String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
-                    boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
-                    boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
+                        String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
+                        boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
+                        boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                    BigDecimal length = positive(size.length(), "Length");
-                    BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
-                    BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
-                    com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                        BigDecimal length = positive(size.length(), "Length");
+                        BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                        BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                        com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
 
-                    BigDecimal sqft =
-                            quotationItemSizeService
-                                    .calculateSqft(
-                                            itemFormula,
-                                            length,
-                                            width,
-                                            height,
-                                            "in"
-                                    );
+                        BigDecimal sqft =
+                                quotationItemSizeService
+                                        .calculateSqft(
+                                                itemFormula,
+                                                length,
+                                                width,
+                                                height,
+                                                "in"
+                                        );
 
-                    BigDecimal amount =
-                            money(
-                                    sqft.multiply(rate)
-                            );
-
-                    BigDecimal offerPrice;
-
-                    if (size.offerPrice() == null) {
-                        offerPrice = amount;
-                    } else {
-                        offerPrice =
-                                nonNegative(
-                                        size.offerPrice(),
-                                        "Offer price"
+                        BigDecimal amount =
+                                money(
+                                        sqft.multiply(rate)
                                 );
-                    }
 
-                    quotationItemSizeService.create(
-                            quotationItem,
-                            length,
-                            width,
-                            height,
-                            offerPrice,
-                            sizeIndex + 1,
-                            "in"
-                    );
+                        BigDecimal offerPrice;
+
+                        if (size.offerPrice() == null) {
+                            offerPrice = amount;
+                        } else {
+                            offerPrice =
+                                    nonNegative(
+                                            size.offerPrice(),
+                                            "Offer price"
+                                    );
+                        }
+
+                        quotationItemSizeService.create(
+                                quotationItem,
+                                length,
+                                width,
+                                height,
+                                offerPrice,
+                                sizeIndex + 1,
+                                "in"
+                        );
+                    }
                 }
             }
         }
@@ -866,15 +900,30 @@ public class AdminQuotationBuilderService {
                 );
             }
 
-            for (ItemRequest item :
-                    room.items()) {
+            for (ItemRequest item : room.items()) {
+                MeasurementType type = item.measurementType();
+                if (type == null && item.materialId() != null) {
+                    Material mat = materialRepository.findById(item.materialId()).orElse(null);
+                    if (mat != null) {
+                        type = mat.getMeasurementType();
+                    }
+                }
+                if (type == null) {
+                    type = MeasurementType.SQFT;
+                }
 
-                if (item.sizes() == null
-                        || item.sizes().isEmpty()) {
-
-                    throw new IllegalArgumentException(
-                            "Each item must contain at least one size."
-                    );
+                if (type.isSqft()) {
+                    if (item.sizes() == null || item.sizes().isEmpty()) {
+                        throw new IllegalArgumentException(
+                                "Each Sq.ft item must contain at least one size."
+                        );
+                    }
+                } else {
+                    if (item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) <= 0) {
+                        throw new IllegalArgumentException(
+                                "Quantity must be greater than zero."
+                        );
+                    }
                 }
             }
         }
@@ -1045,7 +1094,23 @@ public class AdminQuotationBuilderService {
             Long materialSpecificationId,
             String itemDescription,
             String specification,
-            List<SizeRequest> sizes) {
+            List<SizeRequest> sizes,
+            MeasurementType measurementType,
+            BigDecimal quantity,
+            String imageUrl) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes) {
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null);
+        }
 
         public ItemRequest(
                 Long workCategoryId,
@@ -1056,7 +1121,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null);
         }
     }
 

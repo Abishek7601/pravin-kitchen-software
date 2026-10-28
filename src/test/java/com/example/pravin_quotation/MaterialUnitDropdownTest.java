@@ -72,31 +72,32 @@ public class MaterialUnitDropdownTest {
     }
 
     @Test
-    @DisplayName("1. Unit dropdown in work-categories.html contains ONLY Sq.ft and removes all other options")
-    void testUnitDropdownContainsOnlySqFt() throws IOException {
+    @DisplayName("1. Material modal contains 3 radio options (Sq.ft, Quantity, Files) and removed old unit options")
+    void testMaterialModalHasThreeRadioOptions() throws IOException {
         File file = new File("src/main/resources/templates/admin/work-categories.html");
         assertTrue(file.exists(), "work-categories.html must exist");
         String content = Files.readString(file.toPath());
 
-        // Find the unit select block
-        int selectIndex = content.indexOf("id=\"materialUnitSelect\"");
-        assertTrue(selectIndex > 0, "id='materialUnitSelect' select element must exist");
-        int endIndex = content.indexOf("</select>", selectIndex);
-        String selectSnippet = content.substring(selectIndex, endIndex);
+        // Ensure 3 radio button cards exist
+        assertTrue(content.contains("id=\"mTypeRadioSqft\""), "mTypeRadioSqft radio must exist");
+        assertTrue(content.contains("id=\"mTypeRadioQuantity\""), "mTypeRadioQuantity radio must exist");
+        assertTrue(content.contains("id=\"mTypeRadioFiles\""), "mTypeRadioFiles radio must exist");
 
-        // Ensure Sq.ft is present and selected
-        assertTrue(selectSnippet.contains("Sq.ft"), "Dropdown must contain Sq.ft");
+        // Ensure dynamic containers exist
+        assertTrue(content.contains("id=\"formulaSectionContainer\""), "formulaSectionContainer must exist");
+        assertTrue(content.contains("id=\"quantitySectionContainer\""), "quantitySectionContainer must exist");
+        assertTrue(content.contains("id=\"filesSectionContainer\""), "filesSectionContainer must exist");
 
-        // Ensure removed options are NOT in the dropdown source
-        assertFalse(selectSnippet.contains("Running ft"), "Running ft must not be in dropdown");
-        assertFalse(selectSnippet.contains("Piece"), "Piece must not be in dropdown");
-        assertFalse(selectSnippet.contains("Set"), "Set must not be in dropdown");
-        assertFalse(selectSnippet.contains("Meter"), "Meter must not be in dropdown");
-        assertFalse(selectSnippet.contains("Item"), "Item must not be in dropdown");
+        // Ensure removed options from old unit dropdown are NOT in work-categories.html
+        assertFalse(content.contains("value=\"Running ft\""), "Running ft must not be in modal");
+        assertFalse(content.contains("value=\"Piece\""), "Piece must not be in modal");
+        assertFalse(content.contains("value=\"Set\""), "Set must not be in modal");
+        assertFalse(content.contains("value=\"Meter\""), "Meter must not be in modal");
+        assertFalse(content.contains("value=\"Item\""), "Item must not be in modal");
     }
 
     @Test
-    @DisplayName("2. Creating material uses Sq.ft and validates branch rates correctly")
+    @DisplayName("2. Creating material uses Sq.ft (SQFT) and validates branch rates correctly")
     void testCreateMaterialWithSqFt() {
         String branchRatesJson = "{\"" + branch.getId() + "\":{\"MIDDLE\":1250.00}}";
 
@@ -109,6 +110,8 @@ public class MaterialUnitDropdownTest {
                 null,
                 "Grade A Century Ply",
                 "Sq.ft",
+                "SQFT",
+                null,
                 null,
                 branchRatesJson,
                 Map.of()
@@ -123,11 +126,82 @@ public class MaterialUnitDropdownTest {
         assertNotNull(materialId);
 
         Material mat = materialRepository.findById(materialId).orElseThrow();
+        assertEquals(MeasurementType.SQFT, mat.getMeasurementType(), "Material measurementType must be SQFT");
         assertEquals("Sq.ft", mat.getUnit(), "Material unit must be Sq.ft");
     }
 
     @Test
-    @DisplayName("3. Updating existing material displays and saves Sq.ft")
+    @DisplayName("3. Creating material with Quantity (QUANTITY) sets unit to Quantity and clears formula")
+    void testCreateMaterialWithQuantity() {
+        String branchRatesJson = "{\"" + branch.getId() + "\":{\"MIDDLE\":450.00}}";
+
+        ResponseEntity<?> response = workCategoryController.createWorkTypeMaterial(
+                division.getId(),
+                "MIDDLE",
+                null,
+                "Cabinet Handle Brass",
+                null,
+                null,
+                "Brass Finish 6 inch",
+                null,
+                "QUANTITY",
+                null,
+                null,
+                branchRatesJson,
+                Map.of()
+        );
+
+        assertTrue(response.getStatusCode().is2xxSuccessful(), "Creation should succeed");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue((Boolean) body.get("success"));
+        Long materialId = (Long) body.get("materialId");
+        assertNotNull(materialId);
+
+        Material mat = materialRepository.findById(materialId).orElseThrow();
+        assertEquals(MeasurementType.QUANTITY, mat.getMeasurementType(), "Material measurementType must be QUANTITY");
+        assertEquals("Quantity", mat.getUnit(), "Material unit must be Quantity");
+        assertNull(mat.getFormula(), "Formula should be null for Quantity items");
+    }
+
+    @Test
+    @DisplayName("4. Creating material with Files (FILES) sets unit to Files and clears formula")
+    void testCreateMaterialWithFiles() {
+        String branchRatesJson = "{\"" + branch.getId() + "\":{\"MIDDLE\":15000.00}}";
+
+        ResponseEntity<?> response = workCategoryController.createWorkTypeMaterial(
+                division.getId(),
+                "MIDDLE",
+                null,
+                "Custom 3D CNC Panel",
+                null,
+                null,
+                "CNC Cut wave pattern",
+                null,
+                "FILES",
+                null,
+                null,
+                branchRatesJson,
+                Map.of()
+        );
+
+        assertTrue(response.getStatusCode().is2xxSuccessful(), "Creation should succeed");
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        assertTrue((Boolean) body.get("success"));
+        Long materialId = (Long) body.get("materialId");
+        assertNotNull(materialId);
+
+        Material mat = materialRepository.findById(materialId).orElseThrow();
+        assertEquals(MeasurementType.FILES, mat.getMeasurementType(), "Material measurementType must be FILES");
+        assertEquals("Files", mat.getUnit(), "Material unit must be Files");
+        assertNull(mat.getFormula(), "Formula should be null for Files items");
+    }
+
+    @Test
+    @DisplayName("5. Updating existing material displays and saves Sq.ft")
     void testUpdateMaterialWithSqFt() {
         String branchRatesJson = "{\"" + branch.getId() + "\":{\"MIDDLE\":1400.00}}";
 
@@ -153,6 +227,9 @@ public class MaterialUnitDropdownTest {
                 null,
                 "Scratch resistant high gloss",
                 "Sq.ft",
+                "SQFT",
+                null,
+                false,
                 new BigDecimal("1500.00"),
                 branchRatesJson,
                 Map.of()
@@ -161,33 +238,7 @@ public class MaterialUnitDropdownTest {
         assertTrue(updateResp.getStatusCode().is2xxSuccessful(), "Update should succeed");
         Material updated = materialRepository.findById(mat.getId()).orElseThrow();
         assertEquals("Sq.ft", updated.getUnit(), "Updated material unit must be Sq.ft");
+        assertEquals(MeasurementType.SQFT, updated.getMeasurementType());
         assertEquals("Acrylic Shutters Premium", updated.getName());
-    }
-
-    @Test
-    @DisplayName("4. Controller rejects non-Sq.ft unit")
-    void testControllerRejectsNonSqFtUnit() {
-        String branchRatesJson = "{\"" + branch.getId() + "\":{\"MIDDLE\":1000.00}}";
-
-        ResponseEntity<?> response = workCategoryController.createWorkTypeMaterial(
-                division.getId(),
-                "MIDDLE",
-                null,
-                "Invalid Unit Test Item",
-                "L × W",
-                null,
-                "",
-                "Running ft", // Attempting an invalid unit
-                null,
-                branchRatesJson,
-                Map.of()
-        );
-
-        assertTrue(response.getStatusCode().is4xxClientError(), "Non-Sq.ft unit must be rejected");
-        @SuppressWarnings("unchecked")
-        Map<String, Object> body = (Map<String, Object>) response.getBody();
-        assertNotNull(body);
-        assertFalse((Boolean) body.get("success"));
-        assertTrue(((String) body.get("message")).contains("Only 'Sq.ft' is supported"));
     }
 }

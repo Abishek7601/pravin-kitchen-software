@@ -2,13 +2,16 @@ package com.example.pravin_quotation.controller;
 
 import com.example.pravin_quotation.model.Division;
 import com.example.pravin_quotation.model.Material;
+import com.example.pravin_quotation.model.MeasurementType;
 import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.WorkCategory;
+import com.example.pravin_quotation.service.FileUploadService;
 import com.example.pravin_quotation.service.WorkCategoryService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.math.BigDecimal;
 import java.util.LinkedHashMap;
@@ -20,13 +23,16 @@ public class WorkCategoryController {
 
     private final WorkCategoryService workCategoryService;
     private final MasterDataHierarchyController masterDataHierarchyController;
+    private final FileUploadService fileUploadService;
 
     public WorkCategoryController(
             WorkCategoryService workCategoryService,
-            MasterDataHierarchyController masterDataHierarchyController) {
+            MasterDataHierarchyController masterDataHierarchyController,
+            FileUploadService fileUploadService) {
 
         this.workCategoryService = workCategoryService;
         this.masterDataHierarchyController = masterDataHierarchyController;
+        this.fileUploadService = fileUploadService;
     }
 
 
@@ -250,6 +256,8 @@ public class WorkCategoryController {
             @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
+            @RequestParam(required = false) String measurementType,
+            @RequestParam(required = false) MultipartFile imageFile,
             @RequestParam(required = false) BigDecimal rate,
             @RequestParam(required = false) String branchRatesJson,
             @RequestParam(required = false) Map<String, String> allRequestParams) {
@@ -273,16 +281,25 @@ public class WorkCategoryController {
                 ));
             }
 
-            String effectiveUnit = (unit != null && !unit.isBlank()) ? unit.trim() : "Sq.ft";
-            if (!effectiveUnit.equalsIgnoreCase("Sq.ft") && !effectiveUnit.equalsIgnoreCase("Sq.Ft")) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Invalid unit '" + unit + "'. Only 'Sq.ft' is supported for materials."
-                ));
+            MeasurementType mType = MeasurementType.fromString(measurementType != null ? measurementType : unit);
+            String effectiveUnit;
+            if (mType == MeasurementType.QUANTITY) {
+                effectiveUnit = "Quantity";
+                effectiveFormula = null;
+            } else if (mType == MeasurementType.FILES) {
+                effectiveUnit = "Files";
+                effectiveFormula = null;
+            } else {
+                effectiveUnit = "Sq.ft";
+                mType = MeasurementType.SQFT;
             }
-            effectiveUnit = "Sq.ft";
 
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, effectiveUnit, rate, effectiveFormula, branchRates);
+            String imageUrl = null;
+            if (imageFile != null && !imageFile.isEmpty()) {
+                imageUrl = fileUploadService.storeFile(imageFile, "materials");
+            }
+
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -308,6 +325,9 @@ public class WorkCategoryController {
             @RequestParam(required = false) String measurementFormula,
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
+            @RequestParam(required = false) String measurementType,
+            @RequestParam(required = false) MultipartFile imageFile,
+            @RequestParam(required = false) Boolean removeImage,
             @RequestParam(required = false) BigDecimal rate,
             @RequestParam(required = false) String branchRatesJson,
             @RequestParam(required = false) Map<String, String> allRequestParams) {
@@ -315,16 +335,25 @@ public class WorkCategoryController {
             String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
             Map<Long, Map<PricingMode, BigDecimal>> branchRates = workCategoryService.parseBranchRates(branchRatesJson, allRequestParams);
 
-            String effectiveUnit = (unit != null && !unit.isBlank()) ? unit.trim() : "Sq.ft";
-            if (!effectiveUnit.equalsIgnoreCase("Sq.ft") && !effectiveUnit.equalsIgnoreCase("Sq.Ft")) {
-                return ResponseEntity.badRequest().body(Map.of(
-                        "success", false,
-                        "message", "Invalid unit '" + unit + "'. Only 'Sq.ft' is supported for materials."
-                ));
+            MeasurementType mType = MeasurementType.fromString(measurementType != null ? measurementType : unit);
+            String effectiveUnit;
+            if (mType == MeasurementType.QUANTITY) {
+                effectiveUnit = "Quantity";
+                effectiveFormula = null;
+            } else if (mType == MeasurementType.FILES) {
+                effectiveUnit = "Files";
+                effectiveFormula = null;
+            } else {
+                effectiveUnit = "Sq.ft";
+                mType = MeasurementType.SQFT;
             }
-            effectiveUnit = "Sq.ft";
 
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, effectiveUnit, rate, effectiveFormula, branchRates);
+            String imageUrl = null;
+            if (imageFile != null && !imageFile.isEmpty()) {
+                imageUrl = fileUploadService.storeFile(imageFile, "materials");
+            }
+
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)
@@ -367,19 +396,19 @@ public class WorkCategoryController {
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {

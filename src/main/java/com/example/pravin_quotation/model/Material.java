@@ -45,11 +45,15 @@ public class Material {
     @Column(name = "unit", length = 30)
     private String unit = "Sq.ft";
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "measurement_type", length = 30)
-    private String measurementType = "FORMULA";
+    private MeasurementType measurementType = MeasurementType.SQFT;
 
     @Column(name = "sqft_enabled")
     private Boolean sqftEnabled = true;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
 
     @Column(name = "specification", length = 500)
     private String specification;
@@ -111,15 +115,23 @@ public class Material {
             displayOrder = 0;
         }
 
-        if (formula == null || formula.isBlank()) {
-            formula = "(L + W) × H";
+        if (measurementType == null || measurementType.isSqft()) {
+            if (formula == null || formula.isBlank()) {
+                formula = "(L + W) × H";
+            }
+        } else {
+            formula = null;
         }
     }
 
     @PreUpdate
     protected void onUpdate() {
-        if (formula == null || formula.isBlank()) {
-            formula = "(L + W) × H";
+        if (measurementType == null || measurementType.isSqft()) {
+            if (formula == null || formula.isBlank()) {
+                formula = "(L + W) × H";
+            }
+        } else {
+            formula = null;
         }
     }
 
@@ -148,7 +160,14 @@ public class Material {
     }
 
     public String getFormula() {
+        if (measurementType == MeasurementType.QUANTITY || measurementType == MeasurementType.FILES) {
+            return formula != null && !formula.isBlank() ? formula : null;
+        }
         return (formula != null && !formula.isBlank()) ? formula : "(L + W) × H";
+    }
+
+    public String getCalculationFormula() {
+        return getFormula();
     }
 
     public void setFormula(String formula) {
@@ -207,12 +226,20 @@ public class Material {
         this.unit = unit;
     }
 
-    public String getMeasurementType() {
-        return measurementType != null ? measurementType : "FORMULA";
+    public MeasurementType getMeasurementType() {
+        return measurementType != null ? measurementType : MeasurementType.SQFT;
     }
 
-    public void setMeasurementType(String measurementType) {
+    public void setMeasurementType(MeasurementType measurementType) {
         this.measurementType = measurementType;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public Boolean getSqftEnabled() {

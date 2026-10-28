@@ -645,25 +645,56 @@
                 <form id="materialForm" onsubmit="return false;">
                     <input type="hidden" id="materialIdInput" value="">
                     
-                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 14px; margin-bottom: 12px;">
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Material Name <span style="color: #dc2626;">*</span>
+                    <div style="margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Material Name <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="text" id="materialNameInput" class="modal-input" placeholder="e.g. Premium Marine Plywood, Acrylic Finish" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                    </div>
+
+                    <!-- 3 RADIO BUTTON OPTIONS FOR UNIT / MEASUREMENT TYPE -->
+                    <div style="margin-bottom: 14px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                            Material Type <span style="color: #dc2626;">*</span>
+                        </label>
+                        <div class="mtype-radio-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                            <!-- Option 1: Sq.ft -->
+                            <label class="mtype-radio-card active" id="mTypeCardSqft" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid #024541; background: #f0fdf4; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="materialMeasurementType" id="mTypeRadioSqft" value="SQFT" checked style="accent-color: #024541; width: 16px; height: 16px; cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #024541; display: flex; align-items: center; gap: 5px;">
+                                        <span>📐</span> Sq.ft
+                                    </div>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 1px;">Area &amp; Formula</div>
+                                </div>
                             </label>
-                            <input type="text" id="materialNameInput" class="modal-input" placeholder="e.g. Premium Marine Plywood, Acrylic Finish" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
-                        </div>
-                        <div>
-                            <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
-                                Unit <span style="color: #dc2626;">*</span>
+
+                            <!-- Option 2: Quantity -->
+                            <label class="mtype-radio-card" id="mTypeCardQuantity" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="materialMeasurementType" id="mTypeRadioQuantity" value="QUANTITY" style="accent-color: #024541; width: 16px; height: 16px; cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 5px;">
+                                        <span>🔢</span> Quantity
+                                    </div>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 1px;">Direct Count</div>
+                                </div>
                             </label>
-                            <select id="materialUnitSelect" style="padding: 8px 10px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                <option value="Sq.ft" selected>Sq.ft</option>
-                            </select>
+
+                            <!-- Option 3: Files -->
+                            <label class="mtype-radio-card" id="mTypeCardFiles" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="materialMeasurementType" id="mTypeRadioFiles" value="FILES" style="accent-color: #024541; width: 16px; height: 16px; cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 5px;">
+                                        <span>📁</span> Files
+                                    </div>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 1px;">Image Upload</div>
+                                </div>
+                            </label>
                         </div>
                     </div>
 
-                    <!-- MEASUREMENT FORMULA -->
-                    <div style="margin-bottom: 12px;">
+                    <!-- DYNAMIC CONTAINER A: MEASUREMENT FORMULA (For Sq.ft) -->
+                    <div id="formulaSectionContainer" style="margin-bottom: 12px;">
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
                             Measurement Formula <span style="color: #dc2626;">*</span>
                         </label>
@@ -680,6 +711,50 @@
                                 <div style="color: #475569; font-size: 11px; margin-top: 2px;" id="formulaDescCalc">Calculation: Length × Width — Used to calculate area in square feet. Requires Length and Width inputs.</div>
                             </div>
                         </div>
+                    </div>
+
+                    <!-- DYNAMIC CONTAINER B: QUANTITY INFO BOX (For Quantity) -->
+                    <div id="quantitySectionContainer" style="display: none; margin-bottom: 12px; padding: 12px 14px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 8px; font-size: 12px; color: #0369a1;">
+                        <div style="display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 16px; line-height: 1;">🔢</span>
+                            <div>
+                                <strong style="color: #0c4a6e; font-size: 13px;">Quantity-Based Pricing Mode</strong>
+                                <p style="margin: 3px 0 0; color: #334155; font-size: 12px; line-height: 1.4;">
+                                    When adding this material to a quotation, the creator will enter a quantity (e.g., 1, 2, 5, 10). The item amount is calculated as <code>Quantity × Rate</code> for the selected branch and pricing grade. No length, width, or height measurements are required.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC CONTAINER C: FILES UPLOAD & PREVIEW (For Files) -->
+                    <div id="filesSectionContainer" style="display: none; margin-bottom: 12px; padding: 14px; background: #fdfefe; border: 1px dashed #024541; border-radius: 8px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">
+                            Material Image / Specification File <span style="font-size: 11px; font-weight: 400; color: #64748b;">(JPG, JPEG, PNG, WEBP — Max 10MB)</span>
+                        </label>
+                        
+                        <!-- File Input & Dropzone trigger -->
+                        <div id="fileUploadDropzone" style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; padding: 16px; text-align: center; cursor: pointer; transition: all 0.2s ease;">
+                            <input type="file" id="materialImageFileInput" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" style="display: none;">
+                            <div style="font-size: 24px; margin-bottom: 4px;">📁</div>
+                            <div style="font-size: 13px; font-weight: 600; color: #024541;">Click to browse image from computer</div>
+                            <div style="font-size: 11px; color: #64748b; margin-top: 2px;">Accepts JPG, JPEG, PNG, WEBP (Max 10MB)</div>
+                        </div>
+
+                        <!-- Image Preview Box -->
+                        <div id="materialImagePreviewBox" style="display: none; margin-top: 10px; padding: 10px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; align-items: center; justify-content: space-between; gap: 12px;">
+                            <div style="display: flex; align-items: center; gap: 12px; min-width: 0;">
+                                <img id="materialImagePreviewImg" src="" alt="Material Preview" style="width: 56px; height: 56px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; flex-shrink: 0;">
+                                <div style="min-width: 0;">
+                                    <div id="materialImageFileName" style="font-size: 12px; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">image.png</div>
+                                    <div id="materialImageFileSize" style="font-size: 11px; color: #64748b;">0 KB</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 6px; flex-shrink: 0;">
+                                <button type="button" id="replaceMaterialImageBtn" class="btn btn-sm" style="padding: 4px 10px; font-size: 11px; border: 1px solid #cbd5e1; background: #fff; color: #024541; border-radius: 4px; cursor: pointer; font-weight: 600;">Replace</button>
+                                <button type="button" id="removeMaterialImageBtn" class="btn btn-sm" style="padding: 4px 10px; font-size: 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 4px; cursor: pointer; font-weight: 600;">Remove</button>
+                            </div>
+                        </div>
+                        <input type="hidden" id="removeImageFlag" value="false">
                     </div>
 
                     <div style="margin-bottom: 14px;">
@@ -1878,8 +1953,124 @@
         var formulaDescTitle = document.getElementById('formulaDescTitle');
         var formulaDescCalc = document.getElementById('formulaDescCalc');
         var materialSpecInput = document.getElementById('materialSpecInput');
-        var materialUnitSelect = document.getElementById('materialUnitSelect');
         var materialRateInput = document.getElementById('materialRateInput');
+
+        // Radio Cards & Dynamic Containers for Sq.ft / Quantity / Files
+        var mTypeRadioSqft = document.getElementById('mTypeRadioSqft');
+        var mTypeRadioQuantity = document.getElementById('mTypeRadioQuantity');
+        var mTypeRadioFiles = document.getElementById('mTypeRadioFiles');
+        var mTypeCardSqft = document.getElementById('mTypeCardSqft');
+        var mTypeCardQuantity = document.getElementById('mTypeCardQuantity');
+        var mTypeCardFiles = document.getElementById('mTypeCardFiles');
+        var formulaSectionContainer = document.getElementById('formulaSectionContainer');
+        var quantitySectionContainer = document.getElementById('quantitySectionContainer');
+        var filesSectionContainer = document.getElementById('filesSectionContainer');
+        var fileUploadDropzone = document.getElementById('fileUploadDropzone');
+        var materialImageFileInput = document.getElementById('materialImageFileInput');
+        var materialImagePreviewBox = document.getElementById('materialImagePreviewBox');
+        var materialImagePreviewImg = document.getElementById('materialImagePreviewImg');
+        var materialImageFileName = document.getElementById('materialImageFileName');
+        var materialImageFileSize = document.getElementById('materialImageFileSize');
+        var replaceMaterialImageBtn = document.getElementById('replaceMaterialImageBtn');
+        var removeMaterialImageBtn = document.getElementById('removeMaterialImageBtn');
+        var removeImageFlag = document.getElementById('removeImageFlag');
+
+        function setMeasurementType(type) {
+            var t = (type || 'SQFT').toUpperCase();
+            if (t !== 'SQFT' && t !== 'QUANTITY' && t !== 'FILES') {
+                t = 'SQFT';
+            }
+
+            if (mTypeRadioSqft) mTypeRadioSqft.checked = (t === 'SQFT');
+            if (mTypeRadioQuantity) mTypeRadioQuantity.checked = (t === 'QUANTITY');
+            if (mTypeRadioFiles) mTypeRadioFiles.checked = (t === 'FILES');
+
+            function styleCard(card, isSelected) {
+                if (!card) return;
+                if (isSelected) {
+                    card.style.border = '2px solid #024541';
+                    card.style.background = '#f0fdf4';
+                    var strong = card.querySelector('div > div:first-child');
+                    if (strong) strong.style.color = '#024541';
+                } else {
+                    card.style.border = '1px solid #cbd5e1';
+                    card.style.background = '#ffffff';
+                    var strong = card.querySelector('div > div:first-child');
+                    if (strong) strong.style.color = '#334155';
+                }
+            }
+            styleCard(mTypeCardSqft, t === 'SQFT');
+            styleCard(mTypeCardQuantity, t === 'QUANTITY');
+            styleCard(mTypeCardFiles, t === 'FILES');
+
+            if (formulaSectionContainer) formulaSectionContainer.style.display = (t === 'SQFT') ? 'block' : 'none';
+            if (quantitySectionContainer) quantitySectionContainer.style.display = (t === 'QUANTITY') ? 'block' : 'none';
+            if (filesSectionContainer) filesSectionContainer.style.display = (t === 'FILES') ? 'block' : 'none';
+        }
+
+        function getSelectedMeasurementType() {
+            if (mTypeRadioQuantity && mTypeRadioQuantity.checked) return 'QUANTITY';
+            if (mTypeRadioFiles && mTypeRadioFiles.checked) return 'FILES';
+            return 'SQFT';
+        }
+
+        var mTypeRadios = document.querySelectorAll('input[name="materialMeasurementType"]');
+        mTypeRadios.forEach(function(r) {
+            r.addEventListener('change', function() {
+                setMeasurementType(r.value);
+            });
+        });
+
+        if (fileUploadDropzone && materialImageFileInput) {
+            fileUploadDropzone.addEventListener('click', function() {
+                materialImageFileInput.click();
+            });
+        }
+        if (replaceMaterialImageBtn && materialImageFileInput) {
+            replaceMaterialImageBtn.addEventListener('click', function() {
+                materialImageFileInput.click();
+            });
+        }
+        if (materialImageFileInput) {
+            materialImageFileInput.addEventListener('change', function(e) {
+                var file = e.target.files && e.target.files[0];
+                if (!file) return;
+
+                var validExts = ['jpg', 'jpeg', 'png', 'webp'];
+                var ext = (file.name.split('.').pop() || '').toLowerCase();
+                if (!validExts.includes(ext)) {
+                    alert('Invalid file format. Only JPG, JPEG, PNG, and WEBP images are supported.');
+                    materialImageFileInput.value = '';
+                    return;
+                }
+
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File is too large. Maximum allowed size is 10MB.');
+                    materialImageFileInput.value = '';
+                    return;
+                }
+
+                var reader = new FileReader();
+                reader.onload = function(evt) {
+                    if (materialImagePreviewImg) materialImagePreviewImg.src = evt.target.result;
+                    if (materialImageFileName) materialImageFileName.textContent = file.name;
+                    if (materialImageFileSize) materialImageFileSize.textContent = (file.size / 1024).toFixed(1) + ' KB';
+                    if (materialImagePreviewBox) materialImagePreviewBox.style.display = 'flex';
+                    if (fileUploadDropzone) fileUploadDropzone.style.display = 'none';
+                    if (removeImageFlag) removeImageFlag.value = 'false';
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        if (removeMaterialImageBtn) {
+            removeMaterialImageBtn.addEventListener('click', function() {
+                if (materialImageFileInput) materialImageFileInput.value = '';
+                if (materialImagePreviewImg) materialImagePreviewImg.src = '';
+                if (materialImagePreviewBox) materialImagePreviewBox.style.display = 'none';
+                if (fileUploadDropzone) fileUploadDropzone.style.display = 'block';
+                if (removeImageFlag) removeImageFlag.value = 'true';
+            });
+        }
 
         var materialsLoading = document.getElementById('materialsLoading');
         var materialsEmpty = document.getElementById('materialsEmpty');
@@ -2064,9 +2255,15 @@
             if (materialNameInput) materialNameInput.value = '';
             if (materialSpecInput) materialSpecInput.value = '';
             if (materialRateInput) materialRateInput.value = '';
-            if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
+            setMeasurementType('SQFT');
             if (materialFormulaSelect) materialFormulaSelect.value = 'L × W';
             updateFormulaDescription();
+            if (materialImageFileInput) materialImageFileInput.value = '';
+            if (materialImagePreviewImg) materialImagePreviewImg.src = '';
+            if (materialImagePreviewBox) materialImagePreviewBox.style.display = 'none';
+            if (fileUploadDropzone) fileUploadDropzone.style.display = 'block';
+            if (removeImageFlag) removeImageFlag.value = 'false';
+
             renderBranchPricingRows(currentMaterialsData ? currentMaterialsData.branches : [], activeMaterialsGrade);
             if (saveMaterialBtn) {
                 saveMaterialBtn.disabled = false;
@@ -2148,8 +2345,36 @@
             }
             updateFormulaDescription();
             if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
-            if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
+
+            // Set measurement type
+            var mType = 'SQFT';
+            if (mat) {
+                if (mat.measurementType) {
+                    mType = String(mat.measurementType).toUpperCase();
+                } else if (mat.unit && (mat.unit === 'Quantity' || mat.unit === 'quantity')) {
+                    mType = 'QUANTITY';
+                } else if (mat.unit && (mat.unit === 'Files' || mat.unit === 'files')) {
+                    mType = 'FILES';
+                }
+            }
+            setMeasurementType(mType);
+
+            // Handle image preview for Files / existing image
+            if (materialImageFileInput) materialImageFileInput.value = '';
+            if (mat && mat.imageUrl) {
+                if (materialImagePreviewImg) materialImagePreviewImg.src = mat.imageUrl;
+                if (materialImageFileName) materialImageFileName.textContent = 'Existing Material Image';
+                if (materialImageFileSize) materialImageFileSize.textContent = 'Saved in database';
+                if (materialImagePreviewBox) materialImagePreviewBox.style.display = 'flex';
+                if (fileUploadDropzone) fileUploadDropzone.style.display = 'none';
+                if (removeImageFlag) removeImageFlag.value = 'false';
+            } else {
+                if (materialImagePreviewImg) materialImagePreviewImg.src = '';
+                if (materialImagePreviewBox) materialImagePreviewBox.style.display = 'none';
+                if (fileUploadDropzone) fileUploadDropzone.style.display = 'block';
+                if (removeImageFlag) removeImageFlag.value = 'false';
+            }
 
             // Populate formBranchRates from saved material data
             formBranchRates = {};
@@ -2256,9 +2481,28 @@
                     var spec = mat.specification || '';
                     var unit = mat.unit || 'Sq.ft';
                     var formula = mat.formula || 'L × W';
+                    var mType = (mat.measurementType || (unit === 'Quantity' ? 'QUANTITY' : (unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
                     var rateVal = Number(mat.rate || 0);
                     var rateFmt = '₹ ' + rateVal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                     var isActive = mat.active !== false;
+
+                    var typeBadge = '';
+                    var unitLabel = 'per Sq.ft';
+                    var imgThumbnail = '';
+
+                    if (mType === 'QUANTITY' || unit === 'Quantity') {
+                        typeBadge = '<span style="font-size: 11px; background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; padding: 2px 8px; border-radius: 6px; font-weight: 600;">🔢 Quantity</span>';
+                        unitLabel = 'per unit';
+                    } else if (mType === 'FILES' || unit === 'Files') {
+                        typeBadge = '<span style="font-size: 11px; background: #fef3c7; color: #92400e; border: 1px solid #fde68a; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📁 Files</span>';
+                        unitLabel = 'per item';
+                        if (mat.imageUrl) {
+                            imgThumbnail = '<a href="' + escapeHtml(mat.imageUrl) + '" target="_blank" title="View image" style="margin-right: 4px; display: inline-flex;"><img src="' + escapeHtml(mat.imageUrl) + '" alt="' + escapeHtml(name) + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; vertical-align: middle;"></a>';
+                        }
+                    } else {
+                        typeBadge = '<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📐 Formula: ' + escapeHtml(formula) + '</span>';
+                        unitLabel = 'per Sq.ft';
+                    }
 
                     // Branch rate pills for this grade
                     var branchRatesHtml = '';
@@ -2275,22 +2519,25 @@
                     }
 
                     html += '<div class="material-card" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;">' +
-                        '<div style="min-width: 0; flex: 1;">' +
-                            '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
-                                '<strong style="font-size: 14px; font-weight: 700; color: #0f172a;">' + escapeHtml(name) + '</strong>' +
-                                '<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📐 Formula: ' + escapeHtml(formula) + '</span>' +
-                                (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
+                        '<div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">' +
+                            imgThumbnail +
+                            '<div style="min-width: 0; flex: 1;">' +
+                                '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
+                                    '<strong style="font-size: 14px; font-weight: 700; color: #0f172a;">' + escapeHtml(name) + '</strong>' +
+                                    typeBadge +
+                                    (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
+                                '</div>' +
+                                (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
+                                branchRatesHtml +
                             '</div>' +
-                            (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
-                            branchRatesHtml +
                         '</div>' +
                         '<div style="display: flex; align-items: center; gap: 14px; flex-shrink: 0;">' +
                             '<div style="text-align: right;">' +
                                 '<div style="font-size: 15px; font-weight: 700; color: #024541;">' + rateFmt + '</div>' +
-                                '<div style="font-size: 11px; color: #64748b; font-weight: 500;">per ' + escapeHtml(unit) + '</div>' +
+                                '<div style="font-size: 11px; color: #64748b; font-weight: 500;">' + unitLabel + '</div>' +
                             '</div>' +
                             '<div class="material-actions" style="display: flex; gap: 6px;">' +
-                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-type="' + mType + '" data-image="' + (mat.imageUrl ? escapeHtml(mat.imageUrl) : '') + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
                                 '<button type="button" class="js-delete-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" title="Delete Material" style="padding: 5px 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
                             '</div>' +
                         '</div>' +
@@ -2434,7 +2681,8 @@
                 var gradeVal = (materialGradeSelect ? materialGradeSelect.value : activeMaterialsGrade).trim();
                 var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
                 var specVal = (materialSpecInput ? materialSpecInput.value : '').trim();
-                var unitVal = (materialUnitSelect ? materialUnitSelect.value : 'Sq.ft').trim();
+                var selectedType = getSelectedMeasurementType();
+                var unitVal = (selectedType === 'QUANTITY') ? 'Quantity' : ((selectedType === 'FILES') ? 'Files' : 'Sq.ft');
 
                 var isEdit = (idVal && idVal.length > 0 && idVal !== '0');
 
@@ -2483,28 +2731,37 @@
                     ? ('/admin/work-categories/work-types/materials/' + encodeURIComponent(idVal))
                     : ('/admin/work-categories/work-types/' + encodeURIComponent(currentMaterialsWorkType.id) + '/materials');
 
-                var params = new URLSearchParams();
-                params.append('name', nameVal);
-                params.append('grade', gradeVal);
-                params.append('formula', formulaVal);
-                params.append('measurementFormula', formulaVal);
-                params.append('specification', specVal);
-                params.append('unit', unitVal);
-                params.append('branchRatesJson', JSON.stringify(branchRatesObj));
+                var formData = new FormData();
+                formData.append('name', nameVal);
+                formData.append('grade', gradeVal);
+                formData.append('measurementType', selectedType);
+                formData.append('unit', unitVal);
+                if (selectedType === 'SQFT') {
+                    formData.append('formula', formulaVal);
+                    formData.append('measurementFormula', formulaVal);
+                }
+                formData.append('specification', specVal);
+                formData.append('branchRatesJson', JSON.stringify(branchRatesObj));
 
                 // Also append individual params for backward compatibility
                 Object.keys(branchRatesObj).forEach(function(bId) {
                     Object.keys(branchRatesObj[bId]).forEach(function(gr) {
-                        params.append('rate_branch_' + bId + '_' + gr, branchRatesObj[bId][gr]);
+                        formData.append('rate_branch_' + bId + '_' + gr, branchRatesObj[bId][gr]);
                     });
                 });
 
                 if (isEdit) {
-                    params.append('targetWorkTypeId', currentMaterialsWorkType.id);
+                    formData.append('targetWorkTypeId', currentMaterialsWorkType.id);
+                    if (removeImageFlag && removeImageFlag.value === 'true') {
+                        formData.append('removeImage', 'true');
+                    }
+                }
+
+                if (selectedType === 'FILES' && materialImageFileInput && materialImageFileInput.files && materialImageFileInput.files.length > 0) {
+                    formData.append('imageFile', materialImageFileInput.files[0]);
                 }
 
                 var headers = {
-                    'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 };
@@ -2513,7 +2770,7 @@
                 fetch(url, {
                     method: 'POST',
                     headers: headers,
-                    body: params.toString()
+                    body: formData
                 })
                 .then(function(resp) {
                     return resp.json().then(function(data) {
@@ -2568,6 +2825,8 @@
                         var rate = editBtn.getAttribute('data-rate') || '0';
                         var grade = editBtn.getAttribute('data-grade') || activeMaterialsGrade;
                         var formula = editBtn.getAttribute('data-formula') || 'L × W';
+                        var mType = editBtn.getAttribute('data-type') || 'SQFT';
+                        var imgUrl = editBtn.getAttribute('data-image') || '';
                         openMaterialForm({
                             id: id,
                             name: name,
@@ -2575,7 +2834,9 @@
                             unit: unit,
                             rate: rate,
                             pricingGrade: grade,
-                            formula: formula
+                            formula: formula,
+                            measurementType: mType,
+                            imageUrl: imgUrl
                         });
                     }
                     return;

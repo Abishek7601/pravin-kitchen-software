@@ -161,6 +161,53 @@ public class QuotationItemService {
             String formula,
             String specification
     ) {
+        return create(
+                quotationRoom,
+                workCategory,
+                division,
+                item,
+                material,
+                materialOption,
+                materialSpecification,
+                itemDescription,
+                lengthValue,
+                widthValue,
+                heightValue,
+                calculatedSqft,
+                rate,
+                amount,
+                offerPrice,
+                formula,
+                specification,
+                MeasurementType.SQFT,
+                BigDecimal.ONE,
+                null
+        );
+    }
+
+    @Transactional
+    public QuotationItem create(
+            QuotationRoom quotationRoom,
+            WorkCategory workCategory,
+            Division division,
+            Item item,
+            Material material,
+            MaterialOption materialOption,
+            MaterialSpecification materialSpecification,
+            String itemDescription,
+            BigDecimal lengthValue,
+            BigDecimal widthValue,
+            BigDecimal heightValue,
+            BigDecimal calculatedSqft,
+            BigDecimal rate,
+            BigDecimal amount,
+            BigDecimal offerPrice,
+            String formula,
+            String specification,
+            MeasurementType measurementType,
+            BigDecimal quantity,
+            String imageUrl
+    ) {
 
         if (quotationRoom == null) {
             throw new IllegalArgumentException(
@@ -272,6 +319,18 @@ public class QuotationItemService {
 
         quotationItem.setSpecification(
                 cleanText(specification)
+        );
+
+        quotationItem.setMeasurementType(
+                measurementType != null ? measurementType : MeasurementType.SQFT
+        );
+
+        quotationItem.setQuantity(
+                quantity != null && quantity.compareTo(BigDecimal.ZERO) > 0 ? quantity : BigDecimal.ONE
+        );
+
+        quotationItem.setImageUrl(
+                imageUrl
         );
 
         quotationItem.setActive(true);
