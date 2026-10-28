@@ -418,12 +418,15 @@ public class EmployeeQuotationController {
 
     @GetMapping("/builder/customers")
     @ResponseBody
-    public List<Map<String, Object>> builderCustomers(Authentication authentication) {
+    public List<Map<String, Object>> builderCustomers(
+            @RequestParam(required = false) Long branchId,
+            Authentication authentication) {
         User employee = getLoggedInEmployee(authentication);
-        if (employee == null || employee.getBranch() == null) {
+        Long targetBranchId = branchId != null ? branchId : (employee != null && employee.getBranch() != null ? employee.getBranch().getId() : null);
+        if (targetBranchId == null) {
             return Collections.emptyList();
         }
-        return customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(employee.getBranch().getId())
+        return customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(targetBranchId)
                 .stream().map(c -> {
                     Map<String, Object> map = new LinkedHashMap<>();
                     map.put("id", c.getId());
@@ -435,6 +438,10 @@ public class EmployeeQuotationController {
                     map.put("branchName", c.getBranch() != null ? c.getBranch().getName() : "");
                     return map;
                 }).toList();
+    }
+
+    public List<Map<String, Object>> builderCustomers(Authentication authentication) {
+        return builderCustomers(null, authentication);
     }
 
     @GetMapping("/builder/divisions")
@@ -664,8 +671,10 @@ public class EmployeeQuotationController {
                 return ResponseEntity.ok(resp);
             }
 
-            redirectAttributes.addFlashAttribute("successMessage",
-                    "Quotation " + quotation.getQuotationNumber() + " created successfully.");
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("successMessage",
+                        "Quotation " + quotation.getQuotationNumber() + " created successfully.");
+            }
             return "redirect:" + redirectUrl;
         } catch (Exception e) {
             if (acceptsJson) {
@@ -674,7 +683,9 @@ public class EmployeeQuotationController {
                 errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to save quotation.");
                 return ResponseEntity.badRequest().body(errResp);
             }
-            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            if (redirectAttributes != null) {
+                redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            }
             return "redirect:/employee/quotations/builder";
         }
     }
