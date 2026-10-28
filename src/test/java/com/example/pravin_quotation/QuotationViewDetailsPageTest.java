@@ -101,4 +101,61 @@ public class QuotationViewDetailsPageTest {
         assertNotNull(modelQuotation.getStatus(), "Quotation status must be present");
         assertEquals(sampleQuotation.getStatus(), modelQuotation.getStatus(), "Quotation status must match database record");
     }
+
+    @Test
+    @DisplayName("Quotation Financials display section and inline recalculation script are removed from admin/quotation-view.html")
+    public void testQuotationFinancialsSectionRemovedFromQuotationViewTemplate() throws Exception {
+        String template = loadResource("templates/admin/quotation-view.html");
+
+        // Financials display section removed
+        assertFalse(template.contains("QUOTATION FINANCIALS"), "Template must not contain QUOTATION FINANCIALS section");
+        assertFalse(template.contains("id=\"financialCard\""), "Template must not contain financialCard element");
+        assertFalse(template.contains("id=\"chargesForm\""), "Template must not contain chargesForm element");
+        assertFalse(template.contains("initQuotationFinancialSummary"), "Template must not contain inline financial summary recalculation script");
+
+        // Communication history and quotation details must be preserved
+        assertTrue(template.contains("Communication History"), "Communication History must be preserved");
+        assertTrue(template.contains("quotation.customer"), "Customer details must be preserved");
+    }
+
+    @Test
+    @DisplayName("Quotation Breakdown is structured as a semantic table with dark green header and required columns")
+    public void testQuotationBreakdownTableStructureAndStyling() throws Exception {
+        String template = loadResource("templates/admin/quotation-view.html");
+
+        // Semantic table elements
+        assertTrue(template.contains("<table class=\"breakdown-table\""), "Must contain breakdown-table");
+        assertTrue(template.contains("<thead>"), "Must contain semantic thead");
+        assertTrue(template.contains("<tbody>"), "Must contain semantic tbody");
+        assertTrue(template.contains("<tfoot>"), "Must contain semantic tfoot");
+
+        // Required columns present in table header
+        assertTrue(template.contains("S.No."), "Must contain S.No. column");
+        assertTrue(template.contains("Floor"), "Must contain Floor column");
+        assertTrue(template.contains("Room No."), "Must contain Room No. column");
+        assertTrue(template.contains("Category"), "Must contain Category column");
+        assertTrue(template.contains("Work Type"), "Must contain Work Type column");
+        assertTrue(template.contains("Material"), "Must contain Material column");
+        assertTrue(template.contains("Specifications"), "Must contain Specifications column");
+        assertTrue(template.contains("Size / Dimensions"), "Must contain Size / Dimensions column");
+        assertTrue(template.contains("Sq.Ft."), "Must contain Sq.Ft. column");
+        assertTrue(template.contains("Qty"), "Must contain Qty column");
+        assertTrue(template.contains("Unit Rate"), "Must contain Unit Rate column");
+        assertTrue(template.contains("Amount"), "Must contain Amount column");
+        assertTrue(template.contains("Offer Price"), "Must contain Offer Price column");
+
+        // Grouping and totals
+        assertTrue(template.contains("room-group-row"), "Must contain room grouping row");
+        assertTrue(template.contains("room-subtotal-row"), "Must contain room subtotal row");
+        assertTrue(template.contains("tfoot-subtotal-row"), "Must contain total items subtotal row");
+        assertTrue(template.contains("tfoot-grand-total-row"), "Must contain grand total row");
+
+        // CSS styling verification
+        String css = loadResource("static/css/quotation-view.css");
+        assertTrue(css.contains(".breakdown-table"), "CSS must contain .breakdown-table styles");
+        assertTrue(css.contains("#013A36"), "CSS must use dark green header color #013A36");
+        assertTrue(css.contains(".breakdown-table-wrapper"), "CSS must contain responsive wrapper .breakdown-table-wrapper");
+        assertTrue(css.contains("overflow-x: auto"), "Breakdown wrapper must have overflow-x: auto for mobile responsiveness");
+        assertFalse(css.contains(".financial-card {"), "CSS should not contain .financial-card rules");
+    }
 }

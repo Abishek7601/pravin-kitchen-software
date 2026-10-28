@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
@@ -498,1081 +498,187 @@
 
 
         <!-- =================================================
-             ROOMS
+             QUOTATION BREAKDOWN TABLE
         ================================================== -->
-
-        <div class="rooms-container"
-             th:if="${quotationRooms != null
-             && !#lists.isEmpty(quotationRooms)}">
-
-
-            <div class="quotation-room"
-                 th:each="room, roomStat : ${quotationRooms}">
-
-
-                <!-- ROOM HEADER -->
-
-                <div class="room-header">
-
-
-                    <div class="room-title-area">
-
-                        <div class="room-number"
-                             th:text="${roomStat.count}">
-
-                            1
-
-                        </div>
-
-
-                        <div>
-
-                            <span class="room-floor"
-                                  th:text="${room.floor}">
-
-                                Ground Floor
-
-                            </span>
-
-                            <h3
-                                    th:text="${room.room}">
-
-                                Kitchen
-
-                            </h3>
-
-                        </div>
-
-                    </div>
-
-
-
-                    <div class="room-total">
-
-                        <span>
-                            Room Total
-                        </span>
-
-                        <strong
-                                th:text="${'₹ ' +
-                                #numbers.formatDecimal(
-                                room.subtotal != null
-                                ? room.subtotal
-                                : 0,
-                                1, 2)}">
-
-                            ₹ 0.00
-
-                        </strong>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- WORK DESCRIPTION -->
-
-                <div class="room-description"
-                     th:if="${room.workDescription != null
-                     && !#strings.isEmpty(room.workDescription)}">
-
-                    <span class="description-label">
-                        Work
-                    </span>
-
-                    <span
-                            th:text="${room.workDescription}">
-
-                        Modular Kitchen
-
-                    </span>
-
-                </div>
-
-
-
-                <!-- =================================================
-                     ITEMS
-                ================================================== -->
-
-                <div class="room-items"
-                     th:with="roomItems=${itemsByRoom[room.id]}">
-
-
-                    <!-- NO ITEMS -->
-
-                    <div class="room-items-empty"
-                         th:if="${roomItems == null
-                         || #lists.isEmpty(roomItems)}">
-
-                        <span>
-                            No active work items added to this room.
-                        </span>
-
-                    </div>
-
-
-
-                    <!-- ITEM CARDS -->
-
-                    <div class="work-item"
-                         th:each="item : ${roomItems}">
-
-
-                        <!-- ITEM TOP -->
-
-                        <div class="work-item-header">
-
-
-                            <div>
-
-                                <span class="item-category"
-                                      th:if="${item.workCategory != null}"
-                                      th:text="${item.workCategory.name}">
-
-                                    Modular Kitchen
-
-                                </span>
-
-
-                                <h4
-                                        th:text="${item.item != null
-                                        ? item.item.name
-                                        : (item.itemDescription != null
-                                        ? item.itemDescription
-                                        : 'Work Item')}">
-
-                                    Base Cabinet
-
-                                </h4>
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- MATERIAL INFORMATION -->
-
-                        <div class="item-info-grid">
-
-
-                            <div class="item-info">
-
-                                <span>
-                                    Division
-                                </span>
-
-                                <strong
-                                        th:text="${item.division != null
-                                        ? item.division.name
-                                        : 'N/A'}">
-
-                                    Marketing
-
-                                </strong>
-
-                            </div>
-
-
-                            <div class="item-info">
-
-                                <span>
-                                    Material
-                                </span>
-
-                                <strong
-                                        th:text="${item.material != null
-                                        ? item.material.name
-                                        : 'N/A'}">
-
-                                    Marine Ply
-
-                                </strong>
-
-                            </div>
-
-
-                            <div class="item-info">
-
-                                <span>
-                                    Material Option
-                                </span>
-
-                                <strong
-                                        th:text="${item.materialOption != null
-                                        ? item.materialOption.name
-                                        : 'N/A'}">
-
-                                    18mm
-
-                                </strong>
-
-                            </div>
-
-
-                            <div class="item-info">
-
-                                <span>
-                                    Sq.Ft
-                                </span>
-
-                                <strong
-                                        th:text="${#numbers.formatDecimal(
-                                        item.calculatedSqft != null
-                                        ? item.calculatedSqft
-                                        : 0,
-                                        1, 2)}">
-
-                                    0.00
-
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- DIMENSIONS -->
-                        <!-- =================================================
-                             ITEM DIMENSIONS
-                        ================================================== -->
-
-                        <div class="item-dimensions-section">
-
-                            <!-- SINGLE / PARENT DIMENSION -->
-
-                            <div class="item-dimensions">
-
-                                <div class="dimension-box">
-
-            <span>
-                Length
-            </span>
-
-                                    <strong
-                                            th:text="${item.lengthValue != null
-                    ? #numbers.formatDecimal(
-                    item.lengthValue, 1, 2)
-                    : '0.00'}">
-
-                                        0.00
-
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="dimension-symbol">
-                                    ×
-                                </div>
-
-
-                                <div class="dimension-box">
-
-            <span>
-                Width
-            </span>
-
-                                    <strong
-                                            th:text="${item.widthValue != null
-                    ? #numbers.formatDecimal(
-                    item.widthValue, 1, 2)
-                    : '0.00'}">
-
-                                        0.00
-
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="dimension-symbol">
-                                    ×
-                                </div>
-
-
-                                <div class="dimension-box">
-
-            <span>
-                Height
-            </span>
-
-                                    <strong
-                                            th:text="${item.heightValue != null
-                    ? #numbers.formatDecimal(
-                    item.heightValue, 1, 2)
-                    : '0.00'}">
-
-                                        0.00
-
-                                    </strong>
-
-                                </div>
-
-
-                                <div class="dimension-unit">
-                                    inches
-                                </div>
-
-                            </div>
-
-
-                            <!-- =================================================
-                                 MULTIPLE SIZE DETAILS
-                            ================================================== -->
-
-                            <div class="multiple-sizes-section"
-                                 th:if="${item.sizes != null && !#lists.isEmpty(item.sizes)}">
-
-
-                                <div class="multiple-sizes-header">
-
-                                    <div>
-
-                <span class="multiple-sizes-label">
-                    SIZE DETAILS
-                </span>
-
-                                        <h5>
-                                            Measurements
-                                        </h5>
-
+        <div class="breakdown-table-wrapper"
+             th:if="${quotationRooms != null && !#lists.isEmpty(quotationRooms)}">
+
+            <table class="breakdown-table" id="quotationBreakdownTable">
+                <thead>
+                    <tr>
+                        <th class="col-sno text-center">S.No.</th>
+                        <th class="col-floor">Floor</th>
+                        <th class="col-room">Room No.</th>
+                        <th class="col-category">Category</th>
+                        <th class="col-worktype">Work Type</th>
+                        <th class="col-material">Material</th>
+                        <th class="col-spec">Specifications</th>
+                        <th class="col-dimensions">Size / Dimensions</th>
+                        <th class="col-sqft text-right">Sq.Ft.</th>
+                        <th class="col-qty text-center">Qty</th>
+                        <th class="col-rate text-right">Unit Rate</th>
+                        <th class="col-amount text-right">Amount</th>
+                        <th class="col-offer text-right">Offer Price</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <th:block th:each="room, roomStat : ${quotationRooms}">
+                        <!-- Room Grouping Banner -->
+                        <tr class="room-group-row">
+                            <td colspan="13">
+                                <div class="room-group-banner">
+                                    <div class="room-group-title">
+                                        <span class="room-badge" th:text="'Room #' + ${roomStat.count}">Room #1</span>
+                                        <span class="room-floor-tag" th:text="${room.floor}">Ground Floor</span>
+                                        <span class="room-sep">•</span>
+                                        <strong class="room-name-tag" th:text="${room.room}">Kitchen</strong>
+                                        <span class="room-desc-tag"
+                                              th:if="${room.workDescription != null && !#strings.isEmpty(room.workDescription)}"
+                                              th:text="${'— ' + room.workDescription}"></span>
                                     </div>
-
-                                    <span class="size-count"
-                                          th:text="${#lists.size(item.sizes)} + ' Sizes'">
-
-                0 Sizes
-
-            </span>
-
+                                    <div class="room-group-total">
+                                        <span class="room-total-label">Room Subtotal:</span>
+                                        <strong class="room-total-val"
+                                                th:text="${'₹ ' + #numbers.formatDecimal(room.subtotal != null ? room.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                                    </div>
                                 </div>
+                            </td>
+                        </tr>
 
-
-                                <div class="sizes-table-wrapper">
-
-                                    <table class="sizes-table">
-
-                                        <thead>
-
-                                        <tr>
-
-                                            <th>
-                                                #
-                                            </th>
-
-                                            <th>
-                                                Length
-                                            </th>
-
-                                            <th>
-                                                Width
-                                            </th>
-
-                                            <th>
-                                                Height
-                                            </th>
-
-                                            <th>
-                                                Sq.Ft
-                                            </th>
-
-                                        </tr>
-
-                                        </thead>
-
-
-                                        <tbody>
-
-                                        <tr th:each="size, sizeStat : ${item.sizes}"
-                                            th:if="${size.active == null || size.active}">
-
-                                            <td
-                                                    th:text="${sizeStat.count}">
-                                                1
-                                            </td>
-
-
-                                            <td
-                                                    th:text="${size.lengthValue != null
-                            ? #numbers.formatDecimal(
-                            size.lengthValue, 1, 2)
-                            : '0.00'}">
-
-                                                0.00
-
-                                            </td>
-
-
-                                            <td
-                                                    th:text="${size.widthValue != null
-                            ? #numbers.formatDecimal(
-                            size.widthValue, 1, 2)
-                            : '0.00'}">
-
-                                                0.00
-
-                                            </td>
-
-
-                                            <td
-                                                    th:text="${size.heightValue != null
-                            ? #numbers.formatDecimal(
-                            size.heightValue, 1, 2)
-                            : '0.00'}">
-
-                                                0.00
-
-                                            </td>
-
-
-                                            <td>
-
-                                                <strong
-                                                        th:text="${size.calculatedSqft != null
-                                ? #numbers.formatDecimal(
-                                size.calculatedSqft, 1, 2)
-                                : '0.00'}">
-
-                                                    0.00
-
-                                                </strong>
-
-                                            </td>
-
-                                        </tr>
-
-                                        </tbody>
-
-                                    </table>
-
+                        <!-- Room Items -->
+                        <tr th:each="item, itemStat : ${itemsByRoom[room.id]}" class="breakdown-item-row">
+                            <!-- S.No. -->
+                            <td class="text-center cell-sno" th:text="${roomStat.count + '.' + itemStat.count}">1.1</td>
+                            <!-- Floor -->
+                            <td class="cell-floor" th:text="${room.floor}">Ground Floor</td>
+                            <!-- Room No. -->
+                            <td class="cell-room" th:text="${room.room}">Kitchen</td>
+                            <!-- Category -->
+                            <td class="cell-category">
+                                <span class="badge-category"
+                                      th:text="${item.workCategory != null ? item.workCategory.name : '-'}">Modular Kitchen</span>
+                            </td>
+                            <!-- Work Type -->
+                            <td class="cell-worktype">
+                                <strong class="worktype-name"
+                                        th:text="${item.item != null ? item.item.name : (item.itemDescription != null ? item.itemDescription : (item.division != null ? item.division.name : 'Work Item'))}">
+                                    Base Cabinet
+                                </strong>
+                            </td>
+                            <!-- Material -->
+                            <td class="cell-material">
+                                <div class="material-name" th:text="${item.material != null ? item.material.name : 'N/A'}">Marine Ply</div>
+                                <div class="material-option-text"
+                                     th:if="${item.materialOption != null}"
+                                     th:text="${item.materialOption.name}">18mm</div>
+                            </td>
+                            <!-- Specifications -->
+                            <td class="cell-spec">
+                                <div class="spec-main"
+                                     th:if="${item.specification != null && !#strings.isEmpty(item.specification)}"
+                                     th:text="${item.specification}">Standard spec</div>
+                                <div class="spec-mat"
+                                     th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification != null}"
+                                     th:text="${item.materialSpecification.name}">Specification</div>
+                                <div class="spec-formula"
+                                     th:if="${item.formula != null && !#strings.isEmpty(item.formula)}"
+                                     th:text="${'Formula: ' + item.formula}"></div>
+                                <span class="spec-empty"
+                                      th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula))}">-</span>
+                            </td>
+                            <!-- Size / Dimensions -->
+                            <td class="cell-dimensions">
+                                <div th:if="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
+                                    <div th:each="sz, szStat : ${sizesByItem[item.id]}"
+                                         th:if="${sz.active == null || sz.active}"
+                                         class="dimension-line">
+                                        <span class="size-idx"
+                                              th:if="${#lists.size(sizesByItem[item.id]) > 1}"
+                                              th:text="${'#' + szStat.count + ': '}">#1: </span>
+                                        <span class="size-vals"
+                                              th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                    </div>
                                 </div>
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- SPECIFICATION / FORMULA -->
-
-                        <div class="item-details-extra">
-
-
-                            <div class="extra-detail"
-                                 th:if="${item.specification != null
-                                 && !#strings.isEmpty(item.specification)}">
-
-                                <span>
-                                    Specification
-                                </span>
-
-                                <p
-                                        th:text="${item.specification}">
-
-                                    Specification details
-
-                                </p>
-
-                            </div>
-
-
-                            <div class="extra-detail"
-                                 th:if="${item.formula != null
-                                 && !#strings.isEmpty(item.formula)}">
-
-                                <span>
-                                    Formula
-                                </span>
-
-                                <p
-                                        th:text="${item.formula}">
-
-                                    (L + W) × H / 144
-
-                                </p>
-
-                            </div>
-
-
-                            <div class="extra-detail"
-                                 th:if="${item.itemDescription != null
-                                 && !#strings.isEmpty(item.itemDescription)}">
-
-                                <span>
-                                    Description
-                                </span>
-
-                                <p
-                                        th:text="${item.itemDescription}">
-
-                                    Work item description
-
-                                </p>
-
-                            </div>
-
-                        </div>
-
-
-
-                        <!-- ITEM FINANCIALS -->
-
-                        <div class="item-financials">
-
-
-                            <div>
-
-                                <span>
-                                    Rate
-                                </span>
-
-                                <strong
-                                        th:text="${'₹ ' +
-                                        #numbers.formatDecimal(
-                                        item.rate != null
-                                        ? item.rate
-                                        : 0,
-                                        1, 2)}">
-
-                                    ₹ 0.00
-
-                                </strong>
-
-                            </div>
-
-
-                            <div>
-
-                                <span>
-                                    Amount
-                                </span>
-
-                                <strong
-                                        th:text="${'₹ ' +
-                                        #numbers.formatDecimal(
-                                        item.amount != null
-                                        ? item.amount
-                                        : 0,
-                                        1, 2)}">
-
-                                    ₹ 0.00
-
-                                </strong>
-
-                            </div>
-
-                        </div>
-
-                    </div>
-
-                </div>
-
-
-
-                <!-- =================================================
-                     ROOM TOTAL
-                ================================================== -->
-
-                <div class="room-summary">
-
-
-                    <div>
-
-                        <span>
-                            Room Subtotal
-                        </span>
-
-                        <strong
-                                th:text="${'₹ ' +
-                                #numbers.formatDecimal(
-                                room.subtotal != null
-                                ? room.subtotal
-                                : 0,
-                                1, 2)}">
-
-                            ₹ 0.00
-
-                        </strong>
-
-                    </div>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-
-
-    </section>
-
-
-    <!-- =====================================================
-         FINANCIAL SUMMARY
-    ====================================================== -->
-
-    <section class="detail-card financial-card" id="financialCard" th:data-subtotal="${quotation.subtotal != null ? quotation.subtotal : 0}">
-
-        <div class="financial-header">
-
-            <div>
-
-                <p class="eyebrow">
-                    QUOTATION FINANCIALS
-                </p>
-
-                <h3>
-                    Quotation Amount Summary
-                </h3>
-
-                <p class="financial-description">
-                    Update accessories, travel charges, other charges,
-                    discount and GST for this quotation.
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <!-- =================================================
-             UPDATE CHARGES FORM
-        ================================================== -->
-
-        <form th:action="@{/admin/quotations/charges/{id}(id=${quotation.id})}"
-              method="post"
-              class="charges-form"
-              id="chargesForm">
-
-
-            <!-- ACCESSORIES -->
-
-            <div class="charge-input-group">
-
-                <label for="accessoriesAmount">
-                    Accessories
-                </label>
-
-                <div class="input-with-prefix">
-
-                    <span>₹</span>
-
-                    <input
-                            type="number"
-                            id="accessoriesAmount"
-                            name="accessoriesAmount"
-                            min="0"
-                            step="0.01"
-                            th:value="${quotation.accessoriesAmount != null
-                        ? quotation.accessoriesAmount
-                        : 0}">
-
-                </div>
-
-            </div>
-
-
-            <!-- TRAVEL CHARGE -->
-
-            <div class="charge-input-group">
-
-                <label for="travelCharge">
-                    Travel Charges
-                </label>
-
-                <div class="input-with-prefix">
-
-                    <span>₹</span>
-
-                    <input
-                            type="number"
-                            id="travelCharge"
-                            name="travelCharge"
-                            min="0"
-                            step="0.01"
-                            th:value="${quotation.travelCharge != null
-                        ? quotation.travelCharge
-                        : 0}">
-
-                </div>
-
-            </div>
-
-
-            <!-- OTHER CHARGES -->
-
-            <div class="charge-input-group">
-
-                <label for="otherCharges">
-                    Other Charges
-                </label>
-
-                <div class="input-with-prefix">
-
-                    <span>₹</span>
-
-                    <input
-                            type="number"
-                            id="otherCharges"
-                            name="otherCharges"
-                            min="0"
-                            step="0.01"
-                            th:value="${quotation.otherCharges != null
-                        ? quotation.otherCharges
-                        : 0}">
-
-                </div>
-
-            </div>
-
-
-            <!-- DISCOUNT -->
-
-            <div class="charge-input-group">
-
-                <label for="discountAmount">
-                    Discount
-                </label>
-
-                <div class="input-with-prefix">
-
-                    <span>₹</span>
-
-                    <input
-                            type="number"
-                            id="discountAmount"
-                            name="discountAmount"
-                            min="0"
-                            step="0.01"
-                            th:value="${quotation.discountAmount != null
-                        ? quotation.discountAmount
-                        : 0}">
-
-                </div>
-
-            </div>
-
-
-            <!-- GST -->
-
-            <div class="charge-input-group">
-
-                <label for="gstPercentage">
-                    GST Percentage
-                </label>
-
-                <div class="input-with-prefix">
-
-                    <input
-                            type="number"
-                            id="gstPercentage"
-                            name="gstPercentage"
-                            min="0"
-                            step="0.01"
-                            th:value="${quotation.gstPercentage != null
-                        ? quotation.gstPercentage
-                        : 0}">
-
-                    <span>%</span>
-
-                </div>
-
-            </div>
-
-
-            <!-- UPDATE BUTTON -->
-
-            <div class="charges-form-actions">
-
-                <button type="submit"
-                        class="btn btn-primary">
-
-                    💾 Update Charges
-
-                </button>
-
-            </div>
-
-        </form>
-
-
-        <!-- =================================================
-             CURRENT CALCULATED SUMMARY
-        ================================================== -->
-
-        <div class="financial-summary">
-
-
-            <!-- SUBTOTAL -->
-
-            <div class="amount-row">
-
-            <span>
-                Subtotal
-            </span>
-
-                <strong id="displaySubtotal"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.subtotal != null
-                    ? quotation.subtotal
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- ACCESSORIES -->
-
-            <div class="amount-row">
-
-            <span>
-                Accessories
-            </span>
-
-                <strong id="displayAccessories"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.accessoriesAmount != null
-                    ? quotation.accessoriesAmount
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- TRAVEL -->
-
-            <div class="amount-row">
-
-            <span>
-                Travel Charges
-            </span>
-
-                <strong id="displayTravel"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.travelCharge != null
-                    ? quotation.travelCharge
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- OTHER -->
-
-            <div class="amount-row">
-
-            <span>
-                Other Charges
-            </span>
-
-                <strong id="displayOther"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.otherCharges != null
-                    ? quotation.otherCharges
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- DISCOUNT -->
-
-            <div class="amount-row discount-row">
-
-            <span>
-                Discount
-            </span>
-
-                <strong id="displayDiscount"
-                        th:text="${'- ₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.discountAmount != null
-                    ? quotation.discountAmount
-                    : 0,
-                    1, 2)}">
-
-                    - ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- GST -->
-
-            <div class="amount-row">
-
-            <span>
-
-                GST
-
-                (<span id="displayGstPercentage"
-                    th:text="${#numbers.formatDecimal(
-                        quotation.gstPercentage != null
-                        ? quotation.gstPercentage
-                        : 0,
-                        1, 2)}">
-
-                    0.00
-
-                </span>%)
-
-            </span>
-
-
-                <strong id="displayGstAmount"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.gstAmount != null
-                    ? quotation.gstAmount
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- TOTAL AMOUNT -->
-
-            <div class="amount-row total-amount-row">
-
-            <span>
-                Total Amount
-            </span>
-
-                <strong id="displayTotalAmount"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.totalAmount != null
-                    ? quotation.totalAmount
-                    : (quotation.taxableAmount != null
-                        ? quotation.taxableAmount.add(quotation.gstAmount != null ? quotation.gstAmount : 0)
-                        : 0),
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- OFFER PERCENTAGE -->
-
-            <div class="amount-row offer-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
-
-                <label for="offerPercentage" style="font-weight: 700; color: var(--text-primary); margin: 0; font-size: 13px;">
-                    Offer Percentage (%)
-                </label>
-
-                <div class="input-with-prefix" style="max-width: 140px; display: inline-flex; align-items: center;">
-
-                    <input
-                            type="number"
-                            id="offerPercentage"
-                            name="offerPercentage"
-                            form="chargesForm"
-                            min="0"
-                            max="100"
-                            step="0.01"
-                            style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #024541; border-radius: 6px; font-weight: 700; font-size: 14px; color: #024541; background: #f0fdfa;"
-                            th:value="${quotation.offerPercentage != null
-                        ? #numbers.formatDecimal(quotation.offerPercentage, 1, 2)
-                        : 0}">
-
-                    <span style="margin-left: 6px; font-weight: 700; color: #024541;">%</span>
-
-                </div>
-
-            </div>
-
-
-            <!-- OFFER AMOUNT -->
-
-            <div class="amount-row offer-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
-
-                <span style="color: #059669; font-weight: 600;">
-                    Offer Amount
-                </span>
-
-                <strong id="displayOfferAmount" style="color: #059669; font-size: 14px; font-weight: 800;"
-                        th:text="${'- ₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.offerAmount != null
-                    ? quotation.offerAmount
-                    : 0,
-                    1, 2)}">
-
-                    - ₹ 0.00
-
-                </strong>
-
-            </div>
-
-
-            <!-- GRAND TOTAL -->
-
-            <div class="amount-row grand-total">
-
-            <span>
-                Grand Total
-            </span>
-
-                <strong id="displayGrandTotal"
-                        th:text="${'₹ ' +
-                    #numbers.formatDecimal(
-                    quotation.grandTotal != null
-                    ? quotation.grandTotal
-                    : 0,
-                    1, 2)}">
-
-                    ₹ 0.00
-
-                </strong>
-
-            </div>
-
-            <!-- SAVE / APPLY OFFER BUTTON IN SUMMARY -->
-            <div style="margin-top: 14px; text-align: right;">
-                <button type="submit"
-                        form="chargesForm"
-                        class="btn btn-primary"
-                        style="width: 100%; padding: 10px 16px; font-weight: 700; font-size: 13.5px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                    💾 Save Changes &amp; Apply Offer
-                </button>
-            </div>
+                                <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
+                                    <span class="size-vals"
+                                          th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                </div>
+                            </td>
+                            <!-- Sq.Ft. -->
+                            <td class="text-right cell-sqft"
+                                th:text="${#numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
+                                0.00
+                            </td>
+                            <!-- Quantity -->
+                            <td class="text-center cell-qty"
+                                th:text="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id]) ? #lists.size(sizesByItem[item.id]) : 1}">
+                                1
+                            </td>
+                            <!-- Unit Rate -->
+                            <td class="text-right cell-rate"
+                                th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2)}">
+                                ₹ 0.00
+                            </td>
+                            <!-- Amount -->
+                            <td class="text-right cell-amount"
+                                th:text="${'₹ ' + #numbers.formatDecimal(item.amount != null ? item.amount : 0, 1, 2)}">
+                                ₹ 0.00
+                            </td>
+                            <!-- Offer Price -->
+                            <td class="text-right cell-offer"
+                                th:text="${item.offerPrice != null && item.offerPrice > 0 ? ('₹ ' + #numbers.formatDecimal(item.offerPrice, 1, 2)) : '-'}">
+                                -
+                            </td>
+                        </tr>
+
+                        <!-- If room has no active items -->
+                        <tr th:if="${itemsByRoom[room.id] == null || #lists.isEmpty(itemsByRoom[room.id])}" class="empty-room-row">
+                            <td colspan="13" class="text-center text-muted">
+                                No active work items added to this room.
+                            </td>
+                        </tr>
+
+                        <!-- Room Subtotal Row -->
+                        <tr class="room-subtotal-row">
+                            <td colspan="11" class="text-right room-subtotal-label">
+                                <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
+                            </td>
+                            <td class="text-right room-subtotal-val">
+                                <strong th:text="${'₹ ' + #numbers.formatDecimal(room.subtotal != null ? room.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                            </td>
+                            <td class="text-right room-subtotal-offer">
+                                <strong th:text="${room.offerPrice != null && room.offerPrice > 0 ? ('₹ ' + #numbers.formatDecimal(room.offerPrice, 1, 2)) : '-'}">-</strong>
+                            </td>
+                        </tr>
+                    </th:block>
+                </tbody>
+                <tfoot>
+                    <tr class="tfoot-subtotal-row">
+                        <td colspan="11" class="text-right tfoot-label">
+                            <strong>Total Items Subtotal</strong>
+                        </td>
+                        <td class="text-right tfoot-val">
+                            <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.subtotal != null ? quotation.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                        </td>
+                        <td class="text-right tfoot-offer">
+                            <strong th:text="${quotation.offerAmount != null && quotation.offerAmount > 0 ? ('₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount - quotation.offerAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)) : '-'}">-</strong>
+                        </td>
+                    </tr>
+                    <tr class="tfoot-grand-total-row">
+                        <td colspan="11" class="text-right grand-total-label">
+                            <strong>Grand Total</strong>
+                        </td>
+                        <td colspan="2" class="text-right grand-total-amount">
+                            <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : (quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0)), 1, 2)}">₹ 0.00</strong>
+                        </td>
+                    </tr>
+                </tfoot>
+            </table>
 
         </div>
 
     </section>
+
 
 
 
@@ -2118,116 +1224,6 @@
         window.location.reload();
     }
 
-    // ============================================================
-    // LIVE RECALCULATION: TOTAL AMOUNT, OFFER %, OFFER AMT, GRAND TOTAL
-    // ============================================================
-    (function initQuotationFinancialSummary() {
-        const finCard = document.getElementById("financialCard");
-        const accInput = document.getElementById("accessoriesAmount");
-        const travelInput = document.getElementById("travelCharge");
-        const otherInput = document.getElementById("otherCharges");
-        const discInput = document.getElementById("discountAmount");
-        const gstInput = document.getElementById("gstPercentage");
-        const offerInput = document.getElementById("offerPercentage");
-
-        if (!finCard || !accInput || !travelInput || !otherInput || !discInput || !gstInput || !offerInput) {
-            return;
-        }
-
-        const subtotal = parseFloat(finCard.dataset.subtotal) || 0;
-
-        function formatInr(val, isNegative) {
-            const num = Math.abs(Number(val) || 0);
-            const formatted = num.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-            return (isNegative ? "- ₹ " : "₹ ") + formatted;
-        }
-
-        function recalculate() {
-            const acc = Math.max(0, parseFloat(accInput.value) || 0);
-            const travel = Math.max(0, parseFloat(travelInput.value) || 0);
-            const other = Math.max(0, parseFloat(otherInput.value) || 0);
-            const disc = Math.max(0, parseFloat(discInput.value) || 0);
-
-            let gstPct = parseFloat(gstInput.value) || 0;
-            if (gstPct < 0) gstPct = 0;
-
-            let offerPct = parseFloat(offerInput.value);
-            if (isNaN(offerPct) || offerPct < 0) {
-                offerPct = 0;
-            } else if (offerPct > 100) {
-                offerPct = 100;
-            }
-
-            const totalBeforeDiscount = subtotal + acc + travel + other;
-            const taxable = Math.max(0, totalBeforeDiscount - disc);
-            const gstAmount = taxable * (gstPct / 100);
-            const totalAmount = taxable + gstAmount;
-
-            // Formulas:
-            // Offer Amount = Total Amount × Offer Percentage / 100
-            // Grand Total = Total Amount − Offer Amount
-            const offerAmount = totalAmount * (offerPct / 100);
-            const grandTotal = Math.max(0, totalAmount - offerAmount);
-
-            // Update displays
-            const dispAcc = document.getElementById("displayAccessories");
-            if (dispAcc) dispAcc.textContent = formatInr(acc);
-
-            const dispTravel = document.getElementById("displayTravel");
-            if (dispTravel) dispTravel.textContent = formatInr(travel);
-
-            const dispOther = document.getElementById("displayOther");
-            if (dispOther) dispOther.textContent = formatInr(other);
-
-            const dispDisc = document.getElementById("displayDiscount");
-            if (dispDisc) dispDisc.textContent = formatInr(disc, true);
-
-            const dispGstPct = document.getElementById("displayGstPercentage");
-            if (dispGstPct) dispGstPct.textContent = gstPct.toFixed(2);
-
-            const dispGstAmt = document.getElementById("displayGstAmount");
-            if (dispGstAmt) dispGstAmt.textContent = formatInr(gstAmount);
-
-            const dispTotalAmt = document.getElementById("displayTotalAmount");
-            if (dispTotalAmt) dispTotalAmt.textContent = formatInr(totalAmount);
-
-            const dispOfferAmt = document.getElementById("displayOfferAmount");
-            if (dispOfferAmt) dispOfferAmt.textContent = formatInr(offerAmount, true);
-
-            const dispGrandTotal = document.getElementById("displayGrandTotal");
-            if (dispGrandTotal) dispGrandTotal.textContent = formatInr(grandTotal);
-        }
-
-        [accInput, travelInput, otherInput, discInput, gstInput, offerInput].forEach(inp => {
-            inp.addEventListener("input", recalculate);
-            inp.addEventListener("change", recalculate);
-        });
-
-        offerInput.addEventListener("blur", function() {
-            let v = parseFloat(offerInput.value);
-            if (isNaN(v) || v < 0) {
-                offerInput.value = "0";
-            } else if (v > 100) {
-                offerInput.value = "100";
-            }
-            recalculate();
-        });
-
-        const chargesForm = document.getElementById("chargesForm");
-        if (chargesForm) {
-            chargesForm.addEventListener("submit", function() {
-                let v = parseFloat(offerInput.value);
-                if (isNaN(v) || v < 0) {
-                    offerInput.value = "0";
-                } else if (v > 100) {
-                    offerInput.value = "100";
-                }
-            });
-        }
-    })();
 
 </script>
 
