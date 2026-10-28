@@ -213,10 +213,10 @@ public class QuotationMultiRoomTest {
 
         if (category != null && division != null && item != null && material != null && option != null && branch != null && user != null) {
             // Verify hierarchy compatibility
-            if (option.getMaterial().getId().equals(material.getId()) &&
-                material.getItem().getId().equals(item.getId()) &&
-                item.getDivision().getId().equals(division.getId()) &&
-                division.getWorkCategory().getId().equals(category.getId())) {
+            if (option.getMaterial() != null && option.getMaterial().getId().equals(material.getId()) &&
+                material.getItem() != null && material.getItem().getId().equals(item.getId()) &&
+                item.getDivision() != null && item.getDivision().getId().equals(division.getId()) &&
+                division.getWorkCategory() != null && division.getWorkCategory().getId().equals(category.getId())) {
 
                 AdminQuotationBuilderService.SizeRequest size1 = new AdminQuotationBuilderService.SizeRequest(
                         new BigDecimal("20"), new BigDecimal("30"), new BigDecimal("10"), null

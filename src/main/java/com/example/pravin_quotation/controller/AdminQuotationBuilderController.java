@@ -272,16 +272,35 @@ public class AdminQuotationBuilderController {
     }
 
     @PostMapping("/builder/save")
-    public String save(
+    public Object save(
             @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            jakarta.servlet.http.HttpServletRequest httpRequest,
             Authentication authentication,
             RedirectAttributes redirectAttributes) {
+        boolean acceptsJson = httpRequest != null
+                && httpRequest.getHeader("Accept") != null
+                && httpRequest.getHeader("Accept").contains(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
         try {
             Quotation quotation = builderService.save(request, authentication.getName());
+            String redirectUrl = "/admin/quotations/view/" + quotation.getId();
+            if (acceptsJson) {
+                Map<String, Object> resp = new LinkedHashMap<>();
+                resp.put("success", true);
+                resp.put("redirectUrl", redirectUrl);
+                resp.put("quotationId", quotation.getId());
+                resp.put("quotationNumber", quotation.getQuotationNumber());
+                return ResponseEntity.ok(resp);
+            }
             redirectAttributes.addFlashAttribute("successMessage",
                     "Quotation " + quotation.getQuotationNumber() + " created successfully.");
-            return "redirect:/admin/quotations/view/" + quotation.getId();
+            return "redirect:" + redirectUrl;
         } catch (Exception e) {
+            if (acceptsJson) {
+                Map<String, Object> errResp = new LinkedHashMap<>();
+                errResp.put("success", false);
+                errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to save quotation.");
+                return ResponseEntity.badRequest().body(errResp);
+            }
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
             return "redirect:/admin/quotations/builder";
         }
@@ -303,7 +322,14 @@ public class AdminQuotationBuilderController {
             data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
             data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
             data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
-            data.put("notes", q.getNotes() != null ? q.getNotes() : "");
+            data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
+            data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
+            data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
+            data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+            data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
+            data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
+            data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
+            data.put("gstAmount", q.getGstAmount() != null ? q.getGstAmount() : BigDecimal.ZERO);
             data.put("totalAmount", q.getTotalAmount() != null ? q.getTotalAmount() : q.getGrandTotal());
             data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
             data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);

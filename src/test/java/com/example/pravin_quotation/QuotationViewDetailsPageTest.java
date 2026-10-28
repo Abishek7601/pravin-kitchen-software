@@ -101,4 +101,97 @@ public class QuotationViewDetailsPageTest {
         assertNotNull(modelQuotation.getStatus(), "Quotation status must be present");
         assertEquals(sampleQuotation.getStatus(), modelQuotation.getStatus(), "Quotation status must match database record");
     }
+
+    @Test
+    @DisplayName("Quotation Financials display section and inline recalculation script are removed from admin/quotation-view.html")
+    public void testQuotationFinancialsSectionRemovedFromQuotationViewTemplate() throws Exception {
+        String template = loadResource("templates/admin/quotation-view.html");
+
+        // Financials display section removed
+        assertFalse(template.contains("QUOTATION FINANCIALS"), "Template must not contain QUOTATION FINANCIALS section");
+        assertFalse(template.contains("id=\"financialCard\""), "Template must not contain financialCard element");
+        assertFalse(template.contains("id=\"chargesForm\""), "Template must not contain chargesForm element");
+        assertFalse(template.contains("initQuotationFinancialSummary"), "Template must not contain inline financial summary recalculation script");
+
+        // Communication history and quotation details must be preserved
+        assertTrue(template.contains("Communication History"), "Communication History must be preserved");
+        assertTrue(template.contains("quotation.customer"), "Customer details must be preserved");
+    }
+
+    @Test
+    @DisplayName("Project Information section does not contain Division in quotation details templates")
+    public void testProjectInformationRemovesDivision() throws Exception {
+        String adminTemplate = loadResource("templates/admin/quotation-view.html");
+        // Verify District, Pricing Mode, Prepared By, Status remain in Project Information
+        assertTrue(adminTemplate.contains("Project Information"), "Admin view must contain Project Information");
+        assertTrue(adminTemplate.contains("District"), "Project Information must retain District");
+        assertTrue(adminTemplate.contains("Pricing Mode"), "Project Information must retain Pricing Mode");
+        assertTrue(adminTemplate.contains("Prepared By"), "Project Information must retain Prepared By");
+
+        // Verify Division is removed from Project Information
+        int projectInfoIdx = adminTemplate.indexOf("Project Information");
+        int nextSectionIdx = adminTemplate.indexOf("QUOTATION BREAKDOWN", projectInfoIdx);
+        String projectInfoSection = adminTemplate.substring(projectInfoIdx, nextSectionIdx);
+        assertFalse(projectInfoSection.contains("Division"), "Project Information section must not contain Division field");
+
+        // Employee templates
+        String empWorkspace = loadResource("templates/employee/quotation-workspace.html");
+        int empSummaryIdx = empWorkspace.indexOf("QUOTATION SUMMARY");
+        int empSummaryEnd = empWorkspace.indexOf("</section>", empSummaryIdx);
+        String empSummarySection = empWorkspace.substring(empSummaryIdx, empSummaryEnd);
+        assertFalse(empSummarySection.contains("Division"), "Employee Quotation Summary must not contain Division");
+
+        String empView = loadResource("templates/employee/quotation-view.html");
+        int empDetailsIdx = empView.indexOf("details-grid");
+        int empDetailsEnd = empView.indexOf("</section>", empDetailsIdx);
+        String empDetailsSection = empView.substring(empDetailsIdx, empDetailsEnd);
+        assertFalse(empDetailsSection.contains("Division"), "Employee details grid must not contain Division");
+    }
+
+    @Test
+    @DisplayName("Quotation Breakdown table removes Qty and Offer Price columns while retaining remaining columns correctly aligned")
+    public void testQuotationBreakdownTableStructureAndStyling() throws Exception {
+        String template = loadResource("templates/admin/quotation-view.html");
+
+        // Semantic table elements
+        assertTrue(template.contains("<table class=\"breakdown-table\""), "Must contain breakdown-table");
+        assertTrue(template.contains("<thead>"), "Must contain semantic thead");
+        assertTrue(template.contains("<tbody>"), "Must contain semantic tbody");
+        assertTrue(template.contains("<tfoot>"), "Must contain semantic tfoot");
+
+        // Required remaining columns present in table header
+        assertTrue(template.contains("S.No."), "Must contain S.No. column");
+        assertTrue(template.contains("Floor"), "Must contain Floor column");
+        assertTrue(template.contains("Room No."), "Must contain Room No. column");
+        assertTrue(template.contains("Category"), "Must contain Category column");
+        assertTrue(template.contains("Work Type"), "Must contain Work Type column");
+        assertTrue(template.contains("Material"), "Must contain Material column");
+        assertTrue(template.contains("Specifications"), "Must contain Specifications column");
+        assertTrue(template.contains("Size / Dimensions"), "Must contain Size / Dimensions column");
+        assertTrue(template.contains("Sq.Ft."), "Must contain Sq.Ft. column");
+        assertTrue(template.contains("Unit Rate"), "Must contain Unit Rate column");
+        assertTrue(template.contains("Amount"), "Must contain Amount column");
+
+        // Qty and Offer Price must be absent from table header and data rows
+        assertFalse(template.contains("<th class=\"col-qty"), "Table header must not contain Qty column");
+        assertFalse(template.contains("<th class=\"col-offer"), "Table header must not contain Offer Price column");
+        assertFalse(template.contains("cell-qty"), "Table rows must not contain cell-qty");
+        assertFalse(template.contains("cell-offer"), "Table rows must not contain cell-offer");
+        assertFalse(template.contains("room-subtotal-offer"), "Subtotal row must not contain room-subtotal-offer");
+        assertFalse(template.contains("tfoot-offer"), "Footer row must not contain tfoot-offer");
+
+        // Grouping and totals
+        assertTrue(template.contains("room-group-row"), "Must contain room grouping row");
+        assertTrue(template.contains("room-subtotal-row"), "Must contain room subtotal row");
+        assertTrue(template.contains("tfoot-subtotal-row"), "Must contain total items subtotal row");
+        assertTrue(template.contains("tfoot-grand-total-row"), "Must contain grand total row");
+
+        // CSS styling verification
+        String css = loadResource("static/css/quotation-view.css");
+        assertTrue(css.contains(".breakdown-table"), "CSS must contain .breakdown-table styles");
+        assertTrue(css.contains("#013A36"), "CSS must use dark green header color #013A36");
+        assertTrue(css.contains(".breakdown-table-wrapper"), "CSS must contain responsive wrapper .breakdown-table-wrapper");
+        assertTrue(css.contains("overflow-x: auto"), "Breakdown wrapper must have overflow-x: auto for mobile responsiveness");
+        assertFalse(css.contains(".financial-card {"), "CSS should not contain .financial-card rules");
+    }
 }

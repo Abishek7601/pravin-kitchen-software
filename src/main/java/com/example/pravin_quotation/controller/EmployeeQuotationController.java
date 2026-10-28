@@ -643,7 +643,13 @@ public class EmployeeQuotationController {
                     request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE,
                     request.customerRequirements(),
                     request.notes(),
-                    request.rooms()
+                    request.rooms(),
+                    request.accessoriesAmount(),
+                    request.travelCharge(),
+                    request.otherCharges(),
+                    request.discountAmount(),
+                    request.gstPercentage(),
+                    request.offerPercentage()
             );
 
             Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
@@ -703,6 +709,14 @@ public class EmployeeQuotationController {
         data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
         data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
         data.put("notes", q.getNotes() != null ? q.getNotes() : "");
+        data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
+        data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
+        data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
+        data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+        data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
+        data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
+        data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
+        data.put("gstAmount", q.getGstAmount() != null ? q.getGstAmount() : BigDecimal.ZERO);
         data.put("totalAmount", q.getTotalAmount() != null ? q.getTotalAmount() : q.getGrandTotal());
         data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
         data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);

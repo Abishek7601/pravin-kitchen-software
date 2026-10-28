@@ -366,8 +366,8 @@ public class QuotationPdfAmountSummaryTest {
     }
 
     @Test
-    @DisplayName("Quotation with Travel Charge, Other Charges, Discount, and GST: PDF excludes them and calculates Grand Total purely from items")
-    public void testPdfExcludesTravelOtherDiscountAndGst() throws Exception {
+    @DisplayName("Quotation with Travel Charge, Other Charges, Discount, and GST: PDF includes configured charges, GST, and matches Grand Total")
+    public void testPdfIncludesConfiguredChargesAndMatchesSavedGrandTotal() throws Exception {
         BigDecimal itemsTotal = new BigDecimal("64000.00");
         BigDecimal offerPct = new BigDecimal("10.00");
         Quotation q = createQuotationWithItems("QT-CHARGES-001", adminUser, itemsTotal, offerPct);
@@ -376,11 +376,15 @@ public class QuotationPdfAmountSummaryTest {
         q.setTravelCharge(new BigDecimal("3000.00"));
         q.setOtherCharges(new BigDecimal("1500.00"));
         q.setDiscountAmount(new BigDecimal("2000.00"));
-        q.setTaxableAmount(new BigDecimal("66500.00"));
         q.setGstPercentage(new BigDecimal("18.00"));
+        // subtotal = 64,000, travel = 3,000, other = 1,500, discount = 2,000 => taxable = 66,500
+        // gst 18% = 11,970 => totalAmount = 78,470
+        // offer 10% = 7,847 => grandTotal = 70,623
+        q.setTaxableAmount(new BigDecimal("66500.00"));
         q.setGstAmount(new BigDecimal("11970.00"));
-        // DB stored grand total might include GST and charges
-        q.setGrandTotal(new BigDecimal("78470.00"));
+        q.setTotalAmount(new BigDecimal("78470.00"));
+        q.setOfferAmount(new BigDecimal("7847.00"));
+        q.setGrandTotal(new BigDecimal("70623.00"));
         q = quotationRepository.save(q);
 
         byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
@@ -388,22 +392,21 @@ public class QuotationPdfAmountSummaryTest {
 
         String page2 = extractPageText(pdfBytes, 2);
 
-        // Verification 1: Unwanted rows are completely absent
-        assertFalse(page2.contains("Travel Charge"));
-        assertFalse(page2.contains("Other Charges"));
-        assertFalse(page2.contains("Discount"));
-        assertFalse(page2.contains("Taxable Amount"));
-        assertFalse(page2.contains("GST (18.00%)"));
+        // Verification 1: Configured rows are present
+        assertTrue(page2.contains("Subtotal"), "Summary must contain Subtotal row");
+        assertTrue(page2.contains("Travel Charges"), "Summary must contain Travel Charges row");
+        assertTrue(page2.contains("Other Charges"), "Summary must contain Other Charges row");
+        assertTrue(page2.contains("Discount"), "Summary must contain Discount row");
+        assertTrue(page2.contains("GST (18%)") || page2.contains("GST"), "Summary must contain GST row");
+        assertFalse(page2.contains("Taxable Amount"), "Intermediate Taxable Amount must not appear");
 
         // Verification 2: Total Amount, Offer Price, and GRAND TOTAL are present
         assertTrue(page2.contains("Total Amount"));
         assertTrue(page2.contains("Offer Price"));
         assertTrue(page2.contains("GRAND TOTAL"));
 
-        // Verification 3: PDF Grand Total = 64,000 - 6,400 = 57,600 (not 78,470!)
-        assertTrue(page2.contains("FIFTY SEVEN THOUSAND SIX HUNDRED"),
-                "Amount in words must match PDF-specific grand total 57,600 (items total 64,000 - 10% offer 6,400)");
-        assertFalse(page2.contains("SEVENTY EIGHT THOUSAND"),
-                "Must NOT use stored DB grand total which included GST and extra charges");
+        // Verification 3: PDF Grand Total matches saved database grand total: 70,623
+        assertTrue(page2.contains("SEVENTY THOUSAND SIX HUNDRED TWENTY THREE"),
+                "Amount in words must match saved quotation grand total 70,623");
     }
 }

@@ -212,7 +212,13 @@ public class AdminQuotationBuilderService {
                     request.pricingMode(),
                     request.customerRequirements(),
                     request.notes(),
-                    request.rooms()
+                    request.rooms(),
+                    request.accessoriesAmount(),
+                    request.travelCharge(),
+                    request.otherCharges(),
+                    request.discountAmount(),
+                    request.gstPercentage(),
+                    request.offerPercentage()
             );
         }
 
@@ -306,6 +312,25 @@ public class AdminQuotationBuilderService {
         quotation.setNotes(
                 clean(request.notes())
         );
+
+        if (request.accessoriesAmount() != null) {
+            quotation.setAccessoriesAmount(request.accessoriesAmount());
+        }
+        if (request.travelCharge() != null) {
+            quotation.setTravelCharge(request.travelCharge());
+        }
+        if (request.otherCharges() != null) {
+            quotation.setOtherCharges(request.otherCharges());
+        }
+        if (request.discountAmount() != null) {
+            quotation.setDiscountAmount(request.discountAmount());
+        }
+        if (request.gstPercentage() != null) {
+            quotation.setGstPercentage(request.gstPercentage());
+        }
+        if (request.offerPercentage() != null) {
+            quotation.setOfferPercentage(request.offerPercentage());
+        }
 
         Quotation savedQuotation =
                 quotationRepository.save(
@@ -966,7 +991,26 @@ public class AdminQuotationBuilderService {
             PricingMode pricingMode,
             String customerRequirements,
             String notes,
-            List<RoomRequest> rooms) {
+            List<RoomRequest> rooms,
+            BigDecimal accessoriesAmount,
+            BigDecimal travelCharge,
+            BigDecimal otherCharges,
+            BigDecimal discountAmount,
+            BigDecimal gstPercentage,
+            BigDecimal offerPercentage) {
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms) {
+            this(quotationId, customer, branchId, quotationDate, pricingMode, customerRequirements, notes, rooms,
+                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+        }
     }
 
     public record CustomerRequest(
