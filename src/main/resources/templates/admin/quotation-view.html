@@ -356,24 +356,6 @@
             <div class="detail-row">
 
                 <span>
-                    Division
-                </span>
-
-                <strong
-                        th:text="${quotation.division != null
-                        ? quotation.division.name
-                        : 'N/A'}">
-
-                    Marketing
-
-                </strong>
-
-            </div>
-
-
-            <div class="detail-row">
-
-                <span>
                     Pricing Mode
                 </span>
 
@@ -515,17 +497,15 @@
                         <th class="col-spec">Specifications</th>
                         <th class="col-dimensions">Size / Dimensions</th>
                         <th class="col-sqft text-right">Sq.Ft.</th>
-                        <th class="col-qty text-center">Qty</th>
                         <th class="col-rate text-right">Unit Rate</th>
                         <th class="col-amount text-right">Amount</th>
-                        <th class="col-offer text-right">Offer Price</th>
                     </tr>
                 </thead>
                 <tbody>
                     <th:block th:each="room, roomStat : ${quotationRooms}">
                         <!-- Room Grouping Banner -->
                         <tr class="room-group-row">
-                            <td colspan="13">
+                            <td colspan="11">
                                 <div class="room-group-banner">
                                     <div class="room-group-title">
                                         <span class="room-badge" th:text="'Room #' + ${roomStat.count}">Room #1</span>
@@ -592,11 +572,11 @@
                                     <div th:each="sz, szStat : ${sizesByItem[item.id]}"
                                          th:if="${sz.active == null || sz.active}"
                                          class="dimension-line">
-                                        <span class="size-idx"
-                                              th:if="${#lists.size(sizesByItem[item.id]) > 1}"
-                                              th:text="${'#' + szStat.count + ': '}">#1: </span>
-                                        <span class="size-vals"
-                                              th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                         <span class="size-idx"
+                                               th:if="${#lists.size(sizesByItem[item.id]) > 1}"
+                                               th:text="${'#' + szStat.count + ': '}">#1: </span>
+                                         <span class="size-vals"
+                                               th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
                                     </div>
                                 </div>
                                 <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
@@ -609,11 +589,6 @@
                                 th:text="${#numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
                                 0.00
                             </td>
-                            <!-- Quantity -->
-                            <td class="text-center cell-qty"
-                                th:text="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id]) ? #lists.size(sizesByItem[item.id]) : 1}">
-                                1
-                            </td>
                             <!-- Unit Rate -->
                             <td class="text-right cell-rate"
                                 th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2)}">
@@ -624,87 +599,76 @@
                                 th:text="${'₹ ' + #numbers.formatDecimal(item.amount != null ? item.amount : 0, 1, 2)}">
                                 ₹ 0.00
                             </td>
-                            <!-- Offer Price -->
-                            <td class="text-right cell-offer"
-                                th:text="${item.offerPrice != null && item.offerPrice > 0 ? ('₹ ' + #numbers.formatDecimal(item.offerPrice, 1, 2)) : '-'}">
-                                -
-                            </td>
                         </tr>
 
                         <!-- If room has no active items -->
                         <tr th:if="${itemsByRoom[room.id] == null || #lists.isEmpty(itemsByRoom[room.id])}" class="empty-room-row">
-                            <td colspan="13" class="text-center text-muted">
+                            <td colspan="11" class="text-center text-muted">
                                 No active work items added to this room.
                             </td>
                         </tr>
 
                         <!-- Room Subtotal Row -->
                         <tr class="room-subtotal-row">
-                            <td colspan="11" class="text-right room-subtotal-label">
+                            <td colspan="10" class="text-right room-subtotal-label">
                                 <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
                             </td>
                             <td class="text-right room-subtotal-val">
                                 <strong th:text="${'₹ ' + #numbers.formatDecimal(room.subtotal != null ? room.subtotal : 0, 1, 2)}">₹ 0.00</strong>
-                            </td>
-                            <td class="text-right room-subtotal-offer">
-                                <strong th:text="${room.offerPrice != null && room.offerPrice > 0 ? ('₹ ' + #numbers.formatDecimal(room.offerPrice, 1, 2)) : '-'}">-</strong>
                             </td>
                         </tr>
                     </th:block>
                 </tbody>
                 <tfoot>
                     <tr class="tfoot-subtotal-row">
-                        <td colspan="11" class="text-right tfoot-label">
+                        <td colspan="10" class="text-right tfoot-label">
                             <strong>Total Items Subtotal</strong>
                         </td>
                         <td class="text-right tfoot-val">
                             <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.subtotal != null ? quotation.subtotal : 0, 1, 2)}">₹ 0.00</strong>
                         </td>
-                        <td class="text-right tfoot-offer">
-                            <strong th:text="${quotation.offerAmount != null && quotation.offerAmount > 0 ? ('₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount - quotation.offerAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)) : '-'}">-</strong>
-                        </td>
                     </tr>
                     <!-- Accessories -->
                     <tr class="tfoot-charge-row" th:if="${quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label">Accessories</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.accessoriesAmount, 1, 2)}">₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label">Accessories</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.accessoriesAmount, 1, 2)}">₹ 0.00</td>
                     </tr>
                     <!-- Travel Charges -->
                     <tr class="tfoot-charge-row" th:if="${quotation.travelCharge != null && quotation.travelCharge > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label">Travel Charges</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.travelCharge, 1, 2)}">₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label">Travel Charges</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.travelCharge, 1, 2)}">₹ 0.00</td>
                     </tr>
                     <!-- Other Charges -->
                     <tr class="tfoot-charge-row" th:if="${quotation.otherCharges != null && quotation.otherCharges > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label">Other Charges</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.otherCharges, 1, 2)}">₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label">Other Charges</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.otherCharges, 1, 2)}">₹ 0.00</td>
                     </tr>
                     <!-- Discount -->
                     <tr class="tfoot-charge-row discount-charge-row" th:if="${quotation.discountAmount != null && quotation.discountAmount > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label">Discount</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.discountAmount, 1, 2)}">- ₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label">Discount</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.discountAmount, 1, 2)}">- ₹ 0.00</td>
                     </tr>
                     <!-- GST -->
                     <tr class="tfoot-charge-row" th:if="${quotation.gstAmount != null && quotation.gstAmount > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quotation.gstPercentage != null ? quotation.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.gstAmount, 1, 2)}">₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quotation.gstPercentage != null ? quotation.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.gstAmount, 1, 2)}">₹ 0.00</td>
                     </tr>
                     <!-- Total Amount (Taxable + GST) when extra charges exist -->
                     <tr class="tfoot-charge-row total-amount-row" th:if="${(quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0) || (quotation.travelCharge != null && quotation.travelCharge > 0) || (quotation.otherCharges != null && quotation.otherCharges > 0) || (quotation.discountAmount != null && quotation.discountAmount > 0) || (quotation.gstAmount != null && quotation.gstAmount > 0)}">
-                        <td colspan="11" class="text-right tfoot-charge-label"><strong>Total Amount</strong></td>
-                        <td colspan="2" class="text-right tfoot-charge-val"><strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)}">₹ 0.00</strong></td>
+                        <td colspan="10" class="text-right tfoot-charge-label"><strong>Total Amount</strong></td>
+                        <td class="text-right tfoot-charge-val"><strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)}">₹ 0.00</strong></td>
                     </tr>
                     <!-- Special Offer / Discount -->
                     <tr class="tfoot-charge-row offer-charge-row" th:if="${quotation.offerAmount != null && quotation.offerAmount > 0}">
-                        <td colspan="11" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quotation.offerPercentage != null ? quotation.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
-                        <td colspan="2" class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.offerAmount, 1, 2)}">- ₹ 0.00</td>
+                        <td colspan="10" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quotation.offerPercentage != null ? quotation.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.offerAmount, 1, 2)}">- ₹ 0.00</td>
                     </tr>
                     <!-- Grand Total -->
                     <tr class="tfoot-grand-total-row">
-                        <td colspan="11" class="text-right grand-total-label">
+                        <td colspan="10" class="text-right grand-total-label">
                             <strong>Grand Total</strong>
                         </td>
-                        <td colspan="2" class="text-right grand-total-amount">
+                        <td class="text-right grand-total-amount">
                             <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : (quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0)), 1, 2)}">₹ 0.00</strong>
                         </td>
                     </tr>

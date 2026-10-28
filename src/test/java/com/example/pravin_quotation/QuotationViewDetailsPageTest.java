@@ -119,7 +119,37 @@ public class QuotationViewDetailsPageTest {
     }
 
     @Test
-    @DisplayName("Quotation Breakdown is structured as a semantic table with dark green header and required columns")
+    @DisplayName("Project Information section does not contain Division in quotation details templates")
+    public void testProjectInformationRemovesDivision() throws Exception {
+        String adminTemplate = loadResource("templates/admin/quotation-view.html");
+        // Verify District, Pricing Mode, Prepared By, Status remain in Project Information
+        assertTrue(adminTemplate.contains("Project Information"), "Admin view must contain Project Information");
+        assertTrue(adminTemplate.contains("District"), "Project Information must retain District");
+        assertTrue(adminTemplate.contains("Pricing Mode"), "Project Information must retain Pricing Mode");
+        assertTrue(adminTemplate.contains("Prepared By"), "Project Information must retain Prepared By");
+
+        // Verify Division is removed from Project Information
+        int projectInfoIdx = adminTemplate.indexOf("Project Information");
+        int nextSectionIdx = adminTemplate.indexOf("QUOTATION BREAKDOWN", projectInfoIdx);
+        String projectInfoSection = adminTemplate.substring(projectInfoIdx, nextSectionIdx);
+        assertFalse(projectInfoSection.contains("Division"), "Project Information section must not contain Division field");
+
+        // Employee templates
+        String empWorkspace = loadResource("templates/employee/quotation-workspace.html");
+        int empSummaryIdx = empWorkspace.indexOf("QUOTATION SUMMARY");
+        int empSummaryEnd = empWorkspace.indexOf("</section>", empSummaryIdx);
+        String empSummarySection = empWorkspace.substring(empSummaryIdx, empSummaryEnd);
+        assertFalse(empSummarySection.contains("Division"), "Employee Quotation Summary must not contain Division");
+
+        String empView = loadResource("templates/employee/quotation-view.html");
+        int empDetailsIdx = empView.indexOf("details-grid");
+        int empDetailsEnd = empView.indexOf("</section>", empDetailsIdx);
+        String empDetailsSection = empView.substring(empDetailsIdx, empDetailsEnd);
+        assertFalse(empDetailsSection.contains("Division"), "Employee details grid must not contain Division");
+    }
+
+    @Test
+    @DisplayName("Quotation Breakdown table removes Qty and Offer Price columns while retaining remaining columns correctly aligned")
     public void testQuotationBreakdownTableStructureAndStyling() throws Exception {
         String template = loadResource("templates/admin/quotation-view.html");
 
@@ -129,7 +159,7 @@ public class QuotationViewDetailsPageTest {
         assertTrue(template.contains("<tbody>"), "Must contain semantic tbody");
         assertTrue(template.contains("<tfoot>"), "Must contain semantic tfoot");
 
-        // Required columns present in table header
+        // Required remaining columns present in table header
         assertTrue(template.contains("S.No."), "Must contain S.No. column");
         assertTrue(template.contains("Floor"), "Must contain Floor column");
         assertTrue(template.contains("Room No."), "Must contain Room No. column");
@@ -139,10 +169,16 @@ public class QuotationViewDetailsPageTest {
         assertTrue(template.contains("Specifications"), "Must contain Specifications column");
         assertTrue(template.contains("Size / Dimensions"), "Must contain Size / Dimensions column");
         assertTrue(template.contains("Sq.Ft."), "Must contain Sq.Ft. column");
-        assertTrue(template.contains("Qty"), "Must contain Qty column");
         assertTrue(template.contains("Unit Rate"), "Must contain Unit Rate column");
         assertTrue(template.contains("Amount"), "Must contain Amount column");
-        assertTrue(template.contains("Offer Price"), "Must contain Offer Price column");
+
+        // Qty and Offer Price must be absent from table header and data rows
+        assertFalse(template.contains("<th class=\"col-qty"), "Table header must not contain Qty column");
+        assertFalse(template.contains("<th class=\"col-offer"), "Table header must not contain Offer Price column");
+        assertFalse(template.contains("cell-qty"), "Table rows must not contain cell-qty");
+        assertFalse(template.contains("cell-offer"), "Table rows must not contain cell-offer");
+        assertFalse(template.contains("room-subtotal-offer"), "Subtotal row must not contain room-subtotal-offer");
+        assertFalse(template.contains("tfoot-offer"), "Footer row must not contain tfoot-offer");
 
         // Grouping and totals
         assertTrue(template.contains("room-group-row"), "Must contain room grouping row");
