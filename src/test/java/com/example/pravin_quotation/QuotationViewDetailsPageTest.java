@@ -27,6 +27,9 @@ public class QuotationViewDetailsPageTest {
     private QuotationController quotationController;
 
     @Autowired
+    private com.example.pravin_quotation.controller.QuotationPdfController quotationPdfController;
+
+    @Autowired
     private QuotationRepository quotationRepository;
 
     @Autowired
@@ -240,5 +243,58 @@ public class QuotationViewDetailsPageTest {
         assertFalse(empTemplate.contains("+ Add Item<") || empTemplate.contains("+ Add Item\n"), "Must not contain obsolete + Add Item button");
         assertFalse(empTemplate.contains("id=\"employeeChargesForm\""), "Must not contain obsolete employeeChargesForm");
         assertFalse(empTemplate.contains("initEmployeeQuotationFinancialSummary"), "Must not contain obsolete financial summary script");
+    }
+
+    @Test
+    @DisplayName("Verify upper Download PDF button and all Preview buttons are removed from admin/quotation-view.html, leaving only the lower Download PDF button")
+    public void testDuplicateDownloadPdfAndPreviewButtonsRemovedFromQuotationView() throws Exception {
+        String template = loadResource("templates/admin/quotation-view.html");
+
+        // 1. Upper page-header must NOT contain Download PDF or Preview button
+        int headerStart = template.indexOf("<header class=\"page-header\">");
+        int headerEnd = template.indexOf("</header>", headerStart);
+        assertTrue(headerStart != -1 && headerEnd != -1, "page-header must exist");
+        String pageHeader = template.substring(headerStart, headerEnd);
+
+        assertFalse(pageHeader.contains("Download PDF"), "Upper page-header must NOT contain Download PDF button");
+        assertFalse(pageHeader.contains("Preview"), "Upper page-header must NOT contain Preview button");
+        assertFalse(pageHeader.contains("quotation-preview"), "Upper page-header must NOT link to quotation-preview");
+        assertFalse(pageHeader.contains("header-actions"), "header-actions container should be removed from page-header");
+
+        // 2. Bottom actions must NOT contain Preview PDF button
+        int bottomStart = template.indexOf("class=\"bottom-actions\"");
+        int bottomEnd = template.indexOf("</section>", bottomStart);
+        assertTrue(bottomStart != -1 && bottomEnd != -1, "bottom-actions must exist");
+        String bottomActions = template.substring(bottomStart, bottomEnd);
+
+        assertFalse(bottomActions.contains("Preview PDF"), "Bottom actions must NOT contain Preview PDF button");
+        assertFalse(bottomActions.contains("quotation-preview"), "Bottom actions must NOT link to quotation-preview");
+
+        // 3. Lower Download PDF button must be retained in bottom-actions
+        assertTrue(bottomActions.contains("@{/admin/quotations/pdf/{id}(id=${quotation.id})}"),
+                "Bottom actions must retain Download PDF link");
+        assertTrue(bottomActions.contains("Download PDF"),
+                "Bottom actions must retain Download PDF label");
+
+        // 4. Overall template must contain ZERO occurrences of quotation-preview
+        assertFalse(template.contains("quotation-preview"),
+                "admin/quotation-view.html must contain zero links to quotation-preview");
+    }
+
+    @Test
+    @DisplayName("Verify the remaining Download PDF endpoint downloads the quotation PDF successfully")
+    public void testRemainingDownloadPdfButtonWorks() {
+        Quotation sampleQuotation = quotationRepository.findAll().stream().findFirst().orElse(null);
+        assertNotNull(sampleQuotation, "A sample quotation must exist in database");
+
+        org.springframework.http.ResponseEntity<byte[]> response =
+                quotationPdfController.downloadQuotationPdf(sampleQuotation.getId());
+
+        assertEquals(org.springframework.http.HttpStatus.OK, response.getStatusCode(),
+                "Download PDF must return HTTP 200 OK");
+        assertEquals(org.springframework.http.MediaType.APPLICATION_PDF, response.getHeaders().getContentType(),
+                "Content type must be application/pdf");
+        assertNotNull(response.getBody(), "PDF byte array must not be null");
+        assertTrue(response.getBody().length > 0, "PDF byte array must not be empty");
     }
 }
