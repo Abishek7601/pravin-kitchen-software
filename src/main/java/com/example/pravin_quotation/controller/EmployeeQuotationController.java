@@ -17,6 +17,7 @@ import com.example.pravin_quotation.model.QuotationStatusHistory;
 import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.model.WorkCategory;
 import com.example.pravin_quotation.model.MaterialSpecification;
+import com.example.pravin_quotation.model.MeasurementType;
 
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
@@ -90,6 +91,8 @@ public class EmployeeQuotationController {
 
     private final QuotationStatusHistoryService quotationStatusHistoryService;
     private final WhatsAppService whatsAppService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.pravin_quotation.service.FileUploadService fileUploadService;
 
 
     // ============================================================
@@ -519,6 +522,8 @@ public class EmployeeQuotationController {
             map.put("rate", resolvedRate);
             map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
             map.put("formula", m.getFormula());
+            map.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
+            map.put("imageUrl", m.getImageUrl());
             return map;
         }).toList();
     }
@@ -607,6 +612,8 @@ public class EmployeeQuotationController {
             resp.put("unit", unit);
             resp.put("measurementUnit", unit);
             resp.put("pricingUnit", "₹ / " + unit);
+            resp.put("measurementType", (material != null && material.getMeasurementType() != null) ? material.getMeasurementType().name() : "SQFT");
+            resp.put("imageUrl", material != null ? material.getImageUrl() : null);
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(mapData(
@@ -759,6 +766,9 @@ public class EmployeeQuotationController {
                 iMap.put("rate", item.getRate());
                 iMap.put("itemDescription", item.getItemDescription());
                 iMap.put("specification", item.getSpecification());
+                iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
+                iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
+                iMap.put("imageUrl", item.getImageUrl());
 
                 List<QuotationItemSize> sizes = quotationItemSizeService.getActiveSizes(item.getId());
                 List<Map<String, Object>> sizeList = new ArrayList<>();
@@ -770,6 +780,14 @@ public class EmployeeQuotationController {
                     sMap.put("offerPrice", s.getOfferPrice());
                     sizeList.add(sMap);
                 }
+                if (sizeList.isEmpty() && (item.getMeasurementType() == MeasurementType.QUANTITY || item.getMeasurementType() == MeasurementType.FILES)) {
+                    Map<String, Object> sMap = new LinkedHashMap<>();
+                    sMap.put("length", BigDecimal.ZERO);
+                    sMap.put("width", BigDecimal.ZERO);
+                    sMap.put("height", BigDecimal.ZERO);
+                    sMap.put("offerPrice", item.getOfferPrice() != null ? item.getOfferPrice() : item.getAmount());
+                    sizeList.add(sMap);
+                }
                 iMap.put("sizes", sizeList);
                 itemList.add(iMap);
             }
@@ -778,6 +796,20 @@ public class EmployeeQuotationController {
         }
         data.put("rooms", roomList);
         return ResponseEntity.ok(data);
+    }
+
+    @PostMapping("/builder/upload-image")
+    @ResponseBody
+    public ResponseEntity<?> builderUploadItemImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file) {
+        try {
+            if (fileUploadService == null) {
+                return ResponseEntity.badRequest().body(mapData("success", false, "message", "File upload service is not available."));
+            }
+            String url = fileUploadService.storeFile(file, "quotation-items");
+            return ResponseEntity.ok(mapData("success", true, "url", url));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(mapData("success", false, "message", e.getMessage() != null ? e.getMessage() : "Failed to upload image."));
+        }
     }
 
     private Map<String, Object> mapData(Object... values) {

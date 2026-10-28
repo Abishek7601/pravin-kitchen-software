@@ -551,6 +551,11 @@
                                 <div class="material-option-text"
                                      th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
                                      th:text="${item.materialOption.name}">18mm</div>
+                                <div th:if="${item.imageUrl != null and !#strings.isEmpty(item.imageUrl)}" style="margin-top: 6px;">
+                                    <a th:href="@{${item.imageUrl}}" target="_blank" title="View attached image">
+                                        <img th:src="@{${item.imageUrl}}" alt="Attached image" style="max-height: 48px; max-width: 80px; border-radius: 4px; border: 1px solid #cbd5e1; object-fit: cover;">
+                                    </a>
+                                </div>
                             </td>
                             <!-- Specifications -->
                             <td class="cell-spec">
@@ -561,32 +566,38 @@
                                      th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification != null}"
                                      th:text="${item.materialSpecification.name}">Specification</div>
                                 <div class="spec-formula"
-                                     th:if="${item.formula != null && !#strings.isEmpty(item.formula)}"
-                                     th:text="${'Formula: ' + item.formula}"></div>
+                                     th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT')}">
+                                    <span th:if="${item.formula != null && !#strings.isEmpty(item.formula)}" th:text="${'Formula: ' + item.formula}"></span>
+                                </div>
                                 <span class="spec-empty"
                                       th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula))}">-</span>
                             </td>
                             <!-- Size / Dimensions -->
                             <td class="cell-dimensions">
-                                <div th:if="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
-                                    <div th:each="sz, szStat : ${sizesByItem[item.id]}"
-                                         th:if="${sz.active == null || sz.active}"
-                                         class="dimension-line">
-                                         <span class="size-idx"
-                                               th:if="${#lists.size(sizesByItem[item.id]) > 1}"
-                                               th:text="${'#' + szStat.count + ': '}">#1: </span>
-                                         <span class="size-vals"
-                                               th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
-                                    </div>
+                                <div th:if="${item.measurementType != null and !item.measurementType.name().equals('SQFT')}">
+                                    <span class="size-vals" style="font-weight: 600; color: #0f766e;" th:text="${'Qty: ' + (item.quantity != null ? item.quantity : 1)}">Qty: 1</span>
                                 </div>
-                                <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
-                                    <span class="size-vals"
-                                          th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                <div th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT')}">
+                                    <div th:if="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
+                                        <div th:each="sz, szStat : ${sizesByItem[item.id]}"
+                                             th:if="${sz.active == null || sz.active}"
+                                             class="dimension-line">
+                                             <span class="size-idx"
+                                                   th:if="${#lists.size(sizesByItem[item.id]) > 1}"
+                                                   th:text="${'#' + szStat.count + ': '}">#1: </span>
+                                             <span class="size-vals"
+                                                   th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                        </div>
+                                    </div>
+                                    <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
+                                        <span class="size-vals"
+                                              th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                    </div>
                                 </div>
                             </td>
                             <!-- Sq.Ft. -->
                             <td class="text-right cell-sqft"
-                                th:text="${#numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
+                                th:text="${(item.measurementType != null and !item.measurementType.name().equals('SQFT')) ? '-' : #numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
                                 0.00
                             </td>
                             <!-- Unit Rate -->

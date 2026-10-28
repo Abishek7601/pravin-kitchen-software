@@ -503,18 +503,32 @@ public class QuotationPdfService {
                     }
                 }
 
-                // Size
-                String sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
-
                 // Sq.Ft
                 BigDecimal sqft = item.getCalculatedSqft() != null ? item.getCalculatedSqft() : BigDecimal.ZERO;
+
+                // Size & Sq.Ft
+                boolean isSqft = item.getMeasurementType() == null || item.getMeasurementType().isSqft();
+                String sizeStr;
+                String sqftStr;
+                if (isSqft) {
+                    sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+                    sqftStr = format(sqft);
+                } else {
+                    BigDecimal qty = (item.getQuantity() != null && item.getQuantity().compareTo(BigDecimal.ZERO) > 0)
+                            ? item.getQuantity()
+                            : BigDecimal.ONE;
+                    sizeStr = "QTY: " + qty.stripTrailingZeros().toPlainString();
+                    sqftStr = "-";
+                }
 
                 // Unit
                 String unitStr = resolveUnit(item, quotation.getPricingMode());
 
                 // Amounts
                 BigDecimal rate = item.getRate() != null ? item.getRate() : BigDecimal.ZERO;
-                BigDecimal amount = item.getAmount() != null ? item.getAmount() : rate.multiply(sqft);
+                BigDecimal amount = item.getAmount() != null
+                        ? item.getAmount()
+                        : (isSqft ? rate.multiply(sqft) : rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE));
                 BigDecimal offerPrice = item.getOfferPrice();
                 if (offerPrice == null || offerPrice.compareTo(BigDecimal.ZERO) <= 0) {
                     offerPrice = amount;
@@ -530,7 +544,7 @@ public class QuotationPdfService {
                 addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow);
                 addMaterialCell(itemTable, materialText.toUpperCase(), specification != null ? specification.toUpperCase() : "", isAltRow);
                 addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
-                addBodyCell(itemTable, format(sqft), Element.ALIGN_RIGHT, isAltRow);
+                addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
                 addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow);
                 addRupeeCell(itemTable, rupees(amount), false, false, isAltRow);
 
@@ -986,6 +1000,18 @@ public class QuotationPdfService {
     }
 
     private String resolveUnit(QuotationItem item, PricingMode pricingMode) {
+        if (item.getMeasurementType() == MeasurementType.QUANTITY) {
+            return "QTY";
+        }
+        if (item.getMeasurementType() == MeasurementType.FILES) {
+            return "FILES";
+        }
+        if (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.QUANTITY) {
+            return "QTY";
+        }
+        if (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.FILES) {
+            return "FILES";
+        }
         if (item.getMaterialOption() != null && pricingMode != null) {
             Optional<Pricing> pricingOpt = pricingRepository.findByMaterialOptionIdAndPricingMode(
                     item.getMaterialOption().getId(),
@@ -1005,7 +1031,10 @@ public class QuotationPdfService {
                         return "R.FT";
                     case "NOS":
                     case "NO":
-                        return "NOS";
+                    case "QUANTITY":
+                        return "QTY";
+                    case "FILES":
+                        return "FILES";
                     case "LUMP_SUM":
                     case "LS":
                         return "LS";

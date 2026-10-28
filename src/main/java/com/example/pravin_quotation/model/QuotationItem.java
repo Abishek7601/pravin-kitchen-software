@@ -81,6 +81,16 @@ public class QuotationItem {
     @Column(name = "specification", columnDefinition = "TEXT")
     private String specification;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "measurement_type", length = 30)
+    private MeasurementType measurementType = MeasurementType.SQFT;
+
+    @Column(name = "quantity", precision = 10, scale = 2)
+    private BigDecimal quantity = BigDecimal.ONE;
+
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -347,5 +357,29 @@ public class QuotationItem {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public MeasurementType getMeasurementType() {
+        return measurementType != null ? measurementType : MeasurementType.SQFT;
+    }
+
+    public void setMeasurementType(MeasurementType measurementType) {
+        this.measurementType = measurementType;
+    }
+
+    public BigDecimal getQuantity() {
+        return quantity != null ? quantity : BigDecimal.ONE;
+    }
+
+    public void setQuantity(BigDecimal quantity) {
+        this.quantity = quantity;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 }

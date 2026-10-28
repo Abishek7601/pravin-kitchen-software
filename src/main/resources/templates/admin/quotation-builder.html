@@ -769,6 +769,11 @@
       const activeBtn = $(`mat-btn-${divisionId}-${material.id}`);
       if (activeBtn) activeBtn.classList.add('selected-material-btn');
 
+      const mType = (material.measurementType || (material.unit === 'Quantity' ? 'QUANTITY' : (material.unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
+      const isSqft = mType === 'SQFT';
+      const isQuantity = mType === 'QUANTITY';
+      const isFiles = mType === 'FILES';
+
       state.draft = {
           categoryId,
           categoryName,
@@ -783,10 +788,13 @@
           materialSpecificationId: null,
           materialSpecificationName: '',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
-          formula: material.formula || '(L + W) × H',
-          unit: material.unit || 'Sq.ft',
-          measurementUnit: material.unit || 'Sq.ft',
-          pricingUnit: '₹ / ' + (material.unit || 'Sq.ft'),
+          formula: isSqft ? (material.formula || '(L + W) × H') : null,
+          unit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
+          measurementUnit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
+          measurementType: mType,
+          quantity: 1,
+          imageUrl: material.imageUrl || null,
+          pricingUnit: '₹ / ' + (material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           sizes: []
       };
 
@@ -798,30 +806,38 @@
           if (p !== sizePanel) p.classList.add('hidden');
       });
 
-      // Parse formula
-      const formula = (material.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
-      const hasLength = true;
-      const hasWidth = formula.includes('+') || formula.includes('(L + W)') || (!formula.includes('H') && formula.includes('W')) || (formula.includes('W') && !formula.includes('H'));
-      const hasHeight = formula.includes('+') || formula.includes('(L + W)') || formula.includes('H');
-
-      // Format formula display
-      let formulaDisplay = '((L+W)*H/144)';
-      if (formula.includes('+') || formula.includes('(L + W)')) {
-          formulaDisplay = '((L+W)*H/144)';
-      } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
-          formulaDisplay = '(L*H/144)';
-      } else {
-          formulaDisplay = '(L*W/144)';
-      }
-
       // Specifications text (display only saved material specification)
       const specText = (material.specification || '').trim();
       const specDisplay = specText || '-';
 
+      let formulaDisplay = '';
+      let hasLength = false, hasWidth = false, hasHeight = false;
+
+      if (isSqft) {
+          const formula = (material.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+          hasLength = true;
+          hasWidth = formula.includes('+') || formula.includes('(L + W)') || (!formula.includes('H') && formula.includes('W')) || (formula.includes('W') && !formula.includes('H'));
+          hasHeight = formula.includes('+') || formula.includes('(L + W)') || formula.includes('H');
+
+          if (formula.includes('+') || formula.includes('(L + W)')) {
+              formulaDisplay = '((L+W)*H/144)';
+          } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
+              formulaDisplay = '(L*H/144)';
+          } else {
+              formulaDisplay = '(L*W/144)';
+          }
+      }
+
+      let uploadedItemImageUrl = material.imageUrl || null;
+
       sizePanel.innerHTML = `
         <div class="size-details-title-row">
-          <span class="size-details-title">SIZE DETAILS &mdash; ${esc(material.name.toUpperCase())}</span>
-          <span class="size-details-formula">${esc(formulaDisplay)}</span>
+          <span class="size-details-title">${isSqft ? 'SIZE DETAILS' : (isQuantity ? 'QUANTITY DETAILS' : 'FILE &amp; ITEM DETAILS')} &mdash; ${esc(material.name.toUpperCase())}</span>
+          ${isSqft
+              ? `<span class="size-details-formula">${esc(formulaDisplay)}</span>`
+              : (isQuantity
+                  ? `<span class="size-details-formula" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">QUANTITY</span>`
+                  : `<span class="size-details-formula" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">FILES / IMAGE</span>`)}
         </div>
         <div class="size-details-spec-box">
           <div class="spec-header">
@@ -831,6 +847,7 @@
           <div class="spec-content" id="specContent-${divisionId}">${esc(specDisplay)}</div>
           <textarea class="spec-textarea hidden" id="specTextarea-${divisionId}" rows="3" placeholder="Enter specifications (optional)">${esc(specText)}</textarea>
         </div>
+        ${isSqft ? `
         <div class="size-details-inputs-row">
           ${hasLength ? `
           <div class="dim-input-group">
@@ -847,13 +864,34 @@
             <label for="dimHgt-${divisionId}">HEIGHT (IN)</label>
             <input type="number" min="0" step="0.1" class="dim-input" id="dimHgt-${divisionId}" value="0">
           </div>` : ''}
-        </div>
+        </div>` : `
+        <div class="size-details-inputs-row" style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
+          <div class="dim-input-group" style="max-width: 160px;">
+            <label for="dimQty-${divisionId}">QUANTITY</label>
+            <input type="number" min="1" step="1" class="dim-input" id="dimQty-${divisionId}" value="1">
+          </div>
+          ${isFiles ? `
+          <div class="dim-input-group" style="flex: 1; min-width: 240px;">
+            <label>ATTACH IMAGE (OPTIONAL)</label>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <input type="file" id="itemFile-${divisionId}" accept="image/jpeg,image/png,image/webp,image/jpg" style="display: none;">
+              <button type="button" id="itemFileBtn-${divisionId}" style="padding: 6px 12px; font-size: 12px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; cursor: pointer; color: #1e293b; font-weight: 500;">
+                📁 Choose File
+              </button>
+              <span id="itemFileName-${divisionId}" style="font-size: 11px; color: #64748b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 170px;">${material.imageUrl ? 'Material image attached' : 'No file chosen'}</span>
+              <button type="button" id="itemFileClearBtn-${divisionId}" style="${material.imageUrl ? '' : 'display: none;'} background: transparent; border: none; color: #dc2626; cursor: pointer; font-size: 16px; line-height: 1;" title="Remove image">&times;</button>
+            </div>
+            <div id="itemFilePreviewBox-${divisionId}" style="margin-top: 8px; ${material.imageUrl ? '' : 'display: none;'}">
+              <img id="itemFilePreview-${divisionId}" src="${esc(material.imageUrl || '')}" style="max-height: 70px; max-width: 130px; border-radius: 6px; border: 1px solid #cbd5e1; object-fit: contain;">
+            </div>
+          </div>` : ''}
+        </div>`}
         <div class="size-details-calc-box">
-          <span>Rate: <strong>${(material.rate != null && Number(material.rate) > 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || 'Sq.ft')) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span>Rate: <strong>${(material.rate != null && Number(material.rate) > 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
           <span class="calc-divider">|</span>
-          <span>Sq.Ft: <strong id="calcSqft-${divisionId}">0</strong></span>
+          <span>Sq.Ft: <strong id="calcSqft-${divisionId}">${isSqft ? '0' : '-'}</strong></span>
           <span class="calc-divider">|</span>
-          <span>Amount: <strong id="calcAmt-${divisionId}">&#8377;0.00</strong></span>
+          <span>Amount: <strong id="calcAmt-${divisionId}">${isSqft ? '&#8377;0.00' : money(Number(material.rate || 0))}</strong></span>
         </div>
         <div class="size-details-btn-row">
           <button type="button" class="btn-add-to-quote" id="addQuoteBtn-${divisionId}">Add to Quote</button>
@@ -867,25 +905,96 @@
       const lenInput = $(`dimLen-${divisionId}`);
       const widInput = $(`dimWid-${divisionId}`);
       const hgtInput = $(`dimHgt-${divisionId}`);
+      const qtyInput = $(`dimQty-${divisionId}`);
       const sqftEl = $(`calcSqft-${divisionId}`);
       const amtEl = $(`calcAmt-${divisionId}`);
 
       function updateLiveCalc() {
-          const L = Number(lenInput?.value || 0);
-          const W = Number(widInput?.value || 0);
-          const H = Number(hgtInput?.value || 0);
-          const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
-          const roundedSqft = Math.round(sqft * 100) / 100;
           const rateVal = (material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0;
-          const lineAmt = Math.round(roundedSqft * rateVal * 100) / 100;
-
-          if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
-          if (amtEl) amtEl.textContent = money(lineAmt);
+          if (isSqft) {
+              const L = Number(lenInput?.value || 0);
+              const W = Number(widInput?.value || 0);
+              const H = Number(hgtInput?.value || 0);
+              const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
+              const roundedSqft = Math.round(sqft * 100) / 100;
+              const lineAmt = Math.round(roundedSqft * rateVal * 100) / 100;
+              if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
+              if (amtEl) amtEl.textContent = money(lineAmt);
+          } else {
+              const Q = Math.max(1, Number(qtyInput?.value || 1));
+              const lineAmt = Math.round(Q * rateVal * 100) / 100;
+              if (sqftEl) sqftEl.textContent = '-';
+              if (amtEl) amtEl.textContent = money(lineAmt);
+          }
       }
 
       if (lenInput) lenInput.addEventListener('input', updateLiveCalc);
       if (widInput) widInput.addEventListener('input', updateLiveCalc);
       if (hgtInput) hgtInput.addEventListener('input', updateLiveCalc);
+      if (qtyInput) qtyInput.addEventListener('input', updateLiveCalc);
+
+      // File upload handling for Files material
+      if (isFiles) {
+          const fileInput = $(`itemFile-${divisionId}`);
+          const fileBtn = $(`itemFileBtn-${divisionId}`);
+          const fileNameEl = $(`itemFileName-${divisionId}`);
+          const previewBox = $(`itemFilePreviewBox-${divisionId}`);
+          const previewImg = $(`itemFilePreview-${divisionId}`);
+          const clearBtn = $(`itemFileClearBtn-${divisionId}`);
+
+          if (fileBtn && fileInput) {
+              fileBtn.addEventListener('click', () => fileInput.click());
+          }
+
+          if (fileInput) {
+              fileInput.addEventListener('change', async () => {
+                  const file = fileInput.files[0];
+                  if (!file) return;
+
+                  if (fileNameEl) fileNameEl.textContent = file.name;
+                  const reader = new FileReader();
+                  reader.onload = e => {
+                      if (previewImg) previewImg.src = e.target.result;
+                      if (previewBox) previewBox.style.display = 'block';
+                      if (clearBtn) clearBtn.style.display = 'inline-block';
+                  };
+                  reader.readAsDataURL(file);
+
+                  // Upload to server
+                  const fd = new FormData();
+                  fd.append('file', file);
+                  try {
+                      const res = await fetch(`${API_BASE}/upload-image`, {
+                          method: 'POST',
+                          headers: {
+                              'X-CSRF-TOKEN': csrfToken
+                          },
+                          body: fd
+                      });
+                      const data = await res.json();
+                      if (res.ok && data.success && data.url) {
+                          uploadedItemImageUrl = data.url;
+                          if (fileNameEl) fileNameEl.textContent = file.name + ' (Uploaded)';
+                      } else {
+                          alert(data.message || 'Image upload failed');
+                      }
+                  } catch (err) {
+                      console.error('Failed to upload image:', err);
+                  }
+              });
+          }
+
+          if (clearBtn) {
+              clearBtn.addEventListener('click', () => {
+                  uploadedItemImageUrl = null;
+                  if (fileInput) fileInput.value = '';
+                  if (fileNameEl) fileNameEl.textContent = 'No file chosen';
+                  if (previewImg) previewImg.src = '';
+                  if (previewBox) previewBox.style.display = 'none';
+                  clearBtn.style.display = 'none';
+              });
+          }
+      }
 
       // Edit pencil toggle
       const editBtn = $(`specEditBtn-${divisionId}`);
@@ -921,13 +1030,19 @@
       const addBtn = $(`addQuoteBtn-${divisionId}`);
       if (addBtn) {
           addBtn.addEventListener('click', () => {
-              const L = Number(lenInput?.value || 0);
-              const W = Number(widInput?.value || 0);
-              const H = Number(hgtInput?.value || 0);
+              let L = 0, W = 0, H = 0, Q = 1;
 
-              if (hasLength && L <= 0) return alert('Please enter Length (in).');
-              if (hasWidth && W <= 0) return alert('Please enter Width (in).');
-              if (hasHeight && H <= 0) return alert('Please enter Height (in).');
+              if (isSqft) {
+                  L = Number(lenInput?.value || 0);
+                  W = Number(widInput?.value || 0);
+                  H = Number(hgtInput?.value || 0);
+
+                  if (hasLength && L <= 0) return alert('Please enter Length (in).');
+                  if (hasWidth && W <= 0) return alert('Please enter Width (in).');
+                  if (hasHeight && H <= 0) return alert('Please enter Height (in).');
+              } else {
+                  Q = Math.max(1, Number(qtyInput?.value || 1));
+              }
 
               if (material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
                   return alert('No rate configured for this material in the selected branch and grade.');
@@ -954,14 +1069,17 @@
                   materialSpecificationId: null,
                   materialSpecificationName: '',
                   rate: Number(material.rate),
-                  formula: material.formula || '(L + W) × H',
-                  unit: material.unit || 'Sq.ft',
+                  formula: isSqft ? (material.formula || '(L + W) × H') : null,
+                  unit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
+                  measurementType: mType,
+                  quantity: isSqft ? 1 : Q,
+                  imageUrl: isFiles ? (uploadedItemImageUrl || material.imageUrl || null) : null,
                   itemDescription: '',
                   specification: finalSpec,
                   sizes: [{
-                      length: L,
-                      width: hasWidth ? W : 0,
-                      height: hasHeight ? H : 0,
+                      length: isSqft ? L : 0,
+                      width: (isSqft && hasWidth) ? W : 0,
+                      height: (isSqft && hasHeight) ? H : 0,
                       offerPrice: null,
                       offerDiscountPercent: 0,
                       offerActive: false
@@ -1326,10 +1444,38 @@
               html += `<tr class="group-category-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-category-header">&#127970; ${esc(catName.toUpperCase())}</div></td></tr>`;
 
               itemsByCategory[catName].forEach(({ item, itemIdx }) => {
-                  (item.sizes || []).forEach((size, sizeIdx) => {
-                      const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
-                      const sqft = Math.round(meas * 100) / 100;
-                      const lineBase = Math.round(sqft * Number(item.rate || 0) * 100) / 100;
+                  const mType = (item.measurementType || (item.unit === 'Quantity' ? 'QUANTITY' : (item.unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
+                  const isSqft = mType === 'SQFT';
+                  const isQuantity = mType === 'QUANTITY';
+                  const isFiles = mType === 'FILES';
+                  const rowSizes = (item.sizes && item.sizes.length > 0) ? item.sizes : [{ length: 0, width: 0, height: 0, offerPrice: null, offerDiscountPercent: 0, offerActive: false }];
+
+                  rowSizes.forEach((size, sizeIdx) => {
+                      let lineBase = 0;
+                      let sqft = 0;
+                      let sizeDisp = '';
+                      let sqftDisplay = '-';
+
+                      if (isSqft) {
+                          const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
+                          sqft = Math.round(meas * 100) / 100;
+                          lineBase = Math.round(sqft * Number(item.rate || 0) * 100) / 100;
+                          sqftDisplay = sqft % 1 === 0 ? sqft.toFixed(0) : sqft.toFixed(2);
+
+                          const formula = (item.formula || '').toUpperCase();
+                          if (formula.includes('+') || formula.includes('(L + W)')) {
+                              sizeDisp = `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}`;
+                          } else if (formula.includes('H')) {
+                              sizeDisp = `L:${size.length} \u00d7 H:${size.height}`;
+                          } else {
+                              sizeDisp = `L:${size.length} \u00d7 W:${size.width}`;
+                          }
+                      } else {
+                          const qty = Number(item.quantity || 1);
+                          lineBase = Math.round(qty * Number(item.rate || 0) * 100) / 100;
+                          sizeDisp = `Qty: ${qty}`;
+                          sqftDisplay = '-';
+                      }
 
                       // Offer price
                       const isOfferActive = size.offerActive === true;
@@ -1343,28 +1489,21 @@
                       roomBaseTotal += lineBase;
                       roomOfferTotal += (isOfferActive ? lineOffer : lineBase);
 
-                      // Size display
-                      const formula = (item.formula || '').toUpperCase();
-                      let sizeDisp = `L:${size.length}`;
-                      if (formula.includes('+') || formula.includes('(L + W)')) {
-                          sizeDisp = `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}`;
-                      } else if (formula.includes('H')) {
-                          sizeDisp = `L:${size.length} \u00d7 H:${size.height}`;
-                      } else {
-                          sizeDisp = `L:${size.length} \u00d7 W:${size.width}`;
-                      }
-
-                      const sqftDisplay = sqft % 1 === 0 ? sqft.toFixed(0) : sqft.toFixed(2);
                       const baseAmtDisplay = money(lineBase);
                       const offerAmtDisplay = money(isOfferActive ? lineOffer : lineBase);
+
+                      const imgHtml = (item.imageUrl)
+                          ? `<div style="margin-top: 4px;"><img src="${esc(item.imageUrl)}" alt="Attached item image" style="max-width: 50px; max-height: 50px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${esc(item.imageUrl)}', '_blank')" title="Click to view image" /></div>`
+                          : '';
 
                       html += `
                       <tr class="summary-item-row">
                         <td class="col-num">${serialNo++}</td>
                         <td class="col-room">${esc(item.divisionName || item.itemName || 'ITEM')}</td>
                         <td class="col-material">
-                          <div class="mat-name">${esc(item.materialName || 'Material')}</div>
+                          <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : '')}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
+                          ${imgHtml}
                         </td>
                         ${showSqftSize ? `<td class="col-size">${esc(sizeDisp)}</td>` : ''}
                         ${showSqftSize ? `<td class="col-sqft">${sqftDisplay}</td>` : ''}
@@ -1630,6 +1769,9 @@
                   materialSpecificationId: i.materialSpecificationId,
                   itemDescription: i.itemDescription || '',
                   specification: i.specification || '',
+                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : 'SQFT')),
+                  quantity: i.quantity != null ? Number(i.quantity) : 1,
+                  imageUrl: i.imageUrl || null,
                   sizes: (i.sizes || []).map(s => ({
                       length: s.length,
                       width: s.width,
