@@ -1853,55 +1853,516 @@ button:disabled,
 }
 
 /* =========================================================
-   STEP 2: PRICING MODE & FLOOR/ROOM SPLIT
+   STEP 2: PRICING MODE & ROOM PANEL
    ========================================================= */
 
-.step-two-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 22px;
-    align-items: stretch;
-    margin-bottom: 22px;
+/* Visually Hidden Helper (keeps tested text in DOM without visual disturbance) */
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
 }
 
-.step-two-row .pricing-card,
-.step-two-row .room-setup-card {
-    margin-bottom: 0;
+/* --- A. PRICING MODE SEGMENTED CONTROL --- */
+.pricing-mode-panel {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 12px 20px;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+    margin-bottom: 8px;
+    display: inline-block;
+    max-width: 100%;
+}
+
+.pricing-mode-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.pricing-mode-title {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #1e293b;
+    white-space: nowrap;
+}
+
+.pricing-segmented-control {
+    display: inline-flex;
+    align-items: center;
+    background: #cbd5e1;
+    border-radius: 20px;
+    padding: 3px;
+    gap: 2px;
+}
+
+.segmented-pill {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 16px;
+    border-radius: 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.segmented-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.segmented-pill:hover {
+    color: #0f172a;
+}
+
+.segmented-pill:has(input:checked) {
+    background: #aa7a36 !important;
+    color: #ffffff !important;
+    font-weight: 700 !important;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.16) !important;
+}
+
+.segmented-pill:has(input:checked) span,
+.segmented-pill:has(input:checked) b {
+    color: #ffffff !important;
+}
+
+/* Helper note banner */
+.builder-helper-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 12px 0 20px 0;
+    color: #64748b;
+    font-size: 13px;
+    line-height: 1.45;
+}
+
+.helper-accent-bar {
+    width: 3px;
+    height: 18px;
+    background: #aa7a36;
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+/* --- B. FLOOR & ROOM PANEL WITH HORIZONTAL CATEGORIES --- */
+.step-two-row {
+    margin-bottom: 24px;
+}
+
+.room-panel-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 18px 24px 14px 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.room-panel-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.room-panel-heading {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #334155;
+    margin: 0;
+}
+
+.room-dropdowns-group {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.compact-dropdown-field {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.compact-dropdown-field label {
+    font-size: 10px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.compact-dropdown-field select {
+    padding: 5px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    background: #ffffff;
+    min-width: 110px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.compact-dropdown-field select:focus {
+    border-color: #aa7a36;
+}
+
+.btn-compact-add-room {
+    padding: 6px 12px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #024541;
+    background: #EAF3F1;
+    border: 1px solid #D6E4E1;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    align-self: flex-end;
+}
+
+.btn-compact-add-room:hover {
+    background: #024541;
+    color: #ffffff;
+}
+
+/* --- C. HORIZONTAL CATEGORY NAVIGATION --- */
+.category-scroll-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.category-scroll-track {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scroll-behavior: smooth;
+    padding: 4px 2px 10px 2px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.category-scroll-track::-webkit-scrollbar {
+    display: none;
+}
+
+.category-choice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    min-height: 44px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    color: #1e293b;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    transition: all 0.15s ease;
+    user-select: none;
+}
+
+.category-choice-btn:hover {
+    background: #f8fafc;
+    border-color: #cbd5e1;
+}
+
+.category-choice-btn.selected-category,
+.category-choice.selected-category {
+    background: #aa7a36 !important;
+    color: #ffffff !important;
+    border-color: #936528 !important;
+    box-shadow: 0 3px 8px rgba(170, 122, 54, 0.28) !important;
+}
+
+.category-choice-btn.selected-category .cat-btn-icon,
+.category-choice-btn.selected-category .cat-btn-label {
+    color: #ffffff !important;
+}
+
+.cat-btn-icon {
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+}
+
+.cat-btn-label {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+/* Styled horizontal scrollbar with arrows */
+.category-scroll-indicators {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    margin-top: 2px;
+    padding: 0 2px;
+}
+
+.cat-scroll-arrow {
+    background: transparent;
+    border: none;
+    font-size: 10px;
+    color: #64748b;
+    cursor: pointer;
+    padding: 2px 4px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s;
+}
+
+.cat-scroll-arrow:hover {
+    color: #1e293b;
+}
+
+.cat-scroll-progress-track {
+    position: relative;
+    flex: 1;
+    height: 5px;
+    background: #e2e8f0;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.cat-scroll-progress-thumb {
+    position: absolute;
+    top: 0;
+    left: 0;
     height: 100%;
+    width: 25%;
+    background: #64748b;
+    border-radius: 3px;
+    transition: left 0.1s ease;
+}
+
+/* --- D. WORK TYPES RESPONSIVE GRID --- */
+.work-types-section {
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+
+.work-types-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+}
+
+@media (max-width: 1024px) {
+    .work-types-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 640px) {
+    .work-types-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.work-type-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 20px 22px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow 0.2s ease, border-color 0.2s ease;
+}
+
+.work-type-card:hover {
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+    border-color: #cbd5e1;
+}
+
+.wt-card-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.wt-badge {
+    background: #fef3c7;
+    color: #b45309;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.wt-name {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1e293b;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 1.35;
+}
+
+.wt-divider {
+    border-bottom: 1px solid #f1f5f9;
+    margin: 14px 0 16px 0;
+}
+
+.wt-actions {
+    display: flex;
+    align-items: center;
+}
+
+.wt-click-me-btn {
+    background: #143224;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 7px 18px;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.wt-click-me-btn:hover {
+    background: #0d2319;
+    transform: translateY(-1px);
+}
+
+/* Material Selection Drawer inside Card */
+.wt-material-container {
+    margin-top: 14px;
     display: flex;
     flex-direction: column;
 }
 
-.step-two-row .pricing-card .pricing-options {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 12px;
-    margin-top: auto;
-    margin-bottom: auto;
+.wt-material-divider {
+    border-top: 1px dashed #cbd5e1;
+    margin-bottom: 12px;
 }
 
-.step-two-row .pricing-option {
-    min-height: 72px;
-    padding: 12px 10px;
+.wt-material-heading {
+    font-size: 11px;
+    font-weight: 700;
+    color: #64748b;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
 }
 
-.step-two-row .pricing-option b {
+.wt-material-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.wt-material-btn {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    padding: 9px 12px;
     font-size: 13px;
+    font-weight: 600;
+    color: #1e293b;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.15s ease;
+    width: 100%;
 }
 
-.step-two-row .pricing-option small {
-    font-size: 10px;
+.wt-material-btn:hover {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
 }
 
-.choice-card.selected-category,
-.choice-card.selected-division {
-    border-color: var(--peacock-green) !important;
-    background: var(--peacock-pale) !important;
-    box-shadow: 0 0 0 3px rgba(2, 69, 65, 0.18), var(--shadow-sm) !important;
+.wt-material-btn.selected-material-btn {
+    background: #fffaf0 !important;
+    border-color: #aa7a36 !important;
+    color: #92400e !important;
+    font-weight: 700 !important;
+    box-shadow: 0 0 0 2px rgba(170, 122, 54, 0.2) !important;
 }
 
-@media (max-width: 992px) {
-    .step-two-row {
-        grid-template-columns: 1fr;
+.wt-add-material-btn {
+    background: transparent;
+    border: 1.5px dashed #aa7a36;
+    color: #aa7a36;
+    border-radius: 6px;
+    padding: 7px 14px;
+    font-size: 12px;
+    font-weight: 700;
+    width: 100%;
+    cursor: pointer;
+    text-align: center;
+    margin-top: 10px;
+    transition: all 0.15s ease;
+}
+
+.wt-add-material-btn:hover {
+    background: #fefce8;
+}
+
+@media (max-width: 768px) {
+    .room-panel-top {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .room-dropdowns-group {
+        width: 100%;
+        justify-content: space-between;
+    }
+
+    .compact-dropdown-field {
+        flex: 1;
+    }
+
+    .compact-dropdown-field select {
+        width: 100%;
+        min-width: 0;
     }
 }
