@@ -45,6 +45,12 @@ public class Material {
     @Column(name = "unit", length = 30)
     private String unit = "Sq.ft";
 
+    @Column(name = "measurement_type", length = 30)
+    private String measurementType = "FORMULA";
+
+    @Column(name = "sqft_enabled")
+    private Boolean sqftEnabled = true;
+
     @Column(name = "specification", length = 500)
     private String specification;
 
@@ -199,6 +205,26 @@ public class Material {
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public String getMeasurementType() {
+        return measurementType != null ? measurementType : "FORMULA";
+    }
+
+    public void setMeasurementType(String measurementType) {
+        this.measurementType = measurementType;
+    }
+
+    public Boolean getSqftEnabled() {
+        return sqftEnabled != null ? sqftEnabled : Boolean.TRUE;
+    }
+
+    public boolean isSqftEnabled() {
+        return Boolean.TRUE.equals(sqftEnabled);
+    }
+
+    public void setSqftEnabled(Boolean sqftEnabled) {
+        this.sqftEnabled = sqftEnabled != null ? sqftEnabled : Boolean.TRUE;
     }
 
     public String getSpecification() {

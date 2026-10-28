@@ -273,7 +273,16 @@ public class WorkCategoryController {
                 ));
             }
 
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, unit, rate, effectiveFormula, branchRates);
+            String effectiveUnit = (unit != null && !unit.isBlank()) ? unit.trim() : "Sq.ft";
+            if (!effectiveUnit.equalsIgnoreCase("Sq.ft") && !effectiveUnit.equalsIgnoreCase("Sq.Ft")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Invalid unit '" + unit + "'. Only 'Sq.ft' is supported for materials."
+                ));
+            }
+            effectiveUnit = "Sq.ft";
+
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, effectiveUnit, rate, effectiveFormula, branchRates);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -306,7 +315,16 @@ public class WorkCategoryController {
             String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
             Map<Long, Map<PricingMode, BigDecimal>> branchRates = workCategoryService.parseBranchRates(branchRatesJson, allRequestParams);
 
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, unit, rate, effectiveFormula, branchRates);
+            String effectiveUnit = (unit != null && !unit.isBlank()) ? unit.trim() : "Sq.ft";
+            if (!effectiveUnit.equalsIgnoreCase("Sq.ft") && !effectiveUnit.equalsIgnoreCase("Sq.Ft")) {
+                return ResponseEntity.badRequest().body(Map.of(
+                        "success", false,
+                        "message", "Invalid unit '" + unit + "'. Only 'Sq.ft' is supported for materials."
+                ));
+            }
+            effectiveUnit = "Sq.ft";
+
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, effectiveUnit, rate, effectiveFormula, branchRates);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)

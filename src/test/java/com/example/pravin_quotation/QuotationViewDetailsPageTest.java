@@ -194,4 +194,51 @@ public class QuotationViewDetailsPageTest {
         assertTrue(css.contains("overflow-x: auto"), "Breakdown wrapper must have overflow-x: auto for mobile responsiveness");
         assertFalse(css.contains(".financial-card {"), "CSS should not contain .financial-card rules");
     }
+
+    @Test
+    @DisplayName("Employee Quotation Workspace matches Admin Quotation View layout and breakdown table structure")
+    public void testEmployeeQuotationWorkspaceMatchesAdminQuotationViewLayout() throws Exception {
+        String empTemplate = loadResource("templates/employee/quotation-workspace.html");
+
+        // Breakdown table and semantic elements
+        assertTrue(empTemplate.contains("<table class=\"breakdown-table\""), "Employee workspace must contain breakdown-table");
+        assertTrue(empTemplate.contains("<thead>"), "Must contain thead");
+        assertTrue(empTemplate.contains("<tbody>"), "Must contain tbody");
+        assertTrue(empTemplate.contains("<tfoot>"), "Must contain tfoot");
+
+        // Table header columns matching Admin
+        assertTrue(empTemplate.contains("S.No."), "Must contain S.No. column");
+        assertTrue(empTemplate.contains("Floor"), "Must contain Floor column");
+        assertTrue(empTemplate.contains("Room No."), "Must contain Room No. column");
+        assertTrue(empTemplate.contains("Category"), "Must contain Category column");
+        assertTrue(empTemplate.contains("Work Type"), "Must contain Work Type column");
+        assertTrue(empTemplate.contains("Material"), "Must contain Material column");
+        assertTrue(empTemplate.contains("Specifications"), "Must contain Specifications column");
+        assertTrue(empTemplate.contains("Size / Dimensions"), "Must contain Size / Dimensions column");
+        assertTrue(empTemplate.contains("Sq.Ft."), "Must contain Sq.Ft. column");
+        assertTrue(empTemplate.contains("Unit Rate"), "Must contain Unit Rate column");
+        assertTrue(empTemplate.contains("Amount"), "Must contain Amount column");
+
+        // Qty and Offer Price columns must be absent
+        assertFalse(empTemplate.contains("<th class=\"col-qty"), "Must not contain col-qty in th");
+        assertFalse(empTemplate.contains("<th class=\"col-offer"), "Must not contain col-offer in th");
+        assertFalse(empTemplate.contains("cell-qty"), "Must not contain cell-qty");
+        assertFalse(empTemplate.contains("cell-offer"), "Must not contain cell-offer");
+
+        // Sections matching Admin layout
+        assertTrue(empTemplate.contains("class=\"quotation-banner\""), "Must contain quotation-banner");
+        assertTrue(empTemplate.contains("class=\"status-management\""), "Must contain status-management");
+        assertTrue(empTemplate.contains("class=\"details-grid\""), "Must contain details-grid");
+        assertTrue(empTemplate.contains("Customer Information"), "Must contain Customer Information");
+        assertTrue(empTemplate.contains("Project Information"), "Must contain Project Information");
+        assertTrue(empTemplate.contains("QUOTATION BREAKDOWN"), "Must contain QUOTATION BREAKDOWN");
+        assertTrue(empTemplate.contains("Communication History"), "Must contain Communication History");
+        assertTrue(empTemplate.contains("class=\"bottom-actions\""), "Must contain bottom-actions");
+
+        // Obsolete Add Item, Add Room, and Financial Summary editing forms must be absent
+        assertFalse(empTemplate.contains("+ Add Room<") || empTemplate.contains("+ Add Room\n"), "Must not contain obsolete + Add Room button");
+        assertFalse(empTemplate.contains("+ Add Item<") || empTemplate.contains("+ Add Item\n"), "Must not contain obsolete + Add Item button");
+        assertFalse(empTemplate.contains("id=\"employeeChargesForm\""), "Must not contain obsolete employeeChargesForm");
+        assertFalse(empTemplate.contains("initEmployeeQuotationFinancialSummary"), "Must not contain obsolete financial summary script");
+    }
 }

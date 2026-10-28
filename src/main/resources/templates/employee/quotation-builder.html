@@ -50,7 +50,7 @@
   <div th:if="${successMessage}" class="alert alert-success" style="margin: 0 0 16px 0; padding: 12px 16px; background-color: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; color: #155724; font-weight: 600;" th:text="${successMessage}"></div>
   <div id="clientErrorBanner" class="alert alert-danger" style="display: none; margin: 0 0 16px 0; padding: 12px 16px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 8px; color: #721c24; font-weight: 600;"></div>
 
-  <main>
+  <div class="builder-content">
     <section class="card customer-card">
       <div class="section-heading">
         <span class="step">01</span>
@@ -119,16 +119,10 @@
               <select id="floor">
                 <option value="">Select floor</option>
                 <option selected>Ground Floor</option>
-                <option>1st Floor</option>
-                <option>2nd Floor</option>
-                <option>3rd Floor</option>
-                <option>4th Floor</option>
-                <option>5th Floor</option>
-                <option>6th Floor</option>
-                <option>7th Floor</option>
-                <option>8th Floor</option>
-                <option>9th Floor</option>
-                <option>10th Floor</option>
+                <option>First Floor</option>
+                <option>Second Floor</option>
+                <option>Third Floor</option>
+                <option>Fourth Floor</option>
                 <option>Terrace</option>
                 <option>Other</option>
               </select>
@@ -165,9 +159,9 @@
                     type="button" 
                     class="category-choice-btn category-choice" 
                     th:data-id="${category.id}" 
-                    th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
-              <span class="cat-btn-icon" th:text="${category.icon != null && !category.icon.isBlank() ? category.icon : '⌂'}">⌂</span>
-              <span class="cat-btn-label" th:text="${category.displayName != null ? category.displayName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</span>
+                    th:data-name="${category.cleanName != null && !category.cleanName.isBlank() ? category.cleanName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">
+              <span class="cat-btn-icon" th:text="${category.effectiveIcon != null && !category.effectiveIcon.isBlank() ? category.effectiveIcon : (category.icon != null && !category.icon.isBlank() ? category.icon : '⌂')}">⌂</span>
+              <span class="cat-btn-label" th:text="${category.cleanName != null && !category.cleanName.isBlank() ? category.cleanName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</span>
             </button>
           </div>
           <div class="category-scroll-indicators">
@@ -434,8 +428,9 @@
       </div>
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
-  </main>
+  </div>
 </div>
+
   </main>
 </div>
 
@@ -1756,6 +1751,22 @@
   }
 
   document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
+
+  // Ensure category buttons display exactly one emoji per category
+  function sanitizeCategoryButtons() {
+      const leadingEmojiRegex = /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|[\uD83C-\uD83E][\uDF00-\uDFFF]|[\u2600-\u27BF])+\s*/u;
+      document.querySelectorAll('.category-choice-btn').forEach(btn => {
+          const labelSpan = btn.querySelector('.cat-btn-label');
+          if (labelSpan) {
+              let text = (labelSpan.textContent || '').trim();
+              while (text && leadingEmojiRegex.test(text)) {
+                  text = text.replace(leadingEmojiRegex, '').trim();
+              }
+              labelSpan.textContent = text;
+          }
+      });
+  }
+  sanitizeCategoryButtons();
   $('addSizeBtn').addEventListener('click', () => addSizeRow());
   $('addItemBtn').addEventListener('click', addDraftToRoom);
   $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));
@@ -1777,11 +1788,19 @@
   }
   document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
   $('branchId').addEventListener('change', () => {
-      if (state.draft && state.draft.divisionId) {
+      if (activeDivisionId) {
+          const activeCard = $(`wt-card-${activeDivisionId}`);
+          const divName = activeCard?.dataset?.name || '';
+          const catBtn = document.querySelector('.category-choice.selected-category');
+          const catId = catBtn ? Number(catBtn.dataset.id) : null;
+          const catName = catBtn ? catBtn.dataset.name : '';
+          loadMaterialsForWorkType(activeDivisionId, divName, catId, catName);
+      } else if (state.draft && state.draft.divisionId) {
           selectDivision(state.draft.divisionId, state.draft.divisionName, state.draft.categoryId, state.draft.categoryName);
       } else if (state.draft) {
           refreshDraftRate();
       }
+      recalculateAll();
   });
   $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
   $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
@@ -1855,6 +1874,7 @@
   if ($('quoteNumberPreview')) $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
   renderQuoteSummary();
+  renderPaymentTerms();
 
   // Load existing quotation if editing
   if (state.quotationId) {

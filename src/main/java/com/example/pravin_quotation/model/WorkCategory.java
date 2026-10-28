@@ -127,11 +127,46 @@ public class WorkCategory {
         this.icon = emoji;
     }
 
-    public String getDisplayName() {
+    public String getEffectiveIcon() {
         if (icon != null && !icon.trim().isEmpty()) {
-            return icon.trim() + " " + name;
+            return icon.trim();
         }
-        return name;
+        String leading = com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji(name);
+        if (leading != null && !leading.trim().isEmpty()) {
+            return leading.trim();
+        }
+        return "⌂";
+    }
+
+    public String getCleanName() {
+        if (name == null || name.isBlank()) {
+            return "";
+        }
+        String trimmed = name.trim();
+        if (icon != null && !icon.isBlank()) {
+            String iconTrim = icon.trim();
+            while (trimmed.startsWith(iconTrim)) {
+                trimmed = trimmed.substring(iconTrim.length()).trim();
+            }
+        }
+        String leading = com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji(trimmed);
+        while (leading != null && !leading.isBlank() && trimmed.startsWith(leading)) {
+            trimmed = trimmed.substring(leading.length()).trim();
+            leading = com.example.pravin_quotation.service.WorkCategoryService.extractLeadingEmoji(trimmed);
+        }
+        return trimmed;
+    }
+
+    public String getDisplayName() {
+        String effective = getEffectiveIcon();
+        String clean = getCleanName();
+        if (clean.isEmpty()) {
+            return name != null ? name : "";
+        }
+        if (effective != null && !effective.isBlank() && !"⌂".equals(effective)) {
+            return effective + " " + clean;
+        }
+        return clean;
     }
 
 
