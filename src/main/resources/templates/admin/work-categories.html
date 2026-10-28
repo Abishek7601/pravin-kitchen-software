@@ -657,12 +657,7 @@
                                 Unit <span style="color: #dc2626;">*</span>
                             </label>
                             <select id="materialUnitSelect" style="padding: 8px 10px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff;">
-                                <option value="Sq.ft">Sq.ft</option>
-                                <option value="Running ft">Running ft</option>
-                                <option value="Piece">Piece</option>
-                                <option value="Set">Set</option>
-                                <option value="Meter">Meter</option>
-                                <option value="Item">Item</option>
+                                <option value="Sq.ft" selected>Sq.ft</option>
                             </select>
                         </div>
                     </div>
@@ -2153,7 +2148,7 @@
             }
             updateFormulaDescription();
             if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
-            if (materialUnitSelect) materialUnitSelect.value = isEdit ? (mat.unit || 'Sq.ft') : 'Sq.ft';
+            if (materialUnitSelect) materialUnitSelect.value = 'Sq.ft';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
 
             // Populate formBranchRates from saved material data

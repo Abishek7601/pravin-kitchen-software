@@ -873,7 +873,7 @@ public class WorkCategoryService {
             }
             material = new Material();
         }
-        String cleanUnit = (unit != null && !unit.trim().isEmpty()) ? unit.trim() : "Sq.ft";
+        String cleanUnit = (unit != null && !unit.trim().isEmpty() && (unit.trim().equalsIgnoreCase("Sq.ft") || unit.trim().equalsIgnoreCase("Sq.Ft"))) ? "Sq.ft" : "Sq.ft";
         String cleanSpec = cleanValue(specification);
         String cleanFormula = CalculationFormula.normalizeFormula(formula);
 
