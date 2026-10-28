@@ -409,4 +409,90 @@ public class QuotationPdfAmountSummaryTest {
         assertTrue(page2.contains("SEVENTY THOUSAND SIX HUNDRED TWENTY THREE"),
                 "Amount in words must match saved quotation grand total 70,623");
     }
+
+    @Test
+    @DisplayName("Quote Summary table removes OFFER PRICE column header but preserves summary Offer Price row")
+    public void testQuoteSummaryTableRemovesOfferPriceColumnHeader() throws Exception {
+        BigDecimal total = new BigDecimal("50000.00");
+        Quotation q = createQuotationWithItems("QT-COL-001", adminUser, total, BigDecimal.ZERO);
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(pdfBytes);
+
+        String page2 = extractPageText(pdfBytes, 2);
+
+        // Header check: Required headers present, but OFFER PRICE column header removed
+        assertTrue(page2.contains("WORK CATEGORY"), "Table header must have WORK CATEGORY");
+        assertTrue(page2.contains("MATERIAL"), "Table header must have MATERIAL");
+        assertTrue(page2.contains("SQ.FT"), "Table header must have SQ.FT");
+        assertFalse(page2.contains("OFFER PRICE"), "Table header must NOT have OFFER PRICE column header");
+
+        // Footer check: Footer summary rows retain Total Amount, Offer Price, and GRAND TOTAL
+        assertTrue(page2.contains("Total Amount"), "Footer summary row must retain Total Amount");
+        assertTrue(page2.contains("Offer Price"), "Footer summary row must retain Offer Price");
+        assertTrue(page2.contains("GRAND TOTAL"), "Footer must retain GRAND TOTAL");
+    }
+
+    @Test
+    @DisplayName("PDF renders material name once even if option name is identical and cleans specification")
+    public void testMaterialNameDeduplicationInPdf() throws Exception {
+        Material plyMat = new Material();
+        plyMat.setName("Commercial Ply");
+        plyMat.setActive(true);
+        plyMat.setSpecification("Commercial Ply Thickness 16mm with mica");
+        plyMat = materialRepository.save(plyMat);
+
+        MaterialOption dupOption = new MaterialOption();
+        dupOption.setMaterial(plyMat);
+        dupOption.setName("Commercial Ply");
+        dupOption.setActive(true);
+        dupOption = materialOptionRepository.save(dupOption);
+
+        Quotation q = new Quotation();
+        q.setQuotationNumber("QT-DEDUP-001");
+        q.setCustomer(customer);
+        q.setBranch(branch);
+        q.setPricingMode(PricingMode.MIDDLE);
+        q.setQuotationDate(LocalDate.now());
+        q.setEmployee(adminUser);
+        q.setStatus(QuotationStatus.WORKING);
+        q.setSubtotal(new BigDecimal("25000.00"));
+        q.setTotalAmount(new BigDecimal("25000.00"));
+        q.setOfferPercentage(BigDecimal.ZERO);
+        q.setOfferAmount(BigDecimal.ZERO);
+        q.setGrandTotal(new BigDecimal("25000.00"));
+        q = quotationRepository.save(q);
+
+        QuotationRoom room = new QuotationRoom();
+        room.setQuotation(q);
+        room.setRoom("Master Bedroom");
+        room.setFloor("Ground Floor");
+        room.setActive(true);
+        room = quotationRoomRepository.save(room);
+
+        QuotationItem item = new QuotationItem();
+        item.setQuotationRoom(room);
+        item.setWorkCategory(category);
+        item.setMaterial(plyMat);
+        item.setMaterialOption(dupOption);
+        item.setSpecification("Commercial Ply Thickness 16mm with mica");
+        item.setLengthValue(new BigDecimal("8.00"));
+        item.setWidthValue(BigDecimal.ZERO);
+        item.setHeightValue(new BigDecimal("6.00"));
+        item.setCalculatedSqft(new BigDecimal("48.00"));
+        item.setRate(new BigDecimal("500.00"));
+        item.setAmount(new BigDecimal("24000.00"));
+        item.setActive(true);
+        quotationItemRepository.save(item);
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(pdfBytes);
+
+        String page2 = extractPageText(pdfBytes, 2);
+
+        // Material name should appear only once, NOT duplicate as COMMERCIAL PLY - COMMERCIAL PLY
+        assertFalse(page2.contains("COMMERCIAL PLY - COMMERCIAL PLY"), "Must not duplicate material name");
+        assertTrue(page2.contains("COMMERCIAL PLY"), "Must contain material name");
+        assertTrue(page2.contains("THICKNESS 16MM WITH MICA"), "Specification must be preserved without duplicate material name prefix");
+    }
 }

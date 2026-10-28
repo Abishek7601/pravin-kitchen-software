@@ -427,12 +427,12 @@ public class QuotationPdfService {
         document.add(summaryTitle);
 
         // ========================================================
-        // 3. 10-COLUMN QUOTE SUMMARY TABLE
+        // 3. 9-COLUMN QUOTE SUMMARY TABLE
         // ========================================================
-        PdfPTable itemTable = new PdfPTable(10);
+        PdfPTable itemTable = new PdfPTable(9);
         itemTable.setWidthPercentage(100);
         itemTable.setHeaderRows(1);
-        itemTable.setWidths(new float[]{3.0f, 15.0f, 12.0f, 9.0f, 19.0f, 9.0f, 6.5f, 5.5f, 10.5f, 10.5f});
+        itemTable.setWidths(new float[]{3.5f, 16.5f, 13.0f, 9.5f, 24.5f, 11.0f, 7.0f, 5.0f, 10.0f});
         itemTable.setSpacingAfter(5f);
 
         // --- TABLE HEADERS ---
@@ -445,7 +445,6 @@ public class QuotationPdfService {
         addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_RIGHT);
         addHeaderCell(itemTable, "UNIT", Element.ALIGN_CENTER);
         addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT);
-        addHeaderCell(itemTable, "OFFER PRICE", Element.ALIGN_RIGHT);
 
         // --- QUOTATION ROOMS & ITEMS ---
         List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(quotation.getId());
@@ -480,22 +479,28 @@ public class QuotationPdfService {
                     floorName = "-";
                 }
 
-                // Material & Option
-                String materialText = item.getMaterial() != null ? safe(item.getMaterial().getName()) : "";
-                if (item.getMaterialOption() != null) {
-                    String optionName = safe(item.getMaterialOption().getName());
-                    if (!optionName.isBlank()) {
-                        materialText = !materialText.isBlank() ? materialText + " - " + optionName : optionName;
-                    }
+                // Material & Option (deduplicate so material name is only displayed once)
+                String rawMatName = item.getMaterial() != null ? safe(item.getMaterial().getName()).trim() : "";
+                String optionName = item.getMaterialOption() != null ? safe(item.getMaterialOption().getName()).trim() : "";
+
+                String materialText = rawMatName;
+                if (!optionName.isBlank() && !optionName.equalsIgnoreCase(rawMatName)) {
+                    materialText = !materialText.isBlank() ? materialText + " - " + optionName : optionName;
                 }
                 if (materialText.isBlank()) {
                     materialText = "-";
                 }
 
-                // Specifications
-                String specification = safe(item.getSpecification());
+                // Specifications (display saved specification without duplicating material name)
+                String specification = safe(item.getSpecification()).trim();
                 if (specification.isBlank() && item.getMaterialSpecification() != null) {
-                    specification = safe(item.getMaterialSpecification().getName());
+                    specification = safe(item.getMaterialSpecification().getName()).trim();
+                }
+                if (!rawMatName.isBlank() && specification.toUpperCase().startsWith(rawMatName.toUpperCase())) {
+                    specification = specification.substring(rawMatName.length()).trim();
+                    if (specification.startsWith("-") || specification.startsWith(":")) {
+                        specification = specification.substring(1).trim();
+                    }
                 }
 
                 // Size
@@ -518,7 +523,7 @@ public class QuotationPdfService {
                 // Sum items' Total Amount before applying Offer Percentage
                 itemsTotalAmount = itemsTotalAmount.add(amount);
 
-                // Add Row Cells
+                // Add Row Cells (9 columns, item-level offer price removed)
                 addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
@@ -528,7 +533,6 @@ public class QuotationPdfService {
                 addBodyCell(itemTable, format(sqft), Element.ALIGN_RIGHT, isAltRow);
                 addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow);
                 addRupeeCell(itemTable, rupees(amount), false, false, isAltRow);
-                addRupeeCell(itemTable, rupees(offerPrice), true, false, isAltRow);
 
                 isAltRow = !isAltRow;
             }
@@ -904,7 +908,7 @@ public class QuotationPdfService {
     }
 
     private void addFillerRow(PdfPTable table, boolean isAltRow) {
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < 9; i++) {
             PdfPCell cell = new PdfPCell(new Phrase(" ", rupeeFont));
             cell.setBorderColor(COLOR_BORDER);
             cell.setBorderWidth(0.5f);
@@ -933,7 +937,7 @@ public class QuotationPdfService {
         table.addCell(labelCell);
 
         PdfPCell valCell = new PdfPCell(new Phrase(amountText, valFont));
-        valCell.setColspan(2);
+        valCell.setColspan(1);
         valCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         valCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         valCell.setPaddingTop(4.5f);
@@ -959,10 +963,10 @@ public class QuotationPdfService {
         labelCell.setBorderColor(COLOR_HEADER_BG);
         table.addCell(labelCell);
 
-        // GRAND TOTAL VALUE (Colspan 2)
+        // GRAND TOTAL VALUE (Colspan 1)
         String amtText = rupees(grandTotal);
         PdfPCell totalCell = new PdfPCell(new Phrase(amtText, rupeeGoldBoldFont));
-        totalCell.setColspan(2);
+        totalCell.setColspan(1);
         totalCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         totalCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         totalCell.setPaddingTop(5f);

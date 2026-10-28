@@ -549,7 +549,7 @@
                             <td class="cell-material">
                                 <div class="material-name" th:text="${item.material != null ? item.material.name : 'N/A'}">Marine Ply</div>
                                 <div class="material-option-text"
-                                     th:if="${item.materialOption != null}"
+                                     th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
                                      th:text="${item.materialOption.name}">18mm</div>
                             </td>
                             <!-- Specifications -->
