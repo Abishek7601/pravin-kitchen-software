@@ -5,12 +5,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>Quotation Workspace</title>
+    <title>Quotation Workspace - Pravin KITCHENS &amp; INTERIORS</title>
 
     <link rel="stylesheet"
           th:href="@{/css/employee-nav.css}">
     <link rel="stylesheet"
           th:href="@{/css/employee-quotation-workspace.css}">
+    <link rel="stylesheet"
+          th:href="@{/css/quotation-view.css}">
 </head>
 
 <body>
@@ -35,13 +37,7 @@
             </div>
 
             <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-<!--                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/employee/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
-<!--                    <span>← Back</span>-->
-<!--                </button>-->
-<!--                <a th:href="@{/employee/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">-->
-<!--                    <span>⌂ Dashboard</span>-->
-<!--                </a>-->
-                <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
+                <a th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
                    class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: white;">
                     ✏ Edit in Builder
                 </a>
@@ -68,1222 +64,543 @@
             </div>
         </header>
 
-        <div class="workspace-page">
+        <div class="workspace-page page-container">
 
-
-    <!-- ================= QUOTATION SUMMARY ================= -->
-
-    <section class="quotation-summary">
-
-        <div class="summary-card">
-
-            <div class="summary-label">
-                Customer
+            <!-- ================= STATUS MESSAGES ================= -->
+            <div class="status-message success-message"
+                 th:if="${successMessage}"
+                 th:text="${successMessage}"
+                 style="background: #eaf5f1; color: #13795b; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; border: 1px solid #c2e5d9;">
+                Quotation status updated successfully.
             </div>
 
-            <div class="summary-value"
-                 th:text="${quotation.customer != null
-                           ? quotation.customer.name
-                           : 'N/A'}">
-                Customer Name
+            <div class="status-message error-message"
+                 th:if="${errorMessage}"
+                 th:text="${errorMessage}"
+                 style="background: #fee4e2; color: #b42318; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-weight: 600; border: 1px solid #fecdca;">
+                Unable to update quotation status.
             </div>
 
-        </div>
+            <!-- =====================================================
+                 QUOTATION BANNER
+            ====================================================== -->
+            <section class="quotation-banner">
+                <div>
+                    <span class="field-label">
+                        Quotation Number
+                    </span>
 
+                    <h2 th:text="${quotation.quotationNumber}">
+                        QT-001
+                    </h2>
 
-        <div class="summary-card">
+                    <p>
+                        Created on:
+                        <strong
+                                th:text="${quotation.quotationDate != null
+                                ? #temporals.format(quotation.quotationDate, 'dd MMM yyyy')
+                                : 'N/A'}">
+                            05 Oct 2026
+                        </strong>
+                    </p>
+                </div>
 
-            <div class="summary-label">
-                Branch
-            </div>
-
-            <div class="summary-value"
-                 th:text="${quotation.branch != null
-                           ? quotation.branch.name
-                           : 'N/A'}">
-                Branch
-            </div>
-
-        </div>
-
-
-        <div class="summary-card">
-
-            <div class="summary-label">
-                Quotation Date
-            </div>
-
-            <div class="summary-value"
-                 th:text="${quotation.quotationDate}">
-                Quotation Date
-            </div>
-
-        </div>
-
-
-        <div class="summary-card">
-
-            <div class="summary-label">
-                Pricing Mode
-            </div>
-
-            <div class="summary-value"
-                 th:text="${quotation.pricingMode}">
-                PREMIUM
-            </div>
-
-        </div>
-
-
-        <div class="summary-card">
-
-            <div class="summary-label">
-                Status
-            </div>
-
-            <div class="status-badge"
-                 th:text="${quotation.status}">
-                PENDING
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ============================================================
-         STATUS MANAGEMENT
-         ============================================================ -->
-
-    <section class="status-management-card">
-
-        <div class="status-management-header">
-
-            <div>
-
-                <span class="eyebrow">
-                    QUOTATION STATUS
-                </span>
-
-                <h2>
-                    Update Status
-                </h2>
-
-                <p>
-                    Change the current quotation status from the options below.
-                </p>
-
-            </div>
-
-            <div class="current-status-box">
-
-                <span>
-                    Current Status
-                </span>
-
-                <strong th:text="${quotation.status}">
+                <span class="status-badge"
+                      th:classappend="' status-' + ${#strings.toLowerCase(quotation.status.name())}"
+                      th:text="${quotation.status}">
                     PENDING
-                </strong>
-
-            </div>
-
-        </div>
-
-
-        <!-- ================= SUCCESS MESSAGE ================= -->
-
-        <div class="status-message success-message"
-             th:if="${successMessage}"
-             th:text="${successMessage}">
-            Quotation status updated successfully.
-        </div>
-
-
-        <!-- ================= ERROR MESSAGE ================= -->
-
-        <div class="status-message error-message"
-             th:if="${errorMessage}"
-             th:text="${errorMessage}">
-            Unable to update quotation status.
-        </div>
-
-
-        <!-- ================= STATUS ACTIONS ================= -->
-
-        <div class="status-actions">
-
-            <!-- PENDING -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="PENDING">
-
-                <button type="submit"
-                        class="status-action pending"
-                        th:disabled="${quotation.status.name() == 'PENDING'}">
-
-                    Pending
-
-                </button>
-
-            </form>
-
-
-            <!-- WORKING -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="WORKING">
-
-                <button type="submit"
-                        class="status-action working"
-                        th:disabled="${quotation.status.name() == 'WORKING'}">
-
-                    Working
-
-                </button>
-
-            </form>
-
-
-            <!-- SENT -->
-
-            <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
-                  method="post">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-                <input type="hidden"
-                       name="status"
-                       value="SENT">
-
-                <button type="submit"
-                        class="status-action sent"
-                        th:disabled="${quotation.status.name() == 'SENT'}">
-
-                    Sent
-
-                </button>
-
-            </form>
-
-        </div>
-
-    </section>
-
-
-    <!-- ================= STATUS HISTORY ================= -->
-
-    <section class="status-history-card"
-             th:if="${statusHistory != null and !#lists.isEmpty(statusHistory)}">
-
-        <div class="status-history-header">
-
-            <div>
-
-                <span class="eyebrow">
-                    STATUS HISTORY
                 </span>
+            </section>
 
-                <h2>
-                    Quotation Status Timeline
-                </h2>
-
-            </div>
-
-        </div>
-
-
-        <div class="status-history-list">
-
-            <div class="status-history-item"
-                 th:each="history : ${statusHistory}">
-
-                <div class="history-status">
-
-                    <span class="history-old-status"
-                          th:if="${history.oldStatus != null}"
-                          th:text="${history.oldStatus}">
-                        DRAFT
-                    </span>
-
-                    <span class="history-arrow">
-                        →
-                    </span>
-
-                    <span class="history-new-status"
-                          th:text="${history.newStatus}">
-                        PENDING
-                    </span>
-
-                </div>
-
-
-                <div class="history-details">
-
-                    <span class="history-date"
-                          th:text="${history.changedAt}">
-                        2026-10-07
-                    </span>
-
-                    <span class="history-user"
-                          th:if="${history.changedBy != null}"
-                          th:text="${history.changedBy.name}">
-                        Employee
-                    </span>
-
-                    <span class="history-remarks"
-                          th:if="${history.remarks != null
-                                 and !#strings.isEmpty(history.remarks)}"
-                          th:text="${history.remarks}">
-                        Status updated
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ================= CUSTOMER REQUIREMENTS ================= -->
-
-    <section class="requirements-card"
-             th:if="${quotation.customerRequirements != null
-                     and !#strings.isEmpty(quotation.customerRequirements)}">
-
-        <div class="section-label">
-            CUSTOMER REQUIREMENTS
-        </div>
-
-        <p th:text="${quotation.customerRequirements}">
-            Customer requirements
-        </p>
-
-    </section>
-
-
-    <!-- ================= ROOMS ================= -->
-
-    <main class="rooms-section">
-
-        <div class="section-heading">
-
-            <div>
-
-                <span class="eyebrow">
-                    WORK DETAILS
-                </span>
-
-                <h2>
-                    Rooms &amp; Items
-                </h2>
-
-                <p>
-                    Add rooms and configure the work items for this quotation.
-                </p>
-
-            </div>
-
-
-            <a th:href="@{/employee/quotations/view/{id}/room/new(id=${quotation.id})}"
-               class="btn btn-primary">
-
-                + Add Room
-
-            </a>
-
-        </div>
-
-
-        <!-- ================= NO ROOMS ================= -->
-
-        <div class="empty-state"
-             th:if="${#lists.isEmpty(rooms)}">
-
-            <div class="empty-icon">
-                +
-            </div>
-
-            <h3>
-                No rooms added yet
-            </h3>
-
-            <p>
-                Start by adding a room such as Kitchen, Bedroom,
-                Living Room or Wall Panel.
-            </p>
-
-            <a th:href="@{/employee/quotations/view/{id}/room/new(id=${quotation.id})}"
-               class="btn btn-primary">
-
-                Add First Room
-
-            </a>
-
-        </div>
-
-
-        <!-- ================= ROOM LIST ================= -->
-
-        <div class="rooms-list"
-             th:unless="${#lists.isEmpty(rooms)}">
-
-            <article class="room-card"
-                     th:each="room, roomStat : ${rooms}">
-
-
-                <!-- ROOM HEADER -->
-
-                <div class="room-header">
-
-                    <div class="room-number"
-                         th:text="${roomStat.count}">
-                        1
+            <!-- =====================================================
+                 STATUS MANAGEMENT
+            ====================================================== -->
+            <section class="status-management">
+                <div class="status-management-header">
+                    <div>
+                        <h3>
+                            Quotation Status
+                        </h3>
+                        <p>
+                            Update the current quotation status.
+                        </p>
                     </div>
 
+                    <div class="current-status">
+                        Current:
+                        <strong th:text="${quotation.status}">
+                            PENDING
+                        </strong>
+                    </div>
+                </div>
 
-                    <div class="room-info">
+                <div class="status-buttons">
+                    <!-- PENDING -->
+                    <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
+                          method="post">
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}"/>
+                        <input type="hidden"
+                               name="status"
+                               value="PENDING">
+                        <button type="submit"
+                                class="status-action pending"
+                                th:disabled="${quotation.status.name() == 'PENDING'}">
+                            Pending
+                        </button>
+                    </form>
 
-                        <span class="room-label">
-                            ROOM
-                        </span>
+                    <!-- WORKING -->
+                    <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
+                          method="post">
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}"/>
+                        <input type="hidden"
+                               name="status"
+                               value="WORKING">
+                        <button type="submit"
+                                class="status-action working"
+                                th:disabled="${quotation.status.name() == 'WORKING'}">
+                            Working
+                        </button>
+                    </form>
 
-                        <h3 th:text="${room.room}">
-                            Kitchen
-                        </h3>
+                    <!-- SENT -->
+                    <form th:action="@{/employee/quotations/status/{id}(id=${quotation.id})}"
+                          method="post">
+                        <input type="hidden"
+                               th:name="${_csrf.parameterName}"
+                               th:value="${_csrf.token}"/>
+                        <input type="hidden"
+                               name="status"
+                               value="SENT">
+                        <button type="submit"
+                                class="status-action sent"
+                                th:disabled="${quotation.status.name() == 'SENT'}">
+                            Sent
+                        </button>
+                    </form>
+                </div>
+            </section>
 
+            <!-- =====================================================
+                 CUSTOMER + PROJECT INFORMATION
+            ====================================================== -->
+            <!-- QUOTATION SUMMARY -->
+            <section class="details-grid">
+                <!-- CUSTOMER -->
+                <article class="detail-card">
+                    <h3>Customer Information</h3>
 
-                        <div class="room-meta">
+                    <div class="detail-row">
+                        <span>Customer Name</span>
+                        <strong th:text="${quotation.customer != null ? quotation.customer.name : 'N/A'}">Rahul</strong>
+                    </div>
 
-                            <span>
+                    <div class="detail-row">
+                        <span>Phone Number</span>
+                        <strong th:text="${quotation.customer != null ? quotation.customer.phone : 'N/A'}">N/A</strong>
+                    </div>
 
-                                Floor:
+                    <div class="detail-row">
+                        <span>Email Address</span>
+                        <strong th:text="${quotation.customer != null && quotation.customer.email != null ? quotation.customer.email : 'N/A'}">N/A</strong>
+                    </div>
 
-                                <strong th:text="${room.floor}">
-                                    Ground Floor
-                                </strong>
+                    <div class="detail-row">
+                        <span>Address</span>
+                        <strong th:text="${quotation.customer != null && quotation.customer.address != null ? quotation.customer.address : 'N/A'}">N/A</strong>
+                    </div>
+                </article>
 
-                            </span>
+                <!-- PROJECT -->
+                <article class="detail-card">
+                    <h3>Project Information</h3>
 
+                    <div class="detail-row">
+                        <span>District</span>
+                        <strong th:text="${quotation.branch != null ? quotation.branch.name : 'N/A'}">Madurai</strong>
+                    </div>
 
-                            <span th:if="${room.workDescription != null
-                                         and !#strings.isEmpty(room.workDescription)}">
+                    <div class="detail-row">
+                        <span>Pricing Mode</span>
+                        <strong th:text="${quotation.pricingMode}">PREMIUM</strong>
+                    </div>
 
-                                Work:
+                    <div class="detail-row">
+                        <span>Prepared By</span>
+                        <strong th:text="${quotation.employee != null ? quotation.employee.name : 'N/A'}">Abin</strong>
+                    </div>
 
-                                <strong th:text="${room.workDescription}">
-                                    Modular Kitchen
-                                </strong>
+                    <div class="detail-row">
+                        <span>Quotation Status</span>
+                        <strong th:text="${quotation.status}">PENDING</strong>
+                    </div>
+                </article>
+            </section>
 
-                            </span>
+            <!-- =====================================================
+                 ROOMS & WORK ITEMS
+            ====================================================== -->
+            <section class="detail-card quotation-work-section">
+                <div class="work-section-header">
+                    <div>
+                        <p class="eyebrow">
+                            QUOTATION BREAKDOWN
+                        </p>
+                        <h2>
+                            Rooms &amp; Work Items
+                        </h2>
+                        <p>
+                            Detailed work, materials, dimensions and pricing included in this quotation.
+                        </p>
+                    </div>
 
+                    <div class="work-count"
+                         th:text="${quotationRooms != null ? #lists.size(quotationRooms) : 0} + ' Rooms'">
+                        0 Rooms
+                    </div>
+                </div>
+
+                <!-- NO ROOMS -->
+                <div class="work-empty"
+                     th:if="${quotationRooms == null || #lists.isEmpty(quotationRooms)}">
+                    <div class="work-empty-icon">🏠</div>
+                    <h3>No rooms added yet</h3>
+                    <p>Add rooms and work items to build the quotation.</p>
+                    <a th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
+                       class="btn btn-primary">+ Add Rooms &amp; Items in Builder</a>
+                </div>
+
+                <!-- BREAKDOWN TABLE -->
+                <div class="breakdown-table-wrapper"
+                     th:if="${quotationRooms != null && !#lists.isEmpty(quotationRooms)}">
+                    <table class="breakdown-table" id="quotationBreakdownTable">
+                        <thead>
+                            <tr>
+                                <th class="col-sno text-center">S.No.</th>
+                                <th class="col-floor">Floor</th>
+                                <th class="col-room">Room No.</th>
+                                <th class="col-category">Category</th>
+                                <th class="col-worktype">Work Type</th>
+                                <th class="col-material">Material</th>
+                                <th class="col-spec">Specifications</th>
+                                <th class="col-dimensions">Size / Dimensions</th>
+                                <th class="col-sqft text-right">Sq.Ft.</th>
+                                <th class="col-rate text-right">Unit Rate</th>
+                                <th class="col-amount text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <th:block th:each="room, roomStat : ${quotationRooms}">
+                                <!-- Room Grouping Banner -->
+                                <tr class="room-group-row">
+                                    <td colspan="11">
+                                        <div class="room-group-banner">
+                                            <div class="room-group-title">
+                                                <span class="room-badge" th:text="'Room #' + ${roomStat.count}">Room #1</span>
+                                                <span class="room-floor-tag" th:text="${room.floor}">Ground Floor</span>
+                                                <span class="room-sep">•</span>
+                                                <strong class="room-name-tag" th:text="${room.room}">Kitchen</strong>
+                                                <span class="room-desc-tag"
+                                                      th:if="${room.workDescription != null && !#strings.isEmpty(room.workDescription)}"
+                                                      th:text="${'— ' + room.workDescription}"></span>
+                                            </div>
+                                            <div class="room-group-total">
+                                                <span class="room-total-label">Room Subtotal:</span>
+                                                <strong class="room-total-val"
+                                                        th:text="${'₹ ' + #numbers.formatDecimal(room.subtotal != null ? room.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Room Items -->
+                                <tr th:each="item, itemStat : ${itemsByRoom[room.id]}" class="breakdown-item-row">
+                                    <!-- S.No. -->
+                                    <td class="text-center cell-sno" th:text="${roomStat.count + '.' + itemStat.count}">1.1</td>
+                                    <!-- Floor -->
+                                    <td class="cell-floor" th:text="${room.floor}">Ground Floor</td>
+                                    <!-- Room No. -->
+                                    <td class="cell-room" th:text="${room.room}">Kitchen</td>
+                                    <!-- Category -->
+                                    <td class="cell-category">
+                                        <span class="badge-category"
+                                              th:text="${item.workCategory != null ? item.workCategory.name : '-'}">Modular Kitchen</span>
+                                    </td>
+                                    <!-- Work Type -->
+                                    <td class="cell-worktype">
+                                        <strong class="worktype-name"
+                                                th:text="${item.item != null ? item.item.name : (item.itemDescription != null ? item.itemDescription : (item.division != null ? item.division.name : 'Work Item'))}">
+                                            Base Cabinet
+                                        </strong>
+                                    </td>
+                                    <!-- Material (deduplicated) -->
+                                    <td class="cell-material">
+                                        <div class="material-name" th:text="${item.material != null ? item.material.name : 'N/A'}">Marine Ply</div>
+                                        <div class="material-option-text"
+                                             th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
+                                             th:text="${item.materialOption.name}">18mm</div>
+                                    </td>
+                                    <!-- Specifications -->
+                                    <td class="cell-spec">
+                                        <div class="spec-main"
+                                             th:if="${item.specification != null && !#strings.isEmpty(item.specification)}"
+                                             th:text="${item.specification}">Standard spec</div>
+                                        <div class="spec-mat"
+                                             th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification != null}"
+                                             th:text="${item.materialSpecification.name}">Specification</div>
+                                        <div class="spec-formula"
+                                             th:if="${item.formula != null && !#strings.isEmpty(item.formula)}"
+                                             th:text="${'Formula: ' + item.formula}"></div>
+                                        <span class="spec-empty"
+                                              th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula))}">-</span>
+                                    </td>
+                                    <!-- Size / Dimensions -->
+                                    <td class="cell-dimensions">
+                                        <div th:if="${sizesByItem != null && sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
+                                            <div th:each="sz, szStat : ${sizesByItem[item.id]}"
+                                                 th:if="${sz.active == null || sz.active}"
+                                                 class="dimension-line">
+                                                 <span class="size-idx"
+                                                       th:if="${#lists.size(sizesByItem[item.id]) > 1}"
+                                                       th:text="${'#' + szStat.count + ': '}">#1: </span>
+                                                 <span class="size-vals"
+                                                       th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                            </div>
+                                        </div>
+                                        <div th:if="${sizesByItem == null || sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
+                                            <span class="size-vals"
+                                                  th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                        </div>
+                                    </td>
+                                    <!-- Sq.Ft. -->
+                                    <td class="text-right cell-sqft"
+                                        th:text="${#numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
+                                        0.00
+                                    </td>
+                                    <!-- Unit Rate -->
+                                    <td class="text-right cell-rate"
+                                        th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2)}">
+                                        ₹ 0.00
+                                    </td>
+                                    <!-- Amount -->
+                                    <td class="text-right cell-amount"
+                                        th:text="${'₹ ' + #numbers.formatDecimal(item.amount != null ? item.amount : 0, 1, 2)}">
+                                        ₹ 0.00
+                                    </td>
+                                </tr>
+
+                                <!-- If room has no active items -->
+                                <tr th:if="${itemsByRoom[room.id] == null || #lists.isEmpty(itemsByRoom[room.id])}" class="empty-room-row">
+                                    <td colspan="11" class="text-center text-muted">
+                                        No active work items added to this room.
+                                    </td>
+                                </tr>
+
+                                <!-- Room Subtotal Row -->
+                                <tr class="room-subtotal-row">
+                                    <td colspan="10" class="text-right room-subtotal-label">
+                                        <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
+                                    </td>
+                                    <td class="text-right room-subtotal-val">
+                                        <strong th:text="${'₹ ' + #numbers.formatDecimal(room.subtotal != null ? room.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                                    </td>
+                                </tr>
+                            </th:block>
+                        </tbody>
+                        <tfoot>
+                            <tr class="tfoot-subtotal-row">
+                                <td colspan="10" class="text-right tfoot-label">
+                                    <strong>Total Items Subtotal</strong>
+                                </td>
+                                <td class="text-right tfoot-val">
+                                    <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.subtotal != null ? quotation.subtotal : 0, 1, 2)}">₹ 0.00</strong>
+                                </td>
+                            </tr>
+                            <!-- Accessories -->
+                            <tr class="tfoot-charge-row" th:if="${quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label">Accessories</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.accessoriesAmount, 1, 2)}">₹ 0.00</td>
+                            </tr>
+                            <!-- Travel Charges -->
+                            <tr class="tfoot-charge-row" th:if="${quotation.travelCharge != null && quotation.travelCharge > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label">Travel Charges</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.travelCharge, 1, 2)}">₹ 0.00</td>
+                            </tr>
+                            <!-- Other Charges -->
+                            <tr class="tfoot-charge-row" th:if="${quotation.otherCharges != null && quotation.otherCharges > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label">Other Charges</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.otherCharges, 1, 2)}">₹ 0.00</td>
+                            </tr>
+                            <!-- Discount -->
+                            <tr class="tfoot-charge-row discount-charge-row" th:if="${quotation.discountAmount != null && quotation.discountAmount > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label">Discount</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.discountAmount, 1, 2)}">- ₹ 0.00</td>
+                            </tr>
+                            <!-- GST -->
+                            <tr class="tfoot-charge-row" th:if="${quotation.gstAmount != null && quotation.gstAmount > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quotation.gstPercentage != null ? quotation.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.gstAmount, 1, 2)}">₹ 0.00</td>
+                            </tr>
+                            <!-- Total Amount (Taxable + GST) when extra charges exist -->
+                            <tr class="tfoot-charge-row total-amount-row" th:if="${(quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0) || (quotation.travelCharge != null && quotation.travelCharge > 0) || (quotation.otherCharges != null && quotation.otherCharges > 0) || (quotation.discountAmount != null && quotation.discountAmount > 0) || (quotation.gstAmount != null && quotation.gstAmount > 0)}">
+                                <td colspan="10" class="text-right tfoot-charge-label"><strong>Total Amount</strong></td>
+                                <td class="text-right tfoot-charge-val"><strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)}">₹ 0.00</strong></td>
+                            </tr>
+                            <!-- Special Offer / Discount -->
+                            <tr class="tfoot-charge-row offer-charge-row" th:if="${quotation.offerAmount != null && quotation.offerAmount > 0}">
+                                <td colspan="10" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quotation.offerPercentage != null ? quotation.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
+                                <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.offerAmount, 1, 2)}">- ₹ 0.00</td>
+                            </tr>
+                            <!-- Grand Total -->
+                            <tr class="tfoot-grand-total-row">
+                                <td colspan="10" class="text-right grand-total-label">
+                                    <strong>Grand Total</strong>
+                                </td>
+                                <td class="text-right grand-total-amount">
+                                    <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : (quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0)), 1, 2)}">₹ 0.00</strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </section>
+
+            <!-- =====================================================
+                 COMMUNICATION HISTORY
+            ====================================================== -->
+            <section class="history-card communication-history-card">
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">
+                            ACTIVITY
+                        </p>
+                        <h2>
+                            Communication History
+                        </h2>
+                    </div>
+
+                    <span class="history-count"
+                          th:text="${communicationHistory != null ? #lists.size(communicationHistory) : 0}">
+                        0
+                    </span>
+                </div>
+
+                <div th:if="${communicationHistory == null || #lists.isEmpty(communicationHistory)}"
+                     class="empty-history">
+                    <div class="empty-history-icon">
+                        📭
+                    </div>
+                    <h3>
+                        No communication yet
+                    </h3>
+                    <p>
+                        Email, WhatsApp and PDF activities will appear here.
+                    </p>
+                </div>
+
+                <div th:unless="${communicationHistory == null || #lists.isEmpty(communicationHistory)}"
+                     class="communication-list">
+                    <div class="communication-item"
+                         th:each="communication : ${communicationHistory}">
+                        <div class="communication-icon"
+                             th:switch="${communication.type}">
+                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">📧</span>
+                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">💬</span>
+                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">📄</span>
+                            <span th:case="*">📌</span>
                         </div>
 
-                    </div>
+                        <div class="communication-content">
+                            <div class="communication-top">
+                                <h3 th:switch="${communication.type}">
+                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">Email</span>
+                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">WhatsApp</span>
+                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">PDF</span>
+                                    <span th:case="*" th:text="${communication.type}"></span>
+                                </h3>
 
+                                <span class="communication-status"
+                                      th:classappend="${communication.status.name() == 'SENT'} ? ' status-success' : ' status-failed'"
+                                      th:text="${communication.status}">
+                                    SENT
+                                </span>
+                            </div>
 
-                    <div class="room-actions">
-
-                        <a th:href="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/new(
-                                      quotationId=${quotation.id},
-                                      roomId=${room.id})}"
-                           class="btn btn-primary btn-small">
-
-                            + Add Item
-
-                        </a>
-
-                    </div>
-
-                </div>
-
-
-                <!-- ROOM ITEMS -->
-
-                <div class="items-container">
-
-
-                    <!-- NO ITEMS -->
-
-                    <div class="room-empty"
-                         th:if="${#lists.isEmpty(roomItems[room.id])}">
-
-                        <div>
-
-                            <strong>
-                                No items added
-                            </strong>
-
-                            <p>
-                                Add materials, dimensions and pricing
-                                for this room.
+                            <p class="communication-recipient"
+                               th:if="${communication.recipient != null}"
+                               th:text="${communication.recipient}">
+                                Recipient
                             </p>
 
+                            <p class="communication-message"
+                               th:if="${communication.message != null}"
+                               th:text="${communication.message}">
+                                Communication details
+                            </p>
+
+                            <p class="communication-date"
+                               th:if="${communication.sentAt != null}"
+                               th:text="${#temporals.format(communication.sentAt, 'dd MMM yyyy, hh:mm a')}">
+                                05 Oct 2026, 04:30 PM
+                            </p>
                         </div>
-
-
-                        <a th:href="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/new(
-                                      quotationId=${quotation.id},
-                                      roomId=${room.id})}"
-                           class="text-btn">
-
-                            + Add Item
-
-                        </a>
-
                     </div>
-
-
-                    <!-- ITEMS TABLE -->
-
-                    <div class="table-wrapper"
-                         th:unless="${#lists.isEmpty(roomItems[room.id])}">
-
-                        <table class="items-table">
-
-                            <thead>
-
-                            <tr>
-
-                                <th>#</th>
-                                <th>ITEM</th>
-                                <th>MATERIAL</th>
-                                <th>SIZE</th>
-                                <th>SQ.FT</th>
-                                <th>RATE</th>
-                                <th>AMOUNT</th>
-                                <th>ACTION</th>
-
-                            </tr>
-
-                            </thead>
-
-
-                            <tbody>
-
-                            <tr th:each="item, itemStat : ${roomItems[room.id]}">
-
-
-                                <!-- SERIAL -->
-
-                                <td class="serial"
-                                    th:text="${itemStat.count}">
-                                    1
-                                </td>
-
-
-                                <!-- ITEM -->
-
-                                <td>
-
-                                    <div class="item-name"
-                                         th:text="${item.item != null
-                                                   ? item.item.name
-                                                   : 'Item'}">
-                                        Bottom Cabinet
-                                    </div>
-
-                                    <small th:if="${item.itemDescription != null
-                                                   and !#strings.isEmpty(item.itemDescription)}"
-                                           th:text="${item.itemDescription}">
-                                        Description
-                                    </small>
-
-                                </td>
-
-
-                                <!-- MATERIAL -->
-
-                                <td>
-
-                                    <div th:if="${item.material != null}"
-                                         class="material-name"
-                                         th:text="${item.material.name}">
-                                        Marine Ply
-                                    </div>
-
-                                    <small th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
-                                           th:text="${item.materialOption.name}">
-                                        Lamination
-                                    </small>
-
-                                </td>
-
-
-                                <!-- SIZE -->
-
-                                <td class="size-cell">
-
-                                    <span th:text="${item.lengthValue}">
-                                        5
-                                    </span>
-
-                                    ×
-
-                                    <span th:text="${item.widthValue}">
-                                        4.76
-                                    </span>
-
-                                    ×
-
-                                    <span th:text="${item.heightValue}">
-                                        2.5
-                                    </span>
-
-                                </td>
-
-
-                                <!-- SQ FT -->
-
-                                <td>
-
-                                    <strong th:text="${item.calculatedSqft}">
-                                        1.56
-                                    </strong>
-
-                                </td>
-
-
-                                <!-- RATE -->
-
-                                <td>
-
-                                    ₹<span th:text="${item.rate}">
-                                        1000
-                                    </span>
-
-                                </td>
-
-
-                                <!-- AMOUNT -->
-
-                                <td class="amount-cell">
-
-                                    ₹<span th:text="${item.amount}">
-                                        1560
-                                    </span>
-
-                                </td>
-
-
-                                <!-- ACTIONS -->
-
-                                <td>
-
-                                    <div class="item-actions">
-
-
-                                        <!-- EDIT -->
-
-                                        <a th:href="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/{itemId}/edit(
-                                                      quotationId=${quotation.id},
-                                                      roomId=${room.id},
-                                                      itemId=${item.id})}"
-                                           class="icon-btn"
-                                           title="Edit Item"
-                                           aria-label="Edit Item">
-
-                                            ✎
-
-                                        </a>
-
-
-                                        <!-- DELETE -->
-
-                                        <form th:action="@{/employee/quotations/view/{quotationId}/room/{roomId}/item/{itemId}/delete(
-                                                          quotationId=${quotation.id},
-                                                          roomId=${room.id},
-                                                          itemId=${item.id})}"
-                                              method="post"
-                                              class="delete-form"
-                                              onsubmit="return confirmDeleteItem(this);">
-
-                                            <input type="hidden"
-                                                   th:name="${_csrf.parameterName}"
-                                                   th:value="${_csrf.token}"/>
-
-                                            <button type="submit"
-                                                    class="icon-btn delete"
-                                                    title="Delete Item"
-                                                    aria-label="Delete Item">
-
-                                                🗑
-
-                                            </button>
-
-                                        </form>
-
-                                    </div>
-
-                                </td>
-
-                            </tr>
-
-                            </tbody>
-
-                        </table>
-
-                    </div>
-
-
-                    <!-- ROOM TOTAL -->
-
-                    <div class="room-total"
-                         th:unless="${#lists.isEmpty(roomItems[room.id])}">
-
-                        <span>
-                            Room Subtotal
-                        </span>
-
-                        <strong>
-
-                            ₹<span th:text="${room.subtotal}">
-                                0.00
-                            </span>
-
-                        </strong>
-
-                    </div>
-
                 </div>
-
-            </article>
-
-        </div>
-
-    </main>
-
-
-    <!-- ================= QUOTATION TOTALS ================= -->
-
-    <section class="totals-section">
-
-        <div class="totals-card">
-
-
-            <div class="totals-heading">
-
-                <span class="eyebrow">
-                    FINANCIAL SUMMARY
-                </span>
-
-                <h2>
-                    Quotation Amount
-                </h2>
-
-                <p class="financial-description">
-
-                    Update accessories, travel charges, other charges,
-                    discount and GST for this quotation.
-
-                </p>
-
-            </div>
-
-
-            <!-- ================= UPDATE CHARGES FORM ================= -->
-
-            <form th:action="@{/employee/quotations/charges/{id}(id=${quotation.id})}"
-                  method="post"
-                  class="employee-charges-form"
-                  id="employeeChargesForm">
-
-
-                <!-- CSRF -->
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}"/>
-
-
-                <!-- ACCESSORIES -->
-
-                <div class="charge-field">
-
-                    <label for="accessoriesAmount">
-                        Accessories
-                    </label>
-
-                    <div class="charge-input">
-
-                        <span>
-                            ₹
-                        </span>
-
-                        <input type="number"
-                               id="accessoriesAmount"
-                               name="accessoriesAmount"
-                               min="0"
-                               step="0.01"
-                               th:value="${quotation.accessoriesAmount != null
-                                      ? quotation.accessoriesAmount : 0}">
-
-                    </div>
-
-                </div>
-
-
-                <!-- TRAVEL -->
-
-                <div class="charge-field">
-
-                    <label for="travelCharge">
-                        Travel Charges
-                    </label>
-
-                    <div class="charge-input">
-
-                        <span>
-                            ₹
-                        </span>
-
-                        <input type="number"
-                               id="travelCharge"
-                               name="travelCharge"
-                               min="0"
-                               step="0.01"
-                               th:value="${quotation.travelCharge != null
-                                      ? quotation.travelCharge : 0}">
-
-                    </div>
-
-                </div>
-
-
-                <!-- OTHER CHARGES -->
-
-                <div class="charge-field">
-
-                    <label for="otherCharges">
-                        Other Charges
-                    </label>
-
-                    <div class="charge-input">
-
-                        <span>
-                            ₹
-                        </span>
-
-                        <input type="number"
-                               id="otherCharges"
-                               name="otherCharges"
-                               min="0"
-                               step="0.01"
-                               th:value="${quotation.otherCharges != null
-                                      ? quotation.otherCharges : 0}">
-
-                    </div>
-
-                </div>
-
-
-                <!-- DISCOUNT -->
-
-                <div class="charge-field">
-
-                    <label for="discountAmount">
-                        Discount
-                    </label>
-
-                    <div class="charge-input">
-
-                        <span>
-                            ₹
-                        </span>
-
-                        <input type="number"
-                               id="discountAmount"
-                               name="discountAmount"
-                               min="0"
-                               step="0.01"
-                               th:value="${quotation.discountAmount != null
-                                      ? quotation.discountAmount : 0}">
-
-                    </div>
-
-                </div>
-
-
-                <!-- GST -->
-
-                <div class="charge-field">
-
-                    <label for="gstPercentage">
-                        GST Percentage
-                    </label>
-
-                    <div class="charge-input">
-
-                        <input type="number"
-                               id="gstPercentage"
-                               name="gstPercentage"
-                               min="0"
-                               step="0.01"
-                               th:value="${quotation.gstPercentage != null
-                                      ? quotation.gstPercentage : 0}">
-
-                        <span>
-                            %
-                        </span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- UPDATE BUTTON -->
-
-                <div class="charge-form-actions">
-
-                    <button type="submit"
-                            class="btn btn-primary">
-
-                        💾 Update Charges
-
-                    </button>
-
-                </div>
-
-            </form>
-
-
-            <!-- ================= CALCULATED SUMMARY ================= -->
-
-            <div class="quotation-calculated-summary"
-                 id="empFinancialSummary"
-                 th:data-subtotal="${quotation.subtotal != null ? quotation.subtotal : 0}">
-
-
-                <!-- SUBTOTAL -->
-
-                <div class="total-row">
-
-                    <span>
-                        Subtotal
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplaySubtotal" th:text="${quotation.subtotal != null ? #numbers.formatDecimal(quotation.subtotal, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- ACCESSORIES -->
-
-                <div class="total-row">
-
-                    <span>
-                        Accessories
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayAccessories" th:text="${quotation.accessoriesAmount != null ? #numbers.formatDecimal(quotation.accessoriesAmount, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- TRAVEL -->
-
-                <div class="total-row">
-
-                    <span>
-                        Travel Charge
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayTravel" th:text="${quotation.travelCharge != null ? #numbers.formatDecimal(quotation.travelCharge, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- OTHER CHARGES -->
-
-                <div class="total-row">
-
-                    <span>
-                        Other Charges
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayOther" th:text="${quotation.otherCharges != null ? #numbers.formatDecimal(quotation.otherCharges, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- DISCOUNT -->
-
-                <div class="total-row discount-row">
-
-                    <span>
-                        Discount
-                    </span>
-
-                    <strong>
-
-                        − ₹<span id="empDisplayDiscount" th:text="${quotation.discountAmount != null ? #numbers.formatDecimal(quotation.discountAmount, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- GST -->
-
-                <div class="total-row">
-
-                    <span>
-
-                        GST
-                        (<span id="empDisplayGstPercentage" th:text="${quotation.gstPercentage != null ? #numbers.formatDecimal(quotation.gstPercentage, 1, 2) : '0.00'}">
-                            18.00
-                        </span>%)
-
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayGstAmount" th:text="${quotation.gstAmount != null ? #numbers.formatDecimal(quotation.gstAmount, 1, 2) : '0.00'}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- TOTAL AMOUNT -->
-
-                <div class="total-row total-amount-row">
-
-                    <span>
-                        Total Amount
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayTotalAmount"
-                               th:text="${#numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount : (quotation.taxableAmount != null ? quotation.taxableAmount.add(quotation.gstAmount != null ? quotation.gstAmount : 0) : 0), 1, 2)}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- OFFER PERCENTAGE -->
-
-                <div class="total-row offer-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
-
-                    <label for="empOfferPercentage" style="font-weight: 700; color: var(--text-primary); margin: 0; font-size: 13px;">
-                        Offer Percentage (%)
-                    </label>
-
-                    <div style="max-width: 140px; display: inline-flex; align-items: center;">
-
-                        <input type="number"
-                               id="empOfferPercentage"
-                               name="offerPercentage"
-                               form="employeeChargesForm"
-                               min="0"
-                               max="100"
-                               step="0.01"
-                               style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #024541; border-radius: 6px; font-weight: 700; font-size: 14px; color: #024541; background: #f0fdfa;"
-                               th:value="${quotation.offerPercentage != null ? #numbers.formatDecimal(quotation.offerPercentage, 1, 2) : 0}">
-
-                        <span style="margin-left: 6px; font-weight: 700; color: #024541;">%</span>
-
-                    </div>
-
-                </div>
-
-
-                <!-- OFFER AMOUNT -->
-
-                <div class="total-row offer-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
-
-                    <span style="color: #059669; font-weight: 600;">
-                        Offer Amount
-                    </span>
-
-                    <strong style="color: #059669; font-size: 13px;">
-
-                        − ₹<span id="empDisplayOfferAmount"
-                                 th:text="${#numbers.formatDecimal(quotation.offerAmount != null ? quotation.offerAmount : 0, 1, 2)}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-
-                <!-- GRAND TOTAL -->
-
-                <div class="grand-total">
-
-                    <span>
-                        GRAND TOTAL
-                    </span>
-
-                    <strong>
-
-                        ₹<span id="empDisplayGrandTotal"
-                               th:text="${#numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : 0, 1, 2)}">
-                            0.00
-                        </span>
-
-                    </strong>
-
-                </div>
-
-                <!-- SAVE / APPLY OFFER BUTTON IN SUMMARY -->
-                <div style="margin-top: 14px; text-align: right;">
-                    <button type="submit"
-                            form="employeeChargesForm"
-                            class="btn btn-primary"
-                            style="width: 100%; padding: 10px 16px; font-weight: 700; font-size: 13px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        💾 Save Changes &amp; Apply Offer
-                    </button>
-                </div>
-
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <!-- ================= BOTTOM ACTIONS ================= -->
-
-    <section class="bottom-actions">
-
-        <div class="action-group">
-
-
-            <!-- Download PDF -->
-
-            <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-               class="btn btn-dark">
-
-                Download PDF
-
-            </a>
-
-
-            <!-- Email Quotation PDF -->
-
-            <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
-                  method="post"
-                  class="action-form">
-
-                <input type="hidden"
-                       th:name="${_csrf.parameterName}"
-                       th:value="${_csrf.token}" />
-
-                <button type="submit"
-                        class="btn btn-primary">
-
-                    ✉ Email Quotation
-
+            </section>
+
+            <!-- =====================================================
+                 BOTTOM ACTIONS
+            ====================================================== -->
+            <section class="bottom-actions">
+                <a th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
+                   class="btn btn-secondary">
+                    ✏ Edit in Builder
+                </a>
+
+                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
+                   class="btn btn-success">
+                    ↓ Download PDF
+                </a>
+
+                <button type="button"
+                        class="btn btn-dark"
+                        onclick="window.print()">
+                    🖨 Print
                 </button>
 
-            </form>
+                <a href="#"
+                   class="btn btn-whatsapp"
+                   th:attr="
+                   data-id=${quotation.id},
+                   data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
+                   data-name=${quotation.customer != null ? quotation.customer.name : ''},
+                   data-number=${quotation.quotationNumber},
+                   data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
+                   onclick="openWhatsApp(this); return false;"
+                   title="Send quotation PDF document via WhatsApp">
+                    💬 Send Quotation via WhatsApp
+                </a>
 
-
-            <!-- WhatsApp -->
-
-            <a href="#"
-               class="btn btn-whatsapp"
-               th:attr="
-               data-id=${quotation.id},
-               data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
-               data-name=${quotation.customer != null ? quotation.customer.name : ''},
-               data-number=${quotation.quotationNumber},
-               data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
-               onclick="openWhatsAppEmployee(this); return false;"
-               title="Send quotation PDF document via WhatsApp">
-
-                💬 Send Quotation via WhatsApp
-
-            </a>
-
-
-            <!-- Print -->
-
-            <button type="button"
-                    onclick="window.print()"
-                    class="btn btn-outline">
-
-                Print Quotation
-
-            </button>
+                <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
+                      method="post"
+                      style="display: inline;">
+                    <input type="hidden"
+                           th:name="${_csrf.parameterName}"
+                           th:value="${_csrf.token}" />
+                    <button type="submit"
+                            class="btn btn-email">
+                        📧 Email Quotation
+                    </button>
+                </form>
+            </section>
 
         </div>
-
-    </section>
-
-</div>
     </main>
 </div>
-
-
-<!-- ================= DELETE CONFIRMATION ================= -->
-
-<script>
-
-    function confirmDeleteItem(form) {
-
-        return confirm(
-            "Are you sure you want to delete this quotation item?\n\n" +
-            "This item will be removed from the quotation."
-        );
-
-    }
-
-</script>
 
 <!-- =========================================================
      WHATSAPP PDF SHARING MODAL (Desktop & Mobile Friendly)
@@ -1553,116 +870,6 @@
     }
 
     window.openWhatsApp = openWhatsAppEmployee;
-
-    // ============================================================
-    // LIVE RECALCULATION: TOTAL AMOUNT, OFFER %, OFFER AMT, GRAND TOTAL
-    // ============================================================
-    (function initEmployeeQuotationFinancialSummary() {
-        const finSummary = document.getElementById("empFinancialSummary");
-        const accInput = document.getElementById("accessoriesAmount");
-        const travelInput = document.getElementById("travelCharge");
-        const otherInput = document.getElementById("otherCharges");
-        const discInput = document.getElementById("discountAmount");
-        const gstInput = document.getElementById("gstPercentage");
-        const offerInput = document.getElementById("empOfferPercentage");
-
-        if (!finSummary || !accInput || !travelInput || !otherInput || !discInput || !gstInput || !offerInput) {
-            return;
-        }
-
-        const subtotal = parseFloat(finSummary.dataset.subtotal) || 0;
-
-        function formatDecimal(val) {
-            const num = Math.abs(Number(val) || 0);
-            return num.toLocaleString("en-IN", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            });
-        }
-
-        function recalculate() {
-            const acc = Math.max(0, parseFloat(accInput.value) || 0);
-            const travel = Math.max(0, parseFloat(travelInput.value) || 0);
-            const other = Math.max(0, parseFloat(otherInput.value) || 0);
-            const disc = Math.max(0, parseFloat(discInput.value) || 0);
-
-            let gstPct = parseFloat(gstInput.value) || 0;
-            if (gstPct < 0) gstPct = 0;
-
-            let offerPct = parseFloat(offerInput.value);
-            if (isNaN(offerPct) || offerPct < 0) {
-                offerPct = 0;
-            } else if (offerPct > 100) {
-                offerPct = 100;
-            }
-
-            const totalBeforeDiscount = subtotal + acc + travel + other;
-            const taxable = Math.max(0, totalBeforeDiscount - disc);
-            const gstAmount = taxable * (gstPct / 100);
-            const totalAmount = taxable + gstAmount;
-
-            // Formulas:
-            // Offer Amount = Total Amount × Offer Percentage / 100
-            // Grand Total = Total Amount − Offer Amount
-            const offerAmount = totalAmount * (offerPct / 100);
-            const grandTotal = Math.max(0, totalAmount - offerAmount);
-
-            // Update displays
-            const dispAcc = document.getElementById("empDisplayAccessories");
-            if (dispAcc) dispAcc.textContent = formatDecimal(acc);
-
-            const dispTravel = document.getElementById("empDisplayTravel");
-            if (dispTravel) dispTravel.textContent = formatDecimal(travel);
-
-            const dispOther = document.getElementById("empDisplayOther");
-            if (dispOther) dispOther.textContent = formatDecimal(other);
-
-            const dispDisc = document.getElementById("empDisplayDiscount");
-            if (dispDisc) dispDisc.textContent = formatDecimal(disc);
-
-            const dispGstPct = document.getElementById("empDisplayGstPercentage");
-            if (dispGstPct) dispGstPct.textContent = gstPct.toFixed(2);
-
-            const dispGstAmt = document.getElementById("empDisplayGstAmount");
-            if (dispGstAmt) dispGstAmt.textContent = formatDecimal(gstAmount);
-
-            const dispTotalAmt = document.getElementById("empDisplayTotalAmount");
-            if (dispTotalAmt) dispTotalAmt.textContent = formatDecimal(totalAmount);
-
-            const dispOfferAmt = document.getElementById("empDisplayOfferAmount");
-            if (dispOfferAmt) dispOfferAmt.textContent = formatDecimal(offerAmount);
-
-            const dispGrandTotal = document.getElementById("empDisplayGrandTotal");
-            if (dispGrandTotal) dispGrandTotal.textContent = formatDecimal(grandTotal);
-        }
-
-        [accInput, travelInput, otherInput, discInput, gstInput, offerInput].forEach(inp => {
-            inp.addEventListener("input", recalculate);
-            inp.addEventListener("change", recalculate);
-        });
-
-        offerInput.addEventListener("blur", function() {
-            let v = parseFloat(offerInput.value);
-            if (isNaN(v) || v < 0) {
-                offerInput.value = "0";
-            } else if (v > 100) {
-                offerInput.value = "100";
-            }
-            recalculate();
-        });
-
-        const empForm = document.getElementById("employeeChargesForm");
-        if (empForm) {
-            empForm.addEventListener("submit", function() {
-                let v = parseFloat(offerInput.value);
-                if (isNaN(v) || v < 0) {
-                    offerInput.value = "0";
-                } else if (v > 100) {
-                    offerInput.value = "100";
-                }
-            });
-        }
-    })();
 
 </script>
 <script th:src="@{/js/employee-session.js}"></script>

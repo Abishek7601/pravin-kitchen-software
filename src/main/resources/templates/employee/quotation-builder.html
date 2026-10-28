@@ -159,9 +159,9 @@
                     type="button" 
                     class="category-choice-btn category-choice" 
                     th:data-id="${category.id}" 
-                    th:data-name="${category.name != null ? category.name.toUpperCase() : ''}">
-              <span class="cat-btn-icon" th:text="${category.icon != null && !category.icon.isBlank() ? category.icon : '⌂'}">⌂</span>
-              <span class="cat-btn-label" th:text="${category.displayName != null ? category.displayName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</span>
+                    th:data-name="${category.cleanName != null && !category.cleanName.isBlank() ? category.cleanName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">
+              <span class="cat-btn-icon" th:text="${category.effectiveIcon != null && !category.effectiveIcon.isBlank() ? category.effectiveIcon : (category.icon != null && !category.icon.isBlank() ? category.icon : '⌂')}">⌂</span>
+              <span class="cat-btn-label" th:text="${category.cleanName != null && !category.cleanName.isBlank() ? category.cleanName.toUpperCase() : (category.name != null ? category.name.toUpperCase() : '')}">FOYER</span>
             </button>
           </div>
           <div class="category-scroll-indicators">
@@ -1751,6 +1751,22 @@
   }
 
   document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
+
+  // Ensure category buttons display exactly one emoji per category
+  function sanitizeCategoryButtons() {
+      const leadingEmojiRegex = /^(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*|\p{Emoji_Presentation}|\p{Emoji}\uFE0F|[\uD83C-\uD83E][\uDF00-\uDFFF]|[\u2600-\u27BF])+\s*/u;
+      document.querySelectorAll('.category-choice-btn').forEach(btn => {
+          const labelSpan = btn.querySelector('.cat-btn-label');
+          if (labelSpan) {
+              let text = (labelSpan.textContent || '').trim();
+              while (text && leadingEmojiRegex.test(text)) {
+                  text = text.replace(leadingEmojiRegex, '').trim();
+              }
+              labelSpan.textContent = text;
+          }
+      });
+  }
+  sanitizeCategoryButtons();
   $('addSizeBtn').addEventListener('click', () => addSizeRow());
   $('addItemBtn').addEventListener('click', addDraftToRoom);
   $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));

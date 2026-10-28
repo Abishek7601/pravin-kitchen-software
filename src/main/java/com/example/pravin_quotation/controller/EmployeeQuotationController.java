@@ -1871,6 +1871,9 @@ public class EmployeeQuotationController {
         Map<Long, List<QuotationItem>> roomItems =
                 new HashMap<>();
 
+        Map<Long, List<QuotationItemSize>> sizesByItem =
+                new HashMap<>();
+
         for (QuotationRoom room : rooms) {
 
             List<QuotationItem> items =
@@ -1883,6 +1886,18 @@ public class EmployeeQuotationController {
                     room.getId(),
                     items
             );
+
+            for (QuotationItem item : items) {
+                List<QuotationItemSize> sizes =
+                        quotationItemSizeService
+                                .getActiveSizes(
+                                        item.getId()
+                                );
+                sizesByItem.put(
+                        item.getId(),
+                        sizes
+                );
+            }
         }
 
         model.addAttribute(
@@ -1901,8 +1916,23 @@ public class EmployeeQuotationController {
         );
 
         model.addAttribute(
+                "quotationRooms",
+                rooms
+        );
+
+        model.addAttribute(
                 "roomItems",
                 roomItems
+        );
+
+        model.addAttribute(
+                "itemsByRoom",
+                roomItems
+        );
+
+        model.addAttribute(
+                "sizesByItem",
+                sizesByItem
         );
 
         // ========================================================
@@ -1916,6 +1946,16 @@ public class EmployeeQuotationController {
         model.addAttribute(
                 "statusHistory",
                 statusHistory
+        );
+
+        // ========================================================
+        // COMMUNICATION HISTORY
+        // ========================================================
+
+        model.addAttribute(
+                "communicationHistory",
+                quotationCommunicationService
+                        .getByQuotationId(id)
         );
 
         // ========================================================
