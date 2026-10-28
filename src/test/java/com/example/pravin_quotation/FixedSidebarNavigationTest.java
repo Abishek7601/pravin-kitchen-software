@@ -60,8 +60,7 @@ public class FixedSidebarNavigationTest {
         assertTrue(adminNav.contains("@{/admin/customers}"), "Admin sidebar must contain Customers link");
         assertTrue(adminNav.contains("Customers"), "Admin sidebar must contain Customers label");
 
-        assertTrue(adminNav.contains("@{/admin/pricing}"), "Admin sidebar must contain Pricing link");
-        assertTrue(adminNav.contains("Pricing"), "Admin sidebar must contain Pricing label");
+        assertFalse(adminNav.contains("@{/admin/pricing}"), "Admin sidebar must NOT contain Pricing link");
 
         // New menu items added
         assertTrue(adminNav.contains("@{/admin/work-categories}"), "Admin sidebar must contain Work Category link");
