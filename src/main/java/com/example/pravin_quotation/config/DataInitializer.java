@@ -18,7 +18,7 @@ public class DataInitializer {
 
         return args -> {
 
-            String adminEmail = "abisheksr680@gmail.com";
+            String adminEmail = "admin@gmail.com";
             String adminPassword = "Admin@123";
 
             if (!userRepository.existsByEmail(adminEmail) && !userRepository.existsByRole(Role.SUPER_ADMIN)) {
