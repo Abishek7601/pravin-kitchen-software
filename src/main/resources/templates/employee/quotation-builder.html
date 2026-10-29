@@ -66,6 +66,7 @@
         <label class="field">Email<input id="customerEmail" type="email" placeholder="customer@email.com"></label>
         <label class="field">Address / Area<textarea id="customerAddress" class="capitalize-title" rows="2" placeholder="House / area / location"></textarea></label>
         <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
+        <label class="field">Valid Until <small style="font-weight:normal;color:#6b7280;">(365 Days Auto)</small><input id="validUntilDate" type="date" readonly style="background-color: #f3f4f6; cursor: not-allowed;"></label>
         <label class="field">Branch / District <span>*</span>
           <select id="branchId" th:attr="data-employee-branch=${employeeBranchId}">
             <option value="">Select branch / district</option>
@@ -2114,6 +2115,23 @@
   renderQuoteSummary();
   renderPaymentTerms();
 
+  function syncValidUntil() {
+      const qd = $('quotationDate') ? $('quotationDate').value : null;
+      if (qd && $('validUntilDate')) {
+          const d = new Date(qd + 'T00:00:00');
+          d.setDate(d.getDate() + 365);
+          const y = d.getFullYear();
+          const m = String(d.getMonth() + 1).padStart(2, '0');
+          const day = String(d.getDate()).padStart(2, '0');
+          $('validUntilDate').value = `${y}-${m}-${day}`;
+      }
+  }
+  if ($('quotationDate')) {
+      $('quotationDate').addEventListener('change', syncValidUntil);
+      $('quotationDate').addEventListener('input', syncValidUntil);
+      syncValidUntil();
+  }
+
   // Load existing quotation if editing
   if (state.quotationId) {
       getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
@@ -2123,7 +2141,17 @@
           if (data.phone) $('customerPhone').value = data.phone;
           if (data.email) $('customerEmail').value = data.email ? data.email.toLowerCase() : '';
           if (data.address) $('customerAddress').value = toTitleCase(data.address);
-          if (data.quotationDate) $('quotationDate').value = data.quotationDate;
+          if (data.quotationDate) {
+              $('quotationDate').value = data.quotationDate;
+              $('quotationDate').readOnly = true;
+              $('quotationDate').style.backgroundColor = '#f3f4f6';
+              $('quotationDate').style.cursor = 'not-allowed';
+          }
+          if (data.validUntil && $('validUntilDate')) {
+              $('validUntilDate').value = data.validUntil;
+          } else {
+              syncValidUntil();
+          }
           if (data.branchId) $('branchId').value = data.branchId;
           if (data.customerRequirements) state.customerRequirements = data.customerRequirements;
           if (data.notes) {

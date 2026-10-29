@@ -161,7 +161,31 @@
                             id="quotationDate"
                             name="quotationDate"
                             th:value="${quotation.quotationDate}"
+                            th:readonly="${quotation.id != null}"
                             required>
+
+                </div>
+
+
+                <!-- Valid Until -->
+
+                <div class="form-group">
+
+                    <label for="validUntil">
+                        Valid Until
+                    </label>
+
+                    <input
+                            type="date"
+                            id="validUntil"
+                            name="validUntil"
+                            th:value="${quotation.validUntil != null ? quotation.validUntil : (quotation.quotationDate != null ? quotation.quotationDate.plusDays(365) : null)}"
+                            readonly
+                            style="background-color: #f3f4f6; cursor: not-allowed;">
+
+                    <small>
+                        Automatically calculated as 365 days from quotation date.
+                    </small>
 
                 </div>
 

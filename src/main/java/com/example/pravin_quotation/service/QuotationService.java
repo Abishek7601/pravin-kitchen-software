@@ -509,11 +509,11 @@ public class QuotationService {
                 branch
         );
 
-        quotation.setQuotationDate(
-                quotationDate != null
-                        ? quotationDate
-                        : LocalDate.now()
-        );
+        LocalDate effectiveQuotationDate = quotationDate != null
+                ? quotationDate
+                : LocalDate.now();
+        quotation.setQuotationDate(effectiveQuotationDate);
+        quotation.setValidUntil(effectiveQuotationDate.plusDays(365));
 
         quotation.setStatus(
                 QuotationStatus.PENDING
@@ -777,11 +777,12 @@ public class QuotationService {
                 branch
         );
 
-        if (quotationDate != null) {
-
-            quotation.setQuotationDate(
-                    quotationDate
-            );
+        // Preserve original quotation date and valid-until when updating existing quotation
+        if (quotation.getQuotationDate() == null) {
+            quotation.setQuotationDate(quotationDate != null ? quotationDate : LocalDate.now());
+        }
+        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+            quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
 
         quotation.setPricingMode(

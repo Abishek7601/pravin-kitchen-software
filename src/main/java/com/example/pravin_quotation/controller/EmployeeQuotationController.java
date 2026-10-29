@@ -731,6 +731,7 @@ public class EmployeeQuotationController {
         data.put("address", q.getCustomer() != null ? q.getCustomer().getAddress() : "");
         data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
         data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
+        data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
         data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
         data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
         data.put("notes", q.getNotes() != null ? q.getNotes() : "");
@@ -1090,12 +1091,18 @@ public class EmployeeQuotationController {
 
         quotation.setCustomer(customer);
 
-        quotation.setQuotationDate(
-                LocalDate.parse(
-                        quotationDate,
-                        DateTimeFormatter.ISO_LOCAL_DATE
-                )
-        );
+        // Preserve original quotation date and valid until on edit
+        if (quotation.getQuotationDate() == null && quotationDate != null && !quotationDate.isBlank()) {
+            quotation.setQuotationDate(
+                    LocalDate.parse(
+                            quotationDate,
+                            DateTimeFormatter.ISO_LOCAL_DATE
+                    )
+            );
+        }
+        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+            quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
+        }
 
         quotation.setCustomerRequirements(
                 customerRequirements
@@ -1143,10 +1150,14 @@ public class EmployeeQuotationController {
             quotation.setCustomer(customer);
         }
 
-        if (quotationDate != null && !quotationDate.isBlank()) {
+        // Preserve original quotation date and valid until on edit
+        if (quotation.getQuotationDate() == null && quotationDate != null && !quotationDate.isBlank()) {
             quotation.setQuotationDate(
                     LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE)
             );
+        }
+        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+            quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
         if (customerRequirements != null) {
             quotation.setCustomerRequirements(customerRequirements);

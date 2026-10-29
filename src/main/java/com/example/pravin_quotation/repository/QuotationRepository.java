@@ -103,4 +103,10 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
             LocalDate startDate,
             LocalDate endDate
     );
+
+    @org.springframework.data.jpa.repository.Query("SELECT q FROM Quotation q WHERE (q.quotationDate IS NOT NULL AND q.quotationDate <= :cutoffDate) OR (q.quotationDate IS NULL AND q.createdAt <= :cutoffDateTime)")
+    List<Quotation> findQuotationsEligibleForDeletion(
+            @org.springframework.data.repository.query.Param("cutoffDate") LocalDate cutoffDate,
+            @org.springframework.data.repository.query.Param("cutoffDateTime") java.time.LocalDateTime cutoffDateTime
+    );
 }

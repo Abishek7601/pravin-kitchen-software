@@ -333,6 +333,7 @@ public class AdminQuotationBuilderController {
             data.put("address", q.getCustomer() != null ? q.getCustomer().getAddress() : "");
             data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
             data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
+            data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
             data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
             data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
             data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);

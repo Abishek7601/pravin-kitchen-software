@@ -82,6 +82,19 @@
 
                 </strong>
 
+                &nbsp;|&nbsp;
+
+                Valid Until:
+
+                <strong
+                        th:text="${quotation.validUntil != null
+                        ? #temporals.format(quotation.validUntil, 'dd MMM yyyy')
+                        : (quotation.quotationDate != null ? #temporals.format(quotation.quotationDate.plusDays(365), 'dd MMM yyyy') : 'N/A')}">
+
+                    05 Oct 2027
+
+                </strong>
+
             </p>
 
         </div>

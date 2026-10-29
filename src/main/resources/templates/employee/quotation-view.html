@@ -130,6 +130,19 @@
         <div class="detail-box">
 
                     <span>
+                        Valid Until
+                    </span>
+
+          <strong th:text="${quotation.validUntil != null ? quotation.validUntil : (quotation.quotationDate != null ? quotation.quotationDate.plusDays(365) : '-')}">
+            -
+          </strong>
+
+        </div>
+
+
+        <div class="detail-box">
+
+                    <span>
                         Pricing Mode
                     </span>
 
