@@ -256,22 +256,22 @@ public class ConfigureMasterDataUiUpdatesTest {
 
     @Test
     @WithMockUser(username = "superadmin@pravin.com", roles = {"SUPER_ADMIN"})
-    @DisplayName("Req 5: Admin Dashboard removes Configure Master Data button/card while preserving Category and Pricing cards")
+    @DisplayName("Req 5: Admin Dashboard removes Configure Master Data button/card and Category and Pricing shortcut cards")
     public void testAdminDashboardRemovesConfigureMasterData() throws Exception {
         String dashboardHtml = loadTemplateContent("admin/dashboard.html");
         assertFalse(dashboardHtml.contains("Configure Master Data"),
                 "Dashboard template must NOT contain 'Configure Master Data' button, card, or link");
-        assertTrue(dashboardHtml.contains("@{/admin/work-categories}"),
-                "Dashboard must retain Category link");
-        assertTrue(dashboardHtml.contains("@{/admin/pricing}"),
-                "Dashboard must retain Pricing link");
+        assertFalse(dashboardHtml.contains("@{/admin/work-categories}"),
+                "Dashboard must remove Category shortcut card");
+        assertFalse(dashboardHtml.contains("@{/admin/pricing}"),
+                "Dashboard must remove Pricing shortcut card");
 
-        // Verify rendered Admin Dashboard HTML (including shared fragments) contains ZERO occurrences of Configure Master Data
+        // Verify rendered Admin Dashboard HTML (including shared fragments) contains ZERO occurrences of Configure Master Data or Pricing in sidebar
         mockMvc.perform(get("/admin/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("Configure Master Data"))))
                 .andExpect(content().string(containsString("Category")))
-                .andExpect(content().string(containsString("Pricing")));
+                .andExpect(content().string(not(containsString("<span>Pricing</span>"))));
     }
 
     @Test

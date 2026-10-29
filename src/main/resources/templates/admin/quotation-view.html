@@ -39,11 +39,6 @@
 
         <div>
 
-<!--            <p class="eyebrow" style="display: inline-flex; align-items: center; gap: 8px;">-->
-<!--                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS &amp; INTERIORS" class="brand-logo-img" style="height: 40px; width: auto; object-fit: contain; background: #ffffff; padding: 2px; border-radius: 4px;">-->
-<!--                Pravin KITCHENS &amp; INTERIORS-->
-<!--            </p>-->
-
             <h1>
                 Quotation Details
             </h1>
@@ -51,32 +46,6 @@
             <p class="subtitle">
                 View quotation information, work details and current status.
             </p>
-
-        </div>
-
-
-        <div class="header-actions">
-
-<!--            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">-->
-<!--                <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
-<!--                    <span>← Back</span>-->
-<!--                </button>-->
-<!--                <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">-->
-<!--                    <span>⌂ Dashboard</span>-->
-<!--                </a>-->
-<!--            </div>-->
-
-
-            <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
-               class="btn btn-primary">
-                👁 Preview
-            </a>
-
-
-            <a th:href="@{/admin/quotations/pdf/{id}(id=${quotation.id})}"
-               class="btn btn-success">
-                ↓ Download PDF
-            </a>
 
         </div>
 
@@ -895,14 +864,6 @@
            class="btn btn-secondary">
 
             ✏ Edit in Builder
-
-        </a>
-
-
-        <a th:href="@{/admin/quotation-preview/{id}(id=${quotation.id})}"
-           class="btn btn-primary">
-
-            👁 Preview PDF
 
         </a>
 

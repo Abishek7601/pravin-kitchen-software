@@ -250,11 +250,11 @@ public class WorkCategoryViewAndUppercaseTest {
         assertFalse(content.contains("Complete Hierarchy"),
                 "Dashboard must not contain Complete Hierarchy button or card");
 
-        // Must retain Work Categories and Pricing
-        assertTrue(content.contains("@{/admin/work-categories}") || content.contains("/admin/work-categories"),
-                "Dashboard must retain Work Categories");
-        assertTrue(content.contains("@{/admin/pricing}") || content.contains("/admin/pricing"),
-                "Dashboard must retain Pricing");
+        // Verify shortcut cards for Work Categories and Pricing are removed from dashboard
+        assertFalse(content.contains("@{/admin/work-categories}") || content.contains("/admin/work-categories"),
+                "Dashboard must not contain shortcut card for Work Categories");
+        assertFalse(content.contains("@{/admin/pricing}") || content.contains("/admin/pricing"),
+                "Dashboard must not contain shortcut card for Pricing");
     }
 
     @Test

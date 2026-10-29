@@ -484,15 +484,57 @@ public class AdminQuotationBuilderService {
                 }
 
                 // -------------------------------------------------
-                // Resolve rate ONCE for this item
+                // Resolve measurement type & effective values
                 // -------------------------------------------------
 
-                BigDecimal rate = resolveRate(
-                        request.branchId(),
-                        material.getId(),
-                        option.getId(),
-                        request.pricingMode()
-                );
+                MeasurementType effectiveType = itemRequest.measurementType();
+                if (effectiveType == null && material != null) {
+                    effectiveType = material.getMeasurementType();
+                }
+                if (effectiveType == null && material != null && "Files".equalsIgnoreCase(material.getUnit())) {
+                    effectiveType = MeasurementType.FILES;
+                }
+                if (effectiveType == null) {
+                    effectiveType = MeasurementType.SQFT;
+                }
+
+                // -------------------------------------------------
+                // Resolve rate for this item:
+                // For FILES unit, allow quotation-specific edited rate.
+                // For other units, resolve from pricing configuration.
+                // -------------------------------------------------
+
+                BigDecimal rate;
+                if (effectiveType.isFiles()) {
+                    if (itemRequest.rate() != null) {
+                        if (itemRequest.rate().compareTo(BigDecimal.ZERO) < 0) {
+                            throw new IllegalArgumentException("Rate for Files unit must be a valid, non-negative value.");
+                        }
+                        rate = money(itemRequest.rate());
+                    } else {
+                        try {
+                            rate = resolveRate(
+                                    request.branchId(),
+                                    material.getId(),
+                                    option.getId(),
+                                    request.pricingMode()
+                            );
+                        } catch (Exception ex) {
+                            if (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) >= 0) {
+                                rate = money(material.getRate());
+                            } else {
+                                throw ex;
+                            }
+                        }
+                    }
+                } else {
+                    rate = resolveRate(
+                            request.branchId(),
+                            material.getId(),
+                            option.getId(),
+                            request.pricingMode()
+                    );
+                }
 
                 Pricing itemPricing = pricingRepository
                         .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())
@@ -523,14 +565,6 @@ public class AdminQuotationBuilderService {
                 BigDecimal firstLength = null;
                 BigDecimal firstWidth = null;
                 BigDecimal firstHeight = null;
-
-                MeasurementType effectiveType = itemRequest.measurementType();
-                if (effectiveType == null && material != null) {
-                    effectiveType = material.getMeasurementType();
-                }
-                if (effectiveType == null) {
-                    effectiveType = MeasurementType.SQFT;
-                }
 
                 BigDecimal effectiveQuantity = (itemRequest.quantity() != null && itemRequest.quantity().compareTo(BigDecimal.ZERO) > 0)
                         ? itemRequest.quantity()
@@ -924,6 +958,13 @@ public class AdminQuotationBuilderService {
                                 "Quantity must be greater than zero."
                         );
                     }
+                    if (type.isFiles() && item.rate() != null) {
+                        if (item.rate().compareTo(BigDecimal.ZERO) < 0) {
+                            throw new IllegalArgumentException(
+                                    "Rate for Files unit must be a valid, non-negative value."
+                            );
+                        }
+                    }
                 }
             }
         }
@@ -1097,7 +1138,24 @@ public class AdminQuotationBuilderService {
             List<SizeRequest> sizes,
             MeasurementType measurementType,
             BigDecimal quantity,
-            String imageUrl) {
+            String imageUrl,
+            BigDecimal rate) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes,
+                MeasurementType measurementType,
+                BigDecimal quantity,
+                String imageUrl) {
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, null);
+        }
 
         public ItemRequest(
                 Long workCategoryId,
@@ -1109,7 +1167,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1121,7 +1179,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null, null);
         }
     }
 

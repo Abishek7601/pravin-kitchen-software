@@ -37,37 +37,23 @@ public class AdminManageQuotationDataTest {
 
         String content = Files.readString(dashboardPath);
 
-        // Find the master-data-grid container
-        int gridStart = content.indexOf("<div class=\"master-data-grid\">");
-        int gridEnd = content.indexOf("<footer class=\"dashboard-footer\">", gridStart);
-        assertTrue(gridStart != -1 && gridEnd != -1, "master-data-grid and footer must be present");
+        // Verify master-data-grid container is completely removed from dashboard
+        assertFalse(content.contains("<div class=\"master-data-grid\">"),
+                "master-data-grid container must be completely removed from dashboard");
 
-        String masterDataGrid = content.substring(gridStart, gridEnd);
+        // Verify Category and Pricing shortcut cards are NOT present in dashboard
+        assertFalse(content.contains("th:href=\"@{/admin/work-categories}\""),
+                "Category shortcut card must be removed from dashboard");
+        assertFalse(content.contains("th:href=\"@{/admin/pricing}\""),
+                "Pricing shortcut card must be removed from dashboard");
+        assertFalse(content.contains("Manage categories"),
+                "Category card description must be removed from dashboard");
+        assertFalse(content.contains("Manage quotation pricing"),
+                "Pricing card description must be removed from dashboard");
 
-        // Verify removed cards are NOT present in master-data-grid
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/items}\""),
-                "Items card must be removed from Manage Quotation Data grid");
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/district-pricing}\""),
-                "District Pricing card must be removed from Manage Quotation Data grid");
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/travel-charges}\""),
-                "Travel Charges card must be removed from Manage Quotation Data grid");
-
-        // Verify Divisions, Materials, and Material Options cards are removed from dashboard
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/divisions}\""),
-                "Divisions card must be removed from dashboard");
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/materials}\""),
-                "Materials card must be removed from dashboard");
-        assertFalse(masterDataGrid.contains("th:href=\"@{/admin/material-options}\""),
-                "Material Options card must be removed from dashboard");
-
-        int posWorkCategories = masterDataGrid.indexOf("th:href=\"@{/admin/work-categories}\"");
-        int posFifth = masterDataGrid.indexOf("th:href=\"@{/admin/pricing}\"");
-        if (posFifth == -1) {
-            posFifth = masterDataGrid.indexOf("th:href=\"@{/admin/formula-calculation}\"");
-        }
-
-        assertTrue(posWorkCategories != -1, "Work Categories must be present");
-        assertTrue(posFifth != -1, "Pricing card must be present");
+        // Verify footer is still present
+        assertTrue(content.contains("<footer class=\"dashboard-footer\">"),
+                "Footer must remain present on dashboard");
     }
 
     @Test
