@@ -218,7 +218,8 @@ public class AdminQuotationBuilderService {
                     request.otherCharges(),
                     request.discountAmount(),
                     request.gstPercentage(),
-                    request.offerPercentage()
+                    request.offerPercentage(),
+                    request.showSqftSize()
             );
         }
 
@@ -330,6 +331,11 @@ public class AdminQuotationBuilderService {
         }
         if (request.offerPercentage() != null) {
             quotation.setOfferPercentage(request.offerPercentage());
+        }
+        if (request.showSqftSize() != null) {
+            quotation.setShowSqftSize(request.showSqftSize());
+        } else if (quotation.getShowSqftSize() == null) {
+            quotation.setShowSqftSize(true);
         }
 
         Quotation savedQuotation =
@@ -1087,7 +1093,27 @@ public class AdminQuotationBuilderService {
             BigDecimal otherCharges,
             BigDecimal discountAmount,
             BigDecimal gstPercentage,
-            BigDecimal offerPercentage) {
+            BigDecimal offerPercentage,
+            Boolean showSqftSize) {
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage) {
+            this(quotationId, customer, branchId, quotationDate, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges, discountAmount, gstPercentage, offerPercentage, true);
+        }
 
         public BuilderRequest(
                 Long quotationId,
@@ -1099,7 +1125,7 @@ public class AdminQuotationBuilderService {
                 String notes,
                 List<RoomRequest> rooms) {
             this(quotationId, customer, branchId, quotationDate, pricingMode, customerRequirements, notes, rooms,
-                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO);
+                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true);
         }
     }
 

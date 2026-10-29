@@ -739,6 +739,7 @@ public class EmployeeQuotationController {
         data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
         data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
         data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
+        data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
 
         List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(id);
         List<Map<String, Object>> roomList = new ArrayList<>();

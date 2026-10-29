@@ -1793,6 +1793,7 @@
           discountAmount: Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0),
           gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
           offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
+          showSqftSize: showSqftSize,
           rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
               floor: r.floor,
               room: r.room,
@@ -2076,6 +2077,14 @@
           if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = data.discountAmount;
           if (data.gstPercentage != null && $('gstPercentage')) $('gstPercentage').value = data.gstPercentage;
           if (data.offerPercentage != null && $('offerPercentage')) $('offerPercentage').value = data.offerPercentage;
+          if (data.showSqftSize !== undefined && data.showSqftSize !== null) {
+              showSqftSize = data.showSqftSize;
+              if ($('toggleSqftSize')) {
+                  $('toggleSqftSize').checked = showSqftSize;
+              }
+              const thElements = document.querySelectorAll('th.col-toggleable');
+              thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+          }
 
           if (data.rooms && data.rooms.length > 0) {
               state.rooms = data.rooms.map(r => ({
