@@ -772,7 +772,7 @@
       const mType = (material.measurementType || (material.unit === 'Quantity' ? 'QUANTITY' : (material.unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
       const isSqft = mType === 'SQFT';
       const isQuantity = mType === 'QUANTITY';
-      const isFiles = mType === 'FILES';
+      const isFiles = mType === 'FILES' || (material.unit && material.unit.toLowerCase() === 'files');
 
       state.draft = {
           categoryId,
@@ -866,11 +866,15 @@
           </div>` : ''}
         </div>` : `
         <div class="size-details-inputs-row" style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
-          <div class="dim-input-group" style="max-width: 160px;">
+          <div class="dim-input-group" style="max-width: 140px;">
             <label for="dimQty-${divisionId}">QUANTITY</label>
             <input type="number" min="1" step="1" class="dim-input" id="dimQty-${divisionId}" value="1">
           </div>
           ${isFiles ? `
+          <div class="dim-input-group" style="max-width: 160px;">
+            <label for="dimRate-${divisionId}">RATE (&#8377;) <span style="color: #dc2626;">*</span></label>
+            <input type="number" min="0" step="any" class="dim-input" id="dimRate-${divisionId}" value="${(material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0}" placeholder="Enter rate">
+          </div>
           <div class="dim-input-group" style="flex: 1; min-width: 240px;">
             <label>ATTACH IMAGE (OPTIONAL)</label>
             <div style="display: flex; gap: 8px; align-items: center;">
@@ -887,7 +891,7 @@
           </div>` : ''}
         </div>`}
         <div class="size-details-calc-box">
-          <span>Rate: <strong>${(material.rate != null && Number(material.rate) > 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Sq.Ft: <strong id="calcSqft-${divisionId}">${isSqft ? '0' : '-'}</strong></span>
           <span class="calc-divider">|</span>
@@ -906,11 +910,26 @@
       const widInput = $(`dimWid-${divisionId}`);
       const hgtInput = $(`dimHgt-${divisionId}`);
       const qtyInput = $(`dimQty-${divisionId}`);
+      const rateInput = $(`dimRate-${divisionId}`);
+      const calcRateEl = $(`calcRate-${divisionId}`);
       const sqftEl = $(`calcSqft-${divisionId}`);
       const amtEl = $(`calcAmt-${divisionId}`);
 
       function updateLiveCalc() {
-          const rateVal = (material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0;
+          let rateVal;
+          if (isFiles) {
+              const rawRate = rateInput ? rateInput.value.trim() : '';
+              const parsed = Number(rawRate);
+              rateVal = (rawRate !== '' && !isNaN(parsed) && parsed >= 0) ? parsed : 0;
+              if (calcRateEl) {
+                  calcRateEl.innerHTML = (rawRate !== '' && !isNaN(parsed) && parsed >= 0)
+                      ? ('&#8377;' + rateVal.toFixed(2) + ' / ' + esc(material.unit || 'Files'))
+                      : '<span style="color:#e53e3e;">Invalid rate</span>';
+              }
+          } else {
+              rateVal = (material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0;
+          }
+
           if (isSqft) {
               const L = Number(lenInput?.value || 0);
               const W = Number(widInput?.value || 0);
@@ -932,6 +951,7 @@
       if (widInput) widInput.addEventListener('input', updateLiveCalc);
       if (hgtInput) hgtInput.addEventListener('input', updateLiveCalc);
       if (qtyInput) qtyInput.addEventListener('input', updateLiveCalc);
+      if (rateInput) rateInput.addEventListener('input', updateLiveCalc);
 
       // File upload handling for Files material
       if (isFiles) {
@@ -1044,8 +1064,18 @@
                   Q = Math.max(1, Number(qtyInput?.value || 1));
               }
 
-              if (material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
-                  return alert('No rate configured for this material in the selected branch and grade.');
+              let finalRate = Number(material.rate || 0);
+              if (isFiles) {
+                  const rawRate = rateInput ? rateInput.value.trim() : '';
+                  const parsed = Number(rawRate);
+                  if (rawRate === '' || isNaN(parsed) || parsed < 0) {
+                      return alert('Please enter a valid, non-negative rate for Files.');
+                  }
+                  finalRate = parsed;
+              } else {
+                  if (material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
+                      return alert('No rate configured for this material in the selected branch and grade.');
+                  }
               }
 
               const room = ensureRoom();
@@ -1068,7 +1098,7 @@
                   materialOptionName: '',
                   materialSpecificationId: null,
                   materialSpecificationName: '',
-                  rate: Number(material.rate),
+                  rate: finalRate,
                   formula: isSqft ? (material.formula || '(L + W) × H') : null,
                   unit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
                   measurementType: mType,
@@ -1769,6 +1799,7 @@
                   materialSpecificationId: i.materialSpecificationId,
                   itemDescription: i.itemDescription || '',
                   specification: i.specification || '',
+                  rate: i.rate != null ? Number(i.rate) : null,
                   measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : 'SQFT')),
                   quantity: i.quantity != null ? Number(i.quantity) : 1,
                   imageUrl: i.imageUrl || null,
@@ -2030,6 +2061,10 @@
                       materialSpecificationId: i.materialSpecificationId,
                       materialSpecificationName: i.materialSpecificationName,
                       rate: Number(i.rate || 0),
+                      unit: i.unit || 'Sq.ft',
+                      measurementType: i.measurementType || 'SQFT',
+                      quantity: i.quantity != null ? Number(i.quantity) : 1,
+                      imageUrl: i.imageUrl || null,
                       itemDescription: i.itemDescription || '',
                       specification: i.specification || '',
                       sizes: (i.sizes || []).map(s => ({

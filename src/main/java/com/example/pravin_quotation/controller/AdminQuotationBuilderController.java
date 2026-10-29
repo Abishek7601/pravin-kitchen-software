@@ -178,7 +178,7 @@ public class AdminQuotationBuilderController {
                     resolvedRate = builderService.resolveRate(branchId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
-            if (resolvedRate == null && branchId == null) {
+            if (resolvedRate == null) {
                 resolvedRate = m.getRate();
             }
 
@@ -366,6 +366,7 @@ public class AdminQuotationBuilderController {
                     iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                     iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
                     iMap.put("rate", item.getRate());
+                    iMap.put("unit", (item.getMaterial() != null && item.getMaterial().getUnit() != null) ? item.getMaterial().getUnit() : (item.getMeasurementType() == MeasurementType.FILES ? "Files" : (item.getMeasurementType() == MeasurementType.QUANTITY ? "Quantity" : "Sq.ft")));
                     iMap.put("itemDescription", item.getItemDescription());
                     iMap.put("specification", item.getSpecification());
                     iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
