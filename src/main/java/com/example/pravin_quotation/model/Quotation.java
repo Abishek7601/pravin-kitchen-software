@@ -131,6 +131,9 @@ public class Quotation {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "show_sqft_size")
+    private Boolean showSqftSize = true;
+
     /*
      * Audit timestamps.
      */
@@ -470,6 +473,14 @@ public class Quotation {
 
     public void setNotes(String notes) {
         this.notes = notes;
+    }
+
+    public Boolean getShowSqftSize() {
+        return showSqftSize;
+    }
+
+    public void setShowSqftSize(Boolean showSqftSize) {
+        this.showSqftSize = showSqftSize;
     }
 
     public LocalDateTime getCreatedAt() {

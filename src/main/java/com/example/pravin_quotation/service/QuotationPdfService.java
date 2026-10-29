@@ -427,12 +427,18 @@ public class QuotationPdfService {
         document.add(summaryTitle);
 
         // ========================================================
-        // 3. 9-COLUMN QUOTE SUMMARY TABLE
+        // 3. QUOTE SUMMARY TABLE (7 or 9 COLUMNS BASED ON TOGGLE)
         // ========================================================
-        PdfPTable itemTable = new PdfPTable(9);
+        boolean showSqft = quotation.getShowSqftSize() == null || quotation.getShowSqftSize();
+        int numColumns = showSqft ? 9 : 7;
+        PdfPTable itemTable = new PdfPTable(numColumns);
         itemTable.setWidthPercentage(100);
         itemTable.setHeaderRows(1);
-        itemTable.setWidths(new float[]{3.5f, 16.5f, 13.0f, 9.5f, 24.5f, 11.0f, 7.0f, 5.0f, 10.0f});
+        if (showSqft) {
+            itemTable.setWidths(new float[]{3.5f, 16.5f, 13.0f, 9.5f, 24.5f, 11.0f, 7.0f, 5.0f, 10.0f});
+        } else {
+            itemTable.setWidths(new float[]{4.0f, 20.0f, 15.0f, 10.0f, 33.0f, 6.0f, 12.0f});
+        }
         itemTable.setSpacingAfter(5f);
 
         // --- TABLE HEADERS ---
@@ -441,8 +447,10 @@ public class QuotationPdfService {
         addHeaderCell(itemTable, "ROOM", Element.ALIGN_LEFT);
         addHeaderCell(itemTable, "FLOOR", Element.ALIGN_CENTER);
         addHeaderCell(itemTable, "MATERIAL", Element.ALIGN_LEFT);
-        addHeaderCell(itemTable, "SIZE", Element.ALIGN_CENTER);
-        addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_RIGHT);
+        if (showSqft) {
+            addHeaderCell(itemTable, "SIZE", Element.ALIGN_CENTER);
+            addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_RIGHT);
+        }
         addHeaderCell(itemTable, "UNIT", Element.ALIGN_CENTER);
         addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT);
 
@@ -537,14 +545,16 @@ public class QuotationPdfService {
                 // Sum items' Total Amount before applying Offer Percentage
                 itemsTotalAmount = itemsTotalAmount.add(amount);
 
-                // Add Row Cells (9 columns, item-level offer price removed)
+                // Add Row Cells (item-level offer price removed)
                 addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow);
                 addMaterialCell(itemTable, materialText.toUpperCase(), specification != null ? specification.toUpperCase() : "", isAltRow);
-                addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
-                addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
+                if (showSqft) {
+                    addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
+                    addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
+                }
                 addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow);
                 addRupeeCell(itemTable, rupees(amount), false, false, isAltRow);
 
@@ -922,7 +932,8 @@ public class QuotationPdfService {
     }
 
     private void addFillerRow(PdfPTable table, boolean isAltRow) {
-        for (int i = 0; i < 9; i++) {
+        int colCount = table.getNumberOfColumns();
+        for (int i = 0; i < colCount; i++) {
             PdfPCell cell = new PdfPCell(new Phrase(" ", rupeeFont));
             cell.setBorderColor(COLOR_BORDER);
             cell.setBorderWidth(0.5f);
@@ -938,8 +949,9 @@ public class QuotationPdfService {
         Font labelFont = new Font(Font.HELVETICA, 7.8f, Font.BOLD, COLOR_TEXT_DARK);
         Font valFont = isBold ? rupeeBoldFont : rupeeFont;
 
+        int labelColspan = Math.max(1, table.getNumberOfColumns() - 1);
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
-        labelCell.setColspan(8);
+        labelCell.setColspan(labelColspan);
         labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         labelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         labelCell.setPaddingTop(4.5f);
@@ -966,8 +978,9 @@ public class QuotationPdfService {
     private void addGrandTotalRow(PdfPTable table, String label, BigDecimal grandTotal) {
         Font labelFont = new Font(Font.HELVETICA, 8.5f, Font.BOLD, COLOR_HEADER_TEXT);
 
+        int labelColspan = Math.max(1, table.getNumberOfColumns() - 1);
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
-        labelCell.setColspan(8);
+        labelCell.setColspan(labelColspan);
         labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         labelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         labelCell.setPaddingTop(5f);
