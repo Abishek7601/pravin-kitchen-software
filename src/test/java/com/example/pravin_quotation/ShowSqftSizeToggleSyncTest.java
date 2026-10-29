@@ -343,7 +343,7 @@ public class ShowSqftSizeToggleSyncTest {
                 customer.getId(), customer.getName(), customer.getPhone(), customer.getEmail(), customer.getAddress()
         );
 
-        // Employee saves quotation with toggle OFF
+        // Employee saves quotation with toggle OFF via controller endpoint
         AdminQuotationBuilderService.BuilderRequest empReq = new AdminQuotationBuilderService.BuilderRequest(
                 null, custReq, branch.getId(), LocalDate.now(), PricingMode.MIDDLE,
                 "Customer specs", "Notes", List.of(roomReq),
@@ -351,19 +351,95 @@ public class ShowSqftSizeToggleSyncTest {
                 false
         );
 
-        Quotation quotation = adminQuotationBuilderService.save(empReq, employeeUser.getEmail());
-        assertEquals(Boolean.FALSE, quotation.getShowSqftSize());
-
-        // Employee builder load endpoint returns showSqftSize: false
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 employeeUser.getEmail(), null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"))
         );
+
+        org.springframework.mock.web.MockHttpServletRequest httpReq = new org.springframework.mock.web.MockHttpServletRequest();
+        httpReq.addHeader("Accept", org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        Object saveResp = employeeQuotationController.saveBuilderQuotation(empReq, httpReq, auth, redirectAttributes);
+        assertTrue(saveResp instanceof ResponseEntity<?>);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> saveBody = (Map<String, Object>) ((ResponseEntity<?>) saveResp).getBody();
+        assertNotNull(saveBody);
+        Long savedQuotationId = (Long) saveBody.get("quotationId");
+        assertNotNull(savedQuotationId);
+
+        Quotation quotation = quotationRepository.findById(savedQuotationId).orElseThrow();
+        assertEquals(Boolean.FALSE, quotation.getShowSqftSize(), "Employee saved quotation must persist showSqftSize = false");
+
+        // Employee builder load endpoint returns showSqftSize: false
         ResponseEntity<?> empLoadResp = employeeQuotationController.builderLoadQuotation(quotation.getId(), auth);
         assertTrue(empLoadResp.getStatusCode().is2xxSuccessful());
         @SuppressWarnings("unchecked")
         Map<String, Object> data = (Map<String, Object>) empLoadResp.getBody();
         assertNotNull(data);
         assertEquals(false, data.get("showSqftSize"), "Employee builder load must return showSqftSize: false");
+
+        // Employee PDF download endpoint respects showSqftSize = false
+        ResponseEntity<byte[]> pdfResp = employeeQuotationController.downloadQuotationPdf(quotation.getId(), auth);
+        assertTrue(pdfResp.getStatusCode().is2xxSuccessful());
+        assertNotNull(pdfResp.getBody());
+        String page2Text = extractPage2PdfText(pdfResp.getBody());
+        assertFalse(page2Text.contains("SIZE"), "Employee downloaded PDF must NOT contain SIZE header when toggle is OFF");
+        assertFalse(page2Text.contains("4.00 \u00d7 2.00"), "Employee downloaded PDF must NOT contain size dimensions when toggle is OFF");
+    }
+
+    @Test
+    void testEmployeeCanEditQuotationToggleState() throws Exception {
+        AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
+                new BigDecimal("4.0"), new BigDecimal("2.0"), new BigDecimal("2.0"), null
+        );
+        AdminQuotationBuilderService.ItemRequest itemReq = new AdminQuotationBuilderService.ItemRequest(
+                workCategory.getId(), division.getId(), item.getId(),
+                sqftMaterial.getId(), sqftOption.getId(), null,
+                "Sink Unit Base", "18mm Matt", List.of(size),
+                MeasurementType.SQFT, BigDecimal.ONE, null, null
+        );
+        AdminQuotationBuilderService.RoomRequest roomReq = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Cabinet work", List.of(itemReq)
+        );
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                customer.getId(), customer.getName(), customer.getPhone(), customer.getEmail(), customer.getAddress()
+        );
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                employeeUser.getEmail(), null, List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+        );
+        org.springframework.mock.web.MockHttpServletRequest httpReq = new org.springframework.mock.web.MockHttpServletRequest();
+        httpReq.addHeader("Accept", org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
+        org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap redirectAttributes = new org.springframework.web.servlet.mvc.support.RedirectAttributesModelMap();
+
+        // 1. Initial creation with toggle ON
+        AdminQuotationBuilderService.BuilderRequest createReq = new AdminQuotationBuilderService.BuilderRequest(
+                null, custReq, branch.getId(), LocalDate.now(), PricingMode.MIDDLE,
+                "Customer specs", "Notes", List.of(roomReq),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                true
+        );
+        Object saveResp = employeeQuotationController.saveBuilderQuotation(createReq, httpReq, auth, redirectAttributes);
+        @SuppressWarnings("unchecked")
+        Long qId = (Long) ((Map<String, Object>) ((ResponseEntity<?>) saveResp).getBody()).get("quotationId");
+        Quotation q1 = quotationRepository.findById(qId).orElseThrow();
+        assertEquals(Boolean.TRUE, q1.getShowSqftSize());
+
+        // 2. Employee edits existing quotation to toggle OFF
+        AdminQuotationBuilderService.BuilderRequest editReq = new AdminQuotationBuilderService.BuilderRequest(
+                qId, custReq, branch.getId(), LocalDate.now(), PricingMode.MIDDLE,
+                "Customer specs", "Notes", List.of(roomReq),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,
+                false
+        );
+        Object editResp = employeeQuotationController.saveBuilderQuotation(editReq, httpReq, auth, redirectAttributes);
+        Quotation q2 = quotationRepository.findById(qId).orElseThrow();
+        assertEquals(Boolean.FALSE, q2.getShowSqftSize(), "Employee edit must update showSqftSize to false");
+
+        // Verify PDF reflects update
+        ResponseEntity<byte[]> pdfResp = employeeQuotationController.downloadQuotationPdf(qId, auth);
+        String page2Text = extractPage2PdfText(pdfResp.getBody());
+        assertFalse(page2Text.contains("SIZE"), "PDF after employee edit must NOT contain SIZE header");
     }
 
     @Test

@@ -663,7 +663,8 @@ public class EmployeeQuotationController {
                     request.otherCharges(),
                     request.discountAmount(),
                     request.gstPercentage(),
-                    request.offerPercentage()
+                    request.offerPercentage(),
+                    request.showSqftSize()
             );
 
             Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
