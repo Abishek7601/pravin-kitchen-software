@@ -44,6 +44,11 @@
                     <span>Quotation Date</span>
                     <strong id="datePreview">Today</strong>
                 </div>
+
+                <div class="quote-date-preview">
+                    <span>Valid Until</span>
+                    <strong id="validUntilPreview">365 Days</strong>
+                </div>
             </div>
 
             <form th:action="@{/employee/quotations/save}"
@@ -286,17 +291,30 @@
 
         const dateInput = document.getElementById("quotationDate");
         const datePreview = document.getElementById("datePreview");
+        const validUntilPreview = document.getElementById("validUntilPreview");
 
         function updateDatePreview() {
-            if (!dateInput || !datePreview || !dateInput.value) return;
+            if (!dateInput || !dateInput.value) return;
 
             const date = new Date(dateInput.value + "T00:00:00");
 
-            datePreview.textContent = date.toLocaleDateString("en-IN", {
-                day: "2-digit",
-                month: "2-digit",
-                year: "numeric"
-            });
+            if (datePreview) {
+                datePreview.textContent = date.toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+            }
+
+            if (validUntilPreview) {
+                const validDate = new Date(date);
+                validDate.setDate(validDate.getDate() + 365);
+                validUntilPreview.textContent = validDate.toLocaleDateString("en-IN", {
+                    day: "2-digit",
+                    month: "2-digit",
+                    year: "numeric"
+                });
+            }
         }
 
         if (dateInput) {

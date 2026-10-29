@@ -134,6 +134,9 @@ public class Quotation {
     @Column(name = "show_sqft_size")
     private Boolean showSqftSize = true;
 
+    @Column(name = "valid_until")
+    private LocalDate validUntil;
+
     /*
      * Audit timestamps.
      */
@@ -211,6 +214,10 @@ public class Quotation {
 
         if (quotationDate == null) {
             quotationDate = LocalDate.now();
+        }
+
+        if (validUntil == null) {
+            validUntil = quotationDate.plusDays(365);
         }
 
         if (status == null) {
@@ -481,6 +488,20 @@ public class Quotation {
 
     public void setShowSqftSize(Boolean showSqftSize) {
         this.showSqftSize = showSqftSize;
+    }
+
+    public LocalDate getValidUntil() {
+        if (validUntil != null) {
+            return validUntil;
+        }
+        if (quotationDate != null) {
+            return quotationDate.plusDays(365);
+        }
+        return null;
+    }
+
+    public void setValidUntil(LocalDate validUntil) {
+        this.validUntil = validUntil;
     }
 
     public LocalDateTime getCreatedAt() {

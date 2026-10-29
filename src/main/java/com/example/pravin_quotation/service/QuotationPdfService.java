@@ -26,6 +26,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
@@ -394,9 +395,18 @@ public class QuotationPdfService {
         addMetaRow(metaTable, "Quotation Type:", qType);
 
         String dateStr = quotation.getQuotationDate() != null
-                ? quotation.getQuotationDate().format(DateTimeFormatter.ofPattern("dd/MM/yyyy"))
+                ? quotation.getQuotationDate().format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
                 : "-";
-        addMetaRow(metaTable, "Date:", dateStr);
+        addMetaRow(metaTable, "Quotation Date:", dateStr);
+
+        LocalDate validUntil = quotation.getValidUntil();
+        if (validUntil == null && quotation.getQuotationDate() != null) {
+            validUntil = quotation.getQuotationDate().plusDays(365);
+        }
+        String validUntilStr = validUntil != null
+                ? validUntil.format(DateTimeFormatter.ofPattern("dd-MM-yyyy"))
+                : "-";
+        addMetaRow(metaTable, "Valid Until:", validUntilStr);
 
         String custName = quotation.getCustomer() != null ? safe(quotation.getCustomer().getName()) : "—";
         addMetaRow(metaTable, "Customer Name:", custName.isBlank() ? "—" : custName);

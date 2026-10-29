@@ -518,11 +518,22 @@ public class AdminQuotationBuilderService {
                 branch
         );
 
-        quotation.setQuotationDate(
-                request.quotationDate() == null
-                        ? LocalDate.now()
-                        : request.quotationDate()
-        );
+        if (quotation.getId() != null) {
+            // Existing quotation being edited: preserve original quotationDate and validUntil
+            if (quotation.getQuotationDate() == null) {
+                quotation.setQuotationDate(
+                        request.quotationDate() == null ? LocalDate.now() : request.quotationDate()
+                );
+            }
+            if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+                quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
+            }
+        } else {
+            // New quotation creation
+            LocalDate qDate = request.quotationDate() == null ? LocalDate.now() : request.quotationDate();
+            quotation.setQuotationDate(qDate);
+            quotation.setValidUntil(qDate.plusDays(365));
+        }
 
         quotation.setPricingMode(
                 request.pricingMode()
