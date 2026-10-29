@@ -204,7 +204,11 @@ public class AdminQuotationBuilderController {
     }
 
     public ResponseEntity<?> rate(Long branchId, Long materialOptionId, PricingMode pricingMode) {
-        return rate(branchId, materialOptionId, null, pricingMode);
+        return rate(branchId, null, materialOptionId, null, pricingMode);
+    }
+
+    public ResponseEntity<?> rate(Long branchId, Long materialOptionId, Long materialId, PricingMode pricingMode) {
+        return rate(branchId, null, materialOptionId, materialId, pricingMode);
     }
 
     @GetMapping("/builder/material-options")
@@ -239,40 +243,42 @@ public class AdminQuotationBuilderController {
     @ResponseBody
     public ResponseEntity<?> rate(
             @RequestParam(required = false) Long branchId,
+            @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long materialOptionId,
             @RequestParam(required = false) Long materialId,
             @RequestParam PricingMode pricingMode) {
         try {
-            BigDecimal rate = builderService.resolveRate(branchId, materialId, materialOptionId, pricingMode);
-            Material material = materialId != null ? materialRepository.findById(materialId).orElse(null) : null;
-            Pricing pricing = materialOptionId != null ? pricingRepository.findByMaterialOptionIdAndPricingMode(materialOptionId, pricingMode).orElse(null) : null;
-            MaterialOption option = materialOptionId != null ? materialOptionRepository.findById(materialOptionId).orElse(null) : null;
-
-            String formula = (material != null && material.getFormula() != null && !material.getFormula().isBlank() && !"(L + W) × H".equals(material.getFormula()))
-                    ? material.getFormula()
-                    : ((pricing != null && pricing.getFormula() != null && !pricing.getFormula().isBlank())
-                    ? pricing.getFormula()
-                    : ((option != null && option.getMaterial() != null && option.getMaterial().getFormula() != null)
-                    ? option.getMaterial().getFormula()
-                    : "(L + W) × H"));
-
-            String unit = (pricing != null && pricing.getUnit() != null)
-                    ? pricing.getUnit()
-                    : ((material != null && material.getUnit() != null) ? material.getUnit() : "Sq.ft");
+            AdminQuotationBuilderService.ResolvedMaterialRate res =
+                    builderService.resolveMaterialAndRate(branchId, divisionId, materialId, materialOptionId, pricingMode);
+            if (!res.available() || res.rate() == null) {
+                Map<String, Object> resp = new LinkedHashMap<>();
+                resp.put("success", true);
+                resp.put("available", false);
+                resp.put("message", res.message());
+                resp.put("rate", null);
+                resp.put("materialId", materialId);
+                return ResponseEntity.ok(resp);
+            }
 
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("success", true);
-            resp.put("rate", rate);
-            resp.put("formula", formula);
-            resp.put("unit", unit);
-            resp.put("measurementUnit", unit);
-            resp.put("pricingUnit", "₹ / " + unit);
-            resp.put("measurementType", (material != null && material.getMeasurementType() != null) ? material.getMeasurementType().name() : "SQFT");
-            resp.put("imageUrl", material != null ? material.getImageUrl() : null);
+            resp.put("available", true);
+            resp.put("rate", res.rate());
+            resp.put("pricingMode", pricingMode.name());
+            resp.put("materialId", res.materialId());
+            resp.put("materialOptionId", res.materialOptionId());
+            resp.put("materialName", res.materialName());
+            resp.put("formula", res.formula());
+            resp.put("unit", res.unit());
+            resp.put("measurementUnit", res.unit());
+            resp.put("pricingUnit", "₹ / " + res.unit());
+            resp.put("measurementType", res.measurementType() != null ? res.measurementType().name() : "SQFT");
+            resp.put("imageUrl", res.imageUrl());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
+                    "available", false,
                     "message", e.getMessage() != null ? e.getMessage() : "Failed to resolve rate for this branch and grade."
             ));
         }

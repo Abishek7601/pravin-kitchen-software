@@ -98,74 +98,301 @@ public class AdminQuotationBuilderService {
     // RESOLVE RATE
     // =========================================================
 
+    public record ResolvedMaterialRate(
+            Long materialId,
+            Long materialOptionId,
+            String materialName,
+            BigDecimal rate,
+            String formula,
+            String unit,
+            MeasurementType measurementType,
+            String imageUrl,
+            boolean available,
+            String message
+    ) {
+        public static ResolvedMaterialRate unavailable(String message) {
+            return new ResolvedMaterialRate(null, null, null, null, null, null, null, null, false, message);
+        }
+
+        public static ResolvedMaterialRate unavailable(Long materialId, String materialName, String message) {
+            return new ResolvedMaterialRate(materialId, null, materialName, null, null, null, null, null, false, message);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public ResolvedMaterialRate resolveMaterialAndRate(
+            Long branchId,
+            Long divisionId,
+            Long materialId,
+            Long materialOptionId,
+            PricingMode targetGrade) {
+
+        if (targetGrade == null) {
+            return ResolvedMaterialRate.unavailable("Pricing grade is required.");
+        }
+
+        Material mat = (materialId != null) ? materialRepository.findById(materialId).orElse(null) : null;
+        MaterialOption opt = (materialOptionId != null) ? materialOptionRepository.findById(materialOptionId).orElse(null) : null;
+        if (mat == null && opt != null && opt.getMaterial() != null) {
+            mat = opt.getMaterial();
+            materialId = mat.getId();
+        }
+
+        if (divisionId == null && mat != null) {
+            if (mat.getDivision() != null) {
+                divisionId = mat.getDivision().getId();
+            } else if (mat.getItem() != null && mat.getItem().getDivision() != null) {
+                divisionId = mat.getItem().getDivision().getId();
+            } else if (mat.getDivisions() != null && !mat.getDivisions().isEmpty()) {
+                divisionId = mat.getDivisions().iterator().next().getId();
+            }
+        }
+
+        Branch branch = null;
+        if (branchId != null) {
+            branch = branchRepository.findById(branchId).orElse(null);
+        }
+
+        Material matchedMat = null;
+        MaterialOption matchedOpt = null;
+        Pricing matchedPricing = null;
+        BigDecimal matchedRate = null;
+
+        boolean matIsDifferentGrade = (mat != null && mat.getPricingGrade() != null && mat.getPricingGrade() != targetGrade);
+
+        // 1. Direct option match if material is not explicitly tagged with a different grade
+        if (!matIsDifferentGrade && opt != null) {
+            Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(opt.getId(), targetGrade).orElse(null);
+            if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                BigDecimal r = resolveRateFromPricing(branchId, p);
+                if (r != null) {
+                    matchedMat = mat;
+                    matchedOpt = opt;
+                    matchedPricing = p;
+                    matchedRate = r;
+                }
+            }
+        }
+
+        // 2. Direct material match across all options or material rate
+        if (matchedRate == null && !matIsDifferentGrade && mat != null) {
+            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId());
+            if (opts.isEmpty()) {
+                opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
+            }
+            for (MaterialOption o : opts) {
+                Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(o.getId(), targetGrade).orElse(null);
+                if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                    BigDecimal r = resolveRateFromPricing(branchId, p);
+                    if (r != null) {
+                        matchedMat = mat;
+                        matchedOpt = o;
+                        matchedPricing = p;
+                        matchedRate = r;
+                        break;
+                    }
+                }
+            }
+            if (matchedRate == null && mat.getPricingGrade() == targetGrade && mat.getRate() != null) {
+                matchedMat = mat;
+                matchedRate = money(mat.getRate());
+            }
+        }
+
+        // 3. Cross-grade counterpart match in the same division
+        if (matchedRate == null && divisionId != null && mat != null) {
+            List<Material> candidates = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
+            if (candidates.isEmpty()) {
+                candidates = materialRepository.findAllByDivisionIdAndPricingGrade(divisionId, targetGrade);
+            }
+
+            Material counterpart = findMatchingCounterpart(mat, candidates);
+            if (counterpart != null) {
+                List<MaterialOption> cpOpts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(counterpart.getId());
+                if (cpOpts.isEmpty()) {
+                    cpOpts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(counterpart.getId());
+                }
+                MaterialOption bestCpOpt = null;
+                if (!cpOpts.isEmpty()) {
+                    if (opt != null && opt.getName() != null) {
+                        bestCpOpt = cpOpts.stream()
+                                .filter(o -> o.getName() != null && o.getName().trim().equalsIgnoreCase(opt.getName().trim()))
+                                .findFirst()
+                                .orElse(cpOpts.get(0));
+                    } else {
+                        bestCpOpt = cpOpts.get(0);
+                    }
+                }
+
+                if (bestCpOpt != null) {
+                    Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(bestCpOpt.getId(), targetGrade).orElse(null);
+                    if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                        BigDecimal r = resolveRateFromPricing(branchId, p);
+                        if (r != null) {
+                            matchedMat = counterpart;
+                            matchedOpt = bestCpOpt;
+                            matchedPricing = p;
+                            matchedRate = r;
+                        }
+                    }
+                }
+
+                if (matchedRate == null && counterpart.getRate() != null) {
+                    matchedMat = counterpart;
+                    matchedOpt = bestCpOpt;
+                    matchedRate = money(counterpart.getRate());
+                }
+            }
+        }
+
+        // 4. Fallback check on mat's options even if mat had a different pricingGrade tag
+        if (matchedRate == null && mat != null) {
+            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
+            for (MaterialOption o : opts) {
+                Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(o.getId(), targetGrade).orElse(null);
+                if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                    BigDecimal r = resolveRateFromPricing(branchId, p);
+                    if (r != null) {
+                        matchedMat = mat;
+                        matchedOpt = o;
+                        matchedPricing = p;
+                        matchedRate = r;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (matchedRate == null) {
+            String matName = mat != null ? mat.getName() : "selected material";
+            String branchName = branch != null ? branch.getName() : "the selected branch";
+            return ResolvedMaterialRate.unavailable(
+                    mat != null ? mat.getId() : null,
+                    matName,
+                    "No rate has been configured for branch '" + branchName + "' for material '" + matName + "' under " + targetGrade.name() + " pricing grade."
+            );
+        }
+
+        Material effectiveMat = (matchedMat != null) ? matchedMat : mat;
+        MaterialOption effectiveOpt = (matchedOpt != null) ? matchedOpt : opt;
+        Pricing effectivePricing = matchedPricing;
+
+        String formula = (effectiveMat != null && effectiveMat.getFormula() != null && !effectiveMat.getFormula().isBlank() && !"(L + W) × H".equals(effectiveMat.getFormula()))
+                ? effectiveMat.getFormula()
+                : ((effectivePricing != null && effectivePricing.getFormula() != null && !effectivePricing.getFormula().isBlank())
+                        ? effectivePricing.getFormula()
+                        : ((effectiveOpt != null && effectiveOpt.getFormula() != null && !effectiveOpt.getFormula().isBlank())
+                                ? effectiveOpt.getFormula()
+                                : "(L + W) × H"));
+
+        String unit = (effectivePricing != null && effectivePricing.getUnit() != null && !effectivePricing.getUnit().isBlank())
+                ? effectivePricing.getUnit()
+                : ((effectiveMat != null && effectiveMat.getUnit() != null) ? effectiveMat.getUnit() : "Sq.ft");
+
+        MeasurementType measurementType = (effectiveMat != null && effectiveMat.getMeasurementType() != null)
+                ? effectiveMat.getMeasurementType()
+                : MeasurementType.SQFT;
+
+        String imageUrl = effectiveMat != null ? effectiveMat.getImageUrl() : null;
+        String matName = effectiveMat != null ? effectiveMat.getName() : "";
+
+        return new ResolvedMaterialRate(
+                effectiveMat != null ? effectiveMat.getId() : null,
+                effectiveOpt != null ? effectiveOpt.getId() : null,
+                matName,
+                matchedRate,
+                formula,
+                unit,
+                measurementType,
+                imageUrl,
+                true,
+                null
+        );
+    }
+
+    private BigDecimal resolveRateFromPricing(Long branchId, Pricing pricing) {
+        if (pricing == null || !Boolean.TRUE.equals(pricing.getActive())) {
+            return null;
+        }
+        if (branchId != null && districtPricingRepository != null) {
+            DistrictPricing dp = districtPricingRepository.findByBranchIdAndPricingId(branchId, pricing.getId()).orElse(null);
+            if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
+                return money(dp.getRate());
+            }
+            boolean hasBranchRates = districtPricingRepository.existsByPricingIdAndActiveTrue(pricing.getId());
+            if (hasBranchRates) {
+                return null;
+            }
+        }
+        if (pricing.getRate() != null) {
+            return money(pricing.getRate());
+        }
+        return null;
+    }
+
+    private Material findMatchingCounterpart(Material source, List<Material> candidates) {
+        if (source == null || candidates == null || candidates.isEmpty()) {
+            return null;
+        }
+        String sourceName = source.getName() != null ? source.getName().trim() : "";
+
+        // 1. Exact name match (case-insensitive)
+        for (Material c : candidates) {
+            if (c.getName() != null && c.getName().trim().equalsIgnoreCase(sourceName)) {
+                return c;
+            }
+        }
+
+        // 2. Normalized name match
+        String normSource = normalizeMaterialName(sourceName);
+        for (Material c : candidates) {
+            if (c.getName() != null && normalizeMaterialName(c.getName()).equalsIgnoreCase(normSource)) {
+                return c;
+            }
+        }
+
+        // 3. Substring match
+        for (Material c : candidates) {
+            if (c.getName() != null) {
+                String normC = normalizeMaterialName(c.getName());
+                if (!normC.isBlank() && !normSource.isBlank() && (normC.contains(normSource) || normSource.contains(normC))) {
+                    return c;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private String normalizeMaterialName(String name) {
+        if (name == null) return "";
+        return name.toLowerCase()
+                .replaceAll("\\b(premium|middle|economy)\\b", "")
+                .replaceAll("[^a-z0-9]", "");
+    }
+
     @Transactional(readOnly = true)
     public BigDecimal resolveRate(
             Long branchId,
             Long materialId,
             Long materialOptionId,
             PricingMode mode) {
+        return resolveRate(branchId, null, materialId, materialOptionId, mode);
+    }
 
-        if (mode == null) {
-            throw new IllegalArgumentException("Pricing grade is required.");
+    @Transactional(readOnly = true)
+    public BigDecimal resolveRate(
+            Long branchId,
+            Long divisionId,
+            Long materialId,
+            Long materialOptionId,
+            PricingMode mode) {
+
+        ResolvedMaterialRate res = resolveMaterialAndRate(branchId, divisionId, materialId, materialOptionId, mode);
+        if (!res.available() || res.rate() == null) {
+            throw new IllegalArgumentException(res.message() != null ? res.message() : "No pricing configured for material under " + mode.name() + " grade.");
         }
-
-        if (materialOptionId == null && materialId != null) {
-            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(materialId);
-            if (opts.isEmpty()) {
-                opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(materialId);
-            }
-            if (!opts.isEmpty()) {
-                materialOptionId = opts.get(0).getId();
-            }
-        }
-
-        if (materialOptionId == null) {
-            throw new IllegalArgumentException("Material or material option is required.");
-        }
-
-        Pricing pricing = pricingRepository
-                .findByMaterialOptionIdAndPricingMode(materialOptionId, mode)
-                .orElseThrow(() ->
-                        new IllegalArgumentException(
-                                "No pricing configured for material under " + mode.name() + " grade."
-                        )
-                );
-
-        if (!Boolean.TRUE.equals(pricing.getActive())) {
-            throw new IllegalArgumentException("The selected pricing is inactive.");
-        }
-
-        if (branchId != null) {
-            Branch branch = branchRepository.findById(branchId)
-                    .orElseThrow(() -> new IllegalArgumentException("Selected branch not found with ID: " + branchId));
-
-            DistrictPricing dp = (districtPricingRepository != null)
-                    ? districtPricingRepository.findByBranchIdAndPricingId(branchId, pricing.getId()).orElse(null)
-                    : null;
-
-            if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
-                return money(dp.getRate());
-            }
-
-            boolean hasBranchRates = (districtPricingRepository != null)
-                    && districtPricingRepository.existsByPricingIdAndActiveTrue(pricing.getId());
-
-            if (!hasBranchRates && pricing.getRate() != null) {
-                return money(pricing.getRate());
-            }
-
-            MaterialOption opt = materialOptionRepository.findById(materialOptionId).orElse(null);
-            String matName = opt != null ? opt.getName() : "selected material";
-            throw new IllegalArgumentException(
-                    "No rate has been configured for branch '" + branch.getName() + "' for material '" + matName + "' under " + mode.name() + " pricing grade."
-            );
-        }
-
-        if (pricing.getRate() != null) {
-            return money(pricing.getRate());
-        }
-
-        throw new IllegalArgumentException("Please select a branch first to retrieve material rates.");
+        return res.rate();
     }
 
     @Transactional(readOnly = true)
@@ -173,7 +400,7 @@ public class AdminQuotationBuilderService {
             Long branchId,
             Long materialOptionId,
             PricingMode mode) {
-        return resolveRate(branchId, null, materialOptionId, mode);
+        return resolveRate(branchId, null, null, materialOptionId, mode);
     }
 
     // =========================================================
@@ -476,15 +703,11 @@ public class AdminQuotationBuilderService {
                     if (materialSpecification != null) {
                         if (materialSpecification.getMaterial() != null
                                 && !materialSpecification.getMaterial().getId().equals(material.getId())) {
-                            throw new IllegalArgumentException(
-                                    "Material specification does not belong to the selected material."
-                            );
+                            materialSpecification = null;
                         }
-                        if (materialSpecification.getMaterialOption() != null
-                                && !materialSpecification.getMaterialOption().getId().equals(option.getId())) {
-                            throw new IllegalArgumentException(
-                                    "Material specification does not belong to the selected material option."
-                            );
+                        if (materialSpecification != null && materialSpecification.getMaterialOption() != null
+                                && option != null && !materialSpecification.getMaterialOption().getId().equals(option.getId())) {
+                            materialSpecification = null;
                         }
                     }
                 }
@@ -518,33 +741,50 @@ public class AdminQuotationBuilderService {
                         }
                         rate = money(itemRequest.rate());
                     } else {
-                        try {
-                            rate = resolveRate(
-                                    request.branchId(),
-                                    material.getId(),
-                                    option.getId(),
-                                    request.pricingMode()
-                            );
-                        } catch (Exception ex) {
-                            if (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) >= 0) {
-                                rate = money(material.getRate());
-                            } else {
-                                throw ex;
+                        ResolvedMaterialRate resolved = resolveMaterialAndRate(
+                                request.branchId(),
+                                division.getId(),
+                                material.getId(),
+                                option != null ? option.getId() : null,
+                                request.pricingMode()
+                        );
+                        if (resolved.available() && resolved.rate() != null) {
+                            rate = resolved.rate();
+                            if (resolved.materialId() != null) {
+                                material = materialRepository.findById(resolved.materialId()).orElse(material);
                             }
+                            if (resolved.materialOptionId() != null) {
+                                option = materialOptionRepository.findById(resolved.materialOptionId()).orElse(option);
+                            }
+                        } else if (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) >= 0) {
+                            rate = money(material.getRate());
+                        } else {
+                            throw new IllegalArgumentException(resolved.message());
                         }
                     }
                 } else {
-                    rate = resolveRate(
+                    ResolvedMaterialRate resolved = resolveMaterialAndRate(
                             request.branchId(),
+                            division.getId(),
                             material.getId(),
-                            option.getId(),
+                            option != null ? option.getId() : null,
                             request.pricingMode()
                     );
+                    if (!resolved.available() || resolved.rate() == null) {
+                        throw new IllegalArgumentException(resolved.message());
+                    }
+                    rate = resolved.rate();
+                    if (resolved.materialId() != null) {
+                        material = materialRepository.findById(resolved.materialId()).orElse(material);
+                    }
+                    if (resolved.materialOptionId() != null) {
+                        option = materialOptionRepository.findById(resolved.materialOptionId()).orElse(option);
+                    }
                 }
 
-                Pricing itemPricing = pricingRepository
-                        .findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode())
-                        .orElse(null);
+                Pricing itemPricing = (option != null)
+                        ? pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode()).orElse(null)
+                        : null;
 
                 String itemFormula = (material.getFormula() != null && !material.getFormula().isBlank())
                         ? material.getFormula()
