@@ -19,20 +19,35 @@ import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import javax.imageio.ImageIO;
 import java.awt.Color;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class QuotationPdfService {
+
+    private static final Logger log = LoggerFactory.getLogger(QuotationPdfService.class);
 
     private final QuotationRepository quotationRepository;
     private final QuotationRoomRepository quotationRoomRepository;
@@ -54,6 +69,10 @@ public class QuotationPdfService {
     private static final Color COLOR_BORDER = new Color(210, 215, 215);     // #D2D7D7 Thin table & card borders
     private static final Color COLOR_TEXT_DARK = new Color(30, 30, 30);     // #1E1E1E Main text
     private static final Color COLOR_TEXT_MUTED = new Color(90, 90, 90);    // #5A5A5A Subtitles & specifications
+
+    // Regex pattern to format specifications in Title Case for PDF:
+    // Matches digits followed by unit (e.g. 16MM -> 16mm) or words starting with letter (first char upper, rest lower)
+    private static final Pattern SPEC_TITLE_CASE_PATTERN = Pattern.compile("(\\d+)(\\p{L}+)|(\\p{L})(\\p{L}*)");
 
     /*
      * Fonts for Rupee symbol and typography
@@ -555,12 +574,18 @@ public class QuotationPdfService {
                 // Sum items' Total Amount before applying Offer Percentage
                 itemsTotalAmount = itemsTotalAmount.add(amount);
 
+                // Image URL (check item first, then fallback to material)
+                String itemImageUrl = item.getImageUrl();
+                if ((itemImageUrl == null || itemImageUrl.isBlank()) && item.getMaterial() != null) {
+                    itemImageUrl = item.getMaterial().getImageUrl();
+                }
+
                 // Add Row Cells (item-level offer price removed)
                 addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow);
-                addMaterialCell(itemTable, materialText.toUpperCase(), specification != null ? specification.toUpperCase() : "", isAltRow);
+                addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
                 if (showSqft) {
                     addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
                     addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
@@ -891,17 +916,14 @@ public class QuotationPdfService {
     }
 
     private void addMaterialCell(PdfPTable table, String materialName, String specification, boolean isAltRow) {
+        addMaterialCell(table, materialName, specification, null, isAltRow);
+    }
+
+    private void addMaterialCell(PdfPTable table, String materialName, String specification, String imageUrl, boolean isAltRow) {
         Font mainFont = new Font(Font.HELVETICA, 6.8f, Font.BOLD, COLOR_NAVY);
         Font specFont = new Font(Font.HELVETICA, 6.0f, Font.NORMAL, COLOR_TEXT_MUTED);
 
-        Paragraph p = new Paragraph();
-        p.setLeading(8.5f);
-        p.add(new Chunk(safe(materialName).toUpperCase(), mainFont));
-        if (specification != null && !specification.isBlank() && !specification.equals("-")) {
-            p.add(new Chunk("\n" + safe(specification).toUpperCase(), specFont));
-        }
-
-        PdfPCell cell = new PdfPCell(p);
+        PdfPCell cell = new PdfPCell();
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingTop(3.5f);
@@ -913,7 +935,162 @@ public class QuotationPdfService {
         if (isAltRow) {
             cell.setBackgroundColor(COLOR_ROW_ALT);
         }
+
+        Image itemImage = loadItemImage(imageUrl);
+        boolean hasImage = (itemImage != null);
+        String safeName = safe(materialName).trim();
+        boolean isPhotoPlaceholder = safeName.equalsIgnoreCase("PHOTO") || safeName.equalsIgnoreCase("PHOTO - PHOTO");
+
+        // If an actual image is available and the material name is "PHOTO", remove the PHOTO text
+        boolean showName = !safeName.isBlank() && !safeName.equals("-") && !(hasImage && isPhotoPlaceholder);
+
+        Paragraph namePar = null;
+        if (showName) {
+            namePar = new Paragraph(safeName.toUpperCase(), mainFont);
+            namePar.setLeading(8.5f);
+            namePar.setAlignment(Element.ALIGN_LEFT);
+        }
+
+        boolean hasSpec = (specification != null && !specification.isBlank() && !specification.equals("-"));
+        Paragraph specPar = null;
+        if (hasSpec) {
+            specPar = new Paragraph(formatSpecificationForPdf(safe(specification)), specFont);
+            specPar.setLeading(7.6f);
+            specPar.setAlignment(Element.ALIGN_LEFT);
+        }
+
+        if (namePar != null) {
+            if (hasSpec || hasImage) {
+                namePar.setSpacingAfter(3.5f);
+            }
+            cell.addElement(namePar);
+        }
+
+        if (specPar != null) {
+            if (hasImage) {
+                specPar.setSpacingAfter(3.5f);
+            }
+            cell.addElement(specPar);
+        }
+
+        if (hasImage) {
+            itemImage.setAlignment(Image.ALIGN_LEFT);
+            itemImage.scaleToFit(65f, 48f);
+            cell.addElement(itemImage);
+        } else if (namePar == null && specPar == null) {
+            // Fallback if no name, no spec, and no image
+            Paragraph fallback = new Paragraph(safeName.toUpperCase(), mainFont);
+            fallback.setLeading(8.5f);
+            fallback.setAlignment(Element.ALIGN_LEFT);
+            cell.addElement(fallback);
+        }
+
         table.addCell(cell);
+    }
+
+    /**
+     * Loads an image from an uploaded quotation item or material image reference.
+     * Supports relative paths (/uploads/...), project-relative paths (uploads/...),
+     * absolute file paths, web URLs, classpath resources, and Base64 data URIs.
+     * If the image cannot be loaded or is missing, returns null safely without breaking PDF generation.
+     */
+    private Image loadItemImage(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return null;
+        }
+        String cleanUrl = imageUrl.trim();
+
+        // 1. Base64 data URI
+        if (cleanUrl.startsWith("data:image/") && cleanUrl.contains(";base64,")) {
+            try {
+                String base64Data = cleanUrl.substring(cleanUrl.indexOf(";base64,") + 8);
+                byte[] bytes = Base64.getDecoder().decode(base64Data);
+                return Image.getInstance(bytes);
+            } catch (Exception ignored) {}
+        }
+
+        // 2. Local file system lookup
+        try {
+            String rel = cleanUrl.startsWith("/") ? cleanUrl.substring(1) : cleanUrl;
+            Path path = Paths.get(rel);
+            if (!Files.isRegularFile(path)) {
+                path = Paths.get("uploads").resolve(rel.replaceFirst("^uploads[/\\\\]", ""));
+            }
+            if (!Files.isRegularFile(path)) {
+                path = Paths.get(cleanUrl);
+            }
+
+            if (Files.isRegularFile(path)) {
+                byte[] bytes = Files.readAllBytes(path);
+                try {
+                    return Image.getInstance(bytes);
+                } catch (Exception e) {
+                    // Fallback to ImageIO decoding if format is not recognized natively by OpenPDF
+                    try {
+                        BufferedImage bimg = ImageIO.read(new ByteArrayInputStream(bytes));
+                        if (bimg != null) {
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            ImageIO.write(bimg, "png", baos);
+                            return Image.getInstance(baos.toByteArray());
+                        }
+                    } catch (Exception ignored) {}
+                }
+            }
+        } catch (Exception ignored) {}
+
+        // 3. Web URL
+        if (cleanUrl.startsWith("http://") || cleanUrl.startsWith("https://")) {
+            try {
+                return Image.getInstance(URI.create(cleanUrl).toURL());
+            } catch (Exception ignored) {}
+        }
+
+        // 4. Classpath resource
+        try {
+            String cpPath = cleanUrl.startsWith("/") ? cleanUrl : "/" + cleanUrl;
+            InputStream is = getClass().getResourceAsStream(cpPath);
+            if (is != null) {
+                byte[] bytes = is.readAllBytes();
+                return Image.getInstance(bytes);
+            }
+        } catch (Exception ignored) {}
+
+        return null;
+    }
+
+    /**
+     * Formats specification text for PDF display in Title Case.
+     * Capitalizes the first letter of each word and converts remaining letters to lowercase,
+     * while preserving numbers, measurements (e.g. 16mm), special characters, punctuation, and line breaks.
+     *
+     * Examples:
+     * - "MARINE PLY 710 GRADE" -> "Marine Ply 710 Grade"
+     * - "16MM THICKNESS" -> "16mm Thickness"
+     * - "BRAND: FINE PLY/SABURI" -> "Brand: Fine Ply/Saburi"
+     * - "INNER FINISH: FABRIC/OFF WHITE" -> "Inner Finish: Fabric/Off White"
+     */
+    public static String formatSpecificationForPdf(String specification) {
+        if (specification == null || specification.isBlank()) {
+            return specification;
+        }
+
+        Matcher matcher = SPEC_TITLE_CASE_PATTERN.matcher(specification);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            if (matcher.group(1) != null) {
+                // Digits followed by unit/letters (e.g. "16MM" -> "16mm", "2ND" -> "2nd")
+                String digits = matcher.group(1);
+                String unit = matcher.group(2).toLowerCase(Locale.ROOT);
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(digits + unit));
+            } else if (matcher.group(3) != null) {
+                // Word starting with letter: first letter capitalized, remaining lowercase
+                String firstChar = matcher.group(3).toUpperCase(Locale.ROOT);
+                String rest = matcher.group(4) != null ? matcher.group(4).toLowerCase(Locale.ROOT) : "";
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(firstChar + rest));
+            }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     private void addRupeeCell(PdfPTable table, String text, boolean bold, boolean isGold, boolean isAltRow) {
