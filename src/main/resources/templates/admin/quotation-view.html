@@ -614,14 +614,6 @@
                     </th:block>
                 </tbody>
                 <tfoot>
-                    <tr class="tfoot-subtotal-row">
-                        <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-label">
-                            <strong>Total Items Subtotal</strong>
-                        </td>
-                        <td class="text-right tfoot-val">
-                            <strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.subtotal != null ? quotation.subtotal : 0, 1, 2)}">₹ 0.00</strong>
-                        </td>
-                    </tr>
                     <!-- Accessories -->
                     <tr class="tfoot-charge-row" th:if="${quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0}">
                         <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Accessories</td>
@@ -642,20 +634,15 @@
                         <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Discount</td>
                         <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.discountAmount, 1, 2)}">- ₹ 0.00</td>
                     </tr>
-                    <!-- GST -->
-                    <tr class="tfoot-charge-row" th:if="${quotation.gstAmount != null && quotation.gstAmount > 0}">
-                        <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quotation.gstPercentage != null ? quotation.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
-                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.gstAmount, 1, 2)}">₹ 0.00</td>
-                    </tr>
-                    <!-- Total Amount (Taxable + GST) when extra charges exist -->
-                    <tr class="tfoot-charge-row total-amount-row" th:if="${(quotation.accessoriesAmount != null && quotation.accessoriesAmount > 0) || (quotation.travelCharge != null && quotation.travelCharge > 0) || (quotation.otherCharges != null && quotation.otherCharges > 0) || (quotation.discountAmount != null && quotation.discountAmount > 0) || (quotation.gstAmount != null && quotation.gstAmount > 0)}">
-                        <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label"><strong>Total Amount</strong></td>
-                        <td class="text-right tfoot-charge-val"><strong th:text="${'₹ ' + #numbers.formatDecimal(quotation.totalAmount != null ? quotation.totalAmount : (quotation.subtotal != null ? quotation.subtotal : 0), 1, 2)}">₹ 0.00</strong></td>
-                    </tr>
-                    <!-- Special Offer / Discount -->
+                    <!-- Special Offer / Discount (Applied BEFORE GST) -->
                     <tr class="tfoot-charge-row offer-charge-row" th:if="${quotation.offerAmount != null && quotation.offerAmount > 0}">
                         <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quotation.offerPercentage != null ? quotation.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
                         <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + #numbers.formatDecimal(quotation.offerAmount, 1, 2)}">- ₹ 0.00</td>
+                    </tr>
+                    <!-- GST (Applied on Taxable Amount After Offer) -->
+                    <tr class="tfoot-charge-row" th:if="${quotation.gstAmount != null && quotation.gstAmount > 0}">
+                        <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quotation.gstPercentage != null ? quotation.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
+                        <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.gstAmount, 1, 2)}">₹ 0.00</td>
                     </tr>
                     <!-- Grand Total -->
                     <tr class="tfoot-grand-total-row">

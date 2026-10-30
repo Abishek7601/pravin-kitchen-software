@@ -108,40 +108,22 @@ public class QuotationCalculationService {
         BigDecimal discount =
                 zeroIfNull(quotation.getDiscountAmount());
 
-        BigDecimal taxableAmount =
+        // Step 2: Amount Before Discount = Subtotal + Accessories + Travel Charges + Other Charges
+        BigDecimal amountBeforeDiscount =
                 quotationSubtotal
                         .add(accessories)
                         .add(travel)
-                        .add(otherCharges)
-                        .subtract(discount);
+                        .add(otherCharges);
 
-        if (taxableAmount.compareTo(BigDecimal.ZERO) < 0) {
-            taxableAmount = BigDecimal.ZERO;
+        // Step 3: Amount After Discount = Amount Before Discount - Discount
+        BigDecimal amountAfterDiscount =
+                amountBeforeDiscount.subtract(discount);
+
+        if (amountAfterDiscount.compareTo(BigDecimal.ZERO) < 0) {
+            amountAfterDiscount = BigDecimal.ZERO;
         }
 
-        quotation.setTaxableAmount(
-                money(taxableAmount));
-
-        BigDecimal gstPercentage =
-                zeroIfNull(quotation.getGstPercentage());
-
-        BigDecimal gstAmount =
-                taxableAmount
-                        .multiply(gstPercentage)
-                        .divide(
-                                new BigDecimal("100"),
-                                2,
-                                RoundingMode.HALF_UP);
-
-        quotation.setGstAmount(
-                money(gstAmount));
-
-        BigDecimal totalAmount =
-                taxableAmount.add(gstAmount);
-
-        quotation.setTotalAmount(
-                money(totalAmount));
-
+        // Step 4: Offer Amount = Amount After Discount * Offer Percentage / 100
         BigDecimal offerPercentage =
                 zeroIfNull(quotation.getOfferPercentage());
 
@@ -155,7 +137,7 @@ public class QuotationCalculationService {
                 money(offerPercentage));
 
         BigDecimal offerAmount =
-                totalAmount
+                amountAfterDiscount
                         .multiply(offerPercentage)
                         .divide(
                                 new BigDecimal("100"),
@@ -165,8 +147,47 @@ public class QuotationCalculationService {
         quotation.setOfferAmount(
                 money(offerAmount));
 
+        // Amount After Offer (Taxable Amount for GST) = Amount After Discount - Offer Amount
+        BigDecimal amountAfterOffer =
+                amountAfterDiscount.subtract(offerAmount);
+
+        if (amountAfterOffer.compareTo(BigDecimal.ZERO) < 0) {
+            amountAfterOffer = BigDecimal.ZERO;
+        }
+
+        quotation.setTaxableAmount(
+                money(amountAfterOffer));
+
+        // Step 5: GST Amount = Amount After Offer * GST Percentage / 100
+        BigDecimal gstPercentage =
+                zeroIfNull(quotation.getGstPercentage());
+
+        if (gstPercentage.compareTo(BigDecimal.ZERO) < 0) {
+            gstPercentage = BigDecimal.ZERO;
+        } else if (gstPercentage.compareTo(new BigDecimal("100")) > 0) {
+            gstPercentage = new BigDecimal("100");
+        }
+
+        quotation.setGstPercentage(
+                money(gstPercentage));
+
+        BigDecimal gstAmount =
+                amountAfterOffer
+                        .multiply(gstPercentage)
+                        .divide(
+                                new BigDecimal("100"),
+                                2,
+                                RoundingMode.HALF_UP);
+
+        quotation.setGstAmount(
+                money(gstAmount));
+
+        // Step 6: Grand Total = Amount After Offer + GST Amount
         BigDecimal grandTotal =
-                totalAmount.subtract(offerAmount);
+                amountAfterOffer.add(gstAmount);
+
+        quotation.setTotalAmount(
+                money(amountAfterDiscount));
 
         quotation.setGrandTotal(
                 money(grandTotal));

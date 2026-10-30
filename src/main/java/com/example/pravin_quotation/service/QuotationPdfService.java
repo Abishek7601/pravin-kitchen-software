@@ -621,28 +621,33 @@ public class QuotationPdfService {
 
         // Fallback calculation using the exact business rules if fields were not pre-calculated
         if (grandTotal == null) {
-            BigDecimal taxable = subtotal.add(accessories).add(travel).add(otherCharges).subtract(discount);
-            if (taxable.compareTo(BigDecimal.ZERO) < 0) taxable = BigDecimal.ZERO;
-            BigDecimal gstPct = zeroIfNull(quotation.getGstPercentage());
-            if (gstAmount.compareTo(BigDecimal.ZERO) == 0 && gstPct.compareTo(BigDecimal.ZERO) > 0) {
-                gstAmount = taxable.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            }
-            totalAmount = taxable.add(gstAmount);
+            BigDecimal amountBeforeDiscount = subtotal.add(accessories).add(travel).add(otherCharges);
+            BigDecimal amountAfterDiscount = amountBeforeDiscount.subtract(discount);
+            if (amountAfterDiscount.compareTo(BigDecimal.ZERO) < 0) amountAfterDiscount = BigDecimal.ZERO;
+
             BigDecimal offerPct = zeroIfNull(quotation.getOfferPercentage());
             if (offerPct.compareTo(BigDecimal.ZERO) < 0) offerPct = BigDecimal.ZERO;
             if (offerPct.compareTo(new BigDecimal("100")) > 0) offerPct = new BigDecimal("100");
-            offerAmount = totalAmount.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-            grandTotal = totalAmount.subtract(offerAmount);
+            offerAmount = amountAfterDiscount.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+
+            BigDecimal amountAfterOffer = amountAfterDiscount.subtract(offerAmount);
+            if (amountAfterOffer.compareTo(BigDecimal.ZERO) < 0) amountAfterOffer = BigDecimal.ZERO;
+
+            BigDecimal gstPct = zeroIfNull(quotation.getGstPercentage());
+            if (gstAmount.compareTo(BigDecimal.ZERO) == 0 && gstPct.compareTo(BigDecimal.ZERO) > 0) {
+                gstAmount = amountAfterOffer.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+            }
+            totalAmount = amountAfterDiscount;
+            grandTotal = amountAfterOffer.add(gstAmount);
         } else if (totalAmount == null) {
-            totalAmount = grandTotal.add(offerAmount);
+            totalAmount = grandTotal.subtract(gstAmount).add(offerAmount);
         }
 
         // --- SUMMARY ROWS INTEGRATED AT TABLE FOOTER ---
         boolean hasConfiguredExtraCharges = accessories.compareTo(BigDecimal.ZERO) > 0
                 || travel.compareTo(BigDecimal.ZERO) > 0
                 || otherCharges.compareTo(BigDecimal.ZERO) > 0
-                || discount.compareTo(BigDecimal.ZERO) > 0
-                || gstAmount.compareTo(BigDecimal.ZERO) > 0;
+                || discount.compareTo(BigDecimal.ZERO) > 0;
 
         if (hasConfiguredExtraCharges) {
             // Row 1: Subtotal
@@ -668,26 +673,26 @@ public class QuotationPdfService {
                 addSummaryRow(itemTable, "Discount", "- " + rupees(discount), false);
             }
 
-            // Row 6: GST (if configured)
-            if (gstAmount.compareTo(BigDecimal.ZERO) > 0) {
-                String gstLabel = (quotation.getGstPercentage() != null && quotation.getGstPercentage().compareTo(BigDecimal.ZERO) > 0)
-                        ? "GST (" + quotation.getGstPercentage().stripTrailingZeros().toPlainString() + "%)"
-                        : "GST";
-                addSummaryRow(itemTable, gstLabel, rupees(gstAmount), false);
-            }
-
-            // Row 7: Total Amount
-            addSummaryRow(itemTable, "Total Amount", rupees(totalAmount), true);
+            // Row 6: Total Amount (Amount Before Offer)
+            addSummaryRow(itemTable, "Total Amount", rupees(totalAmount != null ? totalAmount : subtotal), true);
         } else {
             // Standard case: Total Amount equals subtotal
             addSummaryRow(itemTable, "Total Amount", rupees(totalAmount != null ? totalAmount : subtotal), true);
         }
 
-        // Row: Offer Price (always present)
+        // Row: Offer Price (always present, applied BEFORE GST)
         String offerPriceStr = offerAmount.compareTo(BigDecimal.ZERO) > 0
                 ? "- " + rupees(offerAmount)
                 : rupees(BigDecimal.ZERO);
         addSummaryRow(itemTable, "Offer Price", offerPriceStr, false);
+
+        // Row: GST (if configured, applied on taxable amount after offer)
+        if (gstAmount.compareTo(BigDecimal.ZERO) > 0) {
+            String gstLabel = (quotation.getGstPercentage() != null && quotation.getGstPercentage().compareTo(BigDecimal.ZERO) > 0)
+                    ? "GST (" + quotation.getGstPercentage().stripTrailingZeros().toPlainString() + "%)"
+                    : "GST";
+            addSummaryRow(itemTable, gstLabel, rupees(gstAmount), false);
+        }
 
         // Row: GRAND TOTAL (Highlighted with dark teal header fill and gold text)
         addGrandTotalRow(itemTable, "GRAND TOTAL", grandTotal);
