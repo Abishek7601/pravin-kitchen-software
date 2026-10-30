@@ -286,4 +286,99 @@ public class QuotationPdfSpecificationCapitalizationTest {
         assertTrue(page2.contains("Line One Spec"));
         assertTrue(page2.contains("Line Two Spec"));
     }
+
+    @Test
+    @DisplayName("4. Material Image: Uploaded image replaces PHOTO text, renders without errors, preserves other material names")
+    void testMaterialImageReplacesPhotoTextInPdf() throws Exception {
+        LocalDate today = LocalDate.of(2026, 10, 30);
+        Quotation q = quotationService.create(
+                "QT-IMG-" + System.nanoTime(),
+                customer.getId(),
+                employee.getId(),
+                branch.getId(),
+                today,
+                PricingMode.PREMIUM,
+                "Photo Material Test",
+                "Internal notes"
+        );
+
+        QuotationRoom room = new QuotationRoom();
+        room.setQuotation(q);
+        room.setFloor("Ground Floor");
+        room.setRoom("Room 1");
+        room.setActive(true);
+        room = quotationRoomRepository.save(room);
+
+        // Material with name "PHOTO" and unit "Files"
+        Material photoMat = new Material();
+        photoMat.setName("PHOTO");
+        photoMat.setUnit("Files");
+        photoMat.setMeasurementType(MeasurementType.FILES);
+        photoMat.setDivision(division);
+        photoMat.setActive(true);
+        photoMat = materialRepository.save(photoMat);
+
+        // Item 1: "PHOTO" material WITH uploaded image
+        QuotationItem itemWithImage = new QuotationItem();
+        itemWithImage.setQuotationRoom(room);
+        itemWithImage.setWorkCategory(category);
+        itemWithImage.setDivision(division);
+        itemWithImage.setMaterial(photoMat);
+        itemWithImage.setImageUrl("/uploads/quotation-items/aa420e66-5fe2-4a33-97dc-4b010a0db40e.jpg");
+        itemWithImage.setMeasurementType(MeasurementType.FILES);
+        itemWithImage.setQuantity(new BigDecimal("2"));
+        itemWithImage.setRate(new BigDecimal("400.00"));
+        itemWithImage.setAmount(new BigDecimal("800.00"));
+        itemWithImage.setActive(true);
+        quotationItemRepository.save(itemWithImage);
+
+        // Item 2: Named material "GYPSUM CEILING" WITH uploaded image
+        Material gypsumMat = new Material();
+        gypsumMat.setName("GYPSUM CEILING");
+        gypsumMat.setUnit("Files");
+        gypsumMat.setMeasurementType(MeasurementType.FILES);
+        gypsumMat.setDivision(division);
+        gypsumMat.setActive(true);
+        gypsumMat = materialRepository.save(gypsumMat);
+
+        QuotationItem item2WithImage = new QuotationItem();
+        item2WithImage.setQuotationRoom(room);
+        item2WithImage.setWorkCategory(category);
+        item2WithImage.setDivision(division);
+        item2WithImage.setMaterial(gypsumMat);
+        item2WithImage.setImageUrl("/uploads/quotation-items/aa420e66-5fe2-4a33-97dc-4b010a0db40e.jpg");
+        item2WithImage.setMeasurementType(MeasurementType.FILES);
+        item2WithImage.setQuantity(new BigDecimal("1"));
+        item2WithImage.setRate(new BigDecimal("500.00"));
+        item2WithImage.setAmount(new BigDecimal("500.00"));
+        item2WithImage.setActive(true);
+        quotationItemRepository.save(item2WithImage);
+
+        // Item 3: "PHOTO" material WITHOUT image (fallback: show text)
+        QuotationItem itemNoImage = new QuotationItem();
+        itemNoImage.setQuotationRoom(room);
+        itemNoImage.setWorkCategory(category);
+        itemNoImage.setDivision(division);
+        itemNoImage.setMaterial(photoMat);
+        itemNoImage.setImageUrl(null);
+        itemNoImage.setMeasurementType(MeasurementType.FILES);
+        itemNoImage.setQuantity(new BigDecimal("1"));
+        itemNoImage.setRate(new BigDecimal("300.00"));
+        itemNoImage.setAmount(new BigDecimal("300.00"));
+        itemNoImage.setActive(true);
+        quotationItemRepository.save(itemNoImage);
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(pdfBytes);
+        assertTrue(pdfBytes.length > 0);
+        java.nio.file.Files.write(java.nio.file.Path.of("target/test-photo-quotation.pdf"), pdfBytes);
+
+        String page2 = extractPage2PdfText(pdfBytes);
+
+        // Item 2 named material must be displayed in uppercase
+        assertTrue(page2.contains("GYPSUM CEILING"), "Named material 'GYPSUM CEILING' must be displayed in PDF");
+
+        // Item 3 (photo material with no image) displays "PHOTO" as fallback
+        assertTrue(page2.contains("PHOTO"), "PHOTO text should appear as fallback when image is absent");
+    }
 }
