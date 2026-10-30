@@ -493,6 +493,6 @@ public class QuotationPdfAmountSummaryTest {
         // Material name should appear only once, NOT duplicate as COMMERCIAL PLY - COMMERCIAL PLY
         assertFalse(page2.contains("COMMERCIAL PLY - COMMERCIAL PLY"), "Must not duplicate material name");
         assertTrue(page2.contains("COMMERCIAL PLY"), "Must contain material name");
-        assertTrue(page2.contains("THICKNESS 16MM WITH MICA"), "Specification must be preserved without duplicate material name prefix");
+        assertTrue(page2.contains("Thickness 16mm With Mica"), "Specification must be formatted in Title Case without duplicate material name prefix");
     }
 }

@@ -29,7 +29,10 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Service
 public class QuotationPdfService {
@@ -54,6 +57,10 @@ public class QuotationPdfService {
     private static final Color COLOR_BORDER = new Color(210, 215, 215);     // #D2D7D7 Thin table & card borders
     private static final Color COLOR_TEXT_DARK = new Color(30, 30, 30);     // #1E1E1E Main text
     private static final Color COLOR_TEXT_MUTED = new Color(90, 90, 90);    // #5A5A5A Subtitles & specifications
+
+    // Regex pattern to format specifications in Title Case for PDF:
+    // Matches digits followed by unit (e.g. 16MM -> 16mm) or words starting with letter (first char upper, rest lower)
+    private static final Pattern SPEC_TITLE_CASE_PATTERN = Pattern.compile("(\\d+)(\\p{L}+)|(\\p{L})(\\p{L}*)");
 
     /*
      * Fonts for Rupee symbol and typography
@@ -560,7 +567,7 @@ public class QuotationPdfService {
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow);
-                addMaterialCell(itemTable, materialText.toUpperCase(), specification != null ? specification.toUpperCase() : "", isAltRow);
+                addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), isAltRow);
                 if (showSqft) {
                     addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
                     addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
@@ -894,14 +901,7 @@ public class QuotationPdfService {
         Font mainFont = new Font(Font.HELVETICA, 6.8f, Font.BOLD, COLOR_NAVY);
         Font specFont = new Font(Font.HELVETICA, 6.0f, Font.NORMAL, COLOR_TEXT_MUTED);
 
-        Paragraph p = new Paragraph();
-        p.setLeading(8.5f);
-        p.add(new Chunk(safe(materialName).toUpperCase(), mainFont));
-        if (specification != null && !specification.isBlank() && !specification.equals("-")) {
-            p.add(new Chunk("\n" + safe(specification).toUpperCase(), specFont));
-        }
-
-        PdfPCell cell = new PdfPCell(p);
+        PdfPCell cell = new PdfPCell();
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingTop(3.5f);
@@ -913,7 +913,59 @@ public class QuotationPdfService {
         if (isAltRow) {
             cell.setBackgroundColor(COLOR_ROW_ALT);
         }
+
+        Paragraph namePar = new Paragraph(safe(materialName).toUpperCase(), mainFont);
+        namePar.setLeading(8.5f);
+        namePar.setAlignment(Element.ALIGN_LEFT);
+
+        if (specification != null && !specification.isBlank() && !specification.equals("-")) {
+            namePar.setSpacingAfter(3.5f);
+            cell.addElement(namePar);
+
+            Paragraph specPar = new Paragraph(formatSpecificationForPdf(safe(specification)), specFont);
+            specPar.setLeading(7.6f);
+            specPar.setAlignment(Element.ALIGN_LEFT);
+            cell.addElement(specPar);
+        } else {
+            cell.addElement(namePar);
+        }
+
         table.addCell(cell);
+    }
+
+    /**
+     * Formats specification text for PDF display in Title Case.
+     * Capitalizes the first letter of each word and converts remaining letters to lowercase,
+     * while preserving numbers, measurements (e.g. 16mm), special characters, punctuation, and line breaks.
+     *
+     * Examples:
+     * - "MARINE PLY 710 GRADE" -> "Marine Ply 710 Grade"
+     * - "16MM THICKNESS" -> "16mm Thickness"
+     * - "BRAND: FINE PLY/SABURI" -> "Brand: Fine Ply/Saburi"
+     * - "INNER FINISH: FABRIC/OFF WHITE" -> "Inner Finish: Fabric/Off White"
+     */
+    public static String formatSpecificationForPdf(String specification) {
+        if (specification == null || specification.isBlank()) {
+            return specification;
+        }
+
+        Matcher matcher = SPEC_TITLE_CASE_PATTERN.matcher(specification);
+        StringBuilder sb = new StringBuilder();
+        while (matcher.find()) {
+            if (matcher.group(1) != null) {
+                // Digits followed by unit/letters (e.g. "16MM" -> "16mm", "2ND" -> "2nd")
+                String digits = matcher.group(1);
+                String unit = matcher.group(2).toLowerCase(Locale.ROOT);
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(digits + unit));
+            } else if (matcher.group(3) != null) {
+                // Word starting with letter: first letter capitalized, remaining lowercase
+                String firstChar = matcher.group(3).toUpperCase(Locale.ROOT);
+                String rest = matcher.group(4) != null ? matcher.group(4).toLowerCase(Locale.ROOT) : "";
+                matcher.appendReplacement(sb, Matcher.quoteReplacement(firstChar + rest));
+            }
+        }
+        matcher.appendTail(sb);
+        return sb.toString();
     }
 
     private void addRupeeCell(PdfPTable table, String text, boolean bold, boolean isGold, boolean isAltRow) {
