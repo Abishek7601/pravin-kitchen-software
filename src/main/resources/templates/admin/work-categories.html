@@ -30,37 +30,7 @@
 
 <div class="category-page">
 
-    <!-- HEADER -->
-<!--    <header class="category-header">-->
 
-<!--        <div class="header-brand">-->
-
-<!--            <div class="brand-mark">-->
-<!--                <img th:src="@{/images/company-logo.png}" alt="Pravin KITCHENS & INTERIORS &amp; INTERIORS" class="brand-logo-img" style="width: 100%; height: 100%; object-fit: contain; padding: 2px; background: #ffffff; border-radius: inherit;">-->
-<!--            </div>-->
-
-<!--            <div>-->
-<!--                <div class="brand-name">-->
-<!--                    Pravin KITCHENS & INTERIORS-->
-<!--                </div>-->
-
-<!--                <div class="brand-subtitle">-->
-<!--                    Pricing Management-->
-<!--                </div>-->
-<!--            </div>-->
-
-<!--        </div>-->
-
-<!--        <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px; margin-left: auto;">-->
-<!--            <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/dashboard'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
-<!--                <span>← Back</span>-->
-<!--            </button>-->
-<!--            <a th:href="@{/admin/dashboard}" class="btn btn-primary btn-sm nav-dashboard-btn" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: #ffffff; transition: all 0.2s ease;">-->
-<!--                <span>⌂ Dashboard</span>-->
-<!--            </a>-->
-<!--        </div>-->
-
-<!--    </header>-->
 
 
     <!-- MAIN -->
@@ -649,7 +619,7 @@
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
                             Material Name <span style="color: #dc2626;">*</span>
                         </label>
-                        <input type="text" id="materialNameInput" class="modal-input" placeholder="e.g. Premium Marine Plywood, Acrylic Finish" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;" required>
+                        <input type="text" id="materialNameInput" class="modal-input uppercase-input" data-uppercase="true" placeholder="e.g. Premium Marine Plywood, Acrylic Finish" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; text-transform: uppercase;" required>
                     </div>
 
                     <!-- 3 RADIO BUTTON OPTIONS FOR UNIT / MEASUREMENT TYPE -->
@@ -761,7 +731,7 @@
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
                             Brand / Specification <span style="font-size: 11px; font-weight: 400; color: #64748b;">(Optional)</span>
                         </label>
-                        <input type="text" id="materialSpecInput" class="modal-input" placeholder="e.g. Century Ply Club Prime 16mm, IS:710 Marine Grade" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px;">
+                        <textarea id="materialSpecInput" class="modal-input capitalize-title" data-title-case="true" placeholder="e.g. Century Ply Club Prime 16mm, IS:710 Marine Grade" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 80px; height: 90px; resize: vertical; box-sizing: border-box; font-family: inherit; line-height: 1.45;"></textarea>
                     </div>
 
                     <!-- BRANCH-WISE PRICING SECTION -->
@@ -839,6 +809,7 @@
 </div>
 
 <script th:src="@{/js/pagination.js}"></script>
+<script th:src="@{/js/title-capitalization.js}"></script>
 <script>
 
     function confirmDeleteCategory(form) {
@@ -1955,6 +1926,48 @@
         var materialSpecInput = document.getElementById('materialSpecInput');
         var materialRateInput = document.getElementById('materialRateInput');
 
+        // Auto-capitalization for Material Name (ALL UPPERCASE)
+        if (materialNameInput) {
+            function handleMaterialNameUppercase() {
+                var val = materialNameInput.value;
+                if (!val) return;
+                var upper = val.toUpperCase();
+                if (upper !== val) {
+                    var start = materialNameInput.selectionStart;
+                    var end = materialNameInput.selectionEnd;
+                    materialNameInput.value = upper;
+                    if (start !== null && end !== null && document.activeElement === materialNameInput) {
+                        try {
+                            materialNameInput.setSelectionRange(start, end);
+                        } catch (e) {}
+                    }
+                }
+            }
+            materialNameInput.addEventListener('input', handleMaterialNameUppercase);
+            materialNameInput.addEventListener('blur', handleMaterialNameUppercase);
+        }
+
+        // Auto-capitalization for Brand / Specification (First Letter Capital of each word)
+        if (materialSpecInput) {
+            function handleMaterialSpecTitleCase() {
+                var val = materialSpecInput.value;
+                if (!val) return;
+                var formatted = (typeof toTitleCase === 'function') ? toTitleCase(val) : val;
+                if (formatted !== val) {
+                    var start = materialSpecInput.selectionStart;
+                    var end = materialSpecInput.selectionEnd;
+                    materialSpecInput.value = formatted;
+                    if (start !== null && end !== null && document.activeElement === materialSpecInput) {
+                        try {
+                            materialSpecInput.setSelectionRange(start, end);
+                        } catch (e) {}
+                    }
+                }
+            }
+            materialSpecInput.addEventListener('input', handleMaterialSpecTitleCase);
+            materialSpecInput.addEventListener('blur', handleMaterialSpecTitleCase);
+        }
+
         // Radio Cards & Dynamic Containers for Sq.ft / Quantity / Files
         var mTypeRadioSqft = document.getElementById('mTypeRadioSqft');
         var mTypeRadioQuantity = document.getElementById('mTypeRadioQuantity');
@@ -2338,13 +2351,13 @@
             }
 
             if (materialIdInput) materialIdInput.value = isEdit ? mat.id : '';
-            if (materialNameInput) materialNameInput.value = isEdit ? (mat.name || '') : '';
+            if (materialNameInput) materialNameInput.value = isEdit ? ((mat.name || '').toUpperCase()) : '';
             if (materialGradeSelect) materialGradeSelect.value = targetGrade;
             if (materialFormulaSelect) {
                 materialFormulaSelect.value = isEdit ? (mat.formula || 'L × W') : 'L × W';
             }
             updateFormulaDescription();
-            if (materialSpecInput) materialSpecInput.value = isEdit ? (mat.specification || '') : '';
+            if (materialSpecInput) materialSpecInput.value = isEdit ? (typeof toTitleCase === 'function' ? toTitleCase(mat.specification || '') : (mat.specification || '')) : '';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
 
             // Set measurement type
@@ -2527,7 +2540,7 @@
                                     typeBadge +
                                     (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
                                 '</div>' +
-                                (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px;">' + escapeHtml(spec) + '</div>' : '') +
+                                (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px; white-space: pre-line; word-break: break-word;">' + escapeHtml(spec) + '</div>' : '') +
                                 branchRatesHtml +
                             '</div>' +
                         '</div>' +
@@ -2677,10 +2690,10 @@
                 syncVisibleInputsToState();
 
                 var idVal = (materialIdInput ? materialIdInput.value : '').trim();
-                var nameVal = (materialNameInput ? materialNameInput.value : '').trim();
+                var nameVal = (materialNameInput ? materialNameInput.value : '').trim().toUpperCase();
                 var gradeVal = (materialGradeSelect ? materialGradeSelect.value : activeMaterialsGrade).trim();
                 var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
-                var specVal = (materialSpecInput ? materialSpecInput.value : '').trim();
+                var specVal = (materialSpecInput ? (typeof toTitleCase === 'function' ? toTitleCase(materialSpecInput.value) : materialSpecInput.value) : '').trim();
                 var selectedType = getSelectedMeasurementType();
                 var unitVal = (selectedType === 'QUANTITY') ? 'Quantity' : ((selectedType === 'FILES') ? 'Files' : 'Sq.ft');
 
@@ -2827,17 +2840,28 @@
                         var formula = editBtn.getAttribute('data-formula') || 'L × W';
                         var mType = editBtn.getAttribute('data-type') || 'SQFT';
                         var imgUrl = editBtn.getAttribute('data-image') || '';
-                        openMaterialForm({
-                            id: id,
-                            name: name,
-                            specification: spec,
-                            unit: unit,
-                            rate: rate,
-                            pricingGrade: grade,
-                            formula: formula,
-                            measurementType: mType,
-                            imageUrl: imgUrl
-                        });
+                        var foundMat = null;
+                        if (currentMaterialsData && currentMaterialsData.materials) {
+                            var listForGrade = currentMaterialsData.materials[grade] || currentMaterialsData.materials[activeMaterialsGrade];
+                            if (listForGrade) {
+                                foundMat = listForGrade.find(function(m) { return String(m.id) === String(id); });
+                            }
+                        }
+                        if (foundMat) {
+                            openMaterialForm(foundMat);
+                        } else {
+                            openMaterialForm({
+                                id: id,
+                                name: name,
+                                specification: spec,
+                                unit: unit,
+                                rate: rate,
+                                pricingGrade: grade,
+                                formula: formula,
+                                measurementType: mType,
+                                imageUrl: imgUrl
+                            });
+                        }
                     }
                     return;
                 }

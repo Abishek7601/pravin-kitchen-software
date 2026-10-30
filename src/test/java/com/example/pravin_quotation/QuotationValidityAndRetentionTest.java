@@ -87,8 +87,6 @@ public class QuotationValidityAndRetentionTest {
     void setUp() {
         branch = new Branch();
         branch.setName("Chennai Retention District " + System.nanoTime());
-        branch.setDistrict("Chennai");
-        branch.setState("Tamil Nadu");
         branch.setActive(true);
         branch = branchRepository.save(branch);
 
@@ -98,16 +96,16 @@ public class QuotationValidityAndRetentionTest {
         employee.setPassword("encoded");
         employee.setRole(Role.EMPLOYEE);
         employee.setBranch(branch);
-        employee.setEnabled(true);
+        employee.setActive(true);
         employee = userRepository.save(employee);
 
         admin = new User();
         admin.setName("Retention Admin");
         admin.setEmail("retention_admin_" + System.nanoTime() + "@pravin.com");
         admin.setPassword("encoded");
-        admin.setRole(Role.ADMIN);
+        admin.setRole(Role.SUPER_ADMIN);
         admin.setBranch(branch);
-        admin.setEnabled(true);
+        admin.setActive(true);
         admin = userRepository.save(admin);
 
         customer = new Customer();
@@ -118,8 +116,14 @@ public class QuotationValidityAndRetentionTest {
         customer.setBranch(branch);
         customer = customerRepository.save(customer);
 
+        WorkCategory setupCat = new WorkCategory();
+        setupCat.setName("Residential Cat " + System.nanoTime());
+        setupCat.setActive(true);
+        setupCat = workCategoryRepository.save(setupCat);
+
         division = new Division();
         division.setName("Residential Division " + System.nanoTime());
+        division.setWorkCategory(setupCat);
         division.setActive(true);
         division = divisionRepository.save(division);
     }
@@ -263,7 +267,7 @@ public class QuotationValidityAndRetentionTest {
                 true
         );
 
-        Quotation builderSaved = adminQuotationBuilderService.save(builderReq, admin);
+        Quotation builderSaved = adminQuotationBuilderService.save(builderReq, admin.getEmail());
         assertEquals(originalDate, builderSaved.getQuotationDate(), "Builder edit must preserve original quotation date!");
         assertEquals(expectedValidUntil, builderSaved.getValidUntil(), "Builder edit must preserve original valid until!");
     }
@@ -324,7 +328,6 @@ public class QuotationValidityAndRetentionTest {
         Material material = new Material();
         material.setName("Marine Plywood " + System.nanoTime());
         material.setMeasurementType(MeasurementType.SQFT);
-        material.setWorkCategory(category);
         material = materialRepository.save(material);
 
         Quotation q = quotationService.create(
@@ -342,8 +345,8 @@ public class QuotationValidityAndRetentionTest {
         // Attach Room
         QuotationRoom room = new QuotationRoom();
         room.setQuotation(q);
-        room.setFloorNumber("1st Floor");
-        room.setRoomNumber("Living Room");
+        room.setFloor("1st Floor");
+        room.setRoom("Living Room");
         room.setActive(true);
         room = quotationRoomRepository.save(room);
         Long roomId = room.getId();
@@ -353,21 +356,22 @@ public class QuotationValidityAndRetentionTest {
         item.setQuotationRoom(room);
         item.setWorkCategory(category);
         item.setMaterial(material);
-        item.setItemName("TV Unit");
+        item.setItemDescription("TV Unit");
         item.setRate(new BigDecimal("450.00"));
-        item.setTotalAmount(new BigDecimal("4500.00"));
+        item.setAmount(new BigDecimal("4500.00"));
         item.setMeasurementType(MeasurementType.SQFT);
+        item.setFormula("L × W");
         item.setQuantity(BigDecimal.ONE);
-        item.setSubtotal(new BigDecimal("4500.00"));
         item = quotationItemRepository.save(item);
         Long itemId = item.getId();
 
         // Attach Size
         QuotationItemSize size = new QuotationItemSize();
         size.setQuotationItem(item);
-        size.setLength(new BigDecimal("10.0"));
-        size.setHeight(new BigDecimal("1.0"));
-        size.setSqft(new BigDecimal("10.0"));
+        size.setLengthValue(new BigDecimal("10.0"));
+        size.setWidthValue(new BigDecimal("1.0"));
+        size.setHeightValue(new BigDecimal("1.0"));
+        size.setCalculatedSqft(new BigDecimal("10.0"));
         size.setDisplayOrder(1);
         size = quotationItemSizeRepository.save(size);
         Long sizeId = size.getId();
@@ -375,9 +379,9 @@ public class QuotationValidityAndRetentionTest {
         // Attach Communication
         QuotationCommunication comm = new QuotationCommunication();
         comm.setQuotation(q);
+        comm.setType(QuotationCommunication.CommunicationType.WHATSAPP);
         comm.setRecipient(customer.getPhone());
-        comm.setChannel("WHATSAPP");
-        comm.setStatus("SENT");
+        comm.setStatus(QuotationCommunication.CommunicationStatus.SENT);
         comm.setSentAt(LocalDateTime.now().minusDays(360));
         comm = quotationCommunicationRepository.save(comm);
         Long commId = comm.getId();
@@ -385,7 +389,7 @@ public class QuotationValidityAndRetentionTest {
         // Attach Status History
         QuotationStatusHistory hist = new QuotationStatusHistory();
         hist.setQuotation(q);
-        hist.setStatus(QuotationStatus.CONFIRMED);
+        hist.setNewStatus(QuotationStatus.WORKING);
         hist.setChangedAt(LocalDateTime.now().minusDays(360));
         hist = quotationStatusHistoryRepository.save(hist);
         Long histId = hist.getId();
@@ -393,9 +397,8 @@ public class QuotationValidityAndRetentionTest {
         // Attach Workflow
         QuotationWorkflow wf = new QuotationWorkflow();
         wf.setQuotation(q);
-        wf.setAction("STATUS_CHANGE");
-        wf.setFromStatus(QuotationStatus.PENDING);
-        wf.setToStatus(QuotationStatus.CONFIRMED);
+        wf.setAction(QuotationWorkflow.WorkflowAction.VIEWED);
+        wf.setCreatedAt(LocalDateTime.now().minusDays(360));
         wf = quotationWorkflowRepository.save(wf);
         Long wfId = wf.getId();
 

@@ -102,7 +102,7 @@ public class MaterialController {
         String effectiveName = name != null ? name.trim().toUpperCase() : null;
         materialService.createMaterial(
                 effectiveName,
-                description,
+                description != null ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim()) : null,
                 itemId,
                 divisionIds,
                 formula,
@@ -156,7 +156,7 @@ public class MaterialController {
         materialService.updateMaterial(
                 id,
                 effectiveName,
-                description,
+                description != null ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim()) : null,
                 itemId,
                 divisionIds,
                 formula,

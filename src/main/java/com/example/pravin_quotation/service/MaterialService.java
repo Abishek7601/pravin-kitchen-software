@@ -87,7 +87,7 @@ public class MaterialService {
             Integer displayOrder
     ) {
         validateName(name);
-        String materialName = name.trim();
+        String materialName = name.trim().toUpperCase();
 
         Item item = null;
         if (itemId != null) {
@@ -168,7 +168,7 @@ public class MaterialService {
         Material material = getMaterialById(id);
         validateName(name);
 
-        String materialName = name.trim();
+        String materialName = name.trim().toUpperCase();
         if (itemId != null && materialRepository.existsByNameIgnoreCaseAndItemIdAndIdNot(materialName, itemId, id)) {
             throw new IllegalArgumentException(
                     "Another material with this name already exists for this item"
@@ -332,6 +332,6 @@ public class MaterialService {
             return null;
         }
         String cleaned = value.trim();
-        return cleaned.isEmpty() ? null : cleaned;
+        return cleaned.isEmpty() ? null : com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(cleaned);
     }
 }

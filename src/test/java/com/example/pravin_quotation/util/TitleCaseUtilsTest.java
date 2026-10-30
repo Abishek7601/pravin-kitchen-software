@@ -39,9 +39,21 @@ public class TitleCaseUtilsTest {
     }
 
     @Test
-    void testMultilineAddresses() {
-        String input = "10 north street\nkanyakumari\ntamil nadu";
-        String expected = "10 North Street\nKanyakumari\nTamil Nadu";
-        assertEquals(expected, TitleCaseUtils.toTitleCase(input));
+    void testMaterialBrandSpecificationCapitalization() {
+        // Requirement 2: Brand / Specification – First Letter Capital
+        assertEquals("Century Club Prime 16mm", TitleCaseUtils.toTitleCase("century club prime 16mm"));
+        assertEquals("Marine Grade Plywood", TitleCaseUtils.toTitleCase("marine grade plywood"));
+        assertEquals("Asian Paints Royal Finish", TitleCaseUtils.toTitleCase("asian paints royal finish"));
+
+        // Preserve numbers, special characters, and line breaks
+        String multiline = "century club prime 16mm\nmarine grade plywood\nasian paints royal finish";
+        String expectedMultiline = "Century Club Prime 16mm\nMarine Grade Plywood\nAsian Paints Royal Finish";
+        assertEquals(expectedMultiline, TitleCaseUtils.toTitleCase(multiline));
+
+        String complexSpec = "is:710 marine grade, 16mm bwp (grade-a) + laminate finish";
+        assertEquals("Is:710 Marine Grade, 16mm Bwp (Grade-A) + Laminate Finish", TitleCaseUtils.toTitleCase(complexSpec));
+
+        String existingAcronyms = "IS:710 Marine Grade, 16mm BWP Plywood";
+        assertEquals("IS:710 Marine Grade, 16mm BWP Plywood", TitleCaseUtils.toTitleCase(existingAcronyms));
     }
 }

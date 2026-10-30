@@ -2753,6 +2753,7 @@ input:checked + .slider:before {
     font-family: monospace, sans-serif;
     line-height: 1.4;
     word-break: break-word;
+    white-space: pre-line;
 }
 
 .col-size {

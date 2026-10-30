@@ -55,7 +55,7 @@ public class Material {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
-    @Column(name = "specification", length = 500)
+    @Column(name = "specification", columnDefinition = "TEXT")
     private String specification;
 
     @ManyToMany(fetch = FetchType.LAZY)
@@ -115,6 +115,18 @@ public class Material {
             displayOrder = 0;
         }
 
+        if (name != null) {
+            name = name.trim().toUpperCase();
+        }
+
+        if (specification != null && !specification.isBlank()) {
+            specification = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim());
+        }
+
+        if (description != null && !description.isBlank()) {
+            description = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim());
+        }
+
         if (measurementType == null || measurementType.isSqft()) {
             if (formula == null || formula.isBlank()) {
                 formula = "(L + W) × H";
@@ -126,6 +138,18 @@ public class Material {
 
     @PreUpdate
     protected void onUpdate() {
+        if (name != null) {
+            name = name.trim().toUpperCase();
+        }
+
+        if (specification != null && !specification.isBlank()) {
+            specification = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim());
+        }
+
+        if (description != null && !description.isBlank()) {
+            description = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim());
+        }
+
         if (measurementType == null || measurementType.isSqft()) {
             if (formula == null || formula.isBlank()) {
                 formula = "(L + W) × H";
@@ -148,7 +172,7 @@ public class Material {
     }
 
     public void setName(String name) {
-        this.name = name;
+        this.name = name != null ? name.trim().toUpperCase() : null;
     }
 
     public String getDescription() {
@@ -156,7 +180,9 @@ public class Material {
     }
 
     public void setDescription(String description) {
-        this.description = description;
+        this.description = (description != null && !description.isBlank())
+                ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim())
+                : description;
     }
 
     public String getFormula() {
@@ -259,7 +285,9 @@ public class Material {
     }
 
     public void setSpecification(String specification) {
-        this.specification = specification;
+        this.specification = (specification != null && !specification.isBlank())
+                ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
+                : specification;
     }
 
     public Set<Division> getDivisions() {

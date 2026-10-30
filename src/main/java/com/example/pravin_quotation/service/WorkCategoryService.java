@@ -833,7 +833,7 @@ public class WorkCategoryService {
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Material name is required.");
         }
-        String cleanName = name.trim();
+        String cleanName = name.trim().toUpperCase();
 
         // Find representative rate
         BigDecimal representativeRate = fallbackRate;
@@ -917,6 +917,9 @@ public class WorkCategoryService {
             cleanFormula = CalculationFormula.normalizeFormula(formula);
         }
         String cleanSpec = cleanValue(specification);
+        if (cleanSpec != null && !cleanSpec.isBlank()) {
+            cleanSpec = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(cleanSpec.trim());
+        }
 
         if (representativeRate == null) {
             representativeRate = BigDecimal.ZERO;
