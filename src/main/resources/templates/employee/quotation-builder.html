@@ -1781,7 +1781,7 @@
                       let sizeDisp = '';
                       let sqftDisplay = '-';
 
-                      const isRateMissing = (item.rateUnavailable === true || item.rate == null || isNaN(Number(item.rate)));
+                      const isRateMissing = (item.rateUnavailable === true || item.rate == null || isNaN(Number(item.rate)) || Number(item.rate) <= 0);
 
                       if (isRateMissing && !isFiles) {
                           lineBase = 0;
@@ -1827,8 +1827,10 @@
                           ? `<div style="margin-top: 4px;"><img src="${esc(item.imageUrl)}" alt="Attached item image" style="max-width: 50px; max-height: 50px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${esc(item.imageUrl)}', '_blank')" title="Click to view image" /></div>`
                           : '';
 
+                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                      const unavailableMsg = item.rateUnavailableMessage || `No material available in ${gradeLabel} Grade`;
                       const unavailableBadge = (isRateMissing && !isFiles)
-                          ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">&#9888; Rate not configured for ${esc(state.pricingMode)} grade</span></div>`
+                          ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${esc(unavailableMsg)}</span></div>`
                           : '';
 
                       html += `
@@ -2060,30 +2062,26 @@
                   return;
               }
 
-              if (!branchVal) return;
 
               requests.push((async () => {
                   try {
-                      const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal)}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
-                      if (data && data.available !== false && data.rate != null) {
+                      const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal || '')}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
+                      if (data && data.available !== false && data.rate != null && !isNaN(Number(data.rate)) && Number(data.rate) > 0) {
                           item.rate = Number(data.rate);
-                          if (data.materialId) item.materialId = data.materialId;
-                          if (data.materialOptionId) item.materialOptionId = data.materialOptionId;
-                          if (data.materialName) item.materialName = data.materialName;
-                          if (data.formula) item.formula = data.formula;
-                          if (data.unit) item.unit = data.unit;
                           item.rateUnavailable = false;
                           item.rateUnavailableMessage = null;
                       } else {
                           item.rate = null;
                           item.rateUnavailable = true;
-                          item.rateUnavailableMessage = (data && data.message) ? data.message : `Not available in ${state.pricingMode} grade`;
+                          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                          item.rateUnavailableMessage = (data && data.message) ? data.message : `No material available in ${gradeLabel} Grade`;
                           unavailableCount++;
                       }
                   } catch (err) {
                       item.rate = null;
                       item.rateUnavailable = true;
-                      item.rateUnavailableMessage = err.message || `Failed to fetch rate for ${state.pricingMode} grade`;
+                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                      item.rateUnavailableMessage = `No material available in ${gradeLabel} Grade`;
                       unavailableCount++;
                   }
               })());
@@ -2092,11 +2090,12 @@
 
       await Promise.all(requests);
 
+      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
       if (unavailableCount > 0) {
-          $('pricingMessage').textContent = `Pricing updated to ${state.pricingMode} grade. ${unavailableCount} item(s) are not configured for this grade.`;
+          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. ${unavailableCount} item(s) are not available in this grade.`;
           $('pricingMessage').style.color = '#dc2626';
       } else {
-          $('pricingMessage').textContent = `Pricing updated to ${state.pricingMode} grade. Existing sizes and items were kept.`;
+          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. Existing sizes and items were kept.`;
           $('pricingMessage').style.color = '#15803d';
       }
 
@@ -2130,7 +2129,7 @@
           return mType !== 'FILES' && (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)));
       }));
       if (hasUnavailableRates) {
-          alert(`Some materials do not have a configured rate for ${state.pricingMode} grade. Please resolve or remove those items before saving.`);
+          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle'); alert(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
           return null;
       }
 
@@ -2496,6 +2495,7 @@
                       materialSpecificationId: i.materialSpecificationId,
                       materialSpecificationName: i.materialSpecificationName,
                       rate: Number(i.rate || 0),
+                      formula: i.formula || '(L + W) × H',
                       unit: i.unit || 'Sq.ft',
                       measurementType: i.measurementType || 'SQFT',
                       quantity: i.quantity != null ? Number(i.quantity) : 1,
@@ -2506,7 +2506,9 @@
                           length: Number(s.length || 0),
                           width: Number(s.width || 0),
                           height: Number(s.height || 0),
-                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null
+                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
+                          offerDiscountPercent: (s.offerPrice != null && Number(i.rate || 0) > 0) ? Math.round((1 - (Number(s.offerPrice) / (Number(i.rate) * calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height)))) * 100) : 0,
+                          offerActive: s.offerPrice != null
                       }))
                   }))
               }));
