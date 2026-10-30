@@ -299,7 +299,11 @@ public class WorkCategoryController {
                 imageUrl = fileUploadService.storeFile(imageFile, "materials");
             }
 
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, name, specification, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl);
+            String effectiveName = (name != null) ? name.trim().toUpperCase() : "";
+            String effectiveSpec = (specification != null && !specification.isBlank())
+                    ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
+                    : null;
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -353,7 +357,11 @@ public class WorkCategoryController {
                 imageUrl = fileUploadService.storeFile(imageFile, "materials");
             }
 
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, name, specification, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage);
+            String effectiveName = (name != null) ? name.trim().toUpperCase() : "";
+            String effectiveSpec = (specification != null && !specification.isBlank())
+                    ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
+                    : null;
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)

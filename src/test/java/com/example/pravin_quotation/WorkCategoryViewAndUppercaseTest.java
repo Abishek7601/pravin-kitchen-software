@@ -74,6 +74,9 @@ public class WorkCategoryViewAndUppercaseTest {
     private MaterialSpecificationRepository materialSpecificationRepository;
 
     @Autowired
+    private BranchRepository branchRepository;
+
+    @Autowired
     private ResourceLoader resourceLoader;
 
     @Test
@@ -428,5 +431,221 @@ public class WorkCategoryViewAndUppercaseTest {
             String name = (String) s.get("name");
             assertEquals(name.toUpperCase(), name, "Employee specifications API must return uppercase");
         }
+    }
+
+    @Test
+    @DisplayName("Req: Verify Brand / Specification field in Add/Edit Material form is a multiline textarea with proper styling and multiline support")
+    public void testMaterialSpecificationFieldIsTextareaWithMultilineSupport() throws Exception {
+        // 1. Check HTML template structure
+        Resource resource = resourceLoader.getResource("classpath:templates/admin/work-categories.html");
+        assertTrue(resource.exists(), "work-categories.html must exist");
+
+        String content;
+        try (InputStream is = resource.getInputStream()) {
+            content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+        }
+
+        // Must contain label: Brand / Specification (Optional)
+        assertTrue(content.contains("Brand / Specification"), "Template must contain 'Brand / Specification'");
+        assertTrue(content.contains("(Optional)"), "Template must contain '(Optional)'");
+
+        // Must NOT contain input type="text" id="materialSpecInput"
+        assertFalse(content.contains("<input type=\"text\" id=\"materialSpecInput\""),
+                "Field must no longer be a single-line input");
+
+        // Must contain <textarea id="materialSpecInput"
+        assertTrue(content.contains("<textarea id=\"materialSpecInput\""),
+                "Field must be a multiline textarea");
+        assertTrue(content.contains("placeholder=\"e.g. Century Ply Club Prime 16mm, IS:710 Marine Grade\""),
+                "Placeholder must be preserved");
+        assertTrue(content.contains("resize: vertical;"),
+                "Textarea must support vertical resizing");
+
+        // 2. Test saving and editing multiline specification via service/controller
+        WorkCategory testCategory = workCategoryService.createCategory(
+                "SPEC_TEST_" + System.nanoTime(),
+                "Description",
+                "🏷️",
+                0
+        );
+
+        Division testDivision = workCategoryService.createWorkType(
+                testCategory.getId(),
+                "Wardrobe Specs " + System.nanoTime(),
+                "Description",
+                "🚪"
+        );
+
+        String multilineSpec = "Century Ply Club Prime 16mm\nIS:710 Marine Grade BWP\n10-Year Manufacturer Warranty";
+
+        // Create material with multiline specification
+        Material created = workCategoryService.createWorkTypeMaterial(
+                testDivision.getId(),
+                PricingMode.PREMIUM,
+                "Premium Marine Ply " + System.nanoTime(),
+                multilineSpec,
+                "Sq.ft",
+                new BigDecimal("450.00"),
+                "L × W",
+                Map.of(),
+                MeasurementType.SQFT,
+                null
+        );
+
+        assertNotNull(created.getId());
+        assertEquals(multilineSpec, created.getSpecification(), "Multiline specification must be preserved on creation");
+        assertTrue(created.getSpecification().contains("\n"), "Specification must contain line breaks");
+
+        // Update material with updated multiline specification
+        String updatedMultilineSpec = "Greenlam Laminate 1mm Glossy\nAnti-Bacterial Coating\nScratch & Heat Resistant";
+        Material updated = workCategoryService.updateWorkTypeMaterial(
+                created.getId(),
+                created.getName(),
+                updatedMultilineSpec,
+                "Sq.ft",
+                new BigDecimal("500.00"),
+                "L × W",
+                Map.of(),
+                MeasurementType.SQFT,
+                null,
+                false
+        );
+
+        assertEquals(updatedMultilineSpec, updated.getSpecification(), "Updated multiline specification must be preserved on update");
+
+        // Fetch JSON via WorkCategoryController and verify multiline specification returned
+        org.springframework.http.ResponseEntity<?> response = workCategoryController.getWorkTypeMaterials(testDivision.getId());
+        assertEquals(200, response.getStatusCode().value());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> body = (Map<String, Object>) response.getBody();
+        assertNotNull(body);
+        @SuppressWarnings("unchecked")
+        Map<String, List<Map<String, Object>>> materialsByGrade = (Map<String, List<Map<String, Object>>>) body.get("materials");
+        assertNotNull(materialsByGrade);
+        Map<String, Object> targetMat = materialsByGrade.values().stream()
+                .flatMap(List::stream)
+                .filter(m -> m.get("id").equals(created.getId()))
+                .findFirst()
+                .orElse(null);
+        assertNotNull(targetMat, "Created material must be present in JSON response");
+        assertEquals(updatedMultilineSpec, targetMat.get("specification"), "JSON response must contain exact multiline specification with line breaks");
+    }
+
+    @Test
+    @DisplayName("Req 6: Automatic Text Capitalization for Material Name (UPPERCASE) and Brand / Specification (Title Case)")
+    public void testMaterialNameUppercaseAndBrandSpecificationTitleCase() throws Exception {
+        WorkCategory testCategory = workCategoryService.createCategory(
+                "CAP_TEST_" + System.nanoTime(),
+                "Description",
+                "📐",
+                0
+        );
+
+        Division testDivision = workCategoryService.createWorkType(
+                testCategory.getId(),
+                "Living Area " + System.nanoTime(),
+                "Living Room Types",
+                "🛋️"
+        );
+
+        Branch branch = new Branch();
+        branch.setName("Branch " + System.nanoTime());
+        branch.setActive(true);
+        branch = branchRepository.save(branch);
+
+        // 1. Create with lowercase material name: "bwp plywood" and spec: "century club prime 16mm"
+        Material mat1 = workCategoryService.createWorkTypeMaterial(
+                testDivision.getId(),
+                PricingMode.PREMIUM,
+                "bwp plywood",
+                "century club prime 16mm",
+                "Sq.ft",
+                new BigDecimal("400.00"),
+                "L × W",
+                Map.of(),
+                MeasurementType.SQFT,
+                null
+        );
+
+        assertNotNull(mat1.getId());
+        assertEquals("BWP PLYWOOD", mat1.getName(), "Material name must automatically be normalized to ALL CAPITAL LETTERS");
+        assertEquals("Century Club Prime 16mm", mat1.getSpecification(), "Brand / Specification must have first letter of each word capitalized");
+
+        // 2. Create with "gypsum board + finish" and spec "marine grade plywood\nasian paints royal finish"
+        String rawSpec2 = "marine grade plywood\nasian paints royal finish";
+        String expectedSpec2 = "Marine Grade Plywood\nAsian Paints Royal Finish";
+        Material mat2 = workCategoryService.createWorkTypeMaterial(
+                testDivision.getId(),
+                PricingMode.PREMIUM,
+                "gypsum board + finish",
+                rawSpec2,
+                "Sq.ft",
+                new BigDecimal("350.00"),
+                "L × W",
+                Map.of(),
+                MeasurementType.SQFT,
+                null
+        );
+
+        assertEquals("GYPSUM BOARD + FINISH", mat2.getName(), "Material name with symbols/spaces must be ALL UPPERCASE");
+        assertEquals(expectedSpec2, mat2.getSpecification(), "Multiline Brand/Spec must preserve newlines and capitalize first letter of each word");
+
+        // 3. Update existing material to new lowercase values
+        Material updatedMat1 = workCategoryService.updateWorkTypeMaterial(
+                mat1.getId(),
+                "pvc foam sheet",
+                "greenply club 18mm\nheat & scratch resistant",
+                "Sq.ft",
+                new BigDecimal("420.00"),
+                "L × W",
+                Map.of(),
+                MeasurementType.SQFT,
+                null,
+                false
+        );
+
+        assertEquals("PVC FOAM SHEET", updatedMat1.getName(), "Updated material name must be stored in UPPERCASE");
+        assertEquals("Greenply Club 18mm\nHeat & Scratch Resistant", updatedMat1.getSpecification(), "Updated specification must follow title capitalization format");
+
+        // 4. Verify WorkCategoryController endpoints enforce normalization
+        org.springframework.http.ResponseEntity<?> resp1 = workCategoryController.createWorkTypeMaterial(
+                testDivision.getId(),
+                "PREMIUM",
+                null,
+                "acrylic laminate",
+                "L × W",
+                null,
+                "century club prime 16mm, is:710",
+                "Sq.ft",
+                "SQFT",
+                null,
+                new BigDecimal("550.00"),
+                "{}",
+                Map.of("rate_branch_" + branch.getId() + "_PREMIUM", "550.00")
+        );
+        assertEquals(200, resp1.getStatusCode().value());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> respBody1 = (Map<String, Object>) resp1.getBody();
+        assertNotNull(respBody1);
+        Long createdMatId = (Long) respBody1.get("materialId");
+        assertNotNull(createdMatId);
+        Material fetchedMat = materialRepository.findById(createdMatId).orElseThrow();
+        assertEquals("ACRYLIC LAMINATE", fetchedMat.getName(), "Controller endpoint must normalize Material Name to UPPERCASE");
+        assertEquals("Century Club Prime 16mm, Is:710", fetchedMat.getSpecification(), "Controller endpoint must normalize Brand/Spec to Title Case");
+
+        // 5. Verify HTML Templates configuration
+        java.io.File workCatFile = new java.io.File("src/main/resources/templates/admin/work-categories.html");
+        String workCatContent = java.nio.file.Files.readString(workCatFile.toPath());
+        assertTrue(workCatContent.contains("id=\"materialNameInput\""), "work-categories.html must contain materialNameInput");
+        assertTrue(workCatContent.contains("text-transform: uppercase"), "materialNameInput must have uppercase text-transform style");
+        assertTrue(workCatContent.contains("id=\"materialSpecInput\""), "work-categories.html must contain materialSpecInput");
+        assertTrue(workCatContent.contains("title-capitalization.js"), "work-categories.html must include title-capitalization.js");
+        assertTrue(workCatContent.contains("handleMaterialNameUppercase"), "work-categories.html must attach uppercase live handler");
+        assertTrue(workCatContent.contains("handleMaterialSpecTitleCase"), "work-categories.html must attach title case live handler");
+
+        java.io.File matFormFile = new java.io.File("src/main/resources/templates/admin/material-form.html");
+        String matFormContent = java.nio.file.Files.readString(matFormFile.toPath());
+        assertTrue(matFormContent.contains("uppercase-input"), "material-form.html must have uppercase-input class");
+        assertTrue(matFormContent.contains("title-capitalization.js"), "material-form.html must include title-capitalization.js");
     }
 }

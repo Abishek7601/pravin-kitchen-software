@@ -834,6 +834,7 @@ font-size: 13px;
 
 .breakdown-table .spec-main {
     color: var(--text-primary);
+    white-space: pre-line;
 }
 
 .breakdown-table .spec-mat {

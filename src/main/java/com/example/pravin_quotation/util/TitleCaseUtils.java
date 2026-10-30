@@ -11,7 +11,7 @@ import java.util.regex.Pattern;
 public final class TitleCaseUtils {
 
     // Delimiters: start of string, or one or more whitespace/punctuation characters
-    private static final Pattern WORD_START_PATTERN = Pattern.compile("(^|[\\s,.\\-/\\\\()\\[\\]#{}:;]+)(\\p{Ll})");
+    private static final Pattern WORD_START_PATTERN = Pattern.compile("(^|[\\s,.\\-/\\\\()\\[\\]#{}:;+&]+)(\\p{Ll})");
 
     private TitleCaseUtils() {
         // Prevent instantiation
