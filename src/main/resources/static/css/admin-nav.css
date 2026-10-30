@@ -471,7 +471,9 @@
     .admin-section {
         width: 100%;
         justify-content: space-between;
-        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 8px;
     }
 
     .admin-avatar {
@@ -480,8 +482,14 @@
         font-size: 11px;
     }
 
+    .change-password-btn {
+        min-height: 38px;
+        padding: 6px 10px !important;
+        font-size: 12px !important;
+    }
+
     .logout-btn {
-        min-height: 36px;
+        min-height: 38px;
         padding: 8px 11px;
         font-size: 12px;
     }
@@ -496,6 +504,67 @@
         gap: 8px;
         padding: 10px 9px;
         font-size: 11px;
+        min-height: 42px;
+    }
+
+    .dashboard-layout > .main-content {
+        padding: 16px 12px;
+    }
+}
+
+@media (max-width: 380px) {
+    .top-navbar {
+        padding: 10px 10px;
+    }
+
+    .brand-icon {
+        width: 35px;
+        height: 35px;
+        font-size: 17px;
+    }
+
+    .brand-text h5 {
+        font-size: 13.5px;
+    }
+
+    .brand-text span {
+        font-size: 9px;
+        max-width: 160px;
+    }
+
+    .admin-info strong {
+        font-size: 12px;
+    }
+
+    .admin-info small {
+        font-size: 10px;
+    }
+
+    .change-password-btn {
+        font-size: 11px !important;
+        padding: 5px 8px !important;
+    }
+
+    .logout-btn {
+        font-size: 11px;
+        padding: 6px 8px;
+    }
+
+    .sidebar-menu {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 6px;
+        gap: 5px;
+    }
+
+    .sidebar-link {
+        font-size: 10px;
+        padding: 8px 6px;
+        gap: 5px;
+        min-height: 40px;
+    }
+
+    .dashboard-layout > .main-content {
+        padding: 12px 8px;
     }
 }
 

@@ -176,3 +176,111 @@ table thead th,
     color: #024541;
     border-bottom: 1px solid #D6E4E1;
 }
+
+/* =========================================================
+   UNIVERSAL RESPONSIVE FOUNDATION & DEVICE COMPATIBILITY
+   Supports 320px Mobile -> Tablets -> Laptops -> 4K Displays
+   ========================================================= */
+
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    min-width: 320px;
+    overflow-x: clip;
+}
+
+img, svg, video, canvas {
+    max-width: 100%;
+    height: auto;
+}
+
+/* Global Table Overflow Protection */
+.table-wrapper,
+.table-responsive,
+.table-container,
+.table-card,
+.quote-summary-table-container,
+.materials-table-wrapper,
+.quotation-table-wrapper,
+.records-table-wrapper,
+.data-table-wrapper,
+.items-table-wrapper {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain;
+}
+
+/* Touch targets and Mobile Controls */
+@media (max-width: 768px) {
+    button,
+    .btn,
+    input[type="button"],
+    input[type="submit"],
+    input[type="reset"],
+    select,
+    .form-control,
+    .form-select {
+        min-height: 42px;
+    }
+
+    a.btn,
+    button.btn,
+    .action-btn {
+        min-height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+}
+
+/* Ultra-wide, 2K & 4K Displays Content Centering */
+@media (min-width: 1921px) {
+    .dashboard-layout > .main-content > .page-container,
+    .dashboard-layout > .main-content > .category-page,
+    .dashboard-layout > .main-content > .customer-page,
+    .dashboard-layout > .main-content > .quotation-page,
+    .dashboard-layout > .main-content > .builder-page,
+    .dashboard-layout > .main-content > .pricing-page,
+    .dashboard-layout > .main-content > .item-page,
+    .dashboard-layout > .main-content > .table-card,
+    .dashboard-layout > .main-content > .page,
+    .dashboard-wrapper > .main-content > .page-container,
+    .dashboard-wrapper > .main-content > .quotation-container,
+    .dashboard-wrapper > .main-content > .table-card,
+    .dashboard-wrapper > .main-content > .filter-bar,
+    .quotation-container,
+    .page-container {
+        max-width: 1800px;
+        margin-right: auto;
+    }
+}
+
+@media (min-width: 2561px) {
+    .dashboard-layout > .main-content > .page-container,
+    .dashboard-layout > .main-content > .category-page,
+    .dashboard-layout > .main-content > .customer-page,
+    .dashboard-layout > .main-content > .quotation-page,
+    .dashboard-layout > .main-content > .builder-page,
+    .dashboard-layout > .main-content > .pricing-page,
+    .dashboard-layout > .main-content > .item-page,
+    .dashboard-layout > .main-content > .table-card,
+    .dashboard-layout > .main-content > .page,
+    .dashboard-wrapper > .main-content > .page-container,
+    .dashboard-wrapper > .main-content > .quotation-container,
+    .dashboard-wrapper > .main-content > .table-card,
+    .dashboard-wrapper > .main-content > .filter-bar,
+    .quotation-container,
+    .page-container {
+        max-width: 2200px;
+        margin-right: auto;
+    }
+}

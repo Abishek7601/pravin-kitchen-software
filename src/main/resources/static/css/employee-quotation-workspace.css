@@ -138,32 +138,9 @@ input:focus-visible {
 }
 
 /* Ensure Navigation Sidebar brand icon & logo fit properly, centered, maintaining aspect ratio */
-.sidebar .brand-icon {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
-    flex-shrink: 0 !important;
-    width: 60px !important;
-    height: 60px !important;
-    border-radius: 14px 14px 14px 5px !important;
-    box-sizing: border-box !important;
-}
 
-.sidebar .brand-icon .brand-logo-img {
-    width: 100% !important;
-    height: 100% !important;
-    max-width: 100% !important;
-    max-height: 100% !important;
-    object-fit: contain !important;
-    border-radius: inherit !important;
-    padding: 3px !important;
-    background: #ffffff !important;
-    border: none !important;
-    box-shadow: none !important;
-    box-sizing: border-box !important;
-    display: block !important;
-    margin: 0 auto !important;
-}
+
+
 
 /* Page heading / Eyebrow company logo */
 .eyebrow .brand-logo-img,
@@ -1608,18 +1585,9 @@ input:focus-visible {
         flex-wrap: wrap;
     }
 
-    .sidebar .brand-icon {
-        width: 40px !important;
-        height: 40px !important;
-        flex: 0 0 40px !important;
-        border-radius: 12px 12px 12px 4px !important;
-    }
+    
 
-    .sidebar .brand-icon .brand-logo-img {
-        width: 100% !important;
-        height: 100% !important;
-        padding: 2px !important;
-    }
+    
 
     .eyebrow .brand-logo-img,
     .page-label .brand-logo-img,
@@ -1791,18 +1759,9 @@ input:focus-visible {
         font-size: 22px;
     }
 
-    .sidebar .brand-icon {
-        width: 40px !important;
-        height: 40px !important;
-        flex: 0 0 40px !important;
-        border-radius: 12px 12px 12px 4px !important;
-    }
+    
 
-    .sidebar .brand-icon .brand-logo-img {
-        width: 100% !important;
-        height: 100% !important;
-        padding: 2px !important;
-    }
+    
 
     .eyebrow .brand-logo-img,
     .page-label .brand-logo-img,

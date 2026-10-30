@@ -944,7 +944,9 @@ public class QuotationPdfService {
         Image itemImage = loadItemImage(imageUrl);
         boolean hasImage = (itemImage != null);
         String safeName = safe(materialName).trim();
-        boolean isPhotoPlaceholder = safeName.equalsIgnoreCase("PHOTO") || safeName.equalsIgnoreCase("PHOTO - PHOTO");
+        boolean isPhotoPlaceholder = safeName.equalsIgnoreCase("PHOTO")
+                || safeName.equalsIgnoreCase("PHOTO - PHOTO")
+                || safeName.toUpperCase().matches("^PHOTO([\\s\\-_/]*[\\[\\(]?(FILE|FILES)[\\]\\)]?)?$");
 
         // If an actual image is available and the material name is "PHOTO", remove the PHOTO text
         boolean showName = !safeName.isBlank() && !safeName.equals("-") && !(hasImage && isPhotoPlaceholder);
@@ -1016,13 +1018,19 @@ public class QuotationPdfService {
 
         // 2. Local file system lookup
         try {
-            String rel = cleanUrl.startsWith("/") ? cleanUrl.substring(1) : cleanUrl;
+            String rel = (cleanUrl.startsWith("/") || cleanUrl.startsWith("\\")) ? cleanUrl.substring(1) : cleanUrl;
             Path path = Paths.get(rel);
             if (!Files.isRegularFile(path)) {
                 path = Paths.get("uploads").resolve(rel.replaceFirst("^uploads[/\\\\]", ""));
             }
             if (!Files.isRegularFile(path)) {
                 path = Paths.get(cleanUrl);
+            }
+            if (!Files.isRegularFile(path)) {
+                path = Paths.get(System.getProperty("user.dir", ".")).resolve(rel);
+            }
+            if (!Files.isRegularFile(path)) {
+                path = Paths.get(System.getProperty("user.dir", ".")).resolve("uploads").resolve(rel.replaceFirst("^uploads[/\\\\]", ""));
             }
 
             if (Files.isRegularFile(path)) {
