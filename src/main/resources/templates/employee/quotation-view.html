@@ -377,34 +377,6 @@
       </div>
 
 
-      <div class="total-row">
-
-                <span>
-                    GST
-                </span>
-
-        <strong
-                th:text="${'₹ ' + quotation.gstAmount}">
-          ₹ 0.00
-        </strong>
-
-      </div>
-
-
-      <div class="total-row" th:if="${quotation.offerAmount != null and quotation.offerAmount > 0}">
-
-                <span>
-                    Total Amount
-                </span>
-
-        <strong
-                th:text="${'₹ ' + (quotation.totalAmount != null ? quotation.totalAmount : quotation.grandTotal)}">
-          ₹ 0.00
-        </strong>
-
-      </div>
-
-
       <div class="total-row" th:if="${quotation.offerAmount != null and quotation.offerAmount > 0}">
 
                 <span>
@@ -414,6 +386,20 @@
         <strong style="color: #059669;"
                 th:text="${'- ₹ ' + quotation.offerAmount}">
           - ₹ 0.00
+        </strong>
+
+      </div>
+
+
+      <div class="total-row">
+
+                <span>
+                    GST
+                </span>
+
+        <strong
+                th:text="${'₹ ' + quotation.gstAmount}">
+          ₹ 0.00
         </strong>
 
       </div>

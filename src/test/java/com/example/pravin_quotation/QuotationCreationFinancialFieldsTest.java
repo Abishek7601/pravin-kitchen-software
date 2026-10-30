@@ -217,24 +217,25 @@ public class QuotationCreationFinancialFieldsTest {
         BigDecimal subtotal = saved.getSubtotal();
         assertTrue(subtotal.compareTo(BigDecimal.ZERO) > 0);
 
-        // Taxable = Subtotal + Acc + Travel + Other - Disc
-        BigDecimal expectedTaxable = subtotal.add(accessories).add(travel).add(other).subtract(discount);
+        // Step 2 & 3: Amount After Discount = Subtotal + Acc + Travel + Other - Disc
+        BigDecimal expectedAmountBeforeDiscount = subtotal.add(accessories).add(travel).add(other);
+        BigDecimal expectedAmountAfterDiscount = expectedAmountBeforeDiscount.subtract(discount);
+        assertEquals(0, expectedAmountAfterDiscount.setScale(2, RoundingMode.HALF_UP).compareTo(saved.getTotalAmount()));
+
+        // Step 4: Offer Amount = Amount After Discount * 5 / 100
+        BigDecimal expectedOfferAmount = expectedAmountAfterDiscount.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        assertEquals(0, expectedOfferAmount.compareTo(saved.getOfferAmount()));
+
+        // Taxable Amount (Amount After Offer) = Amount After Discount - Offer Amount
+        BigDecimal expectedTaxable = expectedAmountAfterDiscount.subtract(expectedOfferAmount);
         assertEquals(0, expectedTaxable.setScale(2, RoundingMode.HALF_UP).compareTo(saved.getTaxableAmount()));
 
-        // GST Amount = Taxable * 18 / 100
+        // Step 5: GST Amount = Amount After Offer * 18 / 100
         BigDecimal expectedGst = expectedTaxable.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         assertEquals(0, expectedGst.compareTo(saved.getGstAmount()));
 
-        // Total Amount = Taxable + GST
-        BigDecimal expectedTotal = expectedTaxable.add(expectedGst);
-        assertEquals(0, expectedTotal.setScale(2, RoundingMode.HALF_UP).compareTo(saved.getTotalAmount()));
-
-        // Offer Amount = Total * 5 / 100
-        BigDecimal expectedOfferAmount = expectedTotal.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-        assertEquals(0, expectedOfferAmount.compareTo(saved.getOfferAmount()));
-
-        // Grand Total = Total - Offer Amount
-        BigDecimal expectedGrandTotal = expectedTotal.subtract(expectedOfferAmount);
+        // Step 6: Grand Total = Amount After Offer + GST Amount
+        BigDecimal expectedGrandTotal = expectedTaxable.add(expectedGst);
         assertEquals(0, expectedGrandTotal.setScale(2, RoundingMode.HALF_UP).compareTo(saved.getGrandTotal()));
 
         // Check Admin loadQuotation endpoint

@@ -81,6 +81,7 @@ public class GradeBasedQuotationPricingTest {
 
     private User adminUser;
     private User employeeUser;
+    private Authentication employeeAuth;
     private Branch branch;
     private Customer customer;
     private WorkCategory workCategory;
@@ -346,7 +347,7 @@ public class GradeBasedQuotationPricingTest {
                 adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), patternBMaterialPremium.getId(), null, PricingMode.MIDDLE);
 
         assertTrue(resMiddle.available(), "Counterpart material should be available in MIDDLE grade");
-        assertEquals(patternBMaterialMiddle.getId(), resMiddle.materialId(), "Should map to Middle material ID");
+        assertEquals(patternBMaterialPremium.getId(), resMiddle.materialId(), "Original material ID must be preserved when switching to Middle grade");
         assertEquals(0, new BigDecimal("250.00").compareTo(resMiddle.rate()), "Should load Middle grade rate of 250");
 
         // Now switch from Middle material ID to ECONOMY grade
@@ -354,7 +355,7 @@ public class GradeBasedQuotationPricingTest {
                 adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), patternBMaterialMiddle.getId(), null, PricingMode.ECONOMY);
 
         assertTrue(resEconomy.available(), "Counterpart material should be available in ECONOMY grade");
-        assertEquals(patternBMaterialEconomy.getId(), resEconomy.materialId(), "Should map to Economy material ID");
+        assertEquals(patternBMaterialMiddle.getId(), resEconomy.materialId(), "Original material ID must be preserved when switching to Economy grade");
         assertEquals(0, new BigDecimal("200.00").compareTo(resEconomy.rate()), "Should load Economy grade rate of 200");
 
         // Now switch back from Economy material ID to PREMIUM grade
@@ -362,7 +363,7 @@ public class GradeBasedQuotationPricingTest {
                 adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), patternBMaterialEconomy.getId(), null, PricingMode.PREMIUM);
 
         assertTrue(resPremium.available(), "Counterpart material should be available in PREMIUM grade");
-        assertEquals(patternBMaterialPremium.getId(), resPremium.materialId(), "Should map to Premium material ID");
+        assertEquals(patternBMaterialEconomy.getId(), resPremium.materialId(), "Original material ID must be preserved when switching to Premium grade");
         assertEquals(0, new BigDecimal("300.00").compareTo(resPremium.rate()), "Should restore Premium grade rate of 300");
     }
 
@@ -375,7 +376,8 @@ public class GradeBasedQuotationPricingTest {
         assertFalse(res.available(), "Material exclusive to Premium should not be available in Economy");
         assertNull(res.rate(), "Rate should be null when unavailable");
         assertNotNull(res.message(), "Should provide a clear explanation message");
-        assertTrue(res.message().contains("ECONOMY"), "Message should mention target grade");
+        assertTrue(res.message().equalsIgnoreCase("No material available in Economy Grade") || res.message().toUpperCase().contains("ECONOMY"), "Message should mention target grade");
+        assertEquals("No material available in Economy Grade", res.message());
     }
 
     @Test
@@ -481,7 +483,7 @@ public class GradeBasedQuotationPricingTest {
         // Verify Middle grade rate ₹250 and amount ₹2500
         assertEquals(0, new BigDecimal("250.00").compareTo(updatedSqftItem.getRate()));
         assertEquals(0, new BigDecimal("2500.00").compareTo(updatedSqftItem.getAmount()));
-        assertEquals(patternBMaterialMiddle.getId(), updatedSqftItem.getMaterial().getId(), "Item should be linked to Middle material counterpart");
+        assertEquals(patternBMaterialPremium.getId(), updatedSqftItem.getMaterial().getId(), "Item should preserve its original material ID");
 
         QuotationItem updatedFilesItem = updatedItems.get(1);
         // Verify Files rate preserved at ₹1500 and amount ₹3000
@@ -501,7 +503,7 @@ public class GradeBasedQuotationPricingTest {
         assertNotNull(body);
         assertTrue(Boolean.TRUE.equals(body.get("available")));
         assertEquals(0, new BigDecimal("250.00").compareTo(new BigDecimal(body.get("rate").toString())));
-        assertEquals(patternBMaterialMiddle.getId(), body.get("materialId"));
+        assertEquals(patternBMaterialPremium.getId(), body.get("materialId"), "Controller must return original material ID");
     }
 
     @Test
@@ -561,7 +563,7 @@ public class GradeBasedQuotationPricingTest {
         assertNotNull(empRateBody);
         assertTrue(Boolean.TRUE.equals(empRateBody.get("available")));
         assertEquals(0, new BigDecimal("200.00").compareTo(new BigDecimal(empRateBody.get("rate").toString())));
-        assertEquals(patternBMaterialEconomy.getId(), empRateBody.get("materialId"));
+        assertEquals(patternBMaterialPremium.getId(), empRateBody.get("materialId"), "Controller must return original material ID");
 
         // Step 3: Save updated quotation with ECONOMY grade
         AdminQuotationBuilderService.ItemRequest editItem = new AdminQuotationBuilderService.ItemRequest(
@@ -592,5 +594,217 @@ public class GradeBasedQuotationPricingTest {
         byte[] pdfBytes = quotationPdfService.generateQuotationPdf(quoteId);
         assertNotNull(pdfBytes);
         assertTrue(pdfBytes.length > 0, "Generated PDF should not be empty");
+    }
+
+    @Test
+    @DisplayName("6. Edit Builder Load: Formula and measurements preserved, preventing zero sqft or amounts")
+    void testEditBuilderLoadPreservesFormulaAndMeasurements_NoZeroAmounts() {
+        // Create an item with L x H formula (like Foyer Shoe Rack: L=23, W=0, H=12, rate=250)
+        Material shoeRackMat = new Material();
+        shoeRackMat.setName("Shoe Rack Ply");
+        shoeRackMat.setFormula("L × H");
+        shoeRackMat.setUnit("Sq.ft");
+        shoeRackMat.setMeasurementType(MeasurementType.SQFT);
+        shoeRackMat.setDivision(division);
+        shoeRackMat.setPricingGrade(PricingMode.MIDDLE);
+        shoeRackMat.setRate(BigDecimal.valueOf(250.00));
+        shoeRackMat.setActive(true);
+        shoeRackMat = materialRepository.save(shoeRackMat);
+
+        AdminQuotationBuilderService.SizeRequest sizeShoeRack = new AdminQuotationBuilderService.SizeRequest(
+                BigDecimal.valueOf(23), BigDecimal.ZERO, BigDecimal.valueOf(12), null
+        );
+        AdminQuotationBuilderService.ItemRequest itemReq = new AdminQuotationBuilderService.ItemRequest(
+                workCategory.getId(), division.getId(), item.getId(),
+                shoeRackMat.getId(), null, null,
+                "Shoe Rack", "BWR Plywood", List.of(sizeShoeRack),
+                MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(250.00)
+        );
+
+        AdminQuotationBuilderService.RoomRequest roomReq = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "1", "Foyer woodwork", List.of(itemReq)
+        );
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                customer.getId(), customer.getName(), customer.getPhone(), customer.getEmail(), customer.getAddress()
+        );
+        AdminQuotationBuilderService.BuilderRequest createReq = new AdminQuotationBuilderService.BuilderRequest(
+                null, custReq, branch.getId(), LocalDate.now(), PricingMode.MIDDLE,
+                "Foyer woodwork", "", List.of(roomReq),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true
+        );
+
+        Quotation quotation = adminQuotationBuilderService.save(createReq, adminUser.getEmail());
+        assertNotNull(quotation.getId());
+        quotation.setEmployee(employeeUser);
+        quotation = quotationRepository.save(quotation);
+
+        // Verify Admin controller loadQuotation
+        ResponseEntity<?> adminLoadResp = adminQuotationBuilderController.loadQuotation(quotation.getId());
+        assertTrue(adminLoadResp.getStatusCode().is2xxSuccessful());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> adminData = (Map<String, Object>) adminLoadResp.getBody();
+        assertNotNull(adminData);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> adminRooms = (List<Map<String, Object>>) adminData.get("rooms");
+        assertEquals(1, adminRooms.size());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> adminItems = (List<Map<String, Object>>) adminRooms.get(0).get("items");
+        assertEquals(1, adminItems.size());
+        Map<String, Object> adminItem = adminItems.get(0);
+
+        assertEquals("L × H", adminItem.get("formula"), "Formula must be returned in loadQuotation");
+        assertEquals(division.getId(), adminItem.get("divisionId"), "Division ID must be returned");
+        assertEquals(shoeRackMat.getId(), adminItem.get("materialId"), "Material ID must be preserved");
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                employeeUser.getEmail(), "password", List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+        );
+        // Verify Employee controller loadQuotation
+        ResponseEntity<?> empLoadResp = employeeQuotationController.builderLoadQuotation(quotation.getId(), auth);
+        assertTrue(empLoadResp.getStatusCode().is2xxSuccessful());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> empData = (Map<String, Object>) empLoadResp.getBody();
+        assertNotNull(empData);
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> empRooms = (List<Map<String, Object>>) empData.get("rooms");
+        assertEquals(1, empRooms.size());
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> empItems = (List<Map<String, Object>>) empRooms.get(0).get("items");
+        assertEquals(1, empItems.size());
+        Map<String, Object> empItem = empItems.get(0);
+
+        assertEquals("L × H", empItem.get("formula"), "Employee loadQuotation must return formula");
+        assertEquals(division.getId(), empItem.get("divisionId"), "Employee loadQuotation must return divisionId");
+        assertEquals(shoeRackMat.getId(), empItem.get("materialId"), "Material ID must be preserved");
+    }
+
+    @Test
+    @DisplayName("7. Preserving items on grade change: Material ID, specifications, dimensions, quantity preserved")
+    void testGradeChangePreservesAllItemAttributes_UpdatesOnlyRates() {
+        // Create quote in Middle grade with specific dimensions, quantity, specs
+        AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
+                BigDecimal.valueOf(48), BigDecimal.valueOf(24), BigDecimal.valueOf(36), null
+        );
+        AdminQuotationBuilderService.ItemRequest itemReq = new AdminQuotationBuilderService.ItemRequest(
+                workCategory.getId(), division.getId(), item.getId(),
+                patternBMaterialMiddle.getId(), null, null,
+                "Custom Unit", "Century Club Prime 16mm", List.of(size),
+                MeasurementType.SQFT, BigDecimal.valueOf(3), null, BigDecimal.valueOf(250.00)
+        );
+        AdminQuotationBuilderService.RoomRequest roomReq = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Living", "Detailed description", List.of(itemReq)
+        );
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                customer.getId(), customer.getName(), customer.getPhone(), customer.getEmail(), customer.getAddress()
+        );
+        AdminQuotationBuilderService.BuilderRequest createReq = new AdminQuotationBuilderService.BuilderRequest(
+                null, custReq, branch.getId(), LocalDate.now(), PricingMode.MIDDLE,
+                "Req", "Notes", List.of(roomReq),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true
+        );
+
+        Quotation quotation = adminQuotationBuilderService.save(createReq, adminUser.getEmail());
+        Long quotationId = quotation.getId();
+
+        // Switch to PREMIUM grade
+        // Resolve rate for patternBMaterialMiddle in PREMIUM grade -> should return 300.00 and keep patternBMaterialMiddle.getId()
+        AdminQuotationBuilderService.ResolvedMaterialRate resolved =
+                adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), patternBMaterialMiddle.getId(), null, PricingMode.PREMIUM);
+        assertTrue(resolved.available());
+        assertEquals(patternBMaterialMiddle.getId(), resolved.materialId(), "Material ID must NOT change when resolving rate");
+        assertEquals(0, new BigDecimal("300.00").compareTo(resolved.rate()), "Rate should be updated to Premium rate of 300");
+
+        // Save update with PREMIUM grade
+        AdminQuotationBuilderService.ItemRequest editItem = new AdminQuotationBuilderService.ItemRequest(
+                workCategory.getId(), division.getId(), item.getId(),
+                patternBMaterialMiddle.getId(), null, null,
+                "Custom Unit", "Century Club Prime 16mm", List.of(size),
+                MeasurementType.SQFT, BigDecimal.valueOf(3), null, null // will resolve 300.00
+        );
+        AdminQuotationBuilderService.RoomRequest editRoom = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Living", "Detailed description", List.of(editItem)
+        );
+        AdminQuotationBuilderService.BuilderRequest updateReq = new AdminQuotationBuilderService.BuilderRequest(
+                quotationId, custReq, branch.getId(), LocalDate.now(), PricingMode.PREMIUM,
+                "Req", "Notes", List.of(editRoom),
+                BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true
+        );
+
+        Quotation updatedQuote = adminQuotationBuilderService.save(updateReq, adminUser.getEmail());
+        assertEquals(quotationId, updatedQuote.getId());
+        assertEquals(PricingMode.PREMIUM, updatedQuote.getPricingMode());
+
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(quotationId);
+        List<QuotationItem> items = quotationItemRepository.findByQuotationRoomIdAndActiveTrueOrderByIdAsc(rooms.get(0).getId());
+        assertEquals(1, items.size());
+        QuotationItem itemSaved = items.get(0);
+
+        // Verify preserved attributes
+        assertEquals(patternBMaterialMiddle.getId(), itemSaved.getMaterial().getId(), "Material ID preserved");
+        assertEquals(division.getId(), itemSaved.getDivision().getId(), "Division ID preserved");
+        assertEquals(workCategory.getId(), itemSaved.getWorkCategory().getId(), "Work Category ID preserved");
+        assertEquals("Century Club Prime 16mm", itemSaved.getSpecification(), "Specification preserved");
+        assertEquals(0, BigDecimal.valueOf(3).compareTo(itemSaved.getQuantity()), "Quantity preserved");
+
+        // Verify rate updated to 300.00
+        assertEquals(0, new BigDecimal("300.00").compareTo(itemSaved.getRate()), "Unit rate updated to Premium grade rate");
+    }
+
+    @Test
+    @DisplayName("8. Verify exact required message format for unavailable materials in Middle and Economy grades")
+    void testExactUnavailableMessageFormat() {
+        // Exclusive Premium material requested in Middle grade
+        AdminQuotationBuilderService.ResolvedMaterialRate resMiddle =
+                adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), exclusivePremiumMaterial.getId(), null, PricingMode.MIDDLE);
+        assertFalse(resMiddle.available());
+        assertNull(resMiddle.rate());
+        assertEquals("No material available in Middle Grade", resMiddle.message());
+
+        // Exclusive Premium material requested in Economy grade
+        AdminQuotationBuilderService.ResolvedMaterialRate resEconomy =
+                adminQuotationBuilderService.resolveMaterialAndRate(branch.getId(), division.getId(), exclusivePremiumMaterial.getId(), null, PricingMode.ECONOMY);
+        assertFalse(resEconomy.available());
+        assertNull(resEconomy.rate());
+        assertEquals("No material available in Economy Grade", resEconomy.message());
+    }
+
+    @Test
+    @DisplayName("9. Controller parity: Admin and Employee rate endpoints return correct grade rates and unavailable messages")
+    void testControllerRateParityAdminAndEmployee() {
+        Authentication employeeAuth = new UsernamePasswordAuthenticationToken(
+                employeeUser.getEmail(), employeeUser.getPassword(),
+                List.of(new SimpleGrantedAuthority("ROLE_EMPLOYEE"))
+        );
+        // Available material in Middle grade
+        ResponseEntity<?> adminResp = adminQuotationBuilderController.rate(branch.getId(), division.getId(), null, patternBMaterialPremium.getId(), PricingMode.MIDDLE);
+        assertTrue(adminResp.getStatusCode().is2xxSuccessful());
+        Map<?, ?> adminData = (Map<?, ?>) adminResp.getBody();
+        assertNotNull(adminData);
+        assertEquals(true, adminData.get("available"));
+        assertEquals(0, new BigDecimal("250.00").compareTo(new BigDecimal(adminData.get("rate").toString())));
+
+        ResponseEntity<?> empResp = employeeQuotationController.builderRate(branch.getId(), division.getId(), null, patternBMaterialPremium.getId(), PricingMode.MIDDLE, employeeAuth);
+        assertTrue(empResp.getStatusCode().is2xxSuccessful());
+        Map<?, ?> empData = (Map<?, ?>) empResp.getBody();
+        assertNotNull(empData);
+        assertEquals(true, empData.get("available"));
+        assertEquals(0, new BigDecimal("250.00").compareTo(new BigDecimal(empData.get("rate").toString())));
+
+        // Unavailable material in Middle grade
+        ResponseEntity<?> adminUnavail = adminQuotationBuilderController.rate(branch.getId(), division.getId(), null, exclusivePremiumMaterial.getId(), PricingMode.MIDDLE);
+        assertTrue(adminUnavail.getStatusCode().is2xxSuccessful());
+        Map<?, ?> adminUnavailData = (Map<?, ?>) adminUnavail.getBody();
+        assertNotNull(adminUnavailData);
+        assertEquals(false, adminUnavailData.get("available"));
+        assertNull(adminUnavailData.get("rate"));
+        assertEquals("No material available in Middle Grade", adminUnavailData.get("message"));
+
+        ResponseEntity<?> empUnavail = employeeQuotationController.builderRate(branch.getId(), division.getId(), null, exclusivePremiumMaterial.getId(), PricingMode.MIDDLE, employeeAuth);
+        assertTrue(empUnavail.getStatusCode().is2xxSuccessful());
+        Map<?, ?> empUnavailData = (Map<?, ?>) empUnavail.getBody();
+        assertNotNull(empUnavailData);
+        assertEquals(false, empUnavailData.get("available"));
+        assertNull(empUnavailData.get("rate"));
+        assertEquals("No material available in Middle Grade", empUnavailData.get("message"));
     }
 }

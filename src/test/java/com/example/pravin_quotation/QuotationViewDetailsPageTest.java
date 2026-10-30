@@ -186,7 +186,7 @@ public class QuotationViewDetailsPageTest {
         // Grouping and totals
         assertTrue(template.contains("room-group-row"), "Must contain room grouping row");
         assertTrue(template.contains("room-subtotal-row"), "Must contain room subtotal row");
-        assertTrue(template.contains("tfoot-subtotal-row"), "Must contain total items subtotal row");
+        assertFalse(template.contains("Total Items Subtotal"), "Must not contain total items subtotal row");
         assertTrue(template.contains("tfoot-grand-total-row"), "Must contain grand total row");
 
         // CSS styling verification

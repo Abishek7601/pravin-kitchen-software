@@ -53,7 +53,7 @@ public class AdminChangePasswordTest {
     private User admin;
     private Authentication adminAuth;
     private final String initialPassword = "Admin@123";
-    private final String adminEmail = "abisheksr680@gmail.com";
+    private final String adminEmail = "admin@gmail.com";
 
     @BeforeEach
     void setUp() {

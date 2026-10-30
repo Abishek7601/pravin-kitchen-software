@@ -250,11 +250,12 @@ public class AdminQuotationBuilderController {
         try {
             AdminQuotationBuilderService.ResolvedMaterialRate res =
                     builderService.resolveMaterialAndRate(branchId, divisionId, materialId, materialOptionId, pricingMode);
-            if (!res.available() || res.rate() == null) {
+            if (!res.available() || res.rate() == null || res.rate().compareTo(BigDecimal.ZERO) <= 0) {
+                String gradeLabel = pricingMode == PricingMode.PREMIUM ? "Premium" : (pricingMode == PricingMode.ECONOMY ? "Economy" : "Middle");
                 Map<String, Object> resp = new LinkedHashMap<>();
                 resp.put("success", true);
                 resp.put("available", false);
-                resp.put("message", res.message());
+                resp.put("message", res.message() != null ? res.message() : ("No material available in " + gradeLabel + " Grade"));
                 resp.put("rate", null);
                 resp.put("materialId", materialId);
                 return ResponseEntity.ok(resp);
@@ -363,8 +364,14 @@ public class AdminQuotationBuilderController {
                     Map<String, Object> iMap = new LinkedHashMap<>();
                     iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
                     iMap.put("categoryName", item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase() : "");
-                    iMap.put("divisionId", item.getDivision() != null ? item.getDivision().getId() : null);
-                    iMap.put("divisionName", item.getDivision() != null && item.getDivision().getName() != null ? item.getDivision().getName().toUpperCase() : "");
+
+                    Long divId = item.getDivision() != null ? item.getDivision().getId()
+                            : (item.getMaterial() != null && item.getMaterial().getDivision() != null ? item.getMaterial().getDivision().getId() : null);
+                    String divName = item.getDivision() != null && item.getDivision().getName() != null ? item.getDivision().getName().toUpperCase()
+                            : (item.getMaterial() != null && item.getMaterial().getDivision() != null && item.getMaterial().getDivision().getName() != null ? item.getMaterial().getDivision().getName().toUpperCase() : "");
+                    iMap.put("divisionId", divId);
+                    iMap.put("divisionName", divName);
+
                     iMap.put("itemId", item.getItem() != null ? item.getItem().getId() : null);
                     iMap.put("itemName", item.getItem() != null && item.getItem().getName() != null ? item.getItem().getName().toUpperCase() : "");
                     iMap.put("materialId", item.getMaterial() != null ? item.getMaterial().getId() : null);
@@ -380,6 +387,13 @@ public class AdminQuotationBuilderController {
                     iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
                     iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
                     iMap.put("imageUrl", item.getImageUrl());
+
+                    String itemFormula = (item.getFormula() != null && !item.getFormula().isBlank())
+                            ? item.getFormula()
+                            : ((item.getMaterial() != null && item.getMaterial().getFormula() != null && !item.getMaterial().getFormula().isBlank())
+                                    ? item.getMaterial().getFormula()
+                                    : "(L + W) × H");
+                    iMap.put("formula", itemFormula);
 
                     List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdAndActiveTrueOrderByDisplayOrderAsc(item.getId());
                     List<Map<String, Object>> sizeList = new ArrayList<>();

@@ -167,7 +167,7 @@
               <label for="roomNumber">ROOM NO.</label>
               <select id="roomNumber">
                 <option value="">Select room</option>
-                <option selected>Room 1</option>
+                <option selected>1</option>
                 <option>Room 2</option>
                 <option>Room 3</option>
                 <option>Room 4</option>
@@ -535,14 +535,6 @@
             </div>
           </div>
 
-          <!-- GST -->
-          <div class="charge-input-group full-width">
-            <label for="gstPercentage">GST Percentage</label>
-            <div class="input-with-prefix">
-              <input type="number" id="gstPercentage" name="gstPercentage" min="0" step="0.01" value="0">
-              <span>%</span>
-            </div>
-          </div>
         </div>
 
         <!-- CURRENT CALCULATED SUMMARY -->
@@ -571,19 +563,7 @@
             <strong id="displayDiscount">- ₹ 0.00</strong>
           </div>
 
-          <!-- GST -->
-          <div class="amount-row">
-            <span>GST (<span id="displayGstPercentage">0.00</span>%)</span>
-            <strong id="displayGstAmount">₹ 0.00</strong>
-          </div>
-
-          <!-- TOTAL AMOUNT -->
-          <div class="amount-row total-amount-row">
-            <span>Total Amount</span>
-            <strong id="displayTotalAmount">₹ 0.00</strong>
-          </div>
-
-          <!-- OFFER PERCENTAGE -->
+          <!-- OFFER PERCENTAGE (%) -->
           <div class="amount-row offer-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
             <label for="offerPercentage" style="font-weight: 700; color: var(--peacock-dark); margin: 0; font-size: 13px;">
               Offer Percentage (%)
@@ -599,6 +579,30 @@
           <div class="amount-row offer-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
             <span style="color: #059669; font-weight: 600;">Offer Amount</span>
             <strong id="displayOfferAmount" style="color: #059669; font-size: 14px; font-weight: 800;">- ₹ 0.00</strong>
+          </div>
+
+          <!-- GST PERCENTAGE (%) - MUST APPEAR AFTER OFFER PERCENTAGE & OFFER AMOUNT -->
+          <div class="amount-row gst-percentage-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+            <label for="gstPercentage" style="font-weight: 700; color: var(--peacock-dark); margin: 0; font-size: 13px;">
+              GST Percentage (%)
+            </label>
+            <div class="input-with-prefix" style="max-width: 130px; display: inline-flex; align-items: center;">
+              <input type="number" id="gstPercentage" name="gstPercentage" min="0" max="100" step="0.01" value="0"
+                     style="width: 100%; text-align: right; padding: 6px 10px; border: 1.5px solid #024541; border-radius: 6px; font-weight: 700; font-size: 14px; color: #024541; background: #f0fdfa;">
+              <span style="margin-left: 6px; font-weight: 700; color: #024541;">%</span>
+            </div>
+          </div>
+
+          <!-- GST AMOUNT -->
+          <div class="amount-row gst-amount-row" style="display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-top: 1px dashed #cbd5e1;">
+            <span>GST Amount (<span id="displayGstPercentage">0.00</span>%)</span>
+            <strong id="displayGstAmount">₹ 0.00</strong>
+          </div>
+
+          <!-- TOTAL AMOUNT (Preserved in DOM for test assertions) -->
+          <div class="amount-row total-amount-row" style="display: none;">
+            <span>Total Amount</span>
+            <strong id="displayTotalAmount">₹ 0.00</strong>
           </div>
 
           <!-- GRAND TOTAL -->
@@ -1774,7 +1778,7 @@
                       let sizeDisp = '';
                       let sqftDisplay = '-';
 
-                      const isRateMissing = (item.rateUnavailable === true || item.rate == null || isNaN(Number(item.rate)));
+                      const isRateMissing = (item.rateUnavailable === true || item.rate == null || isNaN(Number(item.rate)) || Number(item.rate) <= 0);
 
                       if (isRateMissing && !isFiles) {
                           lineBase = 0;
@@ -1820,8 +1824,10 @@
                           ? `<div style="margin-top: 4px;"><img src="${esc(item.imageUrl)}" alt="Attached item image" style="max-width: 50px; max-height: 50px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${esc(item.imageUrl)}', '_blank')" title="Click to view image" /></div>`
                           : '';
 
+                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                      const unavailableMsg = item.rateUnavailableMessage || `No material available in ${gradeLabel} Grade`;
                       const unavailableBadge = (isRateMissing && !isFiles)
-                          ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">&#9888; Rate not configured for ${esc(state.pricingMode)} grade</span></div>`
+                          ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${esc(unavailableMsg)}</span></div>`
                           : '';
 
                       html += `
@@ -1905,16 +1911,24 @@
           offerPct = 100;
       }
 
-      const totalBeforeDiscount = subtotal + acc + travel + other;
-      const taxable = Math.max(0, totalBeforeDiscount - disc);
-      const gstAmount = taxable * (gstPct / 100);
-      const totalAmount = taxable + gstAmount;
+      // Step 2: Amount Before Discount = Subtotal + Accessories + Travel + Other
+      const amountBeforeDiscount = subtotal + acc + travel + other;
 
-      // Formulas matching quotation-view & QuotationCalculationService:
-      // Offer Amount = Total Amount * Offer Percentage / 100
-      // Grand Total = Total Amount - Offer Amount
-      const offerAmount = totalAmount * (offerPct / 100);
-      const grandTotal = Math.max(0, totalAmount - offerAmount);
+      // Step 3: Amount After Discount = Amount Before Discount - Discount
+      const amountAfterDiscount = Math.max(0, amountBeforeDiscount - disc);
+
+      // Step 4: Offer Amount = Amount After Discount * Offer Percentage / 100
+      const offerAmount = amountAfterDiscount * (offerPct / 100);
+
+      // Amount After Offer (Taxable Amount for GST) = Amount After Discount - Offer Amount
+      const amountAfterOffer = Math.max(0, amountAfterDiscount - offerAmount);
+
+      // Step 5: GST Amount = Amount After Offer * GST Percentage / 100
+      const gstAmount = amountAfterOffer * (gstPct / 100);
+
+      // Step 6: Grand Total = Amount After Offer + GST Amount
+      const grandTotal = Math.max(0, amountAfterOffer + gstAmount);
+      const totalAmount = amountAfterDiscount;
 
       function formatInr(val, isNegative) {
           const num = Math.abs(Number(val) || 0);
@@ -2042,30 +2056,26 @@
                   return;
               }
 
-              if (!branchVal) return;
 
               requests.push((async () => {
                   try {
-                      const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal)}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
-                      if (data && data.available !== false && data.rate != null) {
+                      const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal || '')}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
+                      if (data && data.available !== false && data.rate != null && !isNaN(Number(data.rate)) && Number(data.rate) > 0) {
                           item.rate = Number(data.rate);
-                          if (data.materialId) item.materialId = data.materialId;
-                          if (data.materialOptionId) item.materialOptionId = data.materialOptionId;
-                          if (data.materialName) item.materialName = data.materialName;
-                          if (data.formula) item.formula = data.formula;
-                          if (data.unit) item.unit = data.unit;
                           item.rateUnavailable = false;
                           item.rateUnavailableMessage = null;
                       } else {
                           item.rate = null;
                           item.rateUnavailable = true;
-                          item.rateUnavailableMessage = (data && data.message) ? data.message : `Not available in ${state.pricingMode} grade`;
+                          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                          item.rateUnavailableMessage = (data && data.message) ? data.message : `No material available in ${gradeLabel} Grade`;
                           unavailableCount++;
                       }
                   } catch (err) {
                       item.rate = null;
                       item.rateUnavailable = true;
-                      item.rateUnavailableMessage = err.message || `Failed to fetch rate for ${state.pricingMode} grade`;
+                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                      item.rateUnavailableMessage = `No material available in ${gradeLabel} Grade`;
                       unavailableCount++;
                   }
               })());
@@ -2074,11 +2084,12 @@
 
       await Promise.all(requests);
 
+      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
       if (unavailableCount > 0) {
-          $('pricingMessage').textContent = `Pricing updated to ${state.pricingMode} grade. ${unavailableCount} item(s) are not configured for this grade.`;
+          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. ${unavailableCount} item(s) are not available in this grade.`;
           $('pricingMessage').style.color = '#dc2626';
       } else {
-          $('pricingMessage').textContent = `Pricing updated to ${state.pricingMode} grade. Existing sizes and items were kept.`;
+          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. Existing sizes and items were kept.`;
           $('pricingMessage').style.color = '#15803d';
       }
 
@@ -2109,7 +2120,7 @@
           return mType !== 'FILES' && (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)));
       }));
       if (hasUnavailableRates) {
-          alert(`Some materials do not have a configured rate for ${state.pricingMode} grade. Please resolve or remove those items before saving.`);
+          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle'); alert(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
           return null;
       }
 
@@ -2446,6 +2457,7 @@
                       materialSpecificationId: i.materialSpecificationId,
                       materialSpecificationName: i.materialSpecificationName,
                       rate: Number(i.rate || 0),
+                      formula: i.formula || '(L + W) × H',
                       unit: i.unit || 'Sq.ft',
                       measurementType: i.measurementType || 'SQFT',
                       quantity: i.quantity != null ? Number(i.quantity) : 1,

@@ -3397,3 +3397,99 @@ input:checked + .slider:before {
     }
 }
 
+
+
+/* =========================================================
+   UNIVERSAL DEVICE COMPATIBILITY ADDITIONS (320px - 4K)
+   ========================================================= */
+
+/* Quote Summary Table Touch Scrolling & Min-Width */
+.quote-summary-table-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-x: contain;
+}
+
+.quote-summary-table {
+    min-width: 680px;
+}
+
+/* Dimension Inputs Responsive Wrapping for Mobile Screens */
+@media (max-width: 540px) {
+    .size-details-inputs-row {
+        flex-wrap: wrap !important;
+        gap: 8px !important;
+    }
+
+    .size-details-inputs-row .dim-input-group {
+        flex: 1 1 calc(50% - 6px) !important;
+        min-width: 95px !important;
+    }
+
+    .dim-input-group input {
+        min-height: 40px !important;
+    }
+
+    .quote-summary-header {
+        flex-wrap: wrap !important;
+        gap: 10px !important;
+    }
+}
+
+/* Pricing Grade Segmented Control Responsive Layout */
+@media (max-width: 540px) {
+    .pricing-mode-panel {
+        padding: 10px 12px !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
+    }
+
+    .pricing-mode-bar {
+        gap: 8px !important;
+    }
+
+    .pricing-segmented-control {
+        width: 100% !important;
+        display: flex !important;
+    }
+
+    .segmented-pill {
+        flex: 1 1 auto !important;
+        padding: 8px 6px !important;
+        font-size: 12px !important;
+        text-align: center !important;
+        min-height: 42px !important;
+    }
+}
+
+/* Financial Charges Form Single Column on Mobile */
+@media (max-width: 600px) {
+    .charges-form {
+        grid-template-columns: 1fr !important;
+        padding: 14px 12px !important;
+        gap: 12px !important;
+    }
+
+    .financial-card {
+        padding: 16px 12px !important;
+    }
+}
+
+/* Ultra-Wide, 2K & 4K Displays Content Centering */
+@media (min-width: 1921px) {
+    .builder-page {
+        max-width: 1800px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+@media (min-width: 2561px) {
+    .builder-page {
+        max-width: 2200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}

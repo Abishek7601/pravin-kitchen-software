@@ -202,20 +202,22 @@ public class QuotationFinancialConsistencyTest {
         assertTrue(subtotal.compareTo(BigDecimal.ZERO) > 0, "Subtotal must be greater than zero");
 
         // Verify mathematical business rules on DB record
-        BigDecimal expectedTaxable = subtotal.add(accessories).add(travel).add(other).subtract(discount);
+        BigDecimal expectedAmountBeforeDiscount = subtotal.add(accessories).add(travel).add(other);
+        BigDecimal expectedAmountAfterDiscount = expectedAmountBeforeDiscount.subtract(discount);
+        if (expectedAmountAfterDiscount.compareTo(BigDecimal.ZERO) < 0) expectedAmountAfterDiscount = BigDecimal.ZERO;
+        assertEquals(expectedAmountAfterDiscount.setScale(2, RoundingMode.HALF_UP), dbQuotation.getTotalAmount());
+
+        BigDecimal expectedOffer = expectedAmountAfterDiscount.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
+        assertEquals(expectedOffer, dbQuotation.getOfferAmount());
+
+        BigDecimal expectedTaxable = expectedAmountAfterDiscount.subtract(expectedOffer);
         if (expectedTaxable.compareTo(BigDecimal.ZERO) < 0) expectedTaxable = BigDecimal.ZERO;
         assertEquals(expectedTaxable.setScale(2, RoundingMode.HALF_UP), dbQuotation.getTaxableAmount());
 
         BigDecimal expectedGst = expectedTaxable.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
         assertEquals(expectedGst, dbQuotation.getGstAmount());
 
-        BigDecimal expectedTotal = expectedTaxable.add(expectedGst);
-        assertEquals(expectedTotal, dbQuotation.getTotalAmount());
-
-        BigDecimal expectedOffer = expectedTotal.multiply(offerPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
-        assertEquals(expectedOffer, dbQuotation.getOfferAmount());
-
-        BigDecimal expectedGrandTotal = expectedTotal.subtract(expectedOffer);
+        BigDecimal expectedGrandTotal = expectedTaxable.add(expectedGst);
         assertEquals(expectedGrandTotal, dbQuotation.getGrandTotal());
 
         // 3. GENERATE PDF AND VERIFY FINANCIAL ACCURACY
