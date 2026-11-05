@@ -2,7 +2,11 @@ package com.example.pravin_quotation.repository;
 
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationStatus;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -104,9 +108,28 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
             LocalDate endDate
     );
 
-    @org.springframework.data.jpa.repository.Query("SELECT q FROM Quotation q WHERE (q.quotationDate IS NOT NULL AND q.quotationDate <= :cutoffDate) OR (q.quotationDate IS NULL AND q.createdAt <= :cutoffDateTime)")
+    @Query("SELECT q FROM Quotation q WHERE (q.quotationDate IS NOT NULL AND q.quotationDate <= :cutoffDate) OR (q.quotationDate IS NULL AND q.createdAt <= :cutoffDateTime)")
     List<Quotation> findQuotationsEligibleForDeletion(
-            @org.springframework.data.repository.query.Param("cutoffDate") LocalDate cutoffDate,
-            @org.springframework.data.repository.query.Param("cutoffDateTime") java.time.LocalDateTime cutoffDateTime
+            @Param("cutoffDate") LocalDate cutoffDate,
+            @Param("cutoffDateTime") java.time.LocalDateTime cutoffDateTime
+    );
+
+    Page<Quotation> findByEmployeeId(Long employeeId, Pageable pageable);
+
+    @Query("SELECT q FROM Quotation q LEFT JOIN q.customer c WHERE q.employee.id = :employeeId " +
+           "AND (:status IS NULL OR q.status = :status) " +
+           "AND (:startDate IS NULL OR q.quotationDate >= :startDate) " +
+           "AND (:endDate IS NULL OR q.quotationDate <= :endDate) " +
+           "AND (:search IS NULL OR :search = '' OR " +
+           "     LOWER(q.quotationNumber) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "     LOWER(c.name) LIKE LOWER(CONCAT('%', :search, '%')) OR " +
+           "     LOWER(c.phone) LIKE LOWER(CONCAT('%', :search, '%')))")
+    Page<Quotation> searchEmployeeQuotations(
+            @Param("employeeId") Long employeeId,
+            @Param("status") QuotationStatus status,
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate,
+            @Param("search") String search,
+            Pageable pageable
     );
 }

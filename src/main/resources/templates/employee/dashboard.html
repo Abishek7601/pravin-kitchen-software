@@ -15,6 +15,8 @@
         th:href="@{/css/employee-nav.css}">
   <link rel="stylesheet"
         th:href="@{/css/employee-dashboard.css}">
+  <link rel="stylesheet"
+        th:href="@{/css/pagination.css}">
 
 </head>
 
@@ -454,6 +456,59 @@
           </tbody>
 
         </table>
+
+        <!-- PAGINATION FOOTER -->
+        <div class="pagination-footer" th:if="${totalElements != null and totalElements > 0}">
+          <div class="pagination-info">
+            Showing <strong><span th:text="${pageStart}">1</span>–<span th:text="${pageEnd}">10</span></strong> of <strong><span th:text="${totalElements}">45</span></strong> records
+          </div>
+
+          <nav class="pagination-nav" aria-label="Recent quotations pagination" th:if="${totalPages > 1}">
+            <!-- Previous Button -->
+            <a th:if="${hasPrevious}"
+               th:href="@{/employee/dashboard(page=${currentPage - 1})}"
+               class="pagination-btn"
+               aria-label="Previous page">
+              Previous
+            </a>
+            <button th:unless="${hasPrevious}"
+                    class="pagination-btn disabled"
+                    disabled
+                    aria-label="Previous page">
+              Previous
+            </button>
+
+            <!-- Page Numbers -->
+            <th:block th:each="pageNum : ${pageNumbers}">
+              <span th:if="${pageNum == -1}" class="pagination-ellipsis">…</span>
+              <a th:if="${pageNum != -1 and pageNum != currentPage}"
+                 th:href="@{/employee/dashboard(page=${pageNum})}"
+                 class="pagination-page-btn"
+                 th:text="${pageNum}">
+                1
+              </a>
+              <span th:if="${pageNum != -1 and pageNum == currentPage}"
+                    class="pagination-page-btn active"
+                    th:text="${pageNum}">
+                1
+              </span>
+            </th:block>
+
+            <!-- Next Button -->
+            <a th:if="${hasNext}"
+               th:href="@{/employee/dashboard(page=${currentPage + 1})}"
+               class="pagination-btn"
+               aria-label="Next page">
+              Next
+            </a>
+            <button th:unless="${hasNext}"
+                    class="pagination-btn disabled"
+                    disabled
+                    aria-label="Next page">
+              Next
+            </button>
+          </nav>
+        </div>
 
       </div>
 

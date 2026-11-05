@@ -768,6 +768,7 @@ public class QuotationController {
             @RequestParam(required = false) BigDecimal accessoriesAmount,
             @RequestParam(required = false) BigDecimal travelCharge,
             @RequestParam(required = false) BigDecimal otherCharges,
+            @RequestParam(required = false) String otherChargesDescription,
             @RequestParam(required = false) BigDecimal discountAmount,
             @RequestParam(required = false) BigDecimal gstPercentage,
             @RequestParam(required = false) BigDecimal offerPercentage,
@@ -780,6 +781,7 @@ public class QuotationController {
                     accessoriesAmount,
                     travelCharge,
                     otherCharges,
+                    otherChargesDescription,
                     discountAmount,
                     gstPercentage,
                     offerPercentage

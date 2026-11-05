@@ -91,11 +91,6 @@ public class OtpController {
             return "redirect:/login?error";
         }
 
-        // Automatic 8:00 PM IST expiry check
-        if (employee.getRole() == Role.EMPLOYEE && employeeSessionService.isPast8PmIst()) {
-            return "redirect:/login?expired";
-        }
-
         // Already verified
         if (Boolean.TRUE.equals(
                 session.getAttribute("OTP_VERIFIED")
@@ -282,10 +277,6 @@ public class OtpController {
             return "redirect:/login?error";
         }
 
-        if (employeeSessionService.isPast8PmIst()) {
-            return "redirect:/login?expired";
-        }
-
         LocalDateTime lastSent =
                 (LocalDateTime)
                         session.getAttribute(
@@ -389,14 +380,6 @@ public class OtpController {
             return "redirect:/employee/otp?invalid";
         }
 
-        // Automatic 8:00 PM IST expiry check
-        if (employeeSessionService.isPast8PmIst()) {
-            session.removeAttribute("OTP_CODE");
-            session.removeAttribute("OTP_EXPIRY");
-            session.removeAttribute("OTP_ATTEMPTS");
-            return "redirect:/login?expired";
-        }
-
         // =====================================================
         // OTP VERIFIED
         // =====================================================
@@ -406,7 +389,7 @@ public class OtpController {
                 true
         );
 
-        // Initialize employee session with 8:00 PM IST deadline
+        // Initialize employee session with deadline (8:00 PM IST today for daytime, or next morning for after-hours)
         employeeSessionService.initializeEmployeeSession(session);
 
         session.removeAttribute(
@@ -448,7 +431,7 @@ public class OtpController {
         }
 
         boolean expired = employeeSessionService.isSessionExpired(session);
-        long remaining = employeeSessionService.getRemainingMillis();
+        long remaining = employeeSessionService.getRemainingMillis(session);
 
         map.put("authenticated", true);
         map.put("role", "EMPLOYEE");

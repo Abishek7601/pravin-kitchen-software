@@ -50,17 +50,11 @@ public class CustomAuthenticationSuccessHandler
 
         } else if (roles.contains("ROLE_EMPLOYEE")) {
 
-            // Check if login attempt is after 8:00 PM IST
-            if (employeeSessionService.isPast8PmIst()) {
-                employeeSessionService.invalidateEmployeeSession(request, response);
-                response.sendRedirect("/login?expired");
-                return;
-            }
-
-            // Initialize employee session with 8:00 PM IST deadline
+            // Initialize employee session (tracks login date and 8:00 PM IST cutoff)
             employeeSessionService.initializeEmployeeSession(session);
 
-            // Employee MUST verify OTP
+            // Mandatory Super Admin OTP verification for EVERY employee login attempt:
+            // 24 hours a day, 7 days a week (morning, working hours, after 8:00 PM, next day)
             session.setAttribute("OTP_VERIFIED", false);
 
             response.sendRedirect("/employee/otp");

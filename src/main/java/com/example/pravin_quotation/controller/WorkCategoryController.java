@@ -257,6 +257,7 @@ public class WorkCategoryController {
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
             @RequestParam(required = false) String measurementType,
+            @RequestParam(required = false) BigDecimal coveragePerRoll,
             @RequestParam(required = false) MultipartFile imageFile,
             @RequestParam(required = false) BigDecimal rate,
             @RequestParam(required = false) String branchRatesJson,
@@ -289,6 +290,14 @@ public class WorkCategoryController {
             } else if (mType == MeasurementType.FILES) {
                 effectiveUnit = "Files";
                 effectiveFormula = null;
+            } else if (mType == MeasurementType.ROLL) {
+                effectiveUnit = "Roll";
+                if (coveragePerRoll == null || coveragePerRoll.compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "success", false,
+                            "message", "Coverage Per Roll (Sq.ft) is required and must be greater than 0."
+                    ));
+                }
             } else {
                 effectiveUnit = "Sq.ft";
                 mType = MeasurementType.SQFT;
@@ -303,7 +312,7 @@ public class WorkCategoryController {
             String effectiveSpec = (specification != null && !specification.isBlank())
                     ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
                     : null;
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl);
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, coveragePerRoll);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -330,6 +339,7 @@ public class WorkCategoryController {
             @RequestParam(required = false) String specification,
             @RequestParam(required = false, defaultValue = "Sq.ft") String unit,
             @RequestParam(required = false) String measurementType,
+            @RequestParam(required = false) BigDecimal coveragePerRoll,
             @RequestParam(required = false) MultipartFile imageFile,
             @RequestParam(required = false) Boolean removeImage,
             @RequestParam(required = false) BigDecimal rate,
@@ -347,6 +357,14 @@ public class WorkCategoryController {
             } else if (mType == MeasurementType.FILES) {
                 effectiveUnit = "Files";
                 effectiveFormula = null;
+            } else if (mType == MeasurementType.ROLL) {
+                effectiveUnit = "Roll";
+                if (coveragePerRoll == null || coveragePerRoll.compareTo(BigDecimal.ZERO) <= 0) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                            "success", false,
+                            "message", "Coverage Per Roll (Sq.ft) is required and must be greater than 0."
+                    ));
+                }
             } else {
                 effectiveUnit = "Sq.ft";
                 mType = MeasurementType.SQFT;
@@ -361,7 +379,7 @@ public class WorkCategoryController {
             String effectiveSpec = (specification != null && !specification.isBlank())
                     ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
                     : null;
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage);
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage, coveragePerRoll);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)
@@ -404,19 +422,62 @@ public class WorkCategoryController {
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
+    }
+
+    public ResponseEntity<?> createWorkTypeMaterial(
+            Long workTypeId,
+            String grade,
+            String pricingGrade,
+            String name,
+            String formula,
+            String measurementFormula,
+            String specification,
+            String unit,
+            String measurementType,
+            MultipartFile imageFile,
+            BigDecimal rate,
+            String branchRatesJson,
+            Map<?, ?> allRequestParams) {
+        Map<String, String> stringParams = new LinkedHashMap<>();
+        if (allRequestParams != null) {
+            allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
+        }
+        return createWorkTypeMaterial(workTypeId, grade, pricingGrade, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, rate, branchRatesJson, stringParams);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, null, rate, null, null);
+    }
+
+    public ResponseEntity<?> updateWorkTypeMaterial(
+            Long materialId,
+            Long workTypeId,
+            Long targetWorkTypeId,
+            String name,
+            String formula,
+            String measurementFormula,
+            String specification,
+            String unit,
+            String measurementType,
+            MultipartFile imageFile,
+            Boolean removeImage,
+            BigDecimal rate,
+            String branchRatesJson,
+            Map<?, ?> allRequestParams) {
+        Map<String, String> stringParams = new LinkedHashMap<>();
+        if (allRequestParams != null) {
+            allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
+        }
+        return updateWorkTypeMaterial(materialId, workTypeId, targetWorkTypeId, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, removeImage, rate, branchRatesJson, stringParams);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {

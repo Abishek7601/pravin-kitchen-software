@@ -141,7 +141,8 @@ public class AdminQuotationBuilderController {
             @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long itemId,
-            @RequestParam(required = false) String pricingGrade) {
+            @RequestParam(required = false) String pricingGrade,
+            @RequestParam(required = false) Boolean onlyAvailable) {
         PricingMode grade = null;
         if (pricingGrade != null && !pricingGrade.isBlank()) {
             String g = pricingGrade.trim().toUpperCase();
@@ -151,10 +152,10 @@ public class AdminQuotationBuilderController {
         }
 
         List<Material> list = null;
-        if (divisionId != null && grade != null) {
+        if (divisionId != null && grade != null && !Boolean.TRUE.equals(onlyAvailable)) {
             list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
         }
-        if (list == null || list.isEmpty()) {
+        if (list == null || list.isEmpty() || Boolean.TRUE.equals(onlyAvailable)) {
             if (divisionId != null) {
                 list = materialRepository.findActiveByDivisionId(divisionId);
             } else if (itemId != null) {
@@ -164,7 +165,7 @@ public class AdminQuotationBuilderController {
             }
         }
         final PricingMode targetGrade = grade;
-        return list.stream().map(m -> {
+        List<Map<String, Object>> result = list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
@@ -172,23 +173,50 @@ public class AdminQuotationBuilderController {
             map.put("specification", m.getSpecification() != null ? m.getSpecification().trim() : "");
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
 
-            BigDecimal resolvedRate = null;
-            if (branchId != null && targetGrade != null) {
+            AdminQuotationBuilderService.ResolvedMaterialRate res = null;
+            if (targetGrade != null) {
                 try {
-                    resolvedRate = builderService.resolveRate(branchId, m.getId(), null, targetGrade);
+                    Long effectiveDivId = divisionId != null ? divisionId : (m.getDivision() != null ? m.getDivision().getId() : null);
+                    res = builderService.resolveMaterialAndRate(branchId, effectiveDivId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
-            if (resolvedRate == null) {
+
+            boolean isAvailable = (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
+            BigDecimal resolvedRate = isAvailable ? res.rate() : null;
+            if (targetGrade == null && resolvedRate == null) {
                 resolvedRate = m.getRate();
+                isAvailable = (resolvedRate != null && resolvedRate.compareTo(BigDecimal.ZERO) > 0);
             }
 
+            String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
+            String unavailableMsg = (res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade");
+
+            map.put("available", isAvailable);
             map.put("rate", resolvedRate);
-            map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
-            map.put("formula", m.getFormula());
-            map.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
-            map.put("imageUrl", m.getImageUrl());
+            map.put("unavailableMessage", isAvailable ? null : unavailableMsg);
+            map.put("message", isAvailable ? null : unavailableMsg);
+            map.put("pricingGrade", targetGrade != null ? targetGrade.name() : (m.getPricingGrade() != null ? m.getPricingGrade().name() : ""));
+            map.put("formula", (res != null && res.formula() != null) ? res.formula() : m.getFormula());
+            map.put("measurementType", (res != null && res.measurementType() != null) ? res.measurementType().name() : (m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT"));
+            map.put("coveragePerRoll", m.getCoveragePerRoll());
+            map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
             return map;
         }).toList();
+
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+            result = result.stream()
+                    .filter(m -> Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
+                    .toList();
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> materials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade) {
+        return materials(branchId, divisionId, itemId, pricingGrade, false);
     }
 
     public List<Map<String, Object>> materials(Long itemId) {
@@ -275,6 +303,7 @@ public class AdminQuotationBuilderController {
             resp.put("pricingUnit", "₹ / " + res.unit());
             resp.put("measurementType", res.measurementType() != null ? res.measurementType().name() : "SQFT");
             resp.put("imageUrl", res.imageUrl());
+            resp.put("coveragePerRoll", res.coveragePerRoll());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of(
@@ -341,6 +370,7 @@ public class AdminQuotationBuilderController {
             data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
             data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
             data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+            data.put("otherChargesDescription", q.getOtherChargesDescription() != null ? q.getOtherChargesDescription() : "");
             data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
             data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
             data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
@@ -387,6 +417,9 @@ public class AdminQuotationBuilderController {
                     iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
                     iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
                     iMap.put("imageUrl", item.getImageUrl());
+                    iMap.put("coveragePerRoll", item.getCoveragePerRoll() != null ? item.getCoveragePerRoll() : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null));
+                    iMap.put("calculatedSqft", item.getCalculatedSqft());
+                    iMap.put("amount", item.getAmount());
 
                     String itemFormula = (item.getFormula() != null && !item.getFormula().isBlank())
                             ? item.getFormula()

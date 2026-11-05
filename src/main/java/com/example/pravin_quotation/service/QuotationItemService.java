@@ -208,6 +208,35 @@ public class QuotationItemService {
             BigDecimal quantity,
             String imageUrl
     ) {
+        return create(quotationRoom, workCategory, division, item, material, materialOption, materialSpecification,
+                itemDescription, lengthValue, widthValue, heightValue, calculatedSqft, rate, amount, offerPrice,
+                formula, specification, measurementType, quantity, imageUrl, null);
+    }
+
+    @Transactional
+    public QuotationItem create(
+            QuotationRoom quotationRoom,
+            WorkCategory workCategory,
+            Division division,
+            Item item,
+            Material material,
+            MaterialOption materialOption,
+            MaterialSpecification materialSpecification,
+            String itemDescription,
+            BigDecimal lengthValue,
+            BigDecimal widthValue,
+            BigDecimal heightValue,
+            BigDecimal calculatedSqft,
+            BigDecimal rate,
+            BigDecimal amount,
+            BigDecimal offerPrice,
+            String formula,
+            String specification,
+            MeasurementType measurementType,
+            BigDecimal quantity,
+            String imageUrl,
+            BigDecimal coveragePerRoll
+    ) {
 
         if (quotationRoom == null) {
             throw new IllegalArgumentException(
@@ -331,6 +360,10 @@ public class QuotationItemService {
 
         quotationItem.setImageUrl(
                 imageUrl
+        );
+
+        quotationItem.setCoveragePerRoll(
+                coveragePerRoll
         );
 
         quotationItem.setActive(true);

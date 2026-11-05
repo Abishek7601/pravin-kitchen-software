@@ -650,6 +650,7 @@ public class WorkCategoryService {
             matMap.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "MIDDLE");
             matMap.put("formula", m.getFormula());
             matMap.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
+            matMap.put("coveragePerRoll", m.getCoveragePerRoll());
             matMap.put("imageUrl", m.getImageUrl());
             matMap.put("active", m.getActive());
 
@@ -829,6 +830,24 @@ public class WorkCategoryService {
             MeasurementType measurementType,
             String imageUrl,
             Boolean removeImage) {
+        return saveWorkTypeMaterialWithBranchRates(materialId, workTypeId, name, specification, unit, formula, branchRates, fallbackGrade, fallbackRate, measurementType, imageUrl, removeImage, null);
+    }
+
+    @Transactional
+    public Material saveWorkTypeMaterialWithBranchRates(
+            Long materialId,
+            Long workTypeId,
+            String name,
+            String specification,
+            String unit,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            PricingMode fallbackGrade,
+            BigDecimal fallbackRate,
+            MeasurementType measurementType,
+            String imageUrl,
+            Boolean removeImage,
+            BigDecimal coveragePerRoll) {
 
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Material name is required.");
@@ -899,6 +918,8 @@ public class WorkCategoryService {
                 effectiveType = MeasurementType.QUANTITY;
             } else if (unit != null && unit.trim().equalsIgnoreCase("Files")) {
                 effectiveType = MeasurementType.FILES;
+            } else if (unit != null && unit.trim().equalsIgnoreCase("Roll")) {
+                effectiveType = MeasurementType.ROLL;
             } else {
                 effectiveType = MeasurementType.SQFT;
             }
@@ -912,6 +933,12 @@ public class WorkCategoryService {
         } else if (effectiveType == MeasurementType.FILES) {
             cleanUnit = "Files";
             cleanFormula = null;
+        } else if (effectiveType == MeasurementType.ROLL) {
+            cleanUnit = "Roll";
+            cleanFormula = CalculationFormula.normalizeFormula(formula);
+            if (coveragePerRoll == null || coveragePerRoll.compareTo(BigDecimal.ZERO) <= 0) {
+                throw new IllegalArgumentException("Coverage Per Roll (Sq.ft) is required and must be greater than 0.");
+            }
         } else {
             cleanUnit = "Sq.ft";
             cleanFormula = CalculationFormula.normalizeFormula(formula);
@@ -933,6 +960,7 @@ public class WorkCategoryService {
         material.setFormula(cleanFormula);
         material.setMeasurementType(effectiveType);
         material.setSqftEnabled(effectiveType == MeasurementType.SQFT);
+        material.setCoveragePerRoll(effectiveType == MeasurementType.ROLL ? coveragePerRoll : null);
         material.setSpecification(cleanSpec);
         material.setDescription(cleanSpec);
         material.setActive(true);
@@ -1052,7 +1080,23 @@ public class WorkCategoryService {
             Map<Long, Map<PricingMode, BigDecimal>> branchRates,
             MeasurementType measurementType,
             String imageUrl) {
-        return saveWorkTypeMaterialWithBranchRates(null, workTypeId, name, specification, unit, formula, branchRates, grade, rate, measurementType, imageUrl, false);
+        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, formula, branchRates, measurementType, imageUrl, null);
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            MeasurementType measurementType,
+            String imageUrl,
+            BigDecimal coveragePerRoll) {
+        return saveWorkTypeMaterialWithBranchRates(null, workTypeId, name, specification, unit, formula, branchRates, grade, rate, measurementType, imageUrl, false, coveragePerRoll);
     }
 
     @Transactional
@@ -1080,7 +1124,23 @@ public class WorkCategoryService {
             MeasurementType measurementType,
             String imageUrl,
             Boolean removeImage) {
-        return saveWorkTypeMaterialWithBranchRates(materialId, null, name, specification, unit, formula, branchRates, null, rate, measurementType, imageUrl, removeImage);
+        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, formula, branchRates, measurementType, imageUrl, removeImage, null);
+    }
+
+    @Transactional
+    public Material updateWorkTypeMaterial(
+            Long materialId,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            MeasurementType measurementType,
+            String imageUrl,
+            Boolean removeImage,
+            BigDecimal coveragePerRoll) {
+        return saveWorkTypeMaterialWithBranchRates(materialId, null, name, specification, unit, formula, branchRates, null, rate, measurementType, imageUrl, removeImage, coveragePerRoll);
     }
 
     @Transactional

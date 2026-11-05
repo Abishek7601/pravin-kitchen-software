@@ -358,18 +358,21 @@
                                              th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification != null}"
                                              th:text="${item.materialSpecification.name}">Specification</div>
                                         <div class="spec-formula"
-                                             th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT')}">
+                                             th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT') or item.measurementType.name().equals('ROLL')}">
                                             <span th:if="${item.formula != null && !#strings.isEmpty(item.formula)}" th:text="${'Formula: ' + item.formula}"></span>
                                         </div>
+                                        <div th:if="${item.measurementType != null and item.measurementType.name().equals('ROLL')}" style="margin-top: 4px; font-size: 11px; font-weight: 600; color: #0d9488;">
+                                            <span th:text="${(item.quantity != null ? item.quantity : 1) + ' Roll(s) (Coverage: ' + (item.coveragePerRoll != null ? item.coveragePerRoll : 0) + ' Sq.ft/Roll)'}"></span>
+                                        </div>
                                         <span class="spec-empty"
-                                              th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula))}">-</span>
+                                              th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula)) and (item.measurementType == null or !item.measurementType.name().equals('ROLL'))}">-</span>
                                     </td>
                                     <!-- Size / Dimensions -->
                                     <td class="cell-dimensions" th:if="${quotation.showSqftSize == null || quotation.showSqftSize}">
-                                        <div th:if="${item.measurementType != null and !item.measurementType.name().equals('SQFT')}">
+                                        <div th:if="${item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')}">
                                             <span class="size-vals" style="font-weight: 600; color: #0f766e;" th:text="${'Qty: ' + (item.quantity != null ? item.quantity : 1)}">Qty: 1</span>
                                         </div>
-                                        <div th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT')}">
+                                        <div th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT') or item.measurementType.name().equals('ROLL')}">
                                             <div th:if="${sizesByItem != null && sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
                                                 <div th:each="sz, szStat : ${sizesByItem[item.id]}"
                                                      th:if="${sz.active == null || sz.active}"
@@ -390,12 +393,14 @@
                                     <!-- Sq.Ft. -->
                                     <td class="text-right cell-sqft"
                                         th:if="${quotation.showSqftSize == null || quotation.showSqftSize}"
-                                        th:text="${(item.measurementType != null and !item.measurementType.name().equals('SQFT')) ? '-' : #numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
+                                        th:text="${(item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')) ? '-' : #numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
                                         0.00
                                     </td>
                                     <!-- Unit Rate -->
                                     <td class="text-right cell-rate"
-                                        th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2)}">
+                                        th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2) + (item.measurementType != null and item.measurementType.name().equals('ROLL') ? ' / roll' : '')}">
+                                        ₹ 0.00
+                                    </td>
                                         ₹ 0.00
                                     </td>
                                     <!-- Amount -->
@@ -436,7 +441,8 @@
                             </tr>
                             <!-- Other Charges -->
                             <tr class="tfoot-charge-row" th:if="${quotation.otherCharges != null && quotation.otherCharges > 0}">
-                                <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Other Charges</td>
+                                <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label"
+                                    th:text="${(quotation.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quotation.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quotation.otherChargesDescription) + ')' : 'Other Charges'}">Other Charges</td>
                                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + #numbers.formatDecimal(quotation.otherCharges, 1, 2)}">₹ 0.00</td>
                             </tr>
                             <!-- Discount -->

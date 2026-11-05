@@ -107,15 +107,16 @@ public class AdminQuotationBuilderService {
             String unit,
             MeasurementType measurementType,
             String imageUrl,
+            BigDecimal coveragePerRoll,
             boolean available,
             String message
     ) {
         public static ResolvedMaterialRate unavailable(String message) {
-            return new ResolvedMaterialRate(null, null, null, null, null, null, null, null, false, message);
+            return new ResolvedMaterialRate(null, null, null, null, null, null, null, null, null, false, message);
         }
 
         public static ResolvedMaterialRate unavailable(Long materialId, String materialName, String message) {
-            return new ResolvedMaterialRate(materialId, null, materialName, null, null, null, null, null, false, message);
+            return new ResolvedMaterialRate(materialId, null, materialName, null, null, null, null, null, null, false, message);
         }
     }
 
@@ -301,6 +302,7 @@ public class AdminQuotationBuilderService {
                 unit,
                 measurementType,
                 imageUrl,
+                effectiveMat != null ? effectiveMat.getCoveragePerRoll() : null,
                 true,
                 null
         );
@@ -327,10 +329,11 @@ public class AdminQuotationBuilderService {
         }
         if (branchId != null && districtPricingRepository != null) {
             DistrictPricing dp = districtPricingRepository.findByBranchIdAndPricingId(branchId, pricing.getId()).orElse(null);
-            if (dp != null && dp.getRate() != null && Boolean.TRUE.equals(dp.getActive())) {
-                if (dp.getRate().compareTo(BigDecimal.ZERO) > 0) {
+            if (dp != null) {
+                if (Boolean.TRUE.equals(dp.getActive()) && dp.getRate() != null && dp.getRate().compareTo(BigDecimal.ZERO) > 0) {
                     return money(dp.getRate());
                 }
+                return null;
             }
         }
         if (pricing.getRate() != null && pricing.getRate().compareTo(BigDecimal.ZERO) > 0) {
@@ -443,6 +446,7 @@ public class AdminQuotationBuilderService {
                     request.customer(),
                     loggedInUser.getBranch().getId(),
                     request.quotationDate(),
+                    request.validUntil(),
                     request.pricingMode(),
                     request.customerRequirements(),
                     request.notes(),
@@ -450,6 +454,7 @@ public class AdminQuotationBuilderService {
                     request.accessoriesAmount(),
                     request.travelCharge(),
                     request.otherCharges(),
+                    request.otherChargesDescription(),
                     request.discountAmount(),
                     request.gstPercentage(),
                     request.offerPercentage(),
@@ -481,25 +486,16 @@ public class AdminQuotationBuilderService {
         }
 
         // -----------------------------------------------------
-        // Customer resolution & authorization
-        // -----------------------------------------------------
-
-        Customer customer =
-                resolveCustomer(
-                        request.customer(),
-                        branch,
-                        loggedInUser
-                );
-
-        // -----------------------------------------------------
         // Quotation lookup or creation
         // -----------------------------------------------------
 
         Quotation quotation;
+        boolean isEdit = false;
         if (request.quotationId() != null) {
             quotation = quotationRepository.findById(request.quotationId())
                     .orElseGet(Quotation::new);
             if (quotation.getId() != null) {
+                isEdit = true;
                 List<QuotationRoom> oldRooms =
                         quotationRoomService.getActiveByQuotationId(quotation.getId());
                 for (QuotationRoom oldRoom : oldRooms) {
@@ -513,6 +509,19 @@ public class AdminQuotationBuilderService {
             quotation.setQuotationNumber(nextQuotationNumber());
         }
 
+        // -----------------------------------------------------
+        // Customer resolution & authorization
+        // -----------------------------------------------------
+
+        Customer customer =
+                resolveCustomer(
+                        request.customer(),
+                        branch,
+                        loggedInUser,
+                        quotation,
+                        isEdit
+                );
+
         quotation.setCustomer(
                 customer
         );
@@ -525,6 +534,7 @@ public class AdminQuotationBuilderService {
                 branch
         );
 
+        LocalDate effectiveQuotationDate;
         if (quotation.getId() != null) {
             // Existing quotation being edited: preserve original quotationDate and validUntil
             if (quotation.getQuotationDate() == null) {
@@ -532,14 +542,34 @@ public class AdminQuotationBuilderService {
                         request.quotationDate() == null ? LocalDate.now() : request.quotationDate()
                 );
             }
-            if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
-                quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
+            effectiveQuotationDate = quotation.getQuotationDate();
+
+            if (request.validUntil() != null) {
+                if (request.validUntil().isBefore(effectiveQuotationDate)) {
+                    throw new IllegalArgumentException(
+                            "Valid until date cannot be earlier than quotation date."
+                    );
+                }
+                quotation.setValidUntil(request.validUntil());
+            } else if (quotation.getValidUntil() == null) {
+                quotation.setValidUntil(effectiveQuotationDate.plusDays(365));
             }
         } else {
             // New quotation creation
             LocalDate qDate = request.quotationDate() == null ? LocalDate.now() : request.quotationDate();
             quotation.setQuotationDate(qDate);
-            quotation.setValidUntil(qDate.plusDays(365));
+            effectiveQuotationDate = qDate;
+
+            if (request.validUntil() != null) {
+                if (request.validUntil().isBefore(effectiveQuotationDate)) {
+                    throw new IllegalArgumentException(
+                            "Valid until date cannot be earlier than quotation date."
+                    );
+                }
+                quotation.setValidUntil(request.validUntil());
+            } else {
+                quotation.setValidUntil(qDate.plusDays(365));
+            }
         }
 
         quotation.setPricingMode(
@@ -567,6 +597,9 @@ public class AdminQuotationBuilderService {
         }
         if (request.otherCharges() != null) {
             quotation.setOtherCharges(request.otherCharges());
+        }
+        if (request.otherChargesDescription() != null) {
+            quotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
         }
         if (request.discountAmount() != null) {
             quotation.setDiscountAmount(request.discountAmount());
@@ -747,9 +780,20 @@ public class AdminQuotationBuilderService {
 
                 // -------------------------------------------------
                 // Resolve rate for this item:
-                // For FILES unit, allow quotation-specific edited rate.
-                // For other units, resolve from pricing configuration.
+                // Verify grade and branch availability for all units (Sq.ft, Quantity, Files).
                 // -------------------------------------------------
+
+                ResolvedMaterialRate resolved = resolveMaterialAndRate(
+                        request.branchId(),
+                        division.getId(),
+                        material.getId(),
+                        option != null ? option.getId() : null,
+                        request.pricingMode()
+                );
+                if (!resolved.available() || resolved.rate() == null || resolved.rate().compareTo(BigDecimal.ZERO) <= 0) {
+                    String gradeLabel = request.pricingMode() == PricingMode.PREMIUM ? "Premium" : (request.pricingMode() == PricingMode.ECONOMY ? "Economy" : "Middle");
+                    throw new IllegalArgumentException(resolved.message() != null ? resolved.message() : ("No material available in " + gradeLabel + " Grade"));
+                }
 
                 BigDecimal rate;
                 if (effectiveType.isFiles()) {
@@ -759,32 +803,9 @@ public class AdminQuotationBuilderService {
                         }
                         rate = money(itemRequest.rate());
                     } else {
-                        ResolvedMaterialRate resolved = resolveMaterialAndRate(
-                                request.branchId(),
-                                division.getId(),
-                                material.getId(),
-                                option != null ? option.getId() : null,
-                                request.pricingMode()
-                        );
-                        if (resolved.available() && resolved.rate() != null) {
-                            rate = resolved.rate();
-                        } else if (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) >= 0) {
-                            rate = money(material.getRate());
-                        } else {
-                            throw new IllegalArgumentException(resolved.message());
-                        }
+                        rate = resolved.rate();
                     }
                 } else {
-                    ResolvedMaterialRate resolved = resolveMaterialAndRate(
-                            request.branchId(),
-                            division.getId(),
-                            material.getId(),
-                            option != null ? option.getId() : null,
-                            request.pricingMode()
-                    );
-                    if (!resolved.available() || resolved.rate() == null) {
-                        throw new IllegalArgumentException(resolved.message());
-                    }
                     rate = resolved.rate();
                 }
 
@@ -831,6 +852,7 @@ public class AdminQuotationBuilderService {
                 // Calculate all sizes and totals
                 // -------------------------------------------------
 
+                BigDecimal coverage = null;
                 if (effectiveType.isSqft()) {
                     if (itemRequest.sizes() != null) {
                         for (int sizeIndex = 0;
@@ -897,6 +919,47 @@ public class AdminQuotationBuilderService {
                                     );
                         }
                     }
+                } else if (effectiveType.isRoll()) {
+                    coverage = (material != null && material.getCoveragePerRoll() != null && material.getCoveragePerRoll().compareTo(BigDecimal.ZERO) > 0)
+                            ? material.getCoveragePerRoll()
+                            : (itemRequest.coveragePerRoll() != null && itemRequest.coveragePerRoll().compareTo(BigDecimal.ZERO) > 0
+                                    ? itemRequest.coveragePerRoll()
+                                    : BigDecimal.valueOf(40));
+
+                    if (itemRequest.sizes() != null) {
+                        for (int sizeIndex = 0; sizeIndex < itemRequest.sizes().size(); sizeIndex++) {
+                            SizeRequest size = itemRequest.sizes().get(sizeIndex);
+                            String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
+                            boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
+                            boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
+
+                            BigDecimal length = positive(size.length(), "Length");
+                            BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                            BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                            com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+
+                            if (sizeIndex == 0) {
+                                firstLength = length;
+                                firstWidth = width;
+                                firstHeight = height;
+                            }
+
+                            BigDecimal sqft = quotationItemSizeService.calculateSqft(itemFormula, length, width, height, "in");
+                            totalSqft = totalSqft.add(sqft);
+                        }
+                    }
+
+                    BigDecimal requiredRolls = (totalSqft.compareTo(BigDecimal.ZERO) > 0 && coverage.compareTo(BigDecimal.ZERO) > 0)
+                            ? totalSqft.divide(coverage, 0, RoundingMode.CEILING)
+                            : BigDecimal.ZERO;
+                    effectiveQuantity = requiredRolls;
+
+                    totalAmount = money(requiredRolls.multiply(rate));
+                    BigDecimal offerPrice = totalAmount;
+                    if (itemRequest.sizes() != null && !itemRequest.sizes().isEmpty() && itemRequest.sizes().get(0).offerPrice() != null) {
+                        offerPrice = nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
+                    }
+                    totalOfferPrice = offerPrice;
                 } else {
                     // QUANTITY or FILES based item:
                     totalAmount = money(effectiveQuantity.multiply(rate));
@@ -946,19 +1009,20 @@ public class AdminQuotationBuilderService {
                                 totalAmount,
                                 totalOfferPrice,
 
-                                effectiveType.isSqft() ? itemFormula : null,
+                                (effectiveType.isSqft() || effectiveType.isRoll()) ? itemFormula : null,
 
                                 specText,
                                 effectiveType,
                                 effectiveQuantity,
-                                effectiveImageUrl
+                                effectiveImageUrl,
+                                coverage
                         );
 
                 // =================================================
-                // Create child QuotationItemSize rows (only for Sq.ft)
+                // Create child QuotationItemSize rows (for Sq.ft and Roll)
                 // =================================================
 
-                if (effectiveType.isSqft() && itemRequest.sizes() != null) {
+                if ((effectiveType.isSqft() || effectiveType.isRoll()) && itemRequest.sizes() != null) {
                     for (int sizeIndex = 0;
                          sizeIndex < itemRequest.sizes().size();
                          sizeIndex++) {
@@ -1003,7 +1067,7 @@ public class AdminQuotationBuilderService {
                                     );
                         }
 
-                        quotationItemSizeService.create(
+                        QuotationItemSize createdSize = quotationItemSizeService.create(
                                 quotationItem,
                                 length,
                                 width,
@@ -1012,6 +1076,9 @@ public class AdminQuotationBuilderService {
                                 sizeIndex + 1,
                                 "in"
                         );
+                        if (quotationItem.getSizes() != null) {
+                            quotationItem.getSizes().add(createdSize);
+                        }
                     }
                 }
             }
@@ -1035,12 +1102,74 @@ public class AdminQuotationBuilderService {
             CustomerRequest request,
             Branch branch,
             User loggedInUser) {
+        return resolveCustomer(request, branch, loggedInUser, null, false);
+    }
+
+    private Customer resolveCustomer(
+            CustomerRequest request,
+            Branch branch,
+            User loggedInUser,
+            Quotation quotation,
+            boolean isEdit) {
 
         if (request == null) {
             throw new IllegalArgumentException("Customer details are required.");
         }
 
-        // Case 1: Existing Customer by ID
+        // Case 1: Editing customer details in Edit Builder
+        if (isEdit) {
+            Customer existingCustomer = null;
+            if (request.id() != null) {
+                existingCustomer = customerRepository.findById(request.id())
+                        .orElse(null);
+            }
+            if (existingCustomer == null && quotation != null && quotation.getCustomer() != null) {
+                existingCustomer = quotation.getCustomer();
+            }
+
+            if (existingCustomer != null) {
+                // Enforce branch security for employees
+                if (loggedInUser.getRole() == Role.EMPLOYEE) {
+                    if (existingCustomer.getBranch() == null
+                            || !existingCustomer.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                        throw new AccessDeniedException("Unauthorized: Customer does not belong to your assigned branch.");
+                    }
+                }
+
+                String name = TitleCaseUtils.toTitleCase(required(request.name(), "Customer name").trim());
+                String phone = required(request.phone(), "Phone number").trim();
+                String email = clean(request.email());
+                String address = TitleCaseUtils.toTitleCase(clean(request.address()));
+
+                // Check duplicate phone across other customers
+                java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(phone);
+                if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(existingCustomer.getId())) {
+                    throw new IllegalArgumentException("Phone number already exists: A customer with phone number " + phone + " is already registered.");
+                }
+
+                // Check duplicate email across other customers if provided
+                if (email != null && !email.isBlank()) {
+                    String lowerEmail = email.toLowerCase().trim();
+                    java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(lowerEmail);
+                    if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(existingCustomer.getId())) {
+                        throw new IllegalArgumentException("Email address already exists: A customer with email " + lowerEmail + " is already registered.");
+                    }
+                }
+
+                existingCustomer.setName(name);
+                existingCustomer.setPhone(phone);
+                existingCustomer.setEmail(email != null && !email.isBlank() ? email.toLowerCase().trim() : null);
+                existingCustomer.setAddress(address);
+                if (existingCustomer.getBranch() == null) {
+                    existingCustomer.setBranch(branch);
+                }
+                existingCustomer.setActive(true);
+
+                return customerRepository.save(existingCustomer);
+            }
+        }
+
+        // Case 2: Existing Customer by ID for new quotation (reusing profile without mutating)
         if (request.id() != null) {
             Customer existingCustomer = customerRepository.findById(request.id())
                     .orElseThrow(() -> new IllegalArgumentException("Selected customer not found."));
@@ -1055,7 +1184,7 @@ public class AdminQuotationBuilderService {
             return existingCustomer;
         }
 
-        // Case 2: New Customer creation
+        // Case 3: New Customer creation
         String name = TitleCaseUtils.toTitleCase(required(request.name(), "Customer name").trim());
         String phone = required(request.phone(), "Phone number").trim();
         String email = clean(request.email());
@@ -1167,6 +1296,25 @@ public class AdminQuotationBuilderService {
             required(request.customer().phone(), "Phone number");
         }
 
+        if (request.validUntil() != null && request.quotationDate() != null) {
+            if (request.validUntil().isBefore(request.quotationDate())) {
+                throw new IllegalArgumentException(
+                        "Valid until date cannot be earlier than quotation date."
+                );
+            }
+        }
+
+        if (request.otherCharges() != null) {
+            nonNegative(request.otherCharges(), "Other charges");
+            if (request.otherCharges().compareTo(BigDecimal.ZERO) > 0) {
+                if (request.otherChargesDescription() == null || request.otherChargesDescription().trim().isEmpty()) {
+                    throw new IllegalArgumentException(
+                            "Other charges description is required when other charges amount is entered."
+                    );
+                }
+            }
+        }
+
         if (request.rooms() == null
                 || request.rooms().isEmpty()) {
 
@@ -1198,10 +1346,10 @@ public class AdminQuotationBuilderService {
                     type = MeasurementType.SQFT;
                 }
 
-                if (type.isSqft()) {
+                if (type.isSqft() || type.isRoll()) {
                     if (item.sizes() == null || item.sizes().isEmpty()) {
                         throw new IllegalArgumentException(
-                                "Each Sq.ft item must contain at least one size."
+                                "Each " + (type.isRoll() ? "Roll" : "Sq.ft") + " item must contain at least one size."
                         );
                     }
                 } else {
@@ -1330,6 +1478,7 @@ public class AdminQuotationBuilderService {
             CustomerRequest customer,
             Long branchId,
             LocalDate quotationDate,
+            LocalDate validUntil,
             PricingMode pricingMode,
             String customerRequirements,
             String notes,
@@ -1337,10 +1486,56 @@ public class AdminQuotationBuilderService {
             BigDecimal accessoriesAmount,
             BigDecimal travelCharge,
             BigDecimal otherCharges,
+            String otherChargesDescription,
             BigDecimal discountAmount,
             BigDecimal gstPercentage,
             BigDecimal offerPercentage,
             Boolean showSqftSize) {
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                LocalDate validUntil,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
+                Boolean showSqftSize) {
+            this(quotationId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges,
+                    (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize);
+        }
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
+                Boolean showSqftSize) {
+            this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges,
+                    (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize);
+        }
 
         public BuilderRequest(
                 Long quotationId,
@@ -1357,8 +1552,10 @@ public class AdminQuotationBuilderService {
                 BigDecimal discountAmount,
                 BigDecimal gstPercentage,
                 BigDecimal offerPercentage) {
-            this(quotationId, customer, branchId, quotationDate, pricingMode, customerRequirements, notes, rooms,
-                    accessoriesAmount, travelCharge, otherCharges, discountAmount, gstPercentage, offerPercentage, true);
+            this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges,
+                    (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
+                    discountAmount, gstPercentage, offerPercentage, true);
         }
 
         public BuilderRequest(
@@ -1370,8 +1567,8 @@ public class AdminQuotationBuilderService {
                 String customerRequirements,
                 String notes,
                 List<RoomRequest> rooms) {
-            this(quotationId, customer, branchId, quotationDate, pricingMode, customerRequirements, notes, rooms,
-                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true);
+            this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
+                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true);
         }
     }
 
@@ -1411,7 +1608,25 @@ public class AdminQuotationBuilderService {
             MeasurementType measurementType,
             BigDecimal quantity,
             String imageUrl,
-            BigDecimal rate) {
+            BigDecimal rate,
+            BigDecimal coveragePerRoll) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes,
+                MeasurementType measurementType,
+                BigDecimal quantity,
+                String imageUrl,
+                BigDecimal rate) {
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, null);
+        }
 
         public ItemRequest(
                 Long workCategoryId,
@@ -1426,7 +1641,7 @@ public class AdminQuotationBuilderService {
                 MeasurementType measurementType,
                 BigDecimal quantity,
                 String imageUrl) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, null, null);
         }
 
         public ItemRequest(
@@ -1439,7 +1654,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1451,7 +1666,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null, null, null);
         }
     }
 

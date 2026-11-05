@@ -24,10 +24,12 @@ public class EmployeeSessionService {
 
     public static final ZoneId ZONE_IST = ZoneId.of("Asia/Kolkata");
     public static final LocalTime CUTOFF_TIME_IST = LocalTime.of(20, 0, 0); // 8:00 PM IST
+    public static final LocalTime MORNING_START_TIME_IST = LocalTime.of(6, 0, 0); // 6:00 AM IST
 
     public static final String ATTR_EXPIRY_INSTANT = "EMPLOYEE_EXPIRY_INSTANT";
     public static final String ATTR_EXPIRY_EPOCH_MS = "EMPLOYEE_EXPIRY_EPOCH_MS";
     public static final String ATTR_LOGIN_DATE = "EMPLOYEE_LOGIN_DATE";
+    public static final String ATTR_AFTER_HOURS_LOGIN = "EMPLOYEE_AFTER_HOURS_LOGIN";
 
     private Clock clock;
 
@@ -62,19 +64,38 @@ public class EmployeeSessionService {
     }
 
     /**
-     * Returns true if the current time is 8:00 PM IST or later on the current day.
+     * Returns true if current time is after 8:00 PM IST (20:00) until morning working hours (06:00).
      */
-    public boolean isPast8PmIst() {
+    public boolean isAfterHours() {
         ZonedDateTime now = nowIst();
-        ZonedDateTime deadline = getTodayDeadlineIst();
-        return !now.isBefore(deadline);
+        LocalTime time = now.toLocalTime();
+        return !time.isBefore(CUTOFF_TIME_IST) || time.isBefore(MORNING_START_TIME_IST);
     }
 
     /**
-     * Calculates the remaining milliseconds until 8:00 PM IST today.
-     * Returns 0 if already at or past 8:00 PM IST.
+     * Returns true if the current time is 8:00 PM IST or later on the current day (or overnight after-hours).
      */
-    public long getRemainingMillis() {
+    public boolean isPast8PmIst() {
+        return isAfterHours();
+    }
+
+    /**
+     * Calculates the remaining milliseconds until 8:00 PM IST today for normal sessions,
+     * or until morning reset for after-hours sessions.
+     */
+    public long getRemainingMillis(HttpSession session) {
+        if (session != null && Boolean.TRUE.equals(session.getAttribute(ATTR_AFTER_HOURS_LOGIN))) {
+            Object expiryObj = session.getAttribute(ATTR_EXPIRY_INSTANT);
+            if (expiryObj instanceof Instant expiryInstant) {
+                Instant now = clock.instant();
+                if (!now.isBefore(expiryInstant)) {
+                    return 0L;
+                }
+                return Duration.between(now, expiryInstant).toMillis();
+            }
+            return 3600000L;
+        }
+
         ZonedDateTime now = nowIst();
         ZonedDateTime deadline = getTodayDeadlineIst();
         if (!now.isBefore(deadline)) {
@@ -83,18 +104,33 @@ public class EmployeeSessionService {
         return Duration.between(now, deadline).toMillis();
     }
 
+    public long getRemainingMillis() {
+        return getRemainingMillis(null);
+    }
+
     /**
-     * Initialize employee session attributes with the 8:00 PM IST deadline.
+     * Initialize employee session attributes with the 8:00 PM IST deadline (for normal sessions)
+     * or morning reset deadline (for after-hours sessions).
      */
     public void initializeEmployeeSession(HttpSession session) {
         if (session == null) {
             return;
         }
-        ZonedDateTime deadline = getTodayDeadlineIst();
-        Instant expiryInstant = deadline.toInstant();
-        LocalDate loginDate = nowIst().toLocalDate();
+        LocalDate today = nowIst().toLocalDate();
+        ZonedDateTime deadline;
+        if (isAfterHours()) {
+            ZonedDateTime nextMorning = (nowIst().toLocalTime().isBefore(MORNING_START_TIME_IST))
+                    ? today.atTime(MORNING_START_TIME_IST).atZone(ZONE_IST)
+                    : today.plusDays(1).atTime(MORNING_START_TIME_IST).atZone(ZONE_IST);
+            deadline = nextMorning;
+            session.setAttribute(ATTR_AFTER_HOURS_LOGIN, true);
+        } else {
+            deadline = getTodayDeadlineIst();
+            session.setAttribute(ATTR_AFTER_HOURS_LOGIN, false);
+        }
 
-        session.setAttribute(ATTR_LOGIN_DATE, loginDate);
+        Instant expiryInstant = deadline.toInstant();
+        session.setAttribute(ATTR_LOGIN_DATE, today);
         session.setAttribute(ATTR_EXPIRY_INSTANT, expiryInstant);
         session.setAttribute(ATTR_EXPIRY_EPOCH_MS, expiryInstant.toEpochMilli());
     }
@@ -107,22 +143,43 @@ public class EmployeeSessionService {
             return true;
         }
 
-        // Rule: If current time in IST is >= 8:00 PM, session is expired
-        if (isPast8PmIst()) {
+        boolean isAfterHoursSession = Boolean.TRUE.equals(session.getAttribute(ATTR_AFTER_HOURS_LOGIN));
+        LocalDate today = nowIst().toLocalDate();
+        Object dateObj = session.getAttribute(ATTR_LOGIN_DATE);
+
+        if (isAfterHoursSession) {
+            // An after-hours session was verified with Super Admin OTP.
+            // It expires when normal working hours start the next morning or by expiry instant.
+            if (dateObj instanceof LocalDate loginDate) {
+                if (!today.equals(loginDate) && !isAfterHours()) {
+                    return true;
+                }
+            }
+            Object expiryObj = session.getAttribute(ATTR_EXPIRY_INSTANT);
+            if (expiryObj instanceof Instant expiryInstant) {
+                Instant now = clock.instant();
+                if (!now.isBefore(expiryInstant)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // --- NORMAL WORKING HOURS SESSION (Started before 8:00 PM) ---
+        // Rule: If current time in IST is >= 8:00 PM IST, normal session is expired
+        if (isAfterHours()) {
             return true;
         }
 
         // Rule: Check login date stored in session
-        Object dateObj = session.getAttribute(ATTR_LOGIN_DATE);
         if (dateObj instanceof LocalDate loginDate) {
-            LocalDate today = nowIst().toLocalDate();
             if (!today.equals(loginDate)) {
                 // Session from a previous day is expired
                 return true;
             }
         }
 
-        // Rule: Check exact expiry instant stored in session
+        // Rule: Check exact expiry instant stored in session (today at 8:00 PM IST)
         Object expiryObj = session.getAttribute(ATTR_EXPIRY_INSTANT);
         if (expiryObj instanceof Instant expiryInstant) {
             Instant now = clock.instant();

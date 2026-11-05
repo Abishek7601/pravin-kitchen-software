@@ -133,7 +133,7 @@
                         Valid Until
                     </span>
 
-          <strong th:text="${quotation.validUntil != null ? quotation.validUntil : (quotation.quotationDate != null ? quotation.quotationDate.plusDays(365) : '-')}">
+          <strong th:text="${quotation.validUntil != null ? #temporals.format(quotation.validUntil, 'dd MMM yyyy') : (quotation.quotationDate != null ? #temporals.format(quotation.quotationDate.plusDays(365), 'dd MMM yyyy') : '-')}">
             -
           </strong>
 
@@ -351,7 +351,7 @@
 
       <div class="total-row">
 
-                <span>
+                <span th:text="${(quotation.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quotation.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quotation.otherChargesDescription) + ')' : 'Other Charges'}">
                     Other Charges
                 </span>
 

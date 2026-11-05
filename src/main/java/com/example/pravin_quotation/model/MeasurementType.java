@@ -4,6 +4,7 @@ public enum MeasurementType {
     SQFT("Sq.ft"),
     QUANTITY("Quantity"),
     FILES("Files"),
+    ROLL("Roll"),
     FORMULA("Sq.ft"),
     IMAGE("Files");
 
@@ -29,6 +30,10 @@ public enum MeasurementType {
         return this == FILES || this == IMAGE;
     }
 
+    public boolean isRoll() {
+        return this == ROLL;
+    }
+
     public static MeasurementType fromString(String value) {
         if (value == null || value.trim().isEmpty()) {
             return SQFT;
@@ -42,6 +47,9 @@ public enum MeasurementType {
         }
         if (clean.equals("FILES") || clean.equals("FILE") || clean.equals("IMAGE")) {
             return FILES;
+        }
+        if (clean.equals("ROLL") || clean.equals("ROLLS")) {
+            return ROLL;
         }
         return SQFT;
     }

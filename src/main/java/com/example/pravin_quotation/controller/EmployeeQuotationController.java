@@ -30,6 +30,11 @@ import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
+import com.example.pravin_quotation.util.PaginationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import com.example.pravin_quotation.model.WhatsAppResult;
 import com.example.pravin_quotation.service.*;
@@ -253,6 +258,9 @@ public class EmployeeQuotationController {
             @PathVariable(required = false) String status,
             @RequestParam(name = "status", required = false) String paramStatus,
             @RequestParam(name = "period", required = false) String period,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "sort", required = false) String sort,
             Authentication authentication,
             Model model
     ) {
@@ -263,19 +271,14 @@ public class EmployeeQuotationController {
         String rawStatus = (status != null && !status.trim().isEmpty()) ? status : paramStatus;
         QuotationStatus activeStatus = parseStatus(rawStatus);
 
-        List<Quotation> quotations;
+        LocalDate startDate = null;
+        LocalDate endDate = null;
         String pageTitle = "My Quotations";
         String pageSubtitle = "View and manage your customer quotations.";
         String emptyTitle = "No quotations found";
         String emptyMsg = "No quotations found. Create your first quotation to get started.";
 
         if (activeStatus != null) {
-            quotations = quotationRepository
-                    .findByEmployeeIdAndStatusOrderByCreatedAtDesc(
-                            employee.getId(),
-                            activeStatus
-                    );
-
             switch (activeStatus) {
                 case PENDING -> {
                     pageTitle = "Pending Quotations";
@@ -298,36 +301,59 @@ public class EmployeeQuotationController {
             }
         } else if ("60".equals(period)) {
             LocalDate today = LocalDate.now();
-            LocalDate sixtyDaysAgo = today.minusDays(59);
-            quotations = quotationRepository
-                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
-                            employee.getId(),
-                            sixtyDaysAgo,
-                            today
-                    );
+            startDate = today.minusDays(59);
+            endDate = today;
             pageTitle = "60 Days Quotations";
             pageSubtitle = "Quotations created in the last 60 days.";
             emptyTitle = "No quotations in the last 60 days";
             emptyMsg = "You have not created any quotations in the last 60 days.";
         } else if ("365".equals(period) || "year".equalsIgnoreCase(period) || "1year".equalsIgnoreCase(period)) {
             LocalDate today = LocalDate.now();
-            LocalDate oneYearAgo = today.minusYears(1);
-            quotations = quotationRepository
-                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
-                            employee.getId(),
-                            oneYearAgo,
-                            today
-                    );
+            startDate = today.minusYears(1);
+            endDate = today;
             pageTitle = "Total One Year Quotations";
             pageSubtitle = "Quotations created during the last one year.";
             emptyTitle = "No quotations in the last one year";
             emptyMsg = "You have not created any quotations in the last one year.";
-        } else {
-            quotations = quotationRepository
-                    .findByEmployeeIdOrderByCreatedAtDesc(
-                            employee.getId()
-                    );
         }
+
+        String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        if (cleanSearch != null) {
+            emptyTitle = "No matching quotations";
+            emptyMsg = "No quotations found matching '" + cleanSearch + "'.";
+        }
+
+        Sort sortObj;
+        if ("date_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "quotationDate").and(Sort.by(Sort.Direction.ASC, "createdAt"));
+        } else if ("date_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "quotationDate").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if ("amount_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "grandTotal");
+        } else if ("amount_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "grandTotal");
+        } else {
+            sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        int pageIndex = Math.max(0, page - 1);
+        Pageable pageable = PageRequest.of(pageIndex, 10, sortObj);
+
+        Page<Quotation> quotePage = quotationRepository.searchEmployeeQuotations(
+                employee.getId(),
+                activeStatus,
+                startDate,
+                endDate,
+                cleanSearch,
+                pageable
+        );
+
+        List<Quotation> quotations = quotePage.getContent();
+        long totalRecords = quotePage.getTotalElements();
+        int totalPages = quotePage.getTotalPages();
+        int currentPage = quotePage.getNumber() + 1;
+        long pageStart = totalRecords == 0 ? 0 : ((long) quotePage.getNumber() * 10 + 1);
+        long pageEnd = Math.min((long) (quotePage.getNumber() + 1) * 10, totalRecords);
 
         long totalCount = quotationRepository.countByEmployeeId(employee.getId());
         long pendingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.PENDING);
@@ -347,7 +373,29 @@ public class EmployeeQuotationController {
         model.addAttribute("workingCount", workingCount);
         model.addAttribute("sentCount", sentCount);
 
+        model.addAttribute("totalRecords", totalRecords);
+        model.addAttribute("totalElements", totalRecords);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("pageStart", pageStart);
+        model.addAttribute("pageEnd", pageEnd);
+        model.addAttribute("hasPrevious", quotePage.hasPrevious());
+        model.addAttribute("hasNext", quotePage.hasNext());
+        model.addAttribute("pageNumbers", PaginationUtils.getPageNumbers(currentPage, totalPages));
+        model.addAttribute("search", cleanSearch != null ? cleanSearch : "");
+        model.addAttribute("sort", sort != null ? sort : "");
+
         return "employee/quotations";
+    }
+
+    public String quotations(
+            String status,
+            String paramStatus,
+            String period,
+            Authentication authentication,
+            Model model
+    ) {
+        return quotations(status, paramStatus, period, 1, null, null, authentication, model);
     }
 
     private QuotationStatus parseStatus(String statusStr) {
@@ -478,7 +526,9 @@ public class EmployeeQuotationController {
             @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long itemId,
-            @RequestParam(required = false) String pricingGrade) {
+            @RequestParam(required = false) String pricingGrade,
+            @RequestParam(required = false) Boolean onlyAvailable,
+            Authentication authentication) {
         PricingMode grade = null;
         if (pricingGrade != null && !pricingGrade.isBlank()) {
             String g = pricingGrade.trim().toUpperCase();
@@ -487,11 +537,21 @@ public class EmployeeQuotationController {
             else grade = PricingMode.MIDDLE;
         }
 
+        Long effectiveBranchId = branchId;
+        if (effectiveBranchId == null && authentication != null) {
+            try {
+                User emp = userRepository.findByEmail(authentication.getName()).orElse(null);
+                if (emp != null && emp.getBranch() != null) {
+                    effectiveBranchId = emp.getBranch().getId();
+                }
+            } catch (Exception ignored) {}
+        }
+
         List<Material> list = null;
-        if (divisionId != null && grade != null) {
+        if (divisionId != null && grade != null && !Boolean.TRUE.equals(onlyAvailable)) {
             list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
         }
-        if (list == null || list.isEmpty()) {
+        if (list == null || list.isEmpty() || Boolean.TRUE.equals(onlyAvailable)) {
             if (divisionId != null) {
                 list = materialRepository.findActiveByDivisionId(divisionId);
             } else if (itemId != null) {
@@ -501,7 +561,8 @@ public class EmployeeQuotationController {
             }
         }
         final PricingMode targetGrade = grade;
-        return list.stream().map(m -> {
+        final Long finalBranchId = effectiveBranchId;
+        List<Map<String, Object>> result = list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
@@ -509,23 +570,59 @@ public class EmployeeQuotationController {
             map.put("specification", m.getSpecification() != null ? m.getSpecification().trim() : "");
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
 
-            BigDecimal resolvedRate = null;
-            if (branchId != null && targetGrade != null) {
+            AdminQuotationBuilderService.ResolvedMaterialRate res = null;
+            if (targetGrade != null) {
                 try {
-                    resolvedRate = builderService.resolveRate(branchId, m.getId(), null, targetGrade);
+                    Long effectiveDivId = divisionId != null ? divisionId : (m.getDivision() != null ? m.getDivision().getId() : null);
+                    res = builderService.resolveMaterialAndRate(finalBranchId, effectiveDivId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
-            if (resolvedRate == null) {
+
+            boolean isAvailable = (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
+            BigDecimal resolvedRate = isAvailable ? res.rate() : null;
+            if (targetGrade == null && resolvedRate == null) {
                 resolvedRate = m.getRate();
+                isAvailable = (resolvedRate != null && resolvedRate.compareTo(BigDecimal.ZERO) > 0);
             }
 
+            String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
+            String unavailableMsg = (res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade");
+
+            map.put("available", isAvailable);
             map.put("rate", resolvedRate);
-            map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
-            map.put("formula", m.getFormula());
-            map.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
-            map.put("imageUrl", m.getImageUrl());
+            map.put("unavailableMessage", isAvailable ? null : unavailableMsg);
+            map.put("message", isAvailable ? null : unavailableMsg);
+            map.put("pricingGrade", targetGrade != null ? targetGrade.name() : (m.getPricingGrade() != null ? m.getPricingGrade().name() : ""));
+            map.put("formula", (res != null && res.formula() != null) ? res.formula() : m.getFormula());
+            map.put("measurementType", (res != null && res.measurementType() != null) ? res.measurementType().name() : (m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT"));
+            map.put("coveragePerRoll", m.getCoveragePerRoll());
+            map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
             return map;
         }).toList();
+
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+            result = result.stream()
+                    .filter(m -> Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
+                    .toList();
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> builderMaterials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade) {
+        return builderMaterials(branchId, divisionId, itemId, pricingGrade, false, null);
+    }
+
+    public List<Map<String, Object>> builderMaterials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade,
+            Boolean onlyAvailable) {
+        return builderMaterials(branchId, divisionId, itemId, pricingGrade, onlyAvailable, null);
     }
 
     public List<Map<String, Object>> builderMaterials(Long itemId) {
@@ -626,6 +723,7 @@ public class EmployeeQuotationController {
             resp.put("pricingUnit", "₹ / " + res.unit());
             resp.put("measurementType", res.measurementType() != null ? res.measurementType().name() : "SQFT");
             resp.put("imageUrl", res.imageUrl());
+            resp.put("coveragePerRoll", res.coveragePerRoll());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(mapData(
@@ -667,6 +765,7 @@ public class EmployeeQuotationController {
                     request.customer(),
                     effectiveBranchId,
                     request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
+                    request.validUntil(),
                     request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE,
                     request.customerRequirements(),
                     request.notes(),
@@ -674,6 +773,7 @@ public class EmployeeQuotationController {
                     request.accessoriesAmount(),
                     request.travelCharge(),
                     request.otherCharges(),
+                    request.otherChargesDescription(),
                     request.discountAmount(),
                     request.gstPercentage(),
                     request.offerPercentage(),
@@ -746,6 +846,7 @@ public class EmployeeQuotationController {
         data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
         data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
         data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+        data.put("otherChargesDescription", q.getOtherChargesDescription() != null ? q.getOtherChargesDescription() : "");
         data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
         data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
         data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
@@ -792,6 +893,9 @@ public class EmployeeQuotationController {
                 iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
                 iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
                 iMap.put("imageUrl", item.getImageUrl());
+                iMap.put("coveragePerRoll", item.getCoveragePerRoll() != null ? item.getCoveragePerRoll() : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null));
+                iMap.put("calculatedSqft", item.getCalculatedSqft());
+                iMap.put("amount", item.getAmount());
 
                 String itemFormula = (item.getFormula() != null && !item.getFormula().isBlank())
                         ? item.getFormula()
@@ -1075,6 +1179,9 @@ public class EmployeeQuotationController {
             @RequestParam String quotationDate,
 
             @RequestParam(required = false)
+            String validUntil,
+
+            @RequestParam(required = false)
             String customerRequirements,
 
             @RequestParam(required = false)
@@ -1099,6 +1206,33 @@ public class EmployeeQuotationController {
             if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
                 throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
             }
+            if (customerName != null && !customerName.isBlank()) {
+                customer.setName(com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(customerName.trim()));
+            }
+            if (phone != null && !phone.isBlank()) {
+                String cleanPhone = phone.trim();
+                java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(cleanPhone);
+                if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(customer.getId())) {
+                    throw new IllegalArgumentException("Phone number already exists");
+                }
+                customer.setPhone(cleanPhone);
+            }
+            if (email != null) {
+                String cleanEmail = email.trim().toLowerCase();
+                if (!cleanEmail.isBlank()) {
+                    java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(cleanEmail);
+                    if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(customer.getId())) {
+                        throw new IllegalArgumentException("Email address already exists");
+                    }
+                    customer.setEmail(cleanEmail);
+                } else {
+                    customer.setEmail(null);
+                }
+            }
+            if (address != null) {
+                customer.setAddress(address.isBlank() ? null : com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(address.trim()));
+            }
+            customer = customerRepository.save(customer);
         } else {
             customer = customerService.createOrUpdateForQuotation(
                     customerName,
@@ -1120,7 +1254,14 @@ public class EmployeeQuotationController {
                     )
             );
         }
-        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+        if (validUntil != null && !validUntil.isBlank()) {
+            LocalDate vu = LocalDate.parse(validUntil, DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalDate qd = quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now();
+            if (vu.isBefore(qd)) {
+                throw new IllegalArgumentException("Valid until date cannot be earlier than quotation date.");
+            }
+            quotation.setValidUntil(vu);
+        } else if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
             quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
 
@@ -1151,6 +1292,7 @@ public class EmployeeQuotationController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String address,
             @RequestParam(required = false) String quotationDate,
+            @RequestParam(required = false) String validUntil,
             @RequestParam(required = false) String customerRequirements,
             @RequestParam(required = false) String notes,
             Authentication authentication,
@@ -1160,13 +1302,39 @@ public class EmployeeQuotationController {
         Quotation quotation = getQuotationAndCheckOwnership(id, employee);
 
         if (customerName != null && !customerName.isBlank() && phone != null && !phone.isBlank()) {
-            Customer customer = customerService.createOrUpdateForQuotation(
-                    customerName.trim(),
-                    email,
-                    phone.trim(),
-                    address,
-                    employee.getBranch().getId()
-            );
+            Customer customer = quotation.getCustomer();
+            if (customer != null) {
+                if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
+                }
+                String cleanPhone = phone.trim();
+                java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(cleanPhone);
+                if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(customer.getId())) {
+                    throw new IllegalArgumentException("Phone number already exists");
+                }
+                String cleanEmail = email != null ? email.trim().toLowerCase() : null;
+                if (cleanEmail != null && !cleanEmail.isBlank()) {
+                    java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(cleanEmail);
+                    if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(customer.getId())) {
+                        throw new IllegalArgumentException("Email address already exists");
+                    }
+                    customer.setEmail(cleanEmail);
+                } else {
+                    customer.setEmail(null);
+                }
+                customer.setName(com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(customerName.trim()));
+                customer.setPhone(cleanPhone);
+                customer.setAddress(address != null && !address.isBlank() ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(address.trim()) : null);
+                customer = customerRepository.save(customer);
+            } else {
+                customer = customerService.createOrUpdateForQuotation(
+                        customerName.trim(),
+                        email,
+                        phone.trim(),
+                        address,
+                        employee.getBranch().getId()
+                );
+            }
             quotation.setCustomer(customer);
         }
 
@@ -1176,7 +1344,14 @@ public class EmployeeQuotationController {
                     LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE)
             );
         }
-        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+        if (validUntil != null && !validUntil.isBlank()) {
+            LocalDate vu = LocalDate.parse(validUntil, DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalDate qd = quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now();
+            if (vu.isBefore(qd)) {
+                throw new IllegalArgumentException("Valid until date cannot be earlier than quotation date.");
+            }
+            quotation.setValidUntil(vu);
+        } else if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
             quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
         if (customerRequirements != null) {
@@ -3085,6 +3260,9 @@ public class EmployeeQuotationController {
             BigDecimal otherCharges,
 
             @RequestParam(required = false)
+            String otherChargesDescription,
+
+            @RequestParam(required = false)
             BigDecimal discountAmount,
 
             @RequestParam(required = false)
@@ -3124,6 +3302,7 @@ public class EmployeeQuotationController {
                             accessoriesAmount,
                             travelCharge,
                             otherCharges,
+                            otherChargesDescription,
                             discountAmount,
                             gstPercentage,
                             offerPercentage

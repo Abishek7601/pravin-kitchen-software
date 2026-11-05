@@ -611,6 +611,14 @@
                     <strong id="materialFormTitle" style="font-size: 14px; color: #0f172a; font-weight: 700;">Add Material</strong>
                     <button type="button" id="cancelMaterialFormXBtn" style="background: none; border: none; font-size: 18px; color: #64748b; cursor: pointer; line-height: 1;">&times;</button>
                 </div>
+                <div id="materialCategoryTypeBreadcrumb" style="margin-bottom: 14px; padding: 10px 14px; background: #e6f4f1; border: 1px solid #c2e2dc; border-radius: 8px; font-size: 13px; color: #024541; display: flex; align-items: center; gap: 8px;">
+                    <span style="font-size: 16px;">🏷️</span>
+                    <div>
+                        <strong>Category:</strong> <span id="matFormCategoryName">CATEGORY</span>
+                        <span style="margin: 0 8px; color: #94a3b8;">|</span>
+                        <strong>Work Type:</strong> <span id="matFormWorkTypeName">WORK TYPE</span>
+                    </div>
+                </div>
                 <div id="materialFormAlert" class="modal-alert" style="display: none; margin-bottom: 12px; padding: 8px 12px; border-radius: 6px; font-size: 13px;"></div>
                 <form id="materialForm" onsubmit="return false;">
                     <input type="hidden" id="materialIdInput" value="">
@@ -627,7 +635,7 @@
                         <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 6px;">
                             Material Type <span style="color: #dc2626;">*</span>
                         </label>
-                        <div class="mtype-radio-group" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+                        <div class="mtype-radio-group" style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
                             <!-- Option 1: Sq.ft -->
                             <label class="mtype-radio-card active" id="mTypeCardSqft" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 2px solid #024541; background: #f0fdf4; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
                                 <input type="radio" name="materialMeasurementType" id="mTypeRadioSqft" value="SQFT" checked style="accent-color: #024541; width: 16px; height: 16px; cursor: pointer;">
@@ -660,6 +668,34 @@
                                     <div style="font-size: 11px; color: #64748b; margin-top: 1px;">Image Upload</div>
                                 </div>
                             </label>
+
+                            <!-- Option 4: Roll -->
+                            <label class="mtype-radio-card" id="mTypeCardRoll" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #cbd5e1; background: #ffffff; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;">
+                                <input type="radio" name="materialMeasurementType" id="mTypeRadioRoll" value="ROLL" style="accent-color: #024541; width: 16px; height: 16px; cursor: pointer;">
+                                <div>
+                                    <div style="font-size: 13px; font-weight: 700; color: #334155; display: flex; align-items: center; gap: 5px;">
+                                        <span>🧻</span> Roll
+                                    </div>
+                                    <div style="font-size: 11px; color: #64748b; margin-top: 1px;">Area to Roll Calculation</div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- DYNAMIC CONTAINER D: ROLL COVERAGE CONFIGURATION (For Roll) -->
+                    <div id="rollSectionContainer" style="display: none; margin-bottom: 12px;">
+                        <label style="display: block; font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px;">
+                            Coverage Per Roll (Sq.ft) <span style="color: #dc2626;">*</span>
+                        </label>
+                        <input type="number" id="materialCoveragePerRollInput" min="0.01" step="any" placeholder="e.g. 40" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-weight: 600; color: #024541;">
+                        <div style="margin-top: 6px; padding: 10px 12px; background: #faf5ff; border: 1px solid #e9d5ff; border-radius: 6px; font-size: 12px; color: #6b21a8; display: flex; align-items: flex-start; gap: 8px;">
+                            <span style="font-size: 15px; line-height: 1;">🧻</span>
+                            <div style="flex: 1;">
+                                <div style="font-weight: 700;">Roll Formula &amp; Ceiling Calculation</div>
+                                <div style="color: #475569; font-size: 11px; margin-top: 2px;">
+                                    Quotation will calculate Sq.ft from dimensions using the selected formula. Required Rolls = <code>Ceiling(Total Sq.ft / Coverage Per Roll)</code> (always rounded up). Total Amount = <code>Required Rolls × Rate Per Roll</code>.
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -842,6 +878,24 @@
 
     // Client-side search, filtering, pagination and Configure Master Data Modal
     document.addEventListener('DOMContentLoaded', function() {
+        var urlParams = new URLSearchParams(window.location.search);
+        var deepWorkTypeId = urlParams.get('workTypeId') || urlParams.get('divisionId');
+        var deepCategoryId = urlParams.get('categoryId');
+        var deepWorkTypeName = urlParams.get('workTypeName') || urlParams.get('divisionName');
+        var deepCategoryName = urlParams.get('categoryName');
+        var deepAddMaterial = urlParams.get('addMaterial') === 'true' || urlParams.get('openAdd') === 'true';
+        var deepReturnUrl = urlParams.get('returnUrl');
+        var deepAddMaterialPending = deepAddMaterial;
+
+        if (deepWorkTypeId) {
+            var targetWtId = Number(deepWorkTypeId);
+            var wtName = deepWorkTypeName || 'Work Type';
+            var catName = deepCategoryName || 'Category';
+            setTimeout(function() {
+                openMaterialsModal(targetWtId, wtName, '🗄️', catName);
+            }, 100);
+        }
+
         var searchInput = document.getElementById('categorySearch');
         var statusSelect = document.getElementById('statusFilter');
         var categoryTable = document.getElementById('categoryTable');
@@ -1972,10 +2026,14 @@
         var mTypeRadioSqft = document.getElementById('mTypeRadioSqft');
         var mTypeRadioQuantity = document.getElementById('mTypeRadioQuantity');
         var mTypeRadioFiles = document.getElementById('mTypeRadioFiles');
+        var mTypeRadioRoll = document.getElementById('mTypeRadioRoll');
         var mTypeCardSqft = document.getElementById('mTypeCardSqft');
         var mTypeCardQuantity = document.getElementById('mTypeCardQuantity');
         var mTypeCardFiles = document.getElementById('mTypeCardFiles');
+        var mTypeCardRoll = document.getElementById('mTypeCardRoll');
         var formulaSectionContainer = document.getElementById('formulaSectionContainer');
+        var rollSectionContainer = document.getElementById('rollSectionContainer');
+        var materialCoveragePerRollInput = document.getElementById('materialCoveragePerRollInput');
         var quantitySectionContainer = document.getElementById('quantitySectionContainer');
         var filesSectionContainer = document.getElementById('filesSectionContainer');
         var fileUploadDropzone = document.getElementById('fileUploadDropzone');
@@ -1990,13 +2048,14 @@
 
         function setMeasurementType(type) {
             var t = (type || 'SQFT').toUpperCase();
-            if (t !== 'SQFT' && t !== 'QUANTITY' && t !== 'FILES') {
+            if (t !== 'SQFT' && t !== 'QUANTITY' && t !== 'FILES' && t !== 'ROLL') {
                 t = 'SQFT';
             }
 
             if (mTypeRadioSqft) mTypeRadioSqft.checked = (t === 'SQFT');
             if (mTypeRadioQuantity) mTypeRadioQuantity.checked = (t === 'QUANTITY');
             if (mTypeRadioFiles) mTypeRadioFiles.checked = (t === 'FILES');
+            if (mTypeRadioRoll) mTypeRadioRoll.checked = (t === 'ROLL');
 
             function styleCard(card, isSelected) {
                 if (!card) return;
@@ -2015,13 +2074,16 @@
             styleCard(mTypeCardSqft, t === 'SQFT');
             styleCard(mTypeCardQuantity, t === 'QUANTITY');
             styleCard(mTypeCardFiles, t === 'FILES');
+            styleCard(mTypeCardRoll, t === 'ROLL');
 
-            if (formulaSectionContainer) formulaSectionContainer.style.display = (t === 'SQFT') ? 'block' : 'none';
+            if (formulaSectionContainer) formulaSectionContainer.style.display = (t === 'SQFT' || t === 'ROLL') ? 'block' : 'none';
+            if (rollSectionContainer) rollSectionContainer.style.display = (t === 'ROLL') ? 'block' : 'none';
             if (quantitySectionContainer) quantitySectionContainer.style.display = (t === 'QUANTITY') ? 'block' : 'none';
             if (filesSectionContainer) filesSectionContainer.style.display = (t === 'FILES') ? 'block' : 'none';
         }
 
         function getSelectedMeasurementType() {
+            if (mTypeRadioRoll && mTypeRadioRoll.checked) return 'ROLL';
             if (mTypeRadioQuantity && mTypeRadioQuantity.checked) return 'QUANTITY';
             if (mTypeRadioFiles && mTypeRadioFiles.checked) return 'FILES';
             return 'SQFT';
@@ -2345,6 +2407,21 @@
             var targetGrade = isEdit ? (mat.pricingGrade || activeMaterialsGrade) : activeMaterialsGrade;
             activeMaterialsGrade = targetGrade;
 
+            var matCatEl = document.getElementById('matFormCategoryName');
+            var matWtEl = document.getElementById('matFormWorkTypeName');
+            if (matCatEl) {
+                var catText = (currentMaterialsWorkType && currentMaterialsWorkType.categoryName)
+                    ? currentMaterialsWorkType.categoryName
+                    : (typeof deepCategoryName !== 'undefined' && deepCategoryName ? deepCategoryName : 'CATEGORY');
+                matCatEl.textContent = catText.toUpperCase();
+            }
+            if (matWtEl) {
+                var wtText = (currentMaterialsWorkType && currentMaterialsWorkType.name)
+                    ? currentMaterialsWorkType.name
+                    : (typeof deepWorkTypeName !== 'undefined' && deepWorkTypeName ? deepWorkTypeName : 'WORK TYPE');
+                matWtEl.textContent = wtText.toUpperCase();
+            }
+
             if (materialFormTitle) {
                 var gradeLabel = targetGrade === 'PREMIUM' ? 'Premium' : (targetGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
                 materialFormTitle.textContent = isEdit ? 'Edit Material' : ('Add Material to ' + gradeLabel);
@@ -2369,9 +2446,14 @@
                     mType = 'QUANTITY';
                 } else if (mat.unit && (mat.unit === 'Files' || mat.unit === 'files')) {
                     mType = 'FILES';
+                } else if (mat.unit && (mat.unit === 'Roll' || mat.unit === 'roll')) {
+                    mType = 'ROLL';
                 }
             }
             setMeasurementType(mType);
+            if (materialCoveragePerRollInput) {
+                materialCoveragePerRollInput.value = (mat && mat.coveragePerRoll) ? mat.coveragePerRoll : '';
+            }
 
             // Handle image preview for Files / existing image
             if (materialImageFileInput) materialImageFileInput.value = '';
@@ -2512,6 +2594,10 @@
                         if (mat.imageUrl) {
                             imgThumbnail = '<a href="' + escapeHtml(mat.imageUrl) + '" target="_blank" title="View image" style="margin-right: 4px; display: inline-flex;"><img src="' + escapeHtml(mat.imageUrl) + '" alt="' + escapeHtml(name) + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; vertical-align: middle;"></a>';
                         }
+                    } else if (mType === 'ROLL' || unit === 'Roll') {
+                        var cov = mat.coveragePerRoll ? mat.coveragePerRoll : 40;
+                        typeBadge = '<span style="font-size: 11px; background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; padding: 2px 8px; border-radius: 6px; font-weight: 600;">🧻 Roll (' + cov + ' Sq.ft) — ' + escapeHtml(formula) + '</span>';
+                        unitLabel = 'per Roll';
                     } else {
                         typeBadge = '<span style="font-size: 11px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 8px; border-radius: 6px; font-weight: 600;">📐 Formula: ' + escapeHtml(formula) + '</span>';
                         unitLabel = 'per Sq.ft';
@@ -2550,7 +2636,7 @@
                                 '<div style="font-size: 11px; color: #64748b; font-weight: 500;">' + unitLabel + '</div>' +
                             '</div>' +
                             '<div class="material-actions" style="display: flex; gap: 6px;">' +
-                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-type="' + mType + '" data-image="' + (mat.imageUrl ? escapeHtml(mat.imageUrl) : '') + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-type="' + mType + '" data-image="' + (mat.imageUrl ? escapeHtml(mat.imageUrl) : '') + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" data-coverage="' + (mat.coveragePerRoll || '') + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
                                 '<button type="button" class="js-delete-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" title="Delete Material" style="padding: 5px 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
                             '</div>' +
                         '</div>' +
@@ -2581,8 +2667,29 @@
                     return;
                 }
                 currentMaterialsData = res.data;
+                if (res.data.workTypeName && materialsModalTitle) {
+                    materialsModalTitle.textContent = res.data.workTypeName.toUpperCase();
+                }
+                if (res.data.categoryName && materialsModalCategoryBadge) {
+                    materialsModalCategoryBadge.textContent = res.data.categoryName.toUpperCase();
+                }
+                if (currentMaterialsWorkType) {
+                    if (res.data.workTypeName) currentMaterialsWorkType.name = res.data.workTypeName;
+                    if (res.data.categoryName) currentMaterialsWorkType.categoryName = res.data.categoryName;
+                    if (res.data.categoryId) currentMaterialsWorkType.categoryId = res.data.categoryId;
+                }
                 updateGradeTabBadges(res.data);
                 renderMaterialsForGrade(activeMaterialsGrade);
+
+                // Auto-open Add Material form if requested via deep link
+                if (typeof deepAddMaterialPending !== 'undefined' && deepAddMaterialPending) {
+                    deepAddMaterialPending = false;
+                    openMaterialForm(null);
+                    setTimeout(function() {
+                        var nameInp = document.getElementById('materialNameInput');
+                        if (nameInp) nameInp.focus();
+                    }, 120);
+                }
             })
             .catch(function(err) {
                 if (materialsLoading) materialsLoading.style.display = 'none';
@@ -2619,6 +2726,10 @@
         }
 
         function closeMaterialsModal() {
+            if (typeof deepReturnUrl !== 'undefined' && deepReturnUrl) {
+                window.location.href = deepReturnUrl;
+                return;
+            }
             if (!materialsModalOverlay) return;
             hideMaterialForm();
             currentMaterialsWorkType = null;
@@ -2674,11 +2785,19 @@
         }
 
         // Cancel Material Form
+        function handleMaterialFormCancel() {
+            if (typeof deepReturnUrl !== 'undefined' && deepReturnUrl) {
+                window.location.href = deepReturnUrl;
+                return;
+            }
+            hideMaterialForm();
+        }
+
         if (cancelMaterialFormXBtn) {
-            cancelMaterialFormXBtn.addEventListener('click', hideMaterialForm);
+            cancelMaterialFormXBtn.addEventListener('click', handleMaterialFormCancel);
         }
         if (cancelMaterialBtn) {
-            cancelMaterialBtn.addEventListener('click', hideMaterialForm);
+            cancelMaterialBtn.addEventListener('click', handleMaterialFormCancel);
         }
 
         // Save Material Handler
@@ -2695,7 +2814,7 @@
                 var formulaVal = (materialFormulaSelect ? materialFormulaSelect.value : 'L × W').trim();
                 var specVal = (materialSpecInput ? (typeof toTitleCase === 'function' ? toTitleCase(materialSpecInput.value) : materialSpecInput.value) : '').trim();
                 var selectedType = getSelectedMeasurementType();
-                var unitVal = (selectedType === 'QUANTITY') ? 'Quantity' : ((selectedType === 'FILES') ? 'Files' : 'Sq.ft');
+                var unitVal = (selectedType === 'QUANTITY') ? 'Quantity' : ((selectedType === 'FILES') ? 'Files' : ((selectedType === 'ROLL') ? 'Roll' : 'Sq.ft'));
 
                 var isEdit = (idVal && idVal.length > 0 && idVal !== '0');
 
@@ -2749,9 +2868,20 @@
                 formData.append('grade', gradeVal);
                 formData.append('measurementType', selectedType);
                 formData.append('unit', unitVal);
-                if (selectedType === 'SQFT') {
+                if (selectedType === 'SQFT' || selectedType === 'ROLL') {
                     formData.append('formula', formulaVal);
                     formData.append('measurementFormula', formulaVal);
+                }
+                if (selectedType === 'ROLL') {
+                    var covVal = materialCoveragePerRollInput ? materialCoveragePerRollInput.value.trim() : '';
+                    if (!covVal || Number(covVal) <= 0) {
+                        showMaterialFormAlert('Coverage Per Roll (Sq.ft) is required and must be greater than 0.', true);
+                        if (materialCoveragePerRollInput) materialCoveragePerRollInput.focus();
+                        saveMaterialBtn.disabled = false;
+                        saveMaterialBtn.textContent = isEdit ? 'Update Material' : 'Save Material';
+                        return;
+                    }
+                    formData.append('coveragePerRoll', covVal);
                 }
                 formData.append('specification', specVal);
                 formData.append('branchRatesJson', JSON.stringify(branchRatesObj));
@@ -2797,6 +2927,15 @@
                     if (!res.ok || !res.data.success) {
                         var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to save material.';
                         showMaterialFormAlert(errMsg, true);
+                        return;
+                    }
+
+                    if (typeof deepReturnUrl !== 'undefined' && deepReturnUrl) {
+                        var sep = deepReturnUrl.indexOf('?') !== -1 ? '&' : '?';
+                        var redirectTarget = deepReturnUrl + sep +
+                            'savedMaterialId=' + encodeURIComponent(res.data.materialId || '') +
+                            '&savedWorkTypeId=' + encodeURIComponent(currentMaterialsWorkType ? (currentMaterialsWorkType.id || '') : '');
+                        window.location.href = redirectTarget;
                         return;
                     }
 

@@ -59,7 +59,7 @@
                 <div class="customer-count">
 
                     <strong
-                            th:text="${customers.size()}">
+                            th:text="${totalRecords != null ? totalRecords : (customers != null ? customers.size() : 0)}">
                         0
                     </strong>
 
@@ -71,6 +71,26 @@
 
             </div>
 
+            <!-- SEARCH FORM -->
+            <form th:action="@{/employee/customers}" method="get" class="search-form" style="display: flex; gap: 8px; margin-bottom: 16px; align-items: center; flex-wrap: wrap;">
+                <div style="position: relative; flex: 1; min-width: 240px; max-width: 400px;">
+                    <input type="text"
+                           name="search"
+                           th:value="${search}"
+                           placeholder="Search customer by name, phone, or email..."
+                           style="width: 100%; padding: 8px 12px 8px 34px; border: 1.5px solid #D6E4E1; border-radius: 8px; font-size: 13.5px; box-sizing: border-box; outline: none;">
+                    <span style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #64748b; font-size: 14px;">🔍</span>
+                </div>
+                <button type="submit"
+                        style="background: #024541; color: #ffffff; border: none; padding: 8px 16px; border-radius: 8px; font-size: 13.5px; font-weight: 600; cursor: pointer;">
+                    Search
+                </button>
+                <a th:if="${search != null and !search.isEmpty()}"
+                   th:href="@{/employee/customers}"
+                   style="background: #e2e8f0; color: #334155; padding: 8px 14px; border-radius: 8px; font-size: 13.5px; text-decoration: none; font-weight: 600;">
+                    Clear
+                </a>
+            </form>
 
             <!-- TABLE -->
 
@@ -188,6 +208,59 @@
 
                 </table>
 
+                <!-- PAGINATION FOOTER -->
+                <div class="pagination-footer" th:if="${totalElements != null and totalElements > 0}">
+                    <div class="pagination-info">
+                        Showing <strong><span th:text="${pageStart}">1</span>–<span th:text="${pageEnd}">10</span></strong> of <strong><span th:text="${totalElements}">45</span></strong> records
+                    </div>
+
+                    <nav class="pagination-nav" aria-label="Customers pagination" th:if="${totalPages > 1}">
+                        <!-- Previous Button -->
+                        <a th:if="${hasPrevious}"
+                           th:href="@{/employee/customers(page=${currentPage - 1}, search=${search})}"
+                           class="pagination-btn"
+                           aria-label="Previous page">
+                            Previous
+                        </a>
+                        <button th:unless="${hasPrevious}"
+                                class="pagination-btn disabled"
+                                disabled
+                                aria-label="Previous page">
+                            Previous
+                        </button>
+
+                        <!-- Page Numbers -->
+                        <th:block th:each="pageNum : ${pageNumbers}">
+                            <span th:if="${pageNum == -1}" class="pagination-ellipsis">…</span>
+                            <a th:if="${pageNum != -1 and pageNum != currentPage}"
+                               th:href="@{/employee/customers(page=${pageNum}, search=${search})}"
+                               class="pagination-page-btn"
+                               th:text="${pageNum}">
+                                1
+                            </a>
+                            <span th:if="${pageNum != -1 and pageNum == currentPage}"
+                                  class="pagination-page-btn active"
+                                  th:text="${pageNum}">
+                                1
+                            </span>
+                        </th:block>
+
+                        <!-- Next Button -->
+                        <a th:if="${hasNext}"
+                           th:href="@{/employee/customers(page=${currentPage + 1}, search=${search})}"
+                           class="pagination-btn"
+                           aria-label="Next page">
+                            Next
+                        </a>
+                        <button th:unless="${hasNext}"
+                                class="pagination-btn disabled"
+                                disabled
+                                aria-label="Next page">
+                            Next
+                        </button>
+                    </nav>
+                </div>
+
             </div>
 
 
@@ -232,19 +305,6 @@
 </div>
 
 <script th:src="@{/js/employee-session.js}"></script>
-<script th:src="@{/js/pagination.js}"></script>
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var table = document.getElementById('employeeCustomerTable');
-        if (table) {
-            initTablePagination({
-                table: table,
-                pageSize: 10,
-                recordLabel: 'customers'
-            });
-        }
-    });
-</script>
 </body>
 
 </html>
