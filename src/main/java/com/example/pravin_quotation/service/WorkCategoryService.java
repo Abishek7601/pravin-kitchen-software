@@ -830,7 +830,7 @@ public class WorkCategoryService {
             MeasurementType measurementType,
             String imageUrl,
             Boolean removeImage) {
-        return saveWorkTypeMaterialWithBranchRates(materialId, workTypeId, name, specification, unit, formula, branchRates, fallbackGrade, fallbackRate, measurementType, imageUrl, removeImage, null);
+        return saveWorkTypeMaterialWithBranchRates(materialId, workTypeId, name, specification, unit, formula, branchRates, fallbackGrade, fallbackRate, measurementType, imageUrl, removeImage, null, null);
     }
 
     @Transactional
@@ -848,6 +848,25 @@ public class WorkCategoryService {
             String imageUrl,
             Boolean removeImage,
             BigDecimal coveragePerRoll) {
+        return saveWorkTypeMaterialWithBranchRates(materialId, workTypeId, name, specification, unit, formula, branchRates, fallbackGrade, fallbackRate, measurementType, imageUrl, removeImage, coveragePerRoll, null);
+    }
+
+    @Transactional
+    public Material saveWorkTypeMaterialWithBranchRates(
+            Long materialId,
+            Long workTypeId,
+            String name,
+            String specification,
+            String unit,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            PricingMode fallbackGrade,
+            BigDecimal fallbackRate,
+            MeasurementType measurementType,
+            String imageUrl,
+            Boolean removeImage,
+            BigDecimal coveragePerRoll,
+            Boolean active) {
 
         if (name == null || name.trim().isEmpty()) {
             throw new IllegalArgumentException("Material name is required.");
@@ -963,7 +982,15 @@ public class WorkCategoryService {
         material.setCoveragePerRoll(effectiveType == MeasurementType.ROLL ? coveragePerRoll : null);
         material.setSpecification(cleanSpec);
         material.setDescription(cleanSpec);
-        material.setActive(true);
+        boolean effectiveActive;
+        if (active != null) {
+            effectiveActive = active;
+        } else if (materialId != null && material.getActive() != null) {
+            effectiveActive = material.getActive();
+        } else {
+            effectiveActive = true;
+        }
+        material.setActive(effectiveActive);
 
         if (Boolean.TRUE.equals(removeImage)) {
             material.setImageUrl(null);
@@ -985,7 +1012,7 @@ public class WorkCategoryService {
         option.setName(cleanName);
         option.setDescription(cleanSpec);
         option.setFormula(cleanFormula);
-        option.setActive(true);
+        option.setActive(effectiveActive);
         MaterialOption savedOption = materialOptionRepository.saveAndFlush(option);
 
         // Save Pricing and DistrictPricing across branches
@@ -1096,7 +1123,24 @@ public class WorkCategoryService {
             MeasurementType measurementType,
             String imageUrl,
             BigDecimal coveragePerRoll) {
-        return saveWorkTypeMaterialWithBranchRates(null, workTypeId, name, specification, unit, formula, branchRates, grade, rate, measurementType, imageUrl, false, coveragePerRoll);
+        return createWorkTypeMaterial(workTypeId, grade, name, specification, unit, rate, formula, branchRates, measurementType, imageUrl, coveragePerRoll, null);
+    }
+
+    @Transactional
+    public Material createWorkTypeMaterial(
+            Long workTypeId,
+            PricingMode grade,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            MeasurementType measurementType,
+            String imageUrl,
+            BigDecimal coveragePerRoll,
+            Boolean active) {
+        return saveWorkTypeMaterialWithBranchRates(null, workTypeId, name, specification, unit, formula, branchRates, grade, rate, measurementType, imageUrl, false, coveragePerRoll, active);
     }
 
     @Transactional
@@ -1140,7 +1184,24 @@ public class WorkCategoryService {
             String imageUrl,
             Boolean removeImage,
             BigDecimal coveragePerRoll) {
-        return saveWorkTypeMaterialWithBranchRates(materialId, null, name, specification, unit, formula, branchRates, null, rate, measurementType, imageUrl, removeImage, coveragePerRoll);
+        return updateWorkTypeMaterial(materialId, name, specification, unit, rate, formula, branchRates, measurementType, imageUrl, removeImage, coveragePerRoll, null);
+    }
+
+    @Transactional
+    public Material updateWorkTypeMaterial(
+            Long materialId,
+            String name,
+            String specification,
+            String unit,
+            BigDecimal rate,
+            String formula,
+            Map<Long, Map<PricingMode, BigDecimal>> branchRates,
+            MeasurementType measurementType,
+            String imageUrl,
+            Boolean removeImage,
+            BigDecimal coveragePerRoll,
+            Boolean active) {
+        return saveWorkTypeMaterialWithBranchRates(materialId, null, name, specification, unit, formula, branchRates, null, rate, measurementType, imageUrl, removeImage, coveragePerRoll, active);
     }
 
     @Transactional
@@ -1216,6 +1277,27 @@ public class WorkCategoryService {
             materialRepository.saveAndFlush(material);
             return "Material '" + materialName + "' has existing references and has been safely deactivated.";
         }
+    }
+
+    @Transactional
+    public boolean toggleWorkTypeMaterial(Long materialId) {
+        if (materialId == null) {
+            throw new IllegalArgumentException("Material ID is required.");
+        }
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new IllegalArgumentException("Material not found with ID: " + materialId));
+        boolean nextState = !Boolean.TRUE.equals(material.getActive());
+        material.setActive(nextState);
+        materialRepository.saveAndFlush(material);
+
+        List<MaterialOption> options = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(materialId);
+        for (MaterialOption opt : options) {
+            opt.setActive(nextState);
+        }
+        if (!options.isEmpty()) {
+            materialOptionRepository.saveAllAndFlush(options);
+        }
+        return nextState;
     }
 
     private void validateName(String name) {

@@ -14,6 +14,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -152,17 +153,69 @@ public class AdminQuotationBuilderController {
         }
 
         List<Material> list = null;
-        if (divisionId != null && grade != null && !Boolean.TRUE.equals(onlyAvailable)) {
-            list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
-        }
-        if (list == null || list.isEmpty() || Boolean.TRUE.equals(onlyAvailable)) {
-            if (divisionId != null) {
-                list = materialRepository.findActiveByDivisionId(divisionId);
-            } else if (itemId != null) {
-                list = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId);
+        if (divisionId != null) {
+            if (grade != null) {
+                List<Material> allInDiv = materialRepository.findActiveByDivisionId(divisionId);
+                final PricingMode filterGrade = grade;
+                final boolean requireAvailable = Boolean.TRUE.equals(onlyAvailable);
+
+                list = allInDiv.stream()
+                        .filter(m -> {
+                            if (m.getPricingGrade() == filterGrade) {
+                                return true;
+                            }
+                            if (m.getPricingGrade() == null) {
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                            }
+                            return false;
+                        })
+                        .toList();
             } else {
-                list = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
+                list = materialRepository.findActiveByDivisionId(divisionId);
             }
+        } else if (itemId != null) {
+            List<Material> itemMats = materialRepository.findByItemIdAndActiveTrueOrderByDisplayOrderAsc(itemId);
+            if (grade != null) {
+                final PricingMode filterGrade = grade;
+                final boolean requireAvailable = Boolean.TRUE.equals(onlyAvailable);
+                list = itemMats.stream()
+                        .filter(m -> {
+                            if (m.getPricingGrade() == filterGrade) {
+                                return true;
+                            }
+                            if (m.getPricingGrade() == null) {
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                            }
+                            return false;
+                        })
+                        .toList();
+            } else {
+                list = itemMats;
+            }
+        } else {
+            List<Material> allMats = materialRepository.findByActiveTrueOrderByDisplayOrderAsc();
+            if (grade != null) {
+                final PricingMode filterGrade = grade;
+                final boolean requireAvailable = Boolean.TRUE.equals(onlyAvailable);
+                list = allMats.stream()
+                        .filter(m -> {
+                            if (m.getPricingGrade() == filterGrade) {
+                                return true;
+                            }
+                            if (m.getPricingGrade() == null) {
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                            }
+                            return false;
+                        })
+                        .toList();
+            } else {
+                list = allMats;
+            }
+        }
+        if (list != null) {
+            list = list.stream().filter(m -> Boolean.TRUE.equals(m.getActive())).toList();
+        } else {
+            list = Collections.emptyList();
         }
         final PricingMode targetGrade = grade;
         List<Map<String, Object>> result = list.stream().map(m -> {
@@ -172,24 +225,28 @@ public class AdminQuotationBuilderController {
             map.put("description", m.getDescription());
             map.put("specification", m.getSpecification() != null ? m.getSpecification().trim() : "");
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
+            boolean isMaterialActive = Boolean.TRUE.equals(m.getActive());
+            map.put("active", isMaterialActive);
 
             AdminQuotationBuilderService.ResolvedMaterialRate res = null;
-            if (targetGrade != null) {
+            if (targetGrade != null && isMaterialActive) {
                 try {
                     Long effectiveDivId = divisionId != null ? divisionId : (m.getDivision() != null ? m.getDivision().getId() : null);
                     res = builderService.resolveMaterialAndRate(branchId, effectiveDivId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
 
-            boolean isAvailable = (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
+            boolean isAvailable = isMaterialActive && (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
             BigDecimal resolvedRate = isAvailable ? res.rate() : null;
-            if (targetGrade == null && resolvedRate == null) {
+            if (isMaterialActive && targetGrade == null && resolvedRate == null) {
                 resolvedRate = m.getRate();
                 isAvailable = (resolvedRate != null && resolvedRate.compareTo(BigDecimal.ZERO) > 0);
             }
 
             String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
-            String unavailableMsg = (res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade");
+            String unavailableMsg = !isMaterialActive
+                    ? "Material is inactive"
+                    : ((res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade"));
 
             map.put("available", isAvailable);
             map.put("rate", resolvedRate);
@@ -205,7 +262,7 @@ public class AdminQuotationBuilderController {
 
         if (Boolean.TRUE.equals(onlyAvailable)) {
             result = result.stream()
-                    .filter(m -> Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
+                    .filter(m -> Boolean.TRUE.equals(m.get("active")) && Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
                     .toList();
         }
         return result;

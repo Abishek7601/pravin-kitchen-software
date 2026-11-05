@@ -150,6 +150,10 @@ public class AdminQuotationBuilderService {
             return ResolvedMaterialRate.unavailable("Selected material not found.");
         }
 
+        if (!Boolean.TRUE.equals(mat.getActive())) {
+            return ResolvedMaterialRate.unavailable(mat.getId(), mat.getName(), "Material '" + mat.getName() + "' is inactive.");
+        }
+
         if (divisionId == null && mat != null) {
             if (mat.getDivision() != null) {
                 divisionId = mat.getDivision().getId();
@@ -201,6 +205,7 @@ public class AdminQuotationBuilderService {
             matchedRate = money(mat.getRate());
         }
 
+        Material counterpart = null;
         // 4. Exact counterpart match in the same division (Work Type) for targetGrade
         if (matchedRate == null && divisionId != null && mat != null) {
             List<Material> candidates = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
@@ -213,8 +218,9 @@ public class AdminQuotationBuilderService {
                         .filter(m -> m.getPricingGrade() == targetGrade || (m.getPricingGrade() == null && hasPositiveRateForGrade(m, targetGrade)))
                         .toList();
             }
+            candidates = candidates.stream().filter(m -> Boolean.TRUE.equals(m.getActive())).toList();
 
-            Material counterpart = findExactCounterpart(mat, candidates);
+            counterpart = findExactCounterpart(mat, candidates);
             if (counterpart != null) {
                 List<MaterialOption> cpOpts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(counterpart.getId());
                 if (cpOpts.isEmpty()) {
@@ -283,13 +289,14 @@ public class AdminQuotationBuilderService {
                         ? effectiveOpt.getFormula()
                         : "(L + W) × H");
 
+        MeasurementType measurementType = resolveEffectiveMeasurementType(effectiveMat);
         String unit = (effectiveMat != null && effectiveMat.getUnit() != null && !effectiveMat.getUnit().isBlank())
                 ? effectiveMat.getUnit()
-                : "Sq.ft";
+                : (measurementType == MeasurementType.ROLL ? "Roll" : (measurementType == MeasurementType.QUANTITY ? "Quantity" : (measurementType == MeasurementType.FILES ? "Files" : "Sq.ft")));
 
-        MeasurementType measurementType = (effectiveMat != null && effectiveMat.getMeasurementType() != null)
-                ? effectiveMat.getMeasurementType()
-                : MeasurementType.SQFT;
+        BigDecimal coverage = (effectiveMat != null && effectiveMat.getCoveragePerRoll() != null)
+                ? effectiveMat.getCoveragePerRoll()
+                : (counterpart != null ? counterpart.getCoveragePerRoll() : null);
 
         String imageUrl = effectiveMat != null ? effectiveMat.getImageUrl() : null;
 
@@ -302,13 +309,22 @@ public class AdminQuotationBuilderService {
                 unit,
                 measurementType,
                 imageUrl,
-                effectiveMat != null ? effectiveMat.getCoveragePerRoll() : null,
+                coverage,
                 true,
                 null
         );
     }
 
-    private boolean hasPositiveRateForGrade(Material m, PricingMode grade) {
+    public MeasurementType resolveEffectiveMeasurementType(Material m) {
+        if (m == null) return MeasurementType.SQFT;
+        if (m.getMeasurementType() != null) return m.getMeasurementType();
+        if ("Quantity".equalsIgnoreCase(m.getUnit())) return MeasurementType.QUANTITY;
+        if ("Files".equalsIgnoreCase(m.getUnit())) return MeasurementType.FILES;
+        if ("Roll".equalsIgnoreCase(m.getUnit())) return MeasurementType.ROLL;
+        return MeasurementType.SQFT;
+    }
+
+    public boolean hasPositiveRateForGrade(Material m, PricingMode grade) {
         if (m == null) return false;
         if (m.getPricingGrade() == grade && m.getRate() != null && m.getRate().compareTo(BigDecimal.ZERO) > 0) {
             return true;
@@ -351,18 +367,22 @@ public class AdminQuotationBuilderService {
             return null;
         }
 
-        // 1. Exact name match (case-insensitive)
+        MeasurementType sourceType = resolveEffectiveMeasurementType(source);
+
+        // 1. Exact name match (case-insensitive) AND matching measurement type
         for (Material c : candidates) {
-            if (c.getName() != null && c.getName().trim().equalsIgnoreCase(sourceName)) {
+            if (resolveEffectiveMeasurementType(c) == sourceType
+                    && c.getName() != null && c.getName().trim().equalsIgnoreCase(sourceName)) {
                 return c;
             }
         }
 
-        // 2. Normalized name match (removes redundant grade tokens if present, and common spelling typos)
+        // 2. Normalized name match (removes redundant grade tokens if present, and common spelling typos) AND matching measurement type
         String normSource = normalizeMaterialName(sourceName);
         if (!normSource.isEmpty()) {
             for (Material c : candidates) {
-                if (c.getName() != null && normalizeMaterialName(c.getName()).equalsIgnoreCase(normSource)) {
+                if (resolveEffectiveMeasurementType(c) == sourceType
+                        && c.getName() != null && normalizeMaterialName(c.getName()).equalsIgnoreCase(normSource)) {
                     return c;
                 }
             }
@@ -491,6 +511,7 @@ public class AdminQuotationBuilderService {
 
         Quotation quotation;
         boolean isEdit = false;
+        java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
         if (request.quotationId() != null) {
             quotation = quotationRepository.findById(request.quotationId())
                     .orElseGet(Quotation::new);
@@ -499,6 +520,14 @@ public class AdminQuotationBuilderService {
                 List<QuotationRoom> oldRooms =
                         quotationRoomService.getActiveByQuotationId(quotation.getId());
                 for (QuotationRoom oldRoom : oldRooms) {
+                    List<QuotationItem> oldItems = quotationItemService.getActiveByQuotationRoomId(oldRoom.getId());
+                    if (oldItems != null) {
+                        for (QuotationItem oi : oldItems) {
+                            if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
+                                existingMaterialIds.add(oi.getMaterial().getId());
+                            }
+                        }
+                    }
                     quotationRoomService.deactivate(oldRoom.getId());
                 }
             } else {
@@ -682,6 +711,14 @@ public class AdminQuotationBuilderService {
                                         )
                                 );
 
+                if (!Boolean.TRUE.equals(material.getActive())) {
+                    boolean isExistingItemInQuotation = quotation.getId() != null
+                            && existingMaterialIds.contains(material.getId());
+                    if (!isExistingItemInQuotation) {
+                        throw new IllegalArgumentException("Material '" + material.getName() + "' is inactive and cannot be added to quotations.");
+                    }
+                }
+
                 Item item = null;
                 if (itemRequest.itemId() != null) {
                     item = itemRepository
@@ -790,9 +827,31 @@ public class AdminQuotationBuilderService {
                         option != null ? option.getId() : null,
                         request.pricingMode()
                 );
+                boolean isExistingItemInQuotation = quotation.getId() != null
+                        && existingMaterialIds.contains(material.getId());
+
                 if (!resolved.available() || resolved.rate() == null || resolved.rate().compareTo(BigDecimal.ZERO) <= 0) {
-                    String gradeLabel = request.pricingMode() == PricingMode.PREMIUM ? "Premium" : (request.pricingMode() == PricingMode.ECONOMY ? "Economy" : "Middle");
-                    throw new IllegalArgumentException(resolved.message() != null ? resolved.message() : ("No material available in " + gradeLabel + " Grade"));
+                    if (isExistingItemInQuotation) {
+                        BigDecimal fallbackRate = (itemRequest.rate() != null && itemRequest.rate().compareTo(BigDecimal.ZERO) > 0)
+                                ? money(itemRequest.rate())
+                                : (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) > 0 ? money(material.getRate()) : BigDecimal.ONE);
+                        resolved = new ResolvedMaterialRate(
+                                material.getId(),
+                                option != null ? option.getId() : null,
+                                material.getName(),
+                                fallbackRate,
+                                material.getFormula(),
+                                material.getUnit(),
+                                effectiveType,
+                                material.getImageUrl(),
+                                material.getCoveragePerRoll(),
+                                true,
+                                null
+                        );
+                    } else {
+                        String gradeLabel = request.pricingMode() == PricingMode.PREMIUM ? "Premium" : (request.pricingMode() == PricingMode.ECONOMY ? "Economy" : "Middle");
+                        throw new IllegalArgumentException(resolved.message() != null ? resolved.message() : ("No material available in " + gradeLabel + " Grade"));
+                    }
                 }
 
                 BigDecimal rate;
