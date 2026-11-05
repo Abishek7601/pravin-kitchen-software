@@ -384,8 +384,6 @@
                                         th:text="${'₹ ' + #numbers.formatDecimal(item.rate != null ? item.rate : 0, 1, 2) + (item.measurementType != null and item.measurementType.name().equals('ROLL') ? ' / roll' : '')}">
                                         ₹ 0.00
                                     </td>
-                                        ₹ 0.00
-                                    </td>
                                     <!-- Amount -->
                                     <td class="text-right cell-amount">
                                         <div th:if="${item.offerPrice != null && item.offerPrice > 0 && item.offerPrice < item.amount}">
