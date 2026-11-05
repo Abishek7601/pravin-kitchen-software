@@ -85,6 +85,9 @@ public class QuotationItem {
     @Column(name = "measurement_type", length = 30)
     private MeasurementType measurementType = MeasurementType.SQFT;
 
+    @Column(name = "coverage_per_roll", precision = 10, scale = 2)
+    private BigDecimal coveragePerRoll;
+
     @Column(name = "quantity", precision = 10, scale = 2)
     private BigDecimal quantity = BigDecimal.ONE;
 
@@ -377,6 +380,30 @@ public class QuotationItem {
 
     public String getImageUrl() {
         return imageUrl;
+    }
+
+    public BigDecimal getCoveragePerRoll() {
+        return coveragePerRoll;
+    }
+
+    public void setCoveragePerRoll(BigDecimal coveragePerRoll) {
+        this.coveragePerRoll = coveragePerRoll;
+    }
+
+    public boolean isRoll() {
+        return getMeasurementType() == MeasurementType.ROLL;
+    }
+
+    public boolean isSqft() {
+        return getMeasurementType().isSqft();
+    }
+
+    public boolean isQuantity() {
+        return getMeasurementType().isQuantity();
+    }
+
+    public boolean isFiles() {
+        return getMeasurementType().isFiles();
     }
 
     public void setImageUrl(String imageUrl) {

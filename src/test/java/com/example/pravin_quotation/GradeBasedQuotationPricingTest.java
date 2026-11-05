@@ -306,6 +306,14 @@ public class GradeBasedQuotationPricingTest {
         pFiles.setActive(true);
         pricingRepository.save(pFiles);
 
+        Pricing pFilesMiddle = new Pricing();
+        pFilesMiddle.setMaterialOption(filesOption);
+        pFilesMiddle.setPricingMode(PricingMode.MIDDLE);
+        pFilesMiddle.setRate(BigDecimal.valueOf(1000.00));
+        pFilesMiddle.setUnit("Files");
+        pFilesMiddle.setActive(true);
+        pricingRepository.save(pFilesMiddle);
+
         // --- Exclusive Premium Material (no middle or economy available) ---
         exclusivePremiumMaterial = new Material();
         exclusivePremiumMaterial.setName("Italian Exotic Veneer");

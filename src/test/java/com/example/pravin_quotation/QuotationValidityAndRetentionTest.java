@@ -246,6 +246,27 @@ public class QuotationValidityAndRetentionTest {
         assertEquals(expectedValidUntil, updated.getValidUntil(), "Editing must not extend valid until date!");
 
         // 2. Edit via AdminQuotationBuilderService with a different date
+        WorkCategory cat = division.getWorkCategory();
+        Material mat = new Material();
+        mat.setName("Mat " + System.nanoTime());
+        mat.setUnit("Sq.ft");
+        mat.setMeasurementType(MeasurementType.SQFT);
+        mat.setRate(new BigDecimal("500.00"));
+        mat.setPricingGrade(PricingMode.ECONOMY);
+        mat.setDivision(division);
+        mat.setActive(true);
+        mat = materialRepository.save(mat);
+
+        AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
+                new BigDecimal("10"), new BigDecimal("10"), new BigDecimal("10"), null
+        );
+        AdminQuotationBuilderService.ItemRequest itemReq = new AdminQuotationBuilderService.ItemRequest(
+                cat.getId(), division.getId(), null, mat.getId(), null, null, "Desc", "Spec", List.of(size)
+        );
+        AdminQuotationBuilderService.RoomRequest roomReq = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Room 1", "Work", List.of(itemReq)
+        );
+
         AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
                 customer.getId(), customer.getName(), customer.getPhone(), customer.getEmail(), customer.getAddress()
         );
@@ -257,7 +278,7 @@ public class QuotationValidityAndRetentionTest {
                 PricingMode.ECONOMY,
                 "Builder edit",
                 "Notes edit",
-                List.of(),
+                List.of(roomReq),
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,
                 BigDecimal.ZERO,

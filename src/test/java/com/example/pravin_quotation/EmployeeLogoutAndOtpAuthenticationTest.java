@@ -5,7 +5,7 @@ import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.security.EmployeeSessionService;
 import com.example.pravin_quotation.security.OtpService;
-import jakarta.servlet.http.Cookie;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -22,7 +21,6 @@ import org.springframework.web.context.WebApplicationContext;
 
 import java.time.*;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
@@ -62,12 +60,12 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                 .apply(springSecurity())
                 .build();
 
-        // Reset clock to normal IST working hours: today at 10:00 AM IST
+        // Default clock to 10:00 AM IST today
         LocalDate today = LocalDate.now(ZONE_IST);
         ZonedDateTime morningTime = today.atTime(10, 0, 0).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(morningTime.toInstant(), ZONE_IST));
 
-        // Create or get active Super Admin
+        // Create or retrieve active Super Admin
         testAdmin = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.SUPER_ADMIN && Boolean.TRUE.equals(u.getActive()))
                 .findFirst()
@@ -82,7 +80,7 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
         testAdmin.setActive(true);
         testAdmin = userRepository.save(testAdmin);
 
-        // Create or get active Employee
+        // Create or retrieve active Employee
         testEmployee = userRepository.findAll().stream()
                 .filter(u -> u.getRole() == Role.EMPLOYEE && Boolean.TRUE.equals(u.getActive()))
                 .findFirst()
@@ -98,15 +96,18 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
         testEmployee = userRepository.save(testEmployee);
     }
 
-    @org.junit.jupiter.api.AfterEach
+    @AfterEach
     void tearDown() {
         employeeSessionService.setClock(Clock.system(ZONE_IST));
     }
 
     @Test
-    @DisplayName("Acceptance Test 1: Employee clicks Logout → immediate logout, session invalidated, redirected to login")
-    void testManualLogoutImmediatelyInvalidatesSession() throws Exception {
-        // Step 1: Employee logs in with credentials
+    @DisplayName("Verification 1: Employee login at 8:00 AM requires Super Admin OTP")
+    void test1_EmployeeLoginAt8AmRequiresSuperAdminOtp() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time8Am = today.atTime(8, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time8Am.toInstant(), ZONE_IST));
+
         MvcResult loginResult = mockMvc.perform(post("/login")
                         .with(csrf())
                         .param("username", testEmployee.getEmail())
@@ -116,13 +117,75 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                 .andReturn();
 
         MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
-        assertNotNull(session, "Session must be created on login");
+        assertNotNull(session, "Session must be created");
+        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"),
+                "Employee login at 8:00 AM must require OTP verification (OTP_VERIFIED == false)");
 
-        // Step 2: Employee completes Admin OTP verification
+        // Direct access to dashboard before OTP verification must be redirected to /employee/otp
+        mockMvc.perform(get("/employee/dashboard").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"));
+    }
+
+    @Test
+    @DisplayName("Verification 2: Employee login during working hours requires Super Admin OTP")
+    void test2_EmployeeLoginDuringWorkingHoursRequiresSuperAdminOtp() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time1130Am = today.atTime(11, 30, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time1130Am.toInstant(), ZONE_IST));
+
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"))
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        assertNotNull(session);
+        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"),
+                "Employee login during working hours must require OTP verification");
+
+        // Cannot bypass OTP by requesting dashboard directly
+        mockMvc.perform(get("/employee/dashboard").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"));
+    }
+
+    @Test
+    @DisplayName("Verification 3: Employee can use software normally after successful OTP verification")
+    void test3_EmployeeCanUseSoftwareNormallyAfterOtpVerification() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time10Am = today.atTime(10, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time10Am.toInstant(), ZONE_IST));
+
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"))
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        assertNotNull(session);
+
+        // Simulate OTP stored in session
         session.setAttribute("OTP_CODE", "654321");
         session.setAttribute("OTP_EXPIRY", LocalDateTime.now().plusMinutes(5));
-        session.setAttribute("OTP_ATTEMPTS", 0);
 
+        // Attempt verify with incorrect OTP -> fails
+        mockMvc.perform(post("/employee/otp/verify")
+                        .session(session)
+                        .with(csrf())
+                        .param("otp", "000000"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp?invalid"));
+
+        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"));
+
+        // Verify with correct OTP -> succeeds and redirects to dashboard
         mockMvc.perform(post("/employee/otp/verify")
                         .session(session)
                         .with(csrf())
@@ -130,37 +193,106 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/employee/dashboard"));
 
-        assertTrue(Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED")), "OTP must be verified");
+        assertEquals(Boolean.TRUE, session.getAttribute("OTP_VERIFIED"));
 
-        // Step 3: Verified employee can access protected page
+        // Can access dashboard normally without repeated OTP prompts
         mockMvc.perform(get("/employee/dashboard").session(session))
                 .andExpect(status().isOk());
 
-        // Step 4: Employee clicks Logout (e.g. at 11:00 AM, does not wait until 8:00 PM)
-        MvcResult logoutResult = mockMvc.perform(post("/logout")
-                        .session(session)
-                        .with(csrf()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?logout"))
-                .andReturn();
-
-        // Step 5: Session must be invalidated and cookie cleared
-        assertTrue(session.isInvalid(), "Session must be invalidated on logout");
-
-        // Step 6: GET /logout also logs out immediately
-        MockHttpSession anotherSession = new MockHttpSession();
-        mockMvc.perform(get("/logout").session(anotherSession))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?logout"));
-        assertTrue(anotherSession.isInvalid());
+        // Can access quotations normally without repeated OTP prompts
+        mockMvc.perform(get("/employee/quotations").session(session))
+                .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Acceptance Test 2: Automatic Logout at exactly 8:00 PM IST on login day")
-    void testAutomaticLogoutAt8PmIst() throws Exception {
+    @DisplayName("Verification 4: Employee manual logout works immediately")
+    void test4_EmployeeManualLogoutWorksImmediately() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time12Pm = today.atTime(12, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time12Pm.toInstant(), ZONE_IST));
+
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        assertNotNull(session);
+
+        // POST /logout terminates session immediately
+        mockMvc.perform(post("/logout")
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?logout"));
+
+        assertTrue(session.isInvalid(), "Session must be immediately invalidated upon manual logout");
+    }
+
+    @Test
+    @DisplayName("Verification 5: Employee login after manual logout requires a fresh OTP")
+    void test5_EmployeeLoginAfterManualLogoutRequiresFreshOtp() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time13Pm = today.atTime(13, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time13Pm.toInstant(), ZONE_IST));
+
+        // 1. First login + OTP verification
+        MvcResult login1 = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        MockHttpSession session1 = (MockHttpSession) login1.getRequest().getSession(false);
+        session1.setAttribute("OTP_CODE", "111222");
+        session1.setAttribute("OTP_EXPIRY", LocalDateTime.now().plusMinutes(5));
+
+        mockMvc.perform(post("/employee/otp/verify")
+                        .session(session1)
+                        .with(csrf())
+                        .param("otp", "111222"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/dashboard"));
+
+        assertEquals(Boolean.TRUE, session1.getAttribute("OTP_VERIFIED"));
+
+        // 2. Manual logout
+        mockMvc.perform(post("/logout")
+                        .session(session1)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?logout"));
+
+        assertTrue(session1.isInvalid());
+
+        // 3. New login attempt requires fresh OTP verification
+        MvcResult login2 = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"))
+                .andReturn();
+
+        MockHttpSession session2 = (MockHttpSession) login2.getRequest().getSession(false);
+        assertNotNull(session2);
+        assertNotEquals(session1.getId(), session2.getId(), "Must be a new session");
+        assertEquals(Boolean.FALSE, session2.getAttribute("OTP_VERIFIED"),
+                "Re-login after logout must require fresh OTP verification");
+
+        // Old OTP (111222) is not active in the new session
+        assertNull(session2.getAttribute("OTP_CODE"));
+    }
+
+    @Test
+    @DisplayName("Verification 6: All active Employee sessions automatically terminate at exactly 8:00 PM IST")
+    void test6_AllActiveEmployeeSessionsTerminateAtExactly8PmIst() throws Exception {
         LocalDate today = LocalDate.now(ZONE_IST);
 
-        // Step 1: Log in at 9:00 AM IST
+        // Log in at 9:00 AM IST
         ZonedDateTime time9Am = today.atTime(9, 0, 0).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(time9Am.toInstant(), ZONE_IST));
 
@@ -173,61 +305,43 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                 .andReturn();
 
         MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
-        assertNotNull(session);
-        session.setAttribute("OTP_VERIFIED", true);
+        session.setAttribute("OTP_CODE", "999888");
+        session.setAttribute("OTP_EXPIRY", LocalDateTime.now().plusMinutes(5));
 
-        // Step 2: Employee active at 19:59:59 IST (before 8:00 PM) -> Allowed
+        mockMvc.perform(post("/employee/otp/verify")
+                        .session(session)
+                        .with(csrf())
+                        .param("otp", "999888"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/dashboard"));
+
+        // Active at 19:59:59 IST (before 8:00 PM) -> Allowed
         ZonedDateTime time759Pm = today.atTime(19, 59, 59).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(time759Pm.toInstant(), ZONE_IST));
 
         mockMvc.perform(get("/employee/dashboard").session(session))
                 .andExpect(status().isOk());
 
-        // Verify remaining time on session-status API
-        mockMvc.perform(get("/employee/session-status").session(session))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.expired").value(false))
-                .andExpect(jsonPath("$.authenticated").value(true));
-
-        // Step 3: Clock strikes exactly 8:00:00 PM IST (20:00:00)
+        // Clock reaches exactly 8:00:00 PM IST (20:00:00)
         ZonedDateTime time800Pm = today.atTime(20, 0, 0).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(time800Pm.toInstant(), ZONE_IST));
 
-        // Employee leaves application open or makes any request -> automatically rejected & redirected
+        // Any request is rejected, session is invalidated, and redirected to /login?expired
         mockMvc.perform(get("/employee/dashboard").session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/login?expired"));
 
-        // Backend must invalidate session
-        assertTrue(session.isInvalid(), "Session must be invalidated when 8:00 PM IST is reached");
-
-        // Subsequent session-status check returns expired
-        mockMvc.perform(get("/employee/session-status"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.expired").value(true));
+        assertTrue(session.isInvalid(), "Active session must be terminated at 8:00 PM IST");
     }
 
     @Test
-    @DisplayName("Acceptance Test 3: Access denied and redirected to login when accessing protected pages after logout")
-    void testProtectedPagesDeniedAfterLogout() throws Exception {
-        // Accessing protected pages without active authenticated session
-        mockMvc.perform(get("/employee/dashboard"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/login")));
+    @DisplayName("Verification 7: Employee login after 8:00 PM requires a fresh OTP")
+    void test7_EmployeeLoginAfter8PmRequiresFreshOtp() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime after8Pm = today.atTime(20, 15, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(after8Pm.toInstant(), ZONE_IST));
 
-        mockMvc.perform(get("/employee/quotations"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/login")));
-
-        mockMvc.perform(get("/employee/customers"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/login")));
-    }
-
-    @Test
-    @DisplayName("Acceptance Test 4: Admin OTP verification is mandatory on every new employee login")
-    void testAdminOtpmandatoryOnNewLogin() throws Exception {
-        // Employee logs in with credentials
+        // Login at 8:15 PM -> requires OTP
         MvcResult loginResult = mockMvc.perform(post("/login")
                         .with(csrf())
                         .param("username", testEmployee.getEmail())
@@ -238,94 +352,136 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
 
         MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
         assertNotNull(session);
-        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"), "New login must have OTP_VERIFIED = false");
+        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"));
 
-        // Attempt to bypass OTP by navigating directly to /employee/dashboard
+        // Cannot bypass OTP
         mockMvc.perform(get("/employee/dashboard").session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/employee/otp"));
 
-        // Attempt to bypass OTP by navigating directly to /employee/quotations
-        mockMvc.perform(get("/employee/quotations").session(session))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/employee/otp"));
-
-        // Verify with invalid OTP -> rejected
-        session.setAttribute("OTP_CODE", "999888");
+        // Verify valid OTP
+        session.setAttribute("OTP_CODE", "555444");
         session.setAttribute("OTP_EXPIRY", LocalDateTime.now().plusMinutes(5));
-        mockMvc.perform(post("/employee/otp/verify")
-                        .session(session)
-                        .with(csrf())
-                        .param("otp", "000000"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/employee/otp?invalid"));
 
-        // Verify with valid OTP -> accepted
         mockMvc.perform(post("/employee/otp/verify")
                         .session(session)
                         .with(csrf())
-                        .param("otp", "999888"))
+                        .param("otp", "555444"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/employee/dashboard"));
 
         assertEquals(Boolean.TRUE, session.getAttribute("OTP_VERIFIED"));
 
-        // Now dashboard is accessible
+        // Allowed to use dashboard after verification
         mockMvc.perform(get("/employee/dashboard").session(session))
                 .andExpect(status().isOk());
     }
 
     @Test
-    @DisplayName("Acceptance Test 5: Reusing old session or token is rejected")
-    void testOldSessionReuseRejected() throws Exception {
-        MockHttpSession oldSession = new MockHttpSession();
-        oldSession.invalidate();
-
-        mockMvc.perform(get("/employee/dashboard")
-                        .session(oldSession)
-                        .cookie(new Cookie("JSESSIONID", oldSession.getId())))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(header().string("Location", org.hamcrest.Matchers.endsWith("/login")));
-    }
-
-    @Test
-    @DisplayName("Acceptance Test 6: Admin authentication continues working as before without OTP or 8:00 PM cutoff")
-    void testAdminAuthenticationUnaffected() throws Exception {
+    @DisplayName("Verification 8: Employee login the next morning also requires OTP")
+    void test8_EmployeeLoginNextMorningAlsoRequiresOtp() throws Exception {
         LocalDate today = LocalDate.now(ZONE_IST);
+        LocalDate tomorrow = today.plusDays(1);
+        ZonedDateTime nextMorning = tomorrow.atTime(8, 30, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(nextMorning.toInstant(), ZONE_IST));
 
-        // Set time to 21:30 IST (9:30 PM, past employee cutoff)
-        ZonedDateTime nightTime = today.atTime(21, 30, 0).atZone(ZONE_IST);
-        employeeSessionService.setClock(Clock.fixed(nightTime.toInstant(), ZONE_IST));
-
-        // Admin logs in
-        MvcResult adminLogin = mockMvc.perform(post("/login")
-                        .with(csrf())
-                        .param("username", testAdmin.getEmail())
-                        .param("password", "admin123"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/dashboard")) // Direct to dashboard, no OTP needed
-                .andReturn();
-
-        MockHttpSession adminSession = (MockHttpSession) adminLogin.getRequest().getSession(false);
-        assertNotNull(adminSession);
-
-        // Admin can access admin dashboard at 9:30 PM IST without restriction
-        mockMvc.perform(get("/admin/dashboard").session(adminSession))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("Employee login attempt after 8:00 PM IST is immediately rejected and redirected to login?expired")
-    void testEmployeeLoginAfter8PmRejected() throws Exception {
-        LocalDate today = LocalDate.now(ZONE_IST);
-        ZonedDateTime after8Pm = today.atTime(20, 15, 0).atZone(ZONE_IST);
-        employeeSessionService.setClock(Clock.fixed(after8Pm.toInstant(), ZONE_IST));
-
-        mockMvc.perform(post("/login")
+        // Login next morning -> requires Super Admin OTP
+        MvcResult loginResult = mockMvc.perform(post("/login")
                         .with(csrf())
                         .param("username", testEmployee.getEmail())
                         .param("password", "emp123"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?expired"));
+                .andExpect(redirectedUrl("/employee/otp"))
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        assertNotNull(session);
+        assertEquals(Boolean.FALSE, session.getAttribute("OTP_VERIFIED"),
+                "Employee login the next morning must require OTP verification");
+
+        // Cannot access dashboard without completing OTP verification
+        mockMvc.perform(get("/employee/dashboard").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"));
+    }
+
+    @Test
+    @DisplayName("Verification 9: Old sessions cannot access protected pages after logout")
+    void test9_OldSessionsCannotAccessProtectedPagesAfterLogout() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+        ZonedDateTime time2Pm = today.atTime(14, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(time2Pm.toInstant(), ZONE_IST));
+
+        // Normal login + OTP
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testEmployee.getEmail())
+                        .param("password", "emp123"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn();
+
+        MockHttpSession session = (MockHttpSession) loginResult.getRequest().getSession(false);
+        session.setAttribute("OTP_CODE", "333222");
+        session.setAttribute("OTP_EXPIRY", LocalDateTime.now().plusMinutes(5));
+
+        mockMvc.perform(post("/employee/otp/verify")
+                        .session(session)
+                        .with(csrf())
+                        .param("otp", "333222"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/dashboard"));
+
+        // Logout
+        mockMvc.perform(post("/logout")
+                        .session(session)
+                        .with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        assertTrue(session.isInvalid());
+
+        // Subsequent access with invalidated session cannot access protected page
+        mockMvc.perform(get("/employee/dashboard").session(session))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login"));
+    }
+
+    @Test
+    @DisplayName("Verification 10: Super Admin login remains unaffected at all times without OTP")
+    void test10_SuperAdminLoginUnaffected() throws Exception {
+        LocalDate today = LocalDate.now(ZONE_IST);
+
+        // 10A: Morning 10:00 AM IST
+        ZonedDateTime morningTime = today.atTime(10, 0, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(morningTime.toInstant(), ZONE_IST));
+
+        MvcResult adminLogin1 = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testAdmin.getEmail())
+                        .param("password", "admin123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andReturn();
+
+        MockHttpSession session1 = (MockHttpSession) adminLogin1.getRequest().getSession(false);
+        assertNotNull(session1);
+        mockMvc.perform(get("/admin/dashboard").session(session1))
+                .andExpect(status().isOk());
+
+        // 10B: Night 21:30 IST (9:30 PM, after 8:00 PM)
+        ZonedDateTime nightTime = today.atTime(21, 30, 0).atZone(ZONE_IST);
+        employeeSessionService.setClock(Clock.fixed(nightTime.toInstant(), ZONE_IST));
+
+        MvcResult adminLogin2 = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", testAdmin.getEmail())
+                        .param("password", "admin123"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andReturn();
+
+        MockHttpSession session2 = (MockHttpSession) adminLogin2.getRequest().getSession(false);
+        assertNotNull(session2);
+        mockMvc.perform(get("/admin/dashboard").session(session2))
+                .andExpect(status().isOk());
     }
 }

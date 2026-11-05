@@ -520,7 +520,7 @@
 
                 <div class="amount-row">
 
-                    <span>Other Charges</span>
+                    <span th:text="${(quotation.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quotation.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quotation.otherChargesDescription) + ')' : 'Other Charges'}">Other Charges</span>
 
                     <strong>
 

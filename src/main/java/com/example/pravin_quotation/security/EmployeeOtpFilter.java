@@ -70,7 +70,7 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                             || (accept != null && accept.contains("application/json"))) {
                         response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                         response.setContentType("application/json");
-                        response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Session expired at 8:00 PM IST\"}");
+                        response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.\"}");
                         return;
                     }
 
@@ -79,19 +79,24 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                 }
 
                 // =========================================================
-                // 2. ADMIN OTP ENFORCEMENT FOR NEW LOGINS
+                // 2. AFTER-HOURS SUPER ADMIN OTP ENFORCEMENT
                 // =========================================================
                 boolean otpPage = requestUri.equals("/employee/otp");
                 boolean otpSend = requestUri.equals("/employee/otp/send");
                 boolean otpVerify = requestUri.equals("/employee/otp/verify");
                 boolean sessionStatus = requestUri.equals("/employee/session-status");
 
-                if (!otpPage && !otpSend && !otpVerify && !sessionStatus) {
-                    boolean otpVerified = session != null
-                            && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
+                boolean otpVerified = session != null
+                        && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
 
-                    if (!otpVerified) {
+                if (!otpVerified) {
+                    if (!otpPage && !otpSend && !otpVerify && !sessionStatus) {
                         response.sendRedirect("/employee/otp");
+                        return;
+                    }
+                } else {
+                    if (otpPage) {
+                        response.sendRedirect("/employee/dashboard");
                         return;
                     }
                 }

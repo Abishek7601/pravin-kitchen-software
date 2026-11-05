@@ -66,7 +66,7 @@
         <label class="field">Email<input id="customerEmail" type="email" placeholder="customer@email.com"></label>
         <label class="field">Address / Area<textarea id="customerAddress" class="capitalize-title" rows="2" placeholder="House / area / location"></textarea></label>
         <label class="field">Quotation Date <span>*</span><input id="quotationDate" type="date" th:value="${today}"></label>
-        <label class="field">Valid Until <small style="font-weight:normal;color:#6b7280;">(365 Days Auto)</small><input id="validUntilDate" type="date" readonly style="background-color: #f3f4f6; cursor: not-allowed;"></label>
+        <label class="field">Valid Until <span>*</span><input id="validUntilDate" type="date"></label>
         <label class="field">Branch / District <span>*</span>
           <select id="branchId" th:attr="data-employee-branch=${employeeBranchId}">
             <option value="">Select branch / district</option>
@@ -527,13 +527,22 @@
             </div>
           </div>
 
-          <!-- OTHER CHARGES -->
+          <!-- OTHER CHARGES AMOUNT -->
           <div class="charge-input-group">
-            <label for="otherCharges">Other Charges</label>
+            <label for="otherCharges">Other Charges Amount</label>
             <div class="input-with-prefix">
               <span>₹</span>
               <input type="number" id="otherCharges" name="otherCharges" min="0" step="0.01" value="0">
             </div>
+          </div>
+
+          <!-- OTHER CHARGES DESCRIPTION -->
+          <div class="charge-input-group" style="grid-column: 1 / -1;">
+            <label for="otherChargesDescription">Other Charges Description</label>
+            <input type="text" id="otherChargesDescription" name="otherChargesDescription"
+                   autocapitalize="sentences"
+                   placeholder="Enter reason for other charges (e.g. Transportation, Installation, Loading & Unloading)"
+                   style="width: 100%; height: 44px; padding: 0 14px; border: 1.5px solid var(--border); border-radius: 8px; font-size: 13.5px; color: var(--peacock-dark); background: #ffffff; box-sizing: border-box;">
           </div>
 
           <!-- DISCOUNT -->
@@ -563,7 +572,7 @@
 
           <!-- OTHER -->
           <div class="amount-row">
-            <span>Other Charges</span>
+            <span id="displayOtherLabel">Other Charges</span>
             <strong id="displayOther">₹ 0.00</strong>
           </div>
 
@@ -1069,7 +1078,8 @@
       const activeBtn = $(`mat-btn-${divisionId}-${material.id}`);
       if (activeBtn) activeBtn.classList.add('selected-material-btn');
 
-      const mType = (material.measurementType || (material.unit === 'Quantity' ? 'QUANTITY' : (material.unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
+      const mType = (material.measurementType || (material.unit === 'Quantity' ? 'QUANTITY' : (material.unit === 'Files' ? 'FILES' : (material.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
+      const isRoll = mType === 'ROLL' || (material.unit && material.unit.toLowerCase() === 'roll');
       const isSqft = mType === 'SQFT';
       const isQuantity = mType === 'QUANTITY';
       const isFiles = mType === 'FILES' || (material.unit && material.unit.toLowerCase() === 'files');
@@ -1088,10 +1098,11 @@
           materialSpecificationId: null,
           materialSpecificationName: '',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
-          formula: isSqft ? (material.formula || '(L + W) × H') : null,
-          unit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
-          measurementUnit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
+          formula: (isSqft || isRoll) ? (material.formula || 'L × W') : null,
+          unit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
+          measurementUnit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementType: mType,
+          coveragePerRoll: material.coveragePerRoll ? Number(material.coveragePerRoll) : 40,
           quantity: 1,
           imageUrl: material.imageUrl || null,
           pricingUnit: '₹ / ' + (material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
@@ -1106,25 +1117,60 @@
           if (p !== sizePanel) p.classList.add('hidden');
       });
 
-      // Specifications text (display only saved material specification)
       const specText = (material.specification || '').trim();
       const specDisplay = specText || '-';
+
+      const isAvailable = (material.available !== false && material.rate != null && material.rate !== '' && !isNaN(Number(material.rate)) && Number(material.rate) > 0);
+      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+      const unavailableMsg = material.unavailableMessage || material.message || `No material available in ${gradeLabel} Grade`;
+
+      if (isFiles && !isAvailable) {
+          state.draft = null;
+          sizePanel.innerHTML = `
+            <div class="size-details-title-row">
+              <span class="size-details-title">FILE &amp; ITEM DETAILS &mdash; ${esc(material.name.toUpperCase())}</span>
+              <span class="size-details-formula" style="background:#fee2e2; color:#b91c1c; border-color:#fecaca;">UNAVAILABLE</span>
+            </div>
+            <div class="size-details-spec-box">
+              <div class="spec-header">
+                <span>Specifications:</span>
+              </div>
+              <div class="spec-content" id="specContent-${divisionId}">${esc(specDisplay)}</div>
+            </div>
+            <div style="padding: 14px 18px; margin: 12px 0; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; font-weight: 600; text-align: center; font-size: 13px;">
+              ${esc(unavailableMsg)}
+            </div>
+            <div class="size-details-btn-row">
+              <button type="button" class="btn-cancel-size" id="cancelSizeBtn-${divisionId}">Close</button>
+            </div>
+          `;
+          sizePanel.classList.remove('hidden');
+          const cancelBtn = $(`cancelSizeBtn-${divisionId}`);
+          if (cancelBtn) {
+              cancelBtn.addEventListener('click', () => {
+                  sizePanel.classList.add('hidden');
+                  activeBtn.classList.remove('selected-material-btn');
+                  state.draft = null;
+              });
+          }
+          return;
+      }
 
       let formulaDisplay = '';
       let hasLength = false, hasWidth = false, hasHeight = false;
 
-      if (isSqft) {
-          const formula = (material.formula || '(L + W) × H').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
+      if (isSqft || isRoll) {
+          const formula = (material.formula || 'L × W').toUpperCase().replace(/X/g, '×').replace(/\*/g, '×');
           hasLength = true;
           hasWidth = formula.includes('+') || formula.includes('(L + W)') || (!formula.includes('H') && formula.includes('W')) || (formula.includes('W') && !formula.includes('H'));
           hasHeight = formula.includes('+') || formula.includes('(L + W)') || formula.includes('H');
 
           if (formula.includes('+') || formula.includes('(L + W)')) {
-              formulaDisplay = '((L+W)*H/144)';
+              formulaDisplay = isRoll ? 'ROLL: ((L+W)*H/144)' : '((L+W)*H/144)';
           } else if (formula === 'L × H' || (formula.includes('L') && formula.includes('H') && !formula.includes('W'))) {
-              formulaDisplay = '(L*H/144)';
+              formulaDisplay = isRoll ? 'ROLL: (L*H/144)' : '(L*H/144)';
           } else {
-              formulaDisplay = '(L*W/144)';
+              formulaDisplay = isRoll ? 'ROLL: (L*W/144)' : '(L*W/144)';
           }
       }
 
@@ -1132,12 +1178,14 @@
 
       sizePanel.innerHTML = `
         <div class="size-details-title-row">
-          <span class="size-details-title">${isSqft ? 'SIZE DETAILS' : (isQuantity ? 'QUANTITY DETAILS' : 'FILE &amp; ITEM DETAILS')} &mdash; ${esc(material.name.toUpperCase())}</span>
-          ${isSqft
-              ? `<span class="size-details-formula">${esc(formulaDisplay)}</span>`
-              : (isQuantity
-                  ? `<span class="size-details-formula" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">QUANTITY</span>`
-                  : `<span class="size-details-formula" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">FILES / IMAGE</span>`)}
+          <span class="size-details-title">${isRoll ? 'ROLL &amp; SIZE DETAILS' : (isSqft ? 'SIZE DETAILS' : (isQuantity ? 'QUANTITY DETAILS' : 'FILE &amp; ITEM DETAILS'))} &mdash; ${esc(material.name.toUpperCase())}</span>
+          ${isRoll
+              ? `<span class="size-details-formula" style="background:#faf5ff; color:#6b21a8; border-color:#e9d5ff;">${esc(formulaDisplay)}</span>`
+              : (isSqft
+                  ? `<span class="size-details-formula">${esc(formulaDisplay)}</span>`
+                  : (isQuantity
+                      ? `<span class="size-details-formula" style="background:#e0f2fe; color:#0369a1; border-color:#bae6fd;">QUANTITY</span>`
+                      : `<span class="size-details-formula" style="background:#fef3c7; color:#92400e; border-color:#fde68a;">FILES / IMAGE</span>`))}
         </div>
         <div class="size-details-spec-box">
           <div class="spec-header">
@@ -1147,7 +1195,7 @@
           <div class="spec-content" id="specContent-${divisionId}">${esc(specDisplay)}</div>
           <textarea class="spec-textarea hidden" id="specTextarea-${divisionId}" rows="3" placeholder="Enter specifications (optional)">${esc(specText)}</textarea>
         </div>
-        ${isSqft ? `
+        ${(isSqft || isRoll) ? `
         <div class="size-details-inputs-row">
           ${hasLength ? `
           <div class="dim-input-group">
@@ -1230,7 +1278,20 @@
               rateVal = (material.rate != null && !isNaN(Number(material.rate))) ? Number(material.rate) : 0;
           }
 
-          if (isSqft) {
+          if (isRoll) {
+              const L = Number(lenInput?.value || 0);
+              const W = Number(widInput?.value || 0);
+              const H = Number(hgtInput?.value || 0);
+              const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
+              const roundedSqft = Math.round(sqft * 100) / 100;
+              const cov = Number(material.coveragePerRoll || 40);
+              const rolls = (roundedSqft > 0 && cov > 0) ? Math.ceil(roundedSqft / cov) : 0;
+              const lineAmt = Math.round(rolls * rateVal * 100) / 100;
+              if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
+              const rollsEl = $(`calcRolls-${divisionId}`);
+              if (rollsEl) rollsEl.textContent = rolls;
+              if (amtEl) amtEl.textContent = money(lineAmt);
+          } else if (isSqft) {
               const L = Number(lenInput?.value || 0);
               const W = Number(widInput?.value || 0);
               const H = Number(hgtInput?.value || 0);
@@ -1352,7 +1413,7 @@
           addBtn.addEventListener('click', () => {
               let L = 0, W = 0, H = 0, Q = 1;
 
-              if (isSqft) {
+              if (isSqft || isRoll) {
                   L = Number(lenInput?.value || 0);
                   W = Number(widInput?.value || 0);
                   H = Number(hgtInput?.value || 0);
@@ -1366,6 +1427,9 @@
 
               let finalRate = Number(material.rate || 0);
               if (isFiles) {
+                  if (!isAvailable || material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
+                      return alert(unavailableMsg);
+                  }
                   const rawRate = rateInput ? rateInput.value.trim() : '';
                   const parsed = Number(rawRate);
                   if (rawRate === '' || isNaN(parsed) || parsed < 0) {
@@ -1373,8 +1437,8 @@
                   }
                   finalRate = parsed;
               } else {
-                  if (material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
-                      return alert('No rate configured for this material in the selected branch and grade.');
+                  if (!isAvailable || material.rate == null || isNaN(Number(material.rate)) || Number(material.rate) <= 0) {
+                      return alert(unavailableMsg || 'No rate configured for this material in the selected branch and grade.');
                   }
               }
 
@@ -1384,6 +1448,15 @@
               let finalSpec = specTextarea && !specTextarea.classList.contains('hidden')
                   ? specTextarea.value.trim()
                   : (specContent ? (specContent.textContent.trim() === '-' ? '' : specContent.textContent.trim()) : (specText || ''));
+
+              const cov = Number(material.coveragePerRoll || 40);
+              let rollCount = 1;
+              let calcAreaSqft = 0;
+              if (isRoll) {
+                  const sVal = calculateItemMeasurement(material.formula, material.unit, L, W, H);
+                  calcAreaSqft = Math.round(sVal * 100) / 100;
+                  rollCount = (calcAreaSqft > 0 && cov > 0) ? Math.ceil(calcAreaSqft / cov) : 0;
+              }
 
               const quoteItem = {
                   categoryId,
@@ -1399,17 +1472,19 @@
                   materialSpecificationId: null,
                   materialSpecificationName: '',
                   rate: finalRate,
-                  formula: isSqft ? (material.formula || '(L + W) × H') : null,
-                  unit: material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft')),
+                  formula: (isSqft || isRoll) ? (material.formula || 'L × W') : null,
+                  unit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
                   measurementType: mType,
-                  quantity: isSqft ? 1 : Q,
+                  coveragePerRoll: isRoll ? cov : null,
+                  quantity: isRoll ? rollCount : (isSqft ? 1 : Q),
+                  calculatedSqft: isRoll ? calcAreaSqft : null,
                   imageUrl: isFiles ? (uploadedItemImageUrl || material.imageUrl || null) : null,
                   itemDescription: '',
                   specification: finalSpec,
                   sizes: [{
-                      length: isSqft ? L : 0,
-                      width: (isSqft && hasWidth) ? W : 0,
-                      height: (isSqft && hasHeight) ? H : 0,
+                      length: (isSqft || isRoll) ? L : 0,
+                      width: ((isSqft || isRoll) && hasWidth) ? W : 0,
+                      height: ((isSqft || isRoll) && hasHeight) ? H : 0,
                       offerPrice: null,
                       offerDiscountPercent: 0,
                       offerActive: false
@@ -1769,7 +1844,8 @@
               html += `<tr class="group-category-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-category-header">&#127970; ${esc(catName.toUpperCase())}</div></td></tr>`;
 
               itemsByCategory[catName].forEach(({ item, itemIdx }) => {
-                  const mType = (item.measurementType || (item.unit === 'Quantity' ? 'QUANTITY' : (item.unit === 'Files' ? 'FILES' : 'SQFT'))).toUpperCase();
+                  const mType = (item.measurementType || (item.unit === 'Quantity' ? 'QUANTITY' : (item.unit === 'Files' ? 'FILES' : (item.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
+                  const isRoll = mType === 'ROLL' || (item.unit && item.unit.toLowerCase() === 'roll');
                   const isSqft = mType === 'SQFT';
                   const isQuantity = mType === 'QUANTITY';
                   const isFiles = mType === 'FILES';
@@ -1783,10 +1859,28 @@
 
                       const isRateMissing = (item.rateUnavailable === true || item.rate == null || isNaN(Number(item.rate)) || Number(item.rate) <= 0);
 
-                      if (isRateMissing && !isFiles) {
+                      if (isRateMissing) {
                           lineBase = 0;
                           sqftDisplay = '-';
-                          sizeDisp = isSqft ? `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}` : `Qty: ${item.quantity || 1}`;
+                          sizeDisp = (isSqft || isRoll) ? `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}` : (isQuantity ? `Qty: ${item.quantity || 1}` : `Files: ${item.quantity || 1}`);
+                      } else if (isRoll) {
+                          const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
+                          sqft = Math.round(meas * 100) / 100;
+                          const cov = Number(item.coveragePerRoll || 40);
+                          const rolls = (sqft > 0 && cov > 0) ? Math.ceil(sqft / cov) : 0;
+                          item.quantity = rolls;
+                          item.calculatedSqft = sqft;
+                          lineBase = Math.round(rolls * Number(item.rate || 0) * 100) / 100;
+                          sqftDisplay = sqft % 1 === 0 ? sqft.toFixed(0) : sqft.toFixed(2);
+
+                          const formula = (item.formula || '').toUpperCase();
+                          if (formula.includes('+') || formula.includes('(L + W)')) {
+                              sizeDisp = `L:${size.length} \u00d7 W:${size.width} \u00d7 H:${size.height}`;
+                          } else if (formula.includes('H')) {
+                              sizeDisp = `L:${size.length} \u00d7 H:${size.height}`;
+                          } else {
+                              sizeDisp = `L:${size.length} \u00d7 W:${size.width}`;
+                          }
                       } else if (isSqft) {
                           const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
                           sqft = Math.round(meas * 100) / 100;
@@ -1823,13 +1917,13 @@
                       const baseAmtDisplay = money(lineBase);
                       const offerAmtDisplay = money(isOfferActive ? lineOffer : lineBase);
 
-                      const imgHtml = (item.imageUrl)
+                      const imgHtml = (item.imageUrl && !isRateMissing)
                           ? `<div style="margin-top: 4px;"><img src="${esc(item.imageUrl)}" alt="Attached item image" style="max-width: 50px; max-height: 50px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${esc(item.imageUrl)}', '_blank')" title="Click to view image" /></div>`
                           : '';
 
                       const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
                       const unavailableMsg = item.rateUnavailableMessage || `No material available in ${gradeLabel} Grade`;
-                      const unavailableBadge = (isRateMissing && !isFiles)
+                      const unavailableBadge = isRateMissing
                           ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${esc(unavailableMsg)}</span></div>`
                           : '';
 
@@ -1838,8 +1932,9 @@
                         <td class="col-num">${serialNo++}</td>
                         <td class="col-room">${esc(item.divisionName || item.itemName || 'ITEM')}</td>
                         <td class="col-material">
-                          <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : '')}</div>
+                          <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
+                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${item.coveragePerRoll || 40} Sq.ft/Roll @ ₹${Number(item.rate || 0).toFixed(2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
                           ${imgHtml}
                         </td>
@@ -1902,6 +1997,7 @@
       const acc = Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0);
       const travel = Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0);
       const other = Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0);
+      const otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
       const disc = Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0);
 
       let gstPct = parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0;
@@ -1946,6 +2042,16 @@
       if ($('displayAccessories')) $('displayAccessories').textContent = formatInr(acc);
       if ($('displayTravel')) $('displayTravel').textContent = formatInr(travel);
       if ($('displayOther')) $('displayOther').textContent = formatInr(other);
+      if ($('displayOtherLabel')) {
+          let cleanOtherDesc = otherDesc;
+          if (cleanOtherDesc) {
+              const firstIdx = cleanOtherDesc.search(/\S/);
+              if (firstIdx !== -1) {
+                  cleanOtherDesc = cleanOtherDesc.substring(0, firstIdx) + cleanOtherDesc.charAt(firstIdx).toUpperCase() + cleanOtherDesc.substring(firstIdx + 1);
+              }
+          }
+          $('displayOtherLabel').textContent = (cleanOtherDesc && other > 0) ? `Other Charges (${cleanOtherDesc})` : 'Other Charges';
+      }
       if ($('displayDiscount')) $('displayDiscount').textContent = formatInr(disc, true);
       if ($('displayGstPercentage')) $('displayGstPercentage').textContent = gstPct.toFixed(2);
       if ($('displayGstAmount')) $('displayGstAmount').textContent = formatInr(gstAmount);
@@ -2055,14 +2161,6 @@
 
       state.rooms.forEach(room => {
           (room.items || []).forEach(item => {
-              const mType = (item.measurementType || (item.unit === 'Files' ? 'FILES' : (item.unit === 'Quantity' ? 'QUANTITY' : 'SQFT'))).toUpperCase();
-              if (mType === 'FILES') {
-                  item.rateUnavailable = false;
-                  item.rateUnavailableMessage = null;
-                  return;
-              }
-
-
               requests.push((async () => {
                   try {
                       const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal || '')}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
@@ -2115,8 +2213,19 @@
       if (!branchId && $('branchId').dataset && $('branchId').dataset.employeeBranch) {
           branchId = Number($('branchId').dataset.employeeBranch);
       }
-      if (!name || !phone || !branchId || !$('quotationDate').value) {
+      const qdVal = $('quotationDate') ? $('quotationDate').value : '';
+      const vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
+
+      if (!name || !phone || !branchId || !qdVal) {
           alert('Customer Name, Phone, Branch and Date are required.');
+          return null;
+      }
+      if (!vuVal) {
+          alert('Valid Until date is required.');
+          return null;
+      }
+      if (qdVal && vuVal < qdVal) {
+          alert('Valid Until date cannot be earlier than Quotation Date.');
           return null;
       }
       if (!state.rooms.some(r => r.items && r.items.length > 0)) {
@@ -2125,11 +2234,24 @@
       }
 
       const hasUnavailableRates = state.rooms.some(r => (r.items || []).some(i => {
-          const mType = (i.measurementType || (i.unit === 'Files' ? 'FILES' : (i.unit === 'Quantity' ? 'QUANTITY' : 'SQFT'))).toUpperCase();
-          return mType !== 'FILES' && (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)));
+          return (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)) || Number(i.rate) <= 0);
       }));
       if (hasUnavailableRates) {
           const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle'); alert(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
+          return null;
+      }
+
+      const otherAmt = Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0);
+      let otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
+      if (otherDesc) {
+          const firstIdx = otherDesc.search(/\S/);
+          if (firstIdx !== -1) {
+              otherDesc = otherDesc.substring(0, firstIdx) + otherDesc.charAt(firstIdx).toUpperCase() + otherDesc.substring(firstIdx + 1);
+          }
+      }
+      if (otherAmt > 0 && !otherDesc) {
+          alert('Please enter a description for Other Charges explaining the purpose of the charge.');
+          if ($('otherChargesDescription')) $('otherChargesDescription').focus();
           return null;
       }
 
@@ -2145,13 +2267,15 @@
               address: $('customerAddress') ? $('customerAddress').value.trim() : ''
           },
           branchId,
-          quotationDate: $('quotationDate').value,
+          quotationDate: qdVal,
+          validUntil: vuVal,
           pricingMode: state.pricingMode,
           customerRequirements: state.customerRequirements || '',
           notes: notesVal,
           accessoriesAmount: Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0),
           travelCharge: Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0),
-          otherCharges: Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0),
+          otherCharges: otherAmt,
+          otherChargesDescription: otherDesc,
           discountAmount: Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0),
           gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
           offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
@@ -2170,7 +2294,8 @@
                   itemDescription: i.itemDescription || '',
                   specification: i.specification || '',
                   rate: i.rate != null ? Number(i.rate) : null,
-                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : 'SQFT')),
+                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                  coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
                   quantity: i.quantity != null ? Number(i.quantity) : 1,
                   imageUrl: i.imageUrl || null,
                   sizes: (i.sizes || []).map(s => ({
@@ -2267,6 +2392,7 @@
           state.rooms = [];
           state.draft = null;
           if ($('quoteNotes')) $('quoteNotes').value = '';
+          if ($('otherChargesDescription')) $('otherChargesDescription').value = '';
           ['accessoriesAmount', 'travelCharge', 'otherCharges', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
               if ($(id)) $(id).value = '0';
           });
@@ -2307,7 +2433,31 @@
   $('addItemBtn').addEventListener('click', addDraftToRoom);
   $('cancelItemBtn').addEventListener('click', () => hide('itemBuilder'));
 
-  ['accessoriesAmount', 'travelCharge', 'otherCharges', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
+  const otherChargesDescEl = $('otherChargesDescription');
+  if (otherChargesDescEl) {
+      const autoCapitalizeFirstLetter = function() {
+          const val = this.value;
+          if (val) {
+              const firstNonSpace = val.search(/\S/);
+              if (firstNonSpace !== -1) {
+                  const ch = val.charAt(firstNonSpace);
+                  const upper = ch.toUpperCase();
+                  if (ch !== upper) {
+                      const start = this.selectionStart;
+                      const end = this.selectionEnd;
+                      this.value = val.substring(0, firstNonSpace) + upper + val.substring(firstNonSpace + 1);
+                      if (this.setSelectionRange && start !== null && end !== null) {
+                          this.setSelectionRange(start, end);
+                      }
+                  }
+              }
+          }
+      };
+      otherChargesDescEl.addEventListener('input', autoCapitalizeFirstLetter);
+      otherChargesDescEl.addEventListener('keyup', autoCapitalizeFirstLetter);
+  }
+
+  ['accessoriesAmount', 'travelCharge', 'otherCharges', 'otherChargesDescription', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
       const inp = $(id);
       if (inp) {
           inp.addEventListener('input', () => recalculateFinancials());
@@ -2412,16 +2562,29 @@
   renderQuoteSummary();
   renderPaymentTerms();
 
+  let validUntilManuallyChanged = false;
+
   function syncValidUntil() {
       const qd = $('quotationDate') ? $('quotationDate').value : null;
       if (qd && $('validUntilDate')) {
-          const d = new Date(qd + 'T00:00:00');
-          d.setDate(d.getDate() + 365);
-          const y = d.getFullYear();
-          const m = String(d.getMonth() + 1).padStart(2, '0');
-          const day = String(d.getDate()).padStart(2, '0');
-          $('validUntilDate').value = `${y}-${m}-${day}`;
+          $('validUntilDate').min = qd;
+          if (!validUntilManuallyChanged) {
+              const d = new Date(qd + 'T00:00:00');
+              d.setDate(d.getDate() + 365);
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              $('validUntilDate').value = `${y}-${m}-${day}`;
+          }
       }
+  }
+  if ($('validUntilDate')) {
+      $('validUntilDate').addEventListener('change', () => {
+          validUntilManuallyChanged = true;
+      });
+      $('validUntilDate').addEventListener('input', () => {
+          validUntilManuallyChanged = true;
+      });
   }
   if ($('quotationDate')) {
       $('quotationDate').addEventListener('change', syncValidUntil);
@@ -2443,8 +2606,10 @@
               $('quotationDate').readOnly = true;
               $('quotationDate').style.backgroundColor = '#f3f4f6';
               $('quotationDate').style.cursor = 'not-allowed';
+              if ($('validUntilDate')) $('validUntilDate').min = data.quotationDate;
           }
           if (data.validUntil && $('validUntilDate')) {
+              validUntilManuallyChanged = true;
               $('validUntilDate').value = data.validUntil;
           } else {
               syncValidUntil();
@@ -2463,6 +2628,16 @@
           if (data.accessoriesAmount != null && $('accessoriesAmount')) $('accessoriesAmount').value = data.accessoriesAmount;
           if (data.travelCharge != null && $('travelCharge')) $('travelCharge').value = data.travelCharge;
           if (data.otherCharges != null && $('otherCharges')) $('otherCharges').value = data.otherCharges;
+          if ($('otherChargesDescription')) {
+              let loadedDesc = (data.otherChargesDescription || '').trim();
+              if (loadedDesc) {
+                  const firstIdx = loadedDesc.search(/\S/);
+                  if (firstIdx !== -1) {
+                      loadedDesc = loadedDesc.substring(0, firstIdx) + loadedDesc.charAt(firstIdx).toUpperCase() + loadedDesc.substring(firstIdx + 1);
+                  }
+              }
+              $('otherChargesDescription').value = loadedDesc;
+          }
           if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = data.discountAmount;
           if (data.gstPercentage != null && $('gstPercentage')) $('gstPercentage').value = data.gstPercentage;
           if (data.offerPercentage != null && $('offerPercentage')) $('offerPercentage').value = data.offerPercentage;
@@ -2497,7 +2672,8 @@
                       rate: Number(i.rate || 0),
                       formula: i.formula || '(L + W) × H',
                       unit: i.unit || 'Sq.ft',
-                      measurementType: i.measurementType || 'SQFT',
+                      measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                      coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
                       quantity: i.quantity != null ? Number(i.quantity) : 1,
                       imageUrl: i.imageUrl || null,
                       itemDescription: i.itemDescription || '',

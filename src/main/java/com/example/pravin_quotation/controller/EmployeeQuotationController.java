@@ -509,21 +509,33 @@ public class EmployeeQuotationController {
             map.put("specification", m.getSpecification() != null ? m.getSpecification().trim() : "");
             map.put("unit", m.getUnit() != null ? m.getUnit() : "Sq.ft");
 
-            BigDecimal resolvedRate = null;
-            if (branchId != null && targetGrade != null) {
+            AdminQuotationBuilderService.ResolvedMaterialRate res = null;
+            if (targetGrade != null) {
                 try {
-                    resolvedRate = builderService.resolveRate(branchId, m.getId(), null, targetGrade);
+                    Long effectiveDivId = divisionId != null ? divisionId : (m.getDivision() != null ? m.getDivision().getId() : null);
+                    res = builderService.resolveMaterialAndRate(branchId, effectiveDivId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
-            if (resolvedRate == null) {
+
+            boolean isAvailable = (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
+            BigDecimal resolvedRate = isAvailable ? res.rate() : null;
+            if (targetGrade == null && resolvedRate == null) {
                 resolvedRate = m.getRate();
+                isAvailable = (resolvedRate != null && resolvedRate.compareTo(BigDecimal.ZERO) > 0);
             }
 
+            String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
+            String unavailableMsg = (res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade");
+
+            map.put("available", isAvailable);
             map.put("rate", resolvedRate);
-            map.put("pricingGrade", m.getPricingGrade() != null ? m.getPricingGrade().name() : "");
-            map.put("formula", m.getFormula());
-            map.put("measurementType", m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT");
-            map.put("imageUrl", m.getImageUrl());
+            map.put("unavailableMessage", isAvailable ? null : unavailableMsg);
+            map.put("message", isAvailable ? null : unavailableMsg);
+            map.put("pricingGrade", targetGrade != null ? targetGrade.name() : (m.getPricingGrade() != null ? m.getPricingGrade().name() : ""));
+            map.put("formula", (res != null && res.formula() != null) ? res.formula() : m.getFormula());
+            map.put("measurementType", (res != null && res.measurementType() != null) ? res.measurementType().name() : (m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT"));
+            map.put("coveragePerRoll", m.getCoveragePerRoll());
+            map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
             return map;
         }).toList();
     }
@@ -626,6 +638,7 @@ public class EmployeeQuotationController {
             resp.put("pricingUnit", "₹ / " + res.unit());
             resp.put("measurementType", res.measurementType() != null ? res.measurementType().name() : "SQFT");
             resp.put("imageUrl", res.imageUrl());
+            resp.put("coveragePerRoll", res.coveragePerRoll());
             return ResponseEntity.ok(resp);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(mapData(
@@ -667,6 +680,7 @@ public class EmployeeQuotationController {
                     request.customer(),
                     effectiveBranchId,
                     request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
+                    request.validUntil(),
                     request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE,
                     request.customerRequirements(),
                     request.notes(),
@@ -674,6 +688,7 @@ public class EmployeeQuotationController {
                     request.accessoriesAmount(),
                     request.travelCharge(),
                     request.otherCharges(),
+                    request.otherChargesDescription(),
                     request.discountAmount(),
                     request.gstPercentage(),
                     request.offerPercentage(),
@@ -746,6 +761,7 @@ public class EmployeeQuotationController {
         data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
         data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
         data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+        data.put("otherChargesDescription", q.getOtherChargesDescription() != null ? q.getOtherChargesDescription() : "");
         data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
         data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
         data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
@@ -792,6 +808,9 @@ public class EmployeeQuotationController {
                 iMap.put("measurementType", item.getMeasurementType() != null ? item.getMeasurementType().name() : "SQFT");
                 iMap.put("quantity", item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE);
                 iMap.put("imageUrl", item.getImageUrl());
+                iMap.put("coveragePerRoll", item.getCoveragePerRoll() != null ? item.getCoveragePerRoll() : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null));
+                iMap.put("calculatedSqft", item.getCalculatedSqft());
+                iMap.put("amount", item.getAmount());
 
                 String itemFormula = (item.getFormula() != null && !item.getFormula().isBlank())
                         ? item.getFormula()
@@ -1075,6 +1094,9 @@ public class EmployeeQuotationController {
             @RequestParam String quotationDate,
 
             @RequestParam(required = false)
+            String validUntil,
+
+            @RequestParam(required = false)
             String customerRequirements,
 
             @RequestParam(required = false)
@@ -1099,6 +1121,33 @@ public class EmployeeQuotationController {
             if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
                 throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
             }
+            if (customerName != null && !customerName.isBlank()) {
+                customer.setName(com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(customerName.trim()));
+            }
+            if (phone != null && !phone.isBlank()) {
+                String cleanPhone = phone.trim();
+                java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(cleanPhone);
+                if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(customer.getId())) {
+                    throw new IllegalArgumentException("Phone number already exists");
+                }
+                customer.setPhone(cleanPhone);
+            }
+            if (email != null) {
+                String cleanEmail = email.trim().toLowerCase();
+                if (!cleanEmail.isBlank()) {
+                    java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(cleanEmail);
+                    if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(customer.getId())) {
+                        throw new IllegalArgumentException("Email address already exists");
+                    }
+                    customer.setEmail(cleanEmail);
+                } else {
+                    customer.setEmail(null);
+                }
+            }
+            if (address != null) {
+                customer.setAddress(address.isBlank() ? null : com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(address.trim()));
+            }
+            customer = customerRepository.save(customer);
         } else {
             customer = customerService.createOrUpdateForQuotation(
                     customerName,
@@ -1120,7 +1169,14 @@ public class EmployeeQuotationController {
                     )
             );
         }
-        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+        if (validUntil != null && !validUntil.isBlank()) {
+            LocalDate vu = LocalDate.parse(validUntil, DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalDate qd = quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now();
+            if (vu.isBefore(qd)) {
+                throw new IllegalArgumentException("Valid until date cannot be earlier than quotation date.");
+            }
+            quotation.setValidUntil(vu);
+        } else if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
             quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
 
@@ -1151,6 +1207,7 @@ public class EmployeeQuotationController {
             @RequestParam(required = false) String email,
             @RequestParam(required = false) String address,
             @RequestParam(required = false) String quotationDate,
+            @RequestParam(required = false) String validUntil,
             @RequestParam(required = false) String customerRequirements,
             @RequestParam(required = false) String notes,
             Authentication authentication,
@@ -1160,13 +1217,39 @@ public class EmployeeQuotationController {
         Quotation quotation = getQuotationAndCheckOwnership(id, employee);
 
         if (customerName != null && !customerName.isBlank() && phone != null && !phone.isBlank()) {
-            Customer customer = customerService.createOrUpdateForQuotation(
-                    customerName.trim(),
-                    email,
-                    phone.trim(),
-                    address,
-                    employee.getBranch().getId()
-            );
+            Customer customer = quotation.getCustomer();
+            if (customer != null) {
+                if (customer.getBranch() == null || !customer.getBranch().getId().equals(employee.getBranch().getId())) {
+                    throw new org.springframework.security.access.AccessDeniedException("Unauthorized branch customer access");
+                }
+                String cleanPhone = phone.trim();
+                java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(cleanPhone);
+                if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(customer.getId())) {
+                    throw new IllegalArgumentException("Phone number already exists");
+                }
+                String cleanEmail = email != null ? email.trim().toLowerCase() : null;
+                if (cleanEmail != null && !cleanEmail.isBlank()) {
+                    java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(cleanEmail);
+                    if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(customer.getId())) {
+                        throw new IllegalArgumentException("Email address already exists");
+                    }
+                    customer.setEmail(cleanEmail);
+                } else {
+                    customer.setEmail(null);
+                }
+                customer.setName(com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(customerName.trim()));
+                customer.setPhone(cleanPhone);
+                customer.setAddress(address != null && !address.isBlank() ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(address.trim()) : null);
+                customer = customerRepository.save(customer);
+            } else {
+                customer = customerService.createOrUpdateForQuotation(
+                        customerName.trim(),
+                        email,
+                        phone.trim(),
+                        address,
+                        employee.getBranch().getId()
+                );
+            }
             quotation.setCustomer(customer);
         }
 
@@ -1176,7 +1259,14 @@ public class EmployeeQuotationController {
                     LocalDate.parse(quotationDate, DateTimeFormatter.ISO_LOCAL_DATE)
             );
         }
-        if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
+        if (validUntil != null && !validUntil.isBlank()) {
+            LocalDate vu = LocalDate.parse(validUntil, DateTimeFormatter.ISO_LOCAL_DATE);
+            LocalDate qd = quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now();
+            if (vu.isBefore(qd)) {
+                throw new IllegalArgumentException("Valid until date cannot be earlier than quotation date.");
+            }
+            quotation.setValidUntil(vu);
+        } else if (quotation.getValidUntil() == null && quotation.getQuotationDate() != null) {
             quotation.setValidUntil(quotation.getQuotationDate().plusDays(365));
         }
         if (customerRequirements != null) {
@@ -3085,6 +3175,9 @@ public class EmployeeQuotationController {
             BigDecimal otherCharges,
 
             @RequestParam(required = false)
+            String otherChargesDescription,
+
+            @RequestParam(required = false)
             BigDecimal discountAmount,
 
             @RequestParam(required = false)
@@ -3124,6 +3217,7 @@ public class EmployeeQuotationController {
                             accessoriesAmount,
                             travelCharge,
                             otherCharges,
+                            otherChargesDescription,
                             discountAmount,
                             gstPercentage,
                             offerPercentage

@@ -63,6 +63,12 @@ public class MaterialController {
 
     @GetMapping("/new")
     public String newMaterial(
+            @RequestParam(required = false) Long divisionId,
+            @RequestParam(required = false) Long workTypeId,
+            @RequestParam(required = false) Long categoryId,
+            @RequestParam(required = false) String categoryName,
+            @RequestParam(required = false) String workTypeName,
+            @RequestParam(required = false) String returnUrl,
             @RequestParam(required = false) String redirectUrl,
             Model model
     ) {
@@ -70,6 +76,26 @@ public class MaterialController {
                 "material",
                 new Material()
         );
+
+        Long targetWorkTypeId = workTypeId != null ? workTypeId : divisionId;
+        if (targetWorkTypeId != null) {
+            String ret = (returnUrl != null && !returnUrl.isBlank()) ? returnUrl : redirectUrl;
+            StringBuilder sb = new StringBuilder("redirect:/admin/work-categories?workTypeId=").append(targetWorkTypeId).append("&addMaterial=true");
+            if (categoryId != null) {
+                sb.append("&categoryId=").append(categoryId);
+            }
+            if (categoryName != null && !categoryName.isBlank()) {
+                sb.append("&categoryName=").append(java.net.URLEncoder.encode(categoryName, java.nio.charset.StandardCharsets.UTF_8));
+            }
+            if (workTypeName != null && !workTypeName.isBlank()) {
+                sb.append("&workTypeName=").append(java.net.URLEncoder.encode(workTypeName, java.nio.charset.StandardCharsets.UTF_8));
+            }
+            if (ret != null && !ret.isBlank()) {
+                sb.append("&returnUrl=").append(java.net.URLEncoder.encode(ret, java.nio.charset.StandardCharsets.UTF_8));
+            }
+            return sb.toString();
+        }
+
         model.addAttribute(
                 "items",
                 itemRepository.findByActiveTrueOrderByDisplayOrderAsc()

@@ -39,6 +39,14 @@ public class EmployeeService {
     }
 
     // =========================
+    // GET ACTIVE EMPLOYEE COUNT
+    // =========================
+
+    public long getActiveEmployeeCount() {
+        return userRepository.countByRoleAndActiveTrue(Role.EMPLOYEE);
+    }
+
+    // =========================
     // GET EMPLOYEE BY ID
     // =========================
 

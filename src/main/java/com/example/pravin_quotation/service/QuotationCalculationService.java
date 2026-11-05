@@ -281,6 +281,7 @@ public class QuotationCalculationService {
             BigDecimal accessoriesAmount,
             BigDecimal travelCharge,
             BigDecimal otherCharges,
+            String otherChargesDescription,
             BigDecimal discountAmount,
             BigDecimal gstPercentage,
             BigDecimal offerPercentage) {
@@ -308,6 +309,13 @@ public class QuotationCalculationService {
                 otherCharges,
                 "Other charges");
 
+        if (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) {
+            if (otherChargesDescription == null || otherChargesDescription.trim().isEmpty()) {
+                throw new IllegalArgumentException(
+                        "Other charges description is required when other charges amount is entered.");
+            }
+        }
+
         validateNonNegative(
                 discountAmount,
                 "Discount amount");
@@ -325,6 +333,9 @@ public class QuotationCalculationService {
         quotation.setOtherCharges(
                 zeroIfNull(otherCharges));
 
+        quotation.setOtherChargesDescription(
+                otherChargesDescription != null ? otherChargesDescription.trim() : null);
+
         quotation.setDiscountAmount(
                 zeroIfNull(discountAmount));
 
@@ -337,6 +348,35 @@ public class QuotationCalculationService {
         }
 
         return calculateQuotation(quotationId);
+    }
+
+    @Transactional
+    public Quotation updateCharges(
+            Long quotationId,
+            BigDecimal accessoriesAmount,
+            BigDecimal travelCharge,
+            BigDecimal otherCharges,
+            BigDecimal discountAmount,
+            BigDecimal gstPercentage,
+            BigDecimal offerPercentage) {
+
+        Quotation quotation =
+                quotationRepository.findById(quotationId)
+                        .orElse(null);
+        String existingDesc = quotation != null ? quotation.getOtherChargesDescription() : null;
+        if ((existingDesc == null || existingDesc.trim().isEmpty()) && otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) {
+            existingDesc = "Other Charges";
+        }
+
+        return updateCharges(
+                quotationId,
+                accessoriesAmount,
+                travelCharge,
+                otherCharges,
+                existingDesc,
+                discountAmount,
+                gstPercentage,
+                offerPercentage);
     }
 
     @Transactional

@@ -98,6 +98,9 @@ public class Quotation {
     @Column(name = "other_charges", precision = 15, scale = 2)
     private BigDecimal otherCharges = BigDecimal.ZERO;
 
+    @Column(name = "other_charges_description", length = 500)
+    private String otherChargesDescription;
+
     @Column(name = "discount_amount", precision = 15, scale = 2)
     private BigDecimal discountAmount = BigDecimal.ZERO;
 
@@ -391,6 +394,39 @@ public class Quotation {
 
     public void setOtherCharges(BigDecimal otherCharges) {
         this.otherCharges = otherCharges;
+    }
+
+    public String getOtherChargesDescription() {
+        if (otherChargesDescription == null) {
+            return null;
+        }
+        String trimmed = otherChargesDescription.trim();
+        if (trimmed.isEmpty()) {
+            return trimmed;
+        }
+        char first = trimmed.charAt(0);
+        if (Character.isLowerCase(first)) {
+            return Character.toUpperCase(first) + trimmed.substring(1);
+        }
+        return trimmed;
+    }
+
+    public void setOtherChargesDescription(String otherChargesDescription) {
+        if (otherChargesDescription == null) {
+            this.otherChargesDescription = null;
+            return;
+        }
+        String trimmed = otherChargesDescription.trim();
+        if (trimmed.isEmpty()) {
+            this.otherChargesDescription = null;
+            return;
+        }
+        char first = trimmed.charAt(0);
+        if (Character.isLowerCase(first)) {
+            this.otherChargesDescription = Character.toUpperCase(first) + trimmed.substring(1);
+        } else {
+            this.otherChargesDescription = trimmed;
+        }
     }
 
     public BigDecimal getDiscountAmount() {

@@ -544,10 +544,14 @@ public class QuotationPdfService {
                 BigDecimal sqft = item.getCalculatedSqft() != null ? item.getCalculatedSqft() : BigDecimal.ZERO;
 
                 // Size & Sq.Ft
-                boolean isSqft = item.getMeasurementType() == null || item.getMeasurementType().isSqft();
+                boolean isRoll = item.getMeasurementType() == MeasurementType.ROLL || (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.ROLL);
+                boolean isSqft = !isRoll && (item.getMeasurementType() == null || item.getMeasurementType().isSqft());
                 String sizeStr;
                 String sqftStr;
-                if (isSqft) {
+                if (isRoll) {
+                    sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+                    sqftStr = format(sqft);
+                } else if (isSqft) {
                     sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
                     sqftStr = format(sqft);
                 } else {
@@ -565,7 +569,21 @@ public class QuotationPdfService {
                 BigDecimal rate = item.getRate() != null ? item.getRate() : BigDecimal.ZERO;
                 BigDecimal amount = item.getAmount() != null
                         ? item.getAmount()
-                        : (isSqft ? rate.multiply(sqft) : rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE));
+                        : (isRoll
+                                ? rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)
+                                : (isSqft ? rate.multiply(sqft) : rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)));
+
+                if (isRoll) {
+                    BigDecimal rolls = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE;
+                    BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
+                            : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : BigDecimal.valueOf(40));
+                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + cov.stripTrailingZeros().toPlainString() + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹" : "Rs. ") + format(rate) + "/Roll)";
+                    if (specification == null || specification.isBlank()) {
+                        specification = rollDetails;
+                    } else {
+                        specification = specification + "\n" + rollDetails;
+                    }
+                }
                 BigDecimal offerPrice = item.getOfferPrice();
                 if (offerPrice == null || offerPrice.compareTo(BigDecimal.ZERO) <= 0) {
                     offerPrice = amount;
@@ -665,7 +683,16 @@ public class QuotationPdfService {
 
             // Row 4: Other Charges (if configured)
             if (otherCharges.compareTo(BigDecimal.ZERO) > 0) {
-                addSummaryRow(itemTable, "Other Charges", rupees(otherCharges), false);
+                String otherChargesLabel = "Other Charges";
+                if (quotation.getOtherChargesDescription() != null && !quotation.getOtherChargesDescription().trim().isEmpty()) {
+                    String desc = quotation.getOtherChargesDescription().trim();
+                    char first = desc.charAt(0);
+                    if (Character.isLowerCase(first)) {
+                        desc = Character.toUpperCase(first) + desc.substring(1);
+                    }
+                    otherChargesLabel = "Other Charges (" + desc + ")";
+                }
+                addSummaryRow(itemTable, otherChargesLabel, rupees(otherCharges), false);
             }
 
             // Row 5: Discount (if configured)
@@ -1213,6 +1240,9 @@ public class QuotationPdfService {
     }
 
     private String resolveUnit(QuotationItem item, PricingMode pricingMode) {
+        if (item.getMeasurementType() == MeasurementType.ROLL || (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.ROLL)) {
+            return "ROLL";
+        }
         if (item.getMeasurementType() == MeasurementType.QUANTITY) {
             return "QTY";
         }
@@ -1248,6 +1278,9 @@ public class QuotationPdfService {
                         return "QTY";
                     case "FILES":
                         return "FILES";
+                    case "ROLL":
+                    case "ROLLS":
+                        return "ROLL";
                     case "LUMP_SUM":
                     case "LS":
                         return "LS";

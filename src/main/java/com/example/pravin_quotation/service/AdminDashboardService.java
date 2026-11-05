@@ -1,6 +1,7 @@
 package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.Quotation;
+import com.example.pravin_quotation.model.Role;
 import com.example.pravin_quotation.repository.BranchRepository;
 import com.example.pravin_quotation.repository.CustomerRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
@@ -36,7 +37,7 @@ public class AdminDashboardService {
     // ==============================
 
     public long getTotalEmployees() {
-        return userRepository.count();
+        return userRepository.countByRoleAndActiveTrue(Role.EMPLOYEE);
     }
 
     // ==============================

@@ -49,6 +49,9 @@ public class Material {
     @Column(name = "measurement_type", length = 30)
     private MeasurementType measurementType = MeasurementType.SQFT;
 
+    @Column(name = "coverage_per_roll", precision = 10, scale = 2)
+    private BigDecimal coveragePerRoll;
+
     @Column(name = "sqft_enabled")
     private Boolean sqftEnabled = true;
 
@@ -127,7 +130,7 @@ public class Material {
             description = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim());
         }
 
-        if (measurementType == null || measurementType.isSqft()) {
+        if (measurementType == null || measurementType.isSqft() || measurementType.isRoll()) {
             if (formula == null || formula.isBlank()) {
                 formula = "(L + W) × H";
             }
@@ -150,7 +153,7 @@ public class Material {
             description = com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(description.trim());
         }
 
-        if (measurementType == null || measurementType.isSqft()) {
+        if (measurementType == null || measurementType.isSqft() || measurementType.isRoll()) {
             if (formula == null || formula.isBlank()) {
                 formula = "(L + W) × H";
             }
@@ -245,11 +248,22 @@ public class Material {
     }
 
     public String getUnit() {
+        if (measurementType == MeasurementType.ROLL) {
+            return (unit != null && !unit.isBlank()) ? unit : "Roll";
+        }
         return (unit != null && !unit.isBlank()) ? unit : "Sq.ft";
     }
 
     public void setUnit(String unit) {
         this.unit = unit;
+    }
+
+    public BigDecimal getCoveragePerRoll() {
+        return coveragePerRoll;
+    }
+
+    public void setCoveragePerRoll(BigDecimal coveragePerRoll) {
+        this.coveragePerRoll = coveragePerRoll;
     }
 
     public MeasurementType getMeasurementType() {
