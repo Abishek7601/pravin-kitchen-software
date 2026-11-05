@@ -770,6 +770,20 @@
                         <textarea id="materialSpecInput" class="modal-input capitalize-title" data-title-case="true" placeholder="e.g. Century Ply Club Prime 16mm, IS:710 Marine Grade" style="padding: 8px 12px; font-size: 13px; width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; min-height: 80px; height: 90px; resize: vertical; box-sizing: border-box; font-family: inherit; line-height: 1.45;"></textarea>
                     </div>
 
+                    <!-- ACTIVE STATUS FIELD -->
+                    <div style="margin-bottom: 14px; display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; background: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px;">
+                        <div>
+                            <label for="materialActiveInput" style="display: block; font-size: 13px; font-weight: 700; color: #0f172a; cursor: pointer; user-select: none;">
+                                Material Active Status
+                            </label>
+                            <span style="font-size: 11px; color: #64748b;">Active materials appear in Quotation Creation for this grade and branch. Inactive materials are hidden.</span>
+                        </div>
+                        <label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; margin: 0; padding: 4px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px;">
+                            <input type="checkbox" id="materialActiveInput" checked style="width: 17px; height: 17px; accent-color: #024541; cursor: pointer;">
+                            <span id="materialActiveInputLabel" style="font-size: 12px; font-weight: 700; color: #024541;">Active</span>
+                        </label>
+                    </div>
+
                     <!-- BRANCH-WISE PRICING SECTION -->
                     <div style="margin-bottom: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; flex-wrap: wrap; gap: 6px;">
@@ -2437,6 +2451,15 @@
             if (materialSpecInput) materialSpecInput.value = isEdit ? (typeof toTitleCase === 'function' ? toTitleCase(mat.specification || '') : (mat.specification || '')) : '';
             if (materialRateInput) materialRateInput.value = isEdit ? (mat.rate != null ? mat.rate : '') : '';
 
+            var matActive = isEdit ? (mat.active !== false) : true;
+            var activeInp = document.getElementById('materialActiveInput');
+            var activeLbl = document.getElementById('materialActiveInputLabel');
+            if (activeInp) activeInp.checked = matActive;
+            if (activeLbl) {
+                activeLbl.textContent = matActive ? 'Active' : 'Inactive';
+                activeLbl.style.color = matActive ? '#024541' : '#dc2626';
+            }
+
             // Set measurement type
             var mType = 'SQFT';
             if (mat) {
@@ -2617,14 +2640,26 @@
                         branchRatesHtml += '</div>';
                     }
 
-                    html += '<div class="material-card" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;">' +
+                    var statusBadge = isActive
+                        ? '<span class="mat-status-pill mat-status-active" style="font-size: 10px; background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 2px 7px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981; display: inline-block;"></span>Active</span>'
+                        : '<span class="mat-status-pill mat-status-inactive" style="font-size: 10px; background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 2px 7px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>Inactive</span>';
+
+                    var toggleControl = '<label class="material-status-toggle-wrapper" style="display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; margin-right: 4px; padding: 4px 8px; border-radius: 6px; background: ' + (isActive ? '#f0fdf4' : '#f8fafc') + '; border: 1px solid ' + (isActive ? '#bbf7d0' : '#cbd5e1') + '; transition: all 0.2s ease;" title="Click to ' + (isActive ? 'deactivate' : 'activate') + ' material">' +
+                        '<input type="checkbox" class="js-toggle-material-status" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" ' + (isActive ? 'checked' : '') + ' style="position: absolute; opacity: 0; width: 0; height: 0; pointer-events: none;">' +
+                        '<span class="toggle-track" style="position: relative; width: 34px; height: 18px; background-color: ' + (isActive ? '#024541' : '#94a3b8') + '; border-radius: 20px; transition: background-color 0.2s ease; display: inline-block; vertical-align: middle;">' +
+                            '<span class="toggle-knob" style="position: absolute; top: 2px; left: ' + (isActive ? '18px' : '2px') + '; width: 14px; height: 14px; background-color: #ffffff; border-radius: 50%; transition: left 0.2s ease; box-shadow: 0 1px 2px rgba(0,0,0,0.25);"></span>' +
+                        '</span>' +
+                        '<span class="toggle-text" style="font-size: 11px; font-weight: 700; color: ' + (isActive ? '#024541' : '#64748b') + '; min-width: 44px;">' + (isActive ? 'Active' : 'Inactive') + '</span>' +
+                    '</label>';
+
+                    html += '<div class="material-card" style="display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 14px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.03); transition: all 0.2s ease;' + (!isActive ? ' opacity: 0.85;' : '') + '">' +
                         '<div style="display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1;">' +
                             imgThumbnail +
                             '<div style="min-width: 0; flex: 1;">' +
                                 '<div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">' +
                                     '<strong style="font-size: 14px; font-weight: 700; color: #0f172a;">' + escapeHtml(name) + '</strong>' +
                                     typeBadge +
-                                    (!isActive ? '<span style="font-size: 10px; background: #fee2e2; color: #991b1b; padding: 2px 7px; border-radius: 8px; font-weight: 600;">Inactive</span>' : '') +
+                                    statusBadge +
                                 '</div>' +
                                 (spec ? '<div style="font-size: 12px; color: #64748b; margin-top: 3px; white-space: pre-line; word-break: break-word;">' + escapeHtml(spec) + '</div>' : '') +
                                 branchRatesHtml +
@@ -2635,8 +2670,9 @@
                                 '<div style="font-size: 15px; font-weight: 700; color: #024541;">' + rateFmt + '</div>' +
                                 '<div style="font-size: 11px; color: #64748b; font-weight: 500;">' + unitLabel + '</div>' +
                             '</div>' +
-                            '<div class="material-actions" style="display: flex; gap: 6px;">' +
-                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-type="' + mType + '" data-image="' + (mat.imageUrl ? escapeHtml(mat.imageUrl) : '') + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" data-coverage="' + (mat.coveragePerRoll || '') + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
+                            '<div class="material-actions" style="display: flex; align-items: center; gap: 6px;">' +
+                                toggleControl +
+                                '<button type="button" class="js-edit-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" data-spec="' + escapeHtml(spec) + '" data-unit="' + escapeHtml(unit) + '" data-type="' + mType + '" data-image="' + (mat.imageUrl ? escapeHtml(mat.imageUrl) : '') + '" data-rate="' + rateVal + '" data-grade="' + mat.pricingGrade + '" data-formula="' + escapeHtml(formula) + '" data-coverage="' + (mat.coveragePerRoll || '') + '" data-active="' + (isActive ? 'true' : 'false') + '" title="Edit Material" style="padding: 5px 11px; border: 1px solid #cbd5e1; background: #ffffff; color: #024541; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Edit</button>' +
                                 '<button type="button" class="js-delete-material-btn" data-id="' + mat.id + '" data-name="' + escapeHtml(name) + '" title="Delete Material" style="padding: 5px 11px; border: 1px solid #fecaca; background: #fef2f2; color: #dc2626; border-radius: 6px; font-size: 11px; cursor: pointer; font-weight: 600; transition: all 0.2s ease;">Delete</button>' +
                             '</div>' +
                         '</div>' +
@@ -2784,6 +2820,17 @@
             });
         }
 
+        var materialActiveInput = document.getElementById('materialActiveInput');
+        if (materialActiveInput) {
+            materialActiveInput.addEventListener('change', function() {
+                var activeLbl = document.getElementById('materialActiveInputLabel');
+                if (activeLbl) {
+                    activeLbl.textContent = this.checked ? 'Active' : 'Inactive';
+                    activeLbl.style.color = this.checked ? '#024541' : '#dc2626';
+                }
+            });
+        }
+
         // Cancel Material Form
         function handleMaterialFormCancel() {
             if (typeof deepReturnUrl !== 'undefined' && deepReturnUrl) {
@@ -2884,6 +2931,8 @@
                     formData.append('coveragePerRoll', covVal);
                 }
                 formData.append('specification', specVal);
+                var activeInp = document.getElementById('materialActiveInput');
+                formData.append('active', activeInp ? String(activeInp.checked) : 'true');
                 formData.append('branchRatesJson', JSON.stringify(branchRatesObj));
 
                 // Also append individual params for backward compatibility
@@ -2956,6 +3005,78 @@
         // Delegate Edit & Delete clicks inside materialsListContainer
         if (materialsListContainer) {
             materialsListContainer.addEventListener('click', function(e) {
+                var toggleWrap = e.target.closest('.material-status-toggle-wrapper');
+                if (toggleWrap) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    var chk = toggleWrap.querySelector('.js-toggle-material-status');
+                    if (!chk || chk.disabled) return;
+                    var matId = chk.getAttribute('data-id');
+                    var matName = chk.getAttribute('data-name') || 'Material';
+
+                    chk.disabled = true;
+                    toggleWrap.style.opacity = '0.5';
+                    toggleWrap.style.pointerEvents = 'none';
+
+                    var csrf = getCsrfInfo();
+                    var url = '/admin/work-categories/work-types/materials/' + encodeURIComponent(matId) + '/toggle' +
+                        (currentMaterialsWorkType ? ('?targetWorkTypeId=' + encodeURIComponent(currentMaterialsWorkType.id)) : '');
+
+                    var headers = {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    };
+                    if (csrf.token) headers[csrf.header] = csrf.token;
+
+                    fetch(url, {
+                        method: 'POST',
+                        headers: headers
+                    })
+                    .then(function(resp) {
+                        return resp.json().then(function(data) {
+                            return { ok: resp.ok, status: resp.status, data: data };
+                        });
+                    })
+                    .then(function(res) {
+                        chk.disabled = false;
+                        toggleWrap.style.opacity = '1';
+                        toggleWrap.style.pointerEvents = '';
+
+                        if (!res.ok || !res.data || !res.data.success) {
+                            var errMsg = (res.data && res.data.message) ? res.data.message : 'Failed to update material status.';
+                            showMaterialsGlobalAlert(errMsg, true);
+                            return;
+                        }
+
+                        var newActive = res.data.active;
+                        showMaterialsGlobalAlert(res.data.message || (matName + ' status updated to ' + (newActive ? 'Active' : 'Inactive') + '.'), false);
+
+                        if (res.data.materials) {
+                            currentMaterialsData = res.data;
+                            updateGradeTabBadges(res.data);
+                        } else if (currentMaterialsData && currentMaterialsData.materials) {
+                            ['PREMIUM', 'MIDDLE', 'ECONOMY'].forEach(function(g) {
+                                if (currentMaterialsData.materials[g]) {
+                                    currentMaterialsData.materials[g].forEach(function(m) {
+                                        if (String(m.id) === String(matId)) {
+                                            m.active = newActive;
+                                        }
+                                    });
+                                }
+                            });
+                        }
+
+                        renderMaterialsForGrade(activeMaterialsGrade);
+                    })
+                    .catch(function(err) {
+                        chk.disabled = false;
+                        toggleWrap.style.opacity = '1';
+                        toggleWrap.style.pointerEvents = '';
+                        showMaterialsGlobalAlert(err.message || 'Network error while updating material status.', true);
+                    });
+                    return;
+                }
+
                 var editBtn = e.target.closest('.js-edit-material-btn');
                 if (editBtn) {
                     e.preventDefault();
@@ -2979,6 +3100,7 @@
                         var formula = editBtn.getAttribute('data-formula') || 'L × W';
                         var mType = editBtn.getAttribute('data-type') || 'SQFT';
                         var imgUrl = editBtn.getAttribute('data-image') || '';
+                        var isActiveVal = editBtn.getAttribute('data-active') !== 'false';
                         var foundMat = null;
                         if (currentMaterialsData && currentMaterialsData.materials) {
                             var listForGrade = currentMaterialsData.materials[grade] || currentMaterialsData.materials[activeMaterialsGrade];
@@ -2998,7 +3120,8 @@
                                 pricingGrade: grade,
                                 formula: formula,
                                 measurementType: mType,
-                                imageUrl: imgUrl
+                                imageUrl: imgUrl,
+                                active: isActiveVal
                             });
                         }
                     }

@@ -2,6 +2,8 @@ package com.example.pravin_quotation.repository;
 
 import com.example.pravin_quotation.model.QuotationItem;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 
@@ -34,4 +36,7 @@ public interface QuotationItemRepository extends JpaRepository<QuotationItem, Lo
     long countByWorkCategoryId(Long workCategoryId);
 
     List<QuotationItem> findByQuotationRoomId(Long quotationRoomId);
+
+    @Query("SELECT COUNT(qi) FROM QuotationItem qi WHERE qi.quotationRoom.quotation.id = :quotationId AND qi.material.id = :materialId")
+    long countByQuotationIdAndMaterialId(@Param("quotationId") Long quotationId, @Param("materialId") Long materialId);
 }

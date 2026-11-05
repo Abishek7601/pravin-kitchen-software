@@ -1071,10 +1071,10 @@
           const rawMaterials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${encodeURIComponent(state.pricingMode)}&branchId=${encodeURIComponent(branchVal)}&onlyAvailable=true`);
           if (currentReqSeq !== materialsRequestSeq) return;
 
-          const materials = (rawMaterials || []).filter(m => m && m.available === true && m.rate != null && !isNaN(Number(m.rate)) && Number(m.rate) > 0);
+          const materials = (rawMaterials || []).filter(m => m && m.active !== false && m.available === true && m.rate != null && !isNaN(Number(m.rate)) && Number(m.rate) > 0);
 
           if (!materials || materials.length === 0) {
-              listEl.innerHTML = `<div style="font-size: 13px; color: #64748b; font-style: italic; padding: 8px 0; font-weight: 500;">No materials available in this grade</div>`;
+              listEl.innerHTML = `<div style="font-size: 13px; color: #64748b; font-style: italic; padding: 8px 0; font-weight: 500;">No active materials available in this grade</div>`;
               if (state.draft && state.draft.divisionId === divisionId) {
                   state.draft = null;
                   const sizePanel = $(`wt-size-panel-${divisionId}`);

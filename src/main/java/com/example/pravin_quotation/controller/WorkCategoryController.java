@@ -261,6 +261,7 @@ public class WorkCategoryController {
             @RequestParam(required = false) MultipartFile imageFile,
             @RequestParam(required = false) BigDecimal rate,
             @RequestParam(required = false) String branchRatesJson,
+            @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Map<String, String> allRequestParams) {
         try {
             String gradeStr = (grade != null && !grade.isBlank()) ? grade : pricingGrade;
@@ -312,7 +313,7 @@ public class WorkCategoryController {
             String effectiveSpec = (specification != null && !specification.isBlank())
                     ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
                     : null;
-            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, coveragePerRoll);
+            Material material = workCategoryService.createWorkTypeMaterial(workTypeId, mode, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, coveragePerRoll, active);
 
             Map<String, Object> resp = new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(workTypeId));
             resp.put("success", true);
@@ -344,6 +345,7 @@ public class WorkCategoryController {
             @RequestParam(required = false) Boolean removeImage,
             @RequestParam(required = false) BigDecimal rate,
             @RequestParam(required = false) String branchRatesJson,
+            @RequestParam(required = false) Boolean active,
             @RequestParam(required = false) Map<String, String> allRequestParams) {
         try {
             String effectiveFormula = (formula != null && !formula.isBlank()) ? formula : measurementFormula;
@@ -379,7 +381,7 @@ public class WorkCategoryController {
             String effectiveSpec = (specification != null && !specification.isBlank())
                     ? com.example.pravin_quotation.util.TitleCaseUtils.toTitleCase(specification.trim())
                     : null;
-            Material material = workCategoryService.updateWorkTypeMaterial(materialId, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage, coveragePerRoll);
+            Material material = workCategoryService.updateWorkTypeMaterial(materialId, effectiveName, effectiveSpec, effectiveUnit, rate, effectiveFormula, branchRates, mType, imageUrl, removeImage, coveragePerRoll, active);
             Long effectiveWorkTypeId = workTypeId != null ? workTypeId : (targetWorkTypeId != null ? targetWorkTypeId : (material.getDivision() != null ? material.getDivision().getId() : null));
 
             Map<String, Object> resp = (effectiveWorkTypeId != null)
@@ -393,6 +395,31 @@ public class WorkCategoryController {
             return ResponseEntity.badRequest().body(Map.of(
                     "success", false,
                     "message", e.getMessage() != null ? e.getMessage() : "Failed to update material."
+            ));
+        }
+    }
+
+    @PostMapping({"/work-types/materials/{materialId}/toggle", "/work-types/{workTypeId}/materials/{materialId}/toggle"})
+    @ResponseBody
+    public ResponseEntity<?> toggleWorkTypeMaterial(
+            @PathVariable Long materialId,
+            @PathVariable(required = false) Long workTypeId,
+            @RequestParam(required = false) Long targetWorkTypeId) {
+        try {
+            boolean newActive = workCategoryService.toggleWorkTypeMaterial(materialId);
+            Long effectiveWorkTypeId = workTypeId != null ? workTypeId : targetWorkTypeId;
+            Map<String, Object> resp = (effectiveWorkTypeId != null)
+                    ? new LinkedHashMap<>(workCategoryService.getWorkTypeMaterials(effectiveWorkTypeId))
+                    : new LinkedHashMap<>();
+            resp.put("success", true);
+            resp.put("active", newActive);
+            resp.put("materialId", materialId);
+            resp.put("message", "Material status updated to " + (newActive ? "Active" : "Inactive") + ".");
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to toggle material status."
             ));
         }
     }
@@ -422,11 +449,11 @@ public class WorkCategoryController {
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, null, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, null, rate, null, null, null);
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, null, rate, null, null, null);
     }
 
     public ResponseEntity<?> createWorkTypeMaterial(
@@ -447,15 +474,15 @@ public class WorkCategoryController {
         if (allRequestParams != null) {
             allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
         }
-        return createWorkTypeMaterial(workTypeId, grade, pricingGrade, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, rate, branchRatesJson, stringParams);
+        return createWorkTypeMaterial(workTypeId, grade, pricingGrade, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, rate, branchRatesJson, null, stringParams);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, null, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, null, rate, null, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, null, rate, null, null);
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, null, rate, null, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(
@@ -477,7 +504,7 @@ public class WorkCategoryController {
         if (allRequestParams != null) {
             allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
         }
-        return updateWorkTypeMaterial(materialId, workTypeId, targetWorkTypeId, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, removeImage, rate, branchRatesJson, stringParams);
+        return updateWorkTypeMaterial(materialId, workTypeId, targetWorkTypeId, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, removeImage, rate, branchRatesJson, null, stringParams);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {
