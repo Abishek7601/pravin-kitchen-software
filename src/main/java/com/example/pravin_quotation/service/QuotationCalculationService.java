@@ -90,7 +90,7 @@ public class QuotationCalculationService {
             quotationRoomRepository.save(room);
 
             quotationSubtotal =
-                    quotationSubtotal.add(roomSubtotal);
+                    quotationSubtotal.add(roomOfferPrice);
         }
 
         quotation.setSubtotal(
@@ -257,8 +257,32 @@ public class QuotationCalculationService {
             BigDecimal itemOfferPrice =
                     item.getOfferPrice();
 
+            if (quotationItemSizeService != null && item.getId() != null) {
+                List<QuotationItemSize> sizes = quotationItemSizeService.getActiveSizes(item.getId());
+                if (sizes != null && !sizes.isEmpty()) {
+                    BigDecimal sizesOfferTotal = BigDecimal.ZERO;
+                    boolean hasCustomSizeOffer = false;
+                    for (QuotationItemSize sz : sizes) {
+                        BigDecimal szOffer = sz.getOfferPrice();
+                        BigDecimal szSqft = zeroIfNull(sz.getCalculatedSqft());
+                        BigDecimal szBase = money(szSqft.multiply(zeroIfNull(item.getRate())));
+                        if (szOffer != null && szOffer.compareTo(BigDecimal.ZERO) > 0) {
+                            sizesOfferTotal = sizesOfferTotal.add(szOffer);
+                            if (szOffer.compareTo(szBase) != 0) {
+                                hasCustomSizeOffer = true;
+                            }
+                        } else {
+                            sizesOfferTotal = sizesOfferTotal.add(szBase);
+                        }
+                    }
+                    if (hasCustomSizeOffer && sizesOfferTotal.compareTo(BigDecimal.ZERO) > 0) {
+                        itemOfferPrice = sizesOfferTotal;
+                    }
+                }
+            }
+
             if (itemOfferPrice == null
-                    || itemOfferPrice.compareTo(BigDecimal.ZERO)<=0){
+                    || itemOfferPrice.compareTo(BigDecimal.ZERO) <= 0) {
 
                 itemOfferPrice = zeroIfNull(item.getAmount());
             }

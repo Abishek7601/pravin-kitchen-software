@@ -589,8 +589,8 @@ public class QuotationPdfService {
                     offerPrice = amount;
                 }
 
-                // Sum items' Total Amount before applying Offer Percentage
-                itemsTotalAmount = itemsTotalAmount.add(amount);
+                // Sum items' Total Amount (using discounted Offer Price) before applying quotation-level Offer Percentage
+                itemsTotalAmount = itemsTotalAmount.add(offerPrice);
 
                 // Image URL (check item first, then fallback to material)
                 String itemImageUrl = item.getImageUrl();
@@ -598,7 +598,7 @@ public class QuotationPdfService {
                     itemImageUrl = item.getMaterial().getImageUrl();
                 }
 
-                // Add Row Cells (item-level offer price removed)
+                // Add Row Cells (item-level offer price reflected in total amount)
                 addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
                 addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
                 addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
@@ -609,7 +609,8 @@ public class QuotationPdfService {
                     addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
                 }
                 addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow);
-                addRupeeCell(itemTable, rupees(amount), false, false, isAltRow);
+                BigDecimal itemAmt = (offerPrice != null && offerPrice.compareTo(BigDecimal.ZERO) > 0) ? offerPrice : amount;
+                addRupeeCell(itemTable, rupees(itemAmt), false, false, isAltRow);
 
                 isAltRow = !isAltRow;
             }

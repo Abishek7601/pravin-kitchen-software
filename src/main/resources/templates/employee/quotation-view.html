@@ -286,7 +286,7 @@
 
                 ₹
 
-                <span th:text="${room.subtotal != null ? room.subtotal : 0}">
+                <span th:text="${room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0)}">
                                     0.00
                                 </span>
 

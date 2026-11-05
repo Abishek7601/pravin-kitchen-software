@@ -2046,8 +2046,8 @@
       </tr>`;
 
       tbody.innerHTML = html;
-      state.currentSubtotal = grandBase;
-      recalculateFinancials(grandBase);
+      state.currentSubtotal = grandOffer;
+      recalculateFinancials(grandOffer);
   }
 
   function recalculateFinancials(explicitSubtotal) {
@@ -2737,14 +2737,37 @@
                       imageUrl: i.imageUrl || null,
                       itemDescription: i.itemDescription || '',
                       specification: i.specification || '',
-                      sizes: (i.sizes || []).map(s => ({
-                          length: Number(s.length || 0),
-                          width: Number(s.width || 0),
-                          height: Number(s.height || 0),
-                          offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
-                          offerDiscountPercent: (s.offerPrice != null && Number(i.rate || 0) > 0) ? Math.round((1 - (Number(s.offerPrice) / (Number(i.rate) * calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height)))) * 100) : 0,
-                          offerActive: s.offerPrice != null
-                      }))
+                      sizes: (i.sizes || []).map(s => {
+                          const mType = (i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
+                          const isRoll = mType === 'ROLL' || (i.unit && i.unit.toLowerCase() === 'roll');
+                          const isSqft = mType === 'SQFT';
+                          let lineBase = 0;
+                          if (isRoll) {
+                              const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
+                              const cov = Number(i.coveragePerRoll || 40);
+                              const rolls = (meas > 0 && cov > 0) ? Math.ceil(meas / cov) : Number(i.quantity || 1);
+                              lineBase = rolls * Number(i.rate || 0);
+                          } else if (isSqft) {
+                              const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
+                              lineBase = meas * Number(i.rate || 0);
+                          } else {
+                              lineBase = Number(i.quantity || 1) * Number(i.rate || 0);
+                          }
+                          let discPct = 0;
+                          if (s.offerPrice != null && lineBase > 0) {
+                              discPct = Math.round((1 - (Number(s.offerPrice) / lineBase)) * 100);
+                              if (discPct < 0) discPct = 0;
+                          }
+                          const hasOffer = s.offerPrice != null && discPct > 0;
+                          return {
+                              length: Number(s.length || 0),
+                              width: Number(s.width || 0),
+                              height: Number(s.height || 0),
+                              offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
+                              offerDiscountPercent: discPct,
+                              offerActive: hasOffer
+                          };
+                      })
                   }))
               }));
               $('floor').value = state.rooms[0].floor;
