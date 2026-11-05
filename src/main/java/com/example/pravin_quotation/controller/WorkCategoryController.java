@@ -421,6 +421,14 @@ public class WorkCategoryController {
         }
     }
 
+    public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
+        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, null, rate, null, null);
+    }
+
+    public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
+        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
+    }
+
     public ResponseEntity<?> createWorkTypeMaterial(
             Long workTypeId,
             String grade,
@@ -434,8 +442,20 @@ public class WorkCategoryController {
             MultipartFile imageFile,
             BigDecimal rate,
             String branchRatesJson,
-            Map<String, String> allRequestParams) {
-        return createWorkTypeMaterial(workTypeId, grade, pricingGrade, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, rate, branchRatesJson, allRequestParams);
+            Map<?, ?> allRequestParams) {
+        Map<String, String> stringParams = new LinkedHashMap<>();
+        if (allRequestParams != null) {
+            allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
+        }
+        return createWorkTypeMaterial(workTypeId, grade, pricingGrade, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, rate, branchRatesJson, stringParams);
+    }
+
+    public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
+        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, null, rate, null, null);
+    }
+
+    public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
+        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, null, rate, null, null);
     }
 
     public ResponseEntity<?> updateWorkTypeMaterial(
@@ -452,24 +472,12 @@ public class WorkCategoryController {
             Boolean removeImage,
             BigDecimal rate,
             String branchRatesJson,
-            Map<String, String> allRequestParams) {
-        return updateWorkTypeMaterial(materialId, workTypeId, targetWorkTypeId, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, removeImage, rate, branchRatesJson, allRequestParams);
-    }
-
-    public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, null, null, specification, unit, null, null, null, rate, null, null);
-    }
-
-    public ResponseEntity<?> createWorkTypeMaterial(Long workTypeId, String grade, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return createWorkTypeMaterial(workTypeId, grade, null, name, formula, null, specification, unit, null, null, null, rate, null, null);
-    }
-
-    public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate) {
-        return updateWorkTypeMaterial(materialId, null, null, name, null, null, specification, unit, null, null, null, null, rate, null, null);
-    }
-
-    public ResponseEntity<?> updateWorkTypeMaterial(Long materialId, String name, String specification, String unit, BigDecimal rate, String formula) {
-        return updateWorkTypeMaterial(materialId, null, null, name, formula, null, specification, unit, null, null, null, null, rate, null, null);
+            Map<?, ?> allRequestParams) {
+        Map<String, String> stringParams = new LinkedHashMap<>();
+        if (allRequestParams != null) {
+            allRequestParams.forEach((k, v) -> stringParams.put(String.valueOf(k), v != null ? String.valueOf(v) : null));
+        }
+        return updateWorkTypeMaterial(materialId, workTypeId, targetWorkTypeId, name, formula, measurementFormula, specification, unit, measurementType, null, imageFile, removeImage, rate, branchRatesJson, stringParams);
     }
 
     public ResponseEntity<?> deleteWorkTypeMaterial(Long materialId) {

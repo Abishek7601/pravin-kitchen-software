@@ -30,6 +30,11 @@ import com.example.pravin_quotation.repository.PricingRepository;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.repository.WorkCategoryRepository;
+import com.example.pravin_quotation.util.PaginationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import com.example.pravin_quotation.model.WhatsAppResult;
 import com.example.pravin_quotation.service.*;
@@ -253,6 +258,9 @@ public class EmployeeQuotationController {
             @PathVariable(required = false) String status,
             @RequestParam(name = "status", required = false) String paramStatus,
             @RequestParam(name = "period", required = false) String period,
+            @RequestParam(name = "page", defaultValue = "1") int page,
+            @RequestParam(name = "search", required = false) String search,
+            @RequestParam(name = "sort", required = false) String sort,
             Authentication authentication,
             Model model
     ) {
@@ -263,19 +271,14 @@ public class EmployeeQuotationController {
         String rawStatus = (status != null && !status.trim().isEmpty()) ? status : paramStatus;
         QuotationStatus activeStatus = parseStatus(rawStatus);
 
-        List<Quotation> quotations;
+        LocalDate startDate = null;
+        LocalDate endDate = null;
         String pageTitle = "My Quotations";
         String pageSubtitle = "View and manage your customer quotations.";
         String emptyTitle = "No quotations found";
         String emptyMsg = "No quotations found. Create your first quotation to get started.";
 
         if (activeStatus != null) {
-            quotations = quotationRepository
-                    .findByEmployeeIdAndStatusOrderByCreatedAtDesc(
-                            employee.getId(),
-                            activeStatus
-                    );
-
             switch (activeStatus) {
                 case PENDING -> {
                     pageTitle = "Pending Quotations";
@@ -298,36 +301,59 @@ public class EmployeeQuotationController {
             }
         } else if ("60".equals(period)) {
             LocalDate today = LocalDate.now();
-            LocalDate sixtyDaysAgo = today.minusDays(59);
-            quotations = quotationRepository
-                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
-                            employee.getId(),
-                            sixtyDaysAgo,
-                            today
-                    );
+            startDate = today.minusDays(59);
+            endDate = today;
             pageTitle = "60 Days Quotations";
             pageSubtitle = "Quotations created in the last 60 days.";
             emptyTitle = "No quotations in the last 60 days";
             emptyMsg = "You have not created any quotations in the last 60 days.";
         } else if ("365".equals(period) || "year".equalsIgnoreCase(period) || "1year".equalsIgnoreCase(period)) {
             LocalDate today = LocalDate.now();
-            LocalDate oneYearAgo = today.minusYears(1);
-            quotations = quotationRepository
-                    .findByEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
-                            employee.getId(),
-                            oneYearAgo,
-                            today
-                    );
+            startDate = today.minusYears(1);
+            endDate = today;
             pageTitle = "Total One Year Quotations";
             pageSubtitle = "Quotations created during the last one year.";
             emptyTitle = "No quotations in the last one year";
             emptyMsg = "You have not created any quotations in the last one year.";
-        } else {
-            quotations = quotationRepository
-                    .findByEmployeeIdOrderByCreatedAtDesc(
-                            employee.getId()
-                    );
         }
+
+        String cleanSearch = (search != null && !search.trim().isEmpty()) ? search.trim() : null;
+        if (cleanSearch != null) {
+            emptyTitle = "No matching quotations";
+            emptyMsg = "No quotations found matching '" + cleanSearch + "'.";
+        }
+
+        Sort sortObj;
+        if ("date_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "quotationDate").and(Sort.by(Sort.Direction.ASC, "createdAt"));
+        } else if ("date_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "quotationDate").and(Sort.by(Sort.Direction.DESC, "createdAt"));
+        } else if ("amount_asc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.ASC, "grandTotal");
+        } else if ("amount_desc".equalsIgnoreCase(sort)) {
+            sortObj = Sort.by(Sort.Direction.DESC, "grandTotal");
+        } else {
+            sortObj = Sort.by(Sort.Direction.DESC, "createdAt");
+        }
+
+        int pageIndex = Math.max(0, page - 1);
+        Pageable pageable = PageRequest.of(pageIndex, 10, sortObj);
+
+        Page<Quotation> quotePage = quotationRepository.searchEmployeeQuotations(
+                employee.getId(),
+                activeStatus,
+                startDate,
+                endDate,
+                cleanSearch,
+                pageable
+        );
+
+        List<Quotation> quotations = quotePage.getContent();
+        long totalRecords = quotePage.getTotalElements();
+        int totalPages = quotePage.getTotalPages();
+        int currentPage = quotePage.getNumber() + 1;
+        long pageStart = totalRecords == 0 ? 0 : ((long) quotePage.getNumber() * 10 + 1);
+        long pageEnd = Math.min((long) (quotePage.getNumber() + 1) * 10, totalRecords);
 
         long totalCount = quotationRepository.countByEmployeeId(employee.getId());
         long pendingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.PENDING);
@@ -347,7 +373,29 @@ public class EmployeeQuotationController {
         model.addAttribute("workingCount", workingCount);
         model.addAttribute("sentCount", sentCount);
 
+        model.addAttribute("totalRecords", totalRecords);
+        model.addAttribute("totalElements", totalRecords);
+        model.addAttribute("totalPages", totalPages);
+        model.addAttribute("currentPage", currentPage);
+        model.addAttribute("pageStart", pageStart);
+        model.addAttribute("pageEnd", pageEnd);
+        model.addAttribute("hasPrevious", quotePage.hasPrevious());
+        model.addAttribute("hasNext", quotePage.hasNext());
+        model.addAttribute("pageNumbers", PaginationUtils.getPageNumbers(currentPage, totalPages));
+        model.addAttribute("search", cleanSearch != null ? cleanSearch : "");
+        model.addAttribute("sort", sort != null ? sort : "");
+
         return "employee/quotations";
+    }
+
+    public String quotations(
+            String status,
+            String paramStatus,
+            String period,
+            Authentication authentication,
+            Model model
+    ) {
+        return quotations(status, paramStatus, period, 1, null, null, authentication, model);
     }
 
     private QuotationStatus parseStatus(String statusStr) {
@@ -478,7 +526,9 @@ public class EmployeeQuotationController {
             @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long itemId,
-            @RequestParam(required = false) String pricingGrade) {
+            @RequestParam(required = false) String pricingGrade,
+            @RequestParam(required = false) Boolean onlyAvailable,
+            Authentication authentication) {
         PricingMode grade = null;
         if (pricingGrade != null && !pricingGrade.isBlank()) {
             String g = pricingGrade.trim().toUpperCase();
@@ -487,11 +537,21 @@ public class EmployeeQuotationController {
             else grade = PricingMode.MIDDLE;
         }
 
+        Long effectiveBranchId = branchId;
+        if (effectiveBranchId == null && authentication != null) {
+            try {
+                User emp = userRepository.findByEmail(authentication.getName()).orElse(null);
+                if (emp != null && emp.getBranch() != null) {
+                    effectiveBranchId = emp.getBranch().getId();
+                }
+            } catch (Exception ignored) {}
+        }
+
         List<Material> list = null;
-        if (divisionId != null && grade != null) {
+        if (divisionId != null && grade != null && !Boolean.TRUE.equals(onlyAvailable)) {
             list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
         }
-        if (list == null || list.isEmpty()) {
+        if (list == null || list.isEmpty() || Boolean.TRUE.equals(onlyAvailable)) {
             if (divisionId != null) {
                 list = materialRepository.findActiveByDivisionId(divisionId);
             } else if (itemId != null) {
@@ -501,7 +561,8 @@ public class EmployeeQuotationController {
             }
         }
         final PricingMode targetGrade = grade;
-        return list.stream().map(m -> {
+        final Long finalBranchId = effectiveBranchId;
+        List<Map<String, Object>> result = list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
@@ -513,7 +574,7 @@ public class EmployeeQuotationController {
             if (targetGrade != null) {
                 try {
                     Long effectiveDivId = divisionId != null ? divisionId : (m.getDivision() != null ? m.getDivision().getId() : null);
-                    res = builderService.resolveMaterialAndRate(branchId, effectiveDivId, m.getId(), null, targetGrade);
+                    res = builderService.resolveMaterialAndRate(finalBranchId, effectiveDivId, m.getId(), null, targetGrade);
                 } catch (Exception ignored) {}
             }
 
@@ -538,6 +599,30 @@ public class EmployeeQuotationController {
             map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
             return map;
         }).toList();
+
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+            result = result.stream()
+                    .filter(m -> Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
+                    .toList();
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> builderMaterials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade) {
+        return builderMaterials(branchId, divisionId, itemId, pricingGrade, false, null);
+    }
+
+    public List<Map<String, Object>> builderMaterials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade,
+            Boolean onlyAvailable) {
+        return builderMaterials(branchId, divisionId, itemId, pricingGrade, onlyAvailable, null);
     }
 
     public List<Map<String, Object>> builderMaterials(Long itemId) {

@@ -1036,26 +1036,85 @@
       await loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName);
   }
 
+  let materialsRequestSeq = 0;
+
   async function loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName) {
       const listEl = $(`wt-mat-list-${divisionId}`);
       if (!listEl) return;
 
+      const currentReqSeq = ++materialsRequestSeq;
+      let branchVal = $('branchId') ? $('branchId').value : '';
+      if (!branchVal && $('branchId')?.dataset?.employeeBranch) {
+          branchVal = $('branchId').dataset.employeeBranch;
+      }
+
+      if (!branchVal) {
+          listEl.innerHTML = '<div style="font-size: 13px; color: #dc2626; padding: 8px 0; font-weight: 500;">Please select a branch first to retrieve material rates.</div>';
+          if ($('pricingMessage')) {
+              $('pricingMessage').textContent = 'Please select a branch first to retrieve material rates.';
+              $('pricingMessage').style.color = '#dc2626';
+          }
+          if (state.draft && state.draft.divisionId === divisionId) {
+              state.draft = null;
+              const sizePanel = $(`wt-size-panel-${divisionId}`);
+              if (sizePanel) {
+                  sizePanel.innerHTML = '';
+                  sizePanel.classList.add('hidden');
+              }
+          }
+          return;
+      }
+
       listEl.innerHTML = '<div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>';
-      const branchVal = $('branchId') ? $('branchId').value : '';
 
       try {
-          const materials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
+          const rawMaterials = await getJson(`${API_BASE}/materials?divisionId=${divisionId}&pricingGrade=${encodeURIComponent(state.pricingMode)}&branchId=${encodeURIComponent(branchVal)}&onlyAvailable=true`);
+          if (currentReqSeq !== materialsRequestSeq) return;
+
+          const materials = (rawMaterials || []).filter(m => m && m.available === true && m.rate != null && !isNaN(Number(m.rate)) && Number(m.rate) > 0);
+
           if (!materials || materials.length === 0) {
-              listEl.innerHTML = `<div style="font-size: 12px; color: #94a3b8; font-style: italic; padding: 6px 0;">No materials available for ${esc(state.pricingMode)} grade</div>`;
+              listEl.innerHTML = `<div style="font-size: 13px; color: #64748b; font-style: italic; padding: 8px 0; font-weight: 500;">No materials available in this grade</div>`;
+              if (state.draft && state.draft.divisionId === divisionId) {
+                  state.draft = null;
+                  const sizePanel = $(`wt-size-panel-${divisionId}`);
+                  if (sizePanel) {
+                      sizePanel.innerHTML = '';
+                      sizePanel.classList.add('hidden');
+                  }
+              }
               return;
           }
 
+          // If draft material in this division is no longer available in the new grade, clear draft and size panel
+          if (state.draft && state.draft.divisionId === divisionId) {
+              const matchingMat = materials.find(m => m.id === state.draft.materialId);
+              if (!matchingMat) {
+                  state.draft = null;
+                  const sizePanel = $(`wt-size-panel-${divisionId}`);
+                  if (sizePanel) {
+                      sizePanel.innerHTML = '';
+                      sizePanel.classList.add('hidden');
+                  }
+              } else {
+                  state.draft.rate = Number(matchingMat.rate);
+                  state.draft.imageUrl = matchingMat.imageUrl || state.draft.imageUrl;
+                  if (matchingMat.formula) state.draft.formula = matchingMat.formula;
+                  const rateInput = $(`wt-rate-input-${divisionId}`);
+                  if (rateInput) {
+                      rateInput.value = Number(matchingMat.rate).toFixed(2);
+                  }
+              }
+          }
+
           // Populate select id="materialId" for compatibility
-          $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
-              const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
-              const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
-              return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
-          }).join('');
+          if ($('materialId')) {
+              $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
+                  const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
+                  const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : '';
+                  return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
+              }).join('');
+          }
 
           listEl.innerHTML = materials.map(m => {
               const isSelected = state.draft && state.draft.divisionId === divisionId && state.draft.materialId === m.id;
@@ -1069,6 +1128,7 @@
               }
           });
       } catch (e) {
+          if (currentReqSeq !== materialsRequestSeq) return;
           listEl.innerHTML = `<div style="font-size: 12px; color: #dc2626; padding: 6px 0;">Failed to load materials</div>`;
       }
   }
@@ -1124,11 +1184,11 @@
       const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
       const unavailableMsg = material.unavailableMessage || material.message || `No material available in ${gradeLabel} Grade`;
 
-      if (isFiles && !isAvailable) {
+      if (!isAvailable) {
           state.draft = null;
           sizePanel.innerHTML = `
             <div class="size-details-title-row">
-              <span class="size-details-title">FILE &amp; ITEM DETAILS &mdash; ${esc(material.name.toUpperCase())}</span>
+              <span class="size-details-title">${isFiles ? 'FILE &amp; ITEM DETAILS' : 'ITEM DETAILS'} &mdash; ${esc(material.name.toUpperCase())}</span>
               <span class="size-details-formula" style="background:#fee2e2; color:#b91c1c; border-color:#fecaca;">UNAVAILABLE</span>
             </div>
             <div class="size-details-spec-box">
@@ -2138,16 +2198,15 @@
           const catName = catBtn ? catBtn.dataset.name : '';
           await loadMaterialsForWorkType(activeDivisionId, divName, catId, catName);
       } else if (state.draft && state.draft.divisionId) {
-          const materials = await getJson(`${API_BASE}/materials?divisionId=${state.draft.divisionId}&pricingGrade=${state.pricingMode}&branchId=${branchVal}`);
-          if (!materials || materials.length === 0) {
-              $('materialId').innerHTML = `<option value="" disabled selected>No materials available for ${esc(state.pricingMode)} grade</option>`;
-          } else {
-              $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
-                  const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
-                  const rateText = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : ' - (No rate configured for this branch)';
-                  return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateText}</option>`;
-              }).join('');
-          }
+          await loadMaterialsForWorkType(state.draft.divisionId, state.draft.divisionName || '', state.draft.categoryId, state.draft.categoryName || '');
+      }
+
+      if (!state.draft) {
+          document.querySelectorAll('.wt-size-panel').forEach(p => {
+              p.innerHTML = '';
+              p.classList.add('hidden');
+          });
+          document.querySelectorAll('.wt-material-btn').forEach(b => b.classList.remove('selected-material-btn'));
       }
 
       if (!state.rooms.some(r => r.items && r.items.length > 0)) {

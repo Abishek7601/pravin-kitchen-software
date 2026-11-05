@@ -141,7 +141,8 @@ public class AdminQuotationBuilderController {
             @RequestParam(required = false) Long branchId,
             @RequestParam(required = false) Long divisionId,
             @RequestParam(required = false) Long itemId,
-            @RequestParam(required = false) String pricingGrade) {
+            @RequestParam(required = false) String pricingGrade,
+            @RequestParam(required = false) Boolean onlyAvailable) {
         PricingMode grade = null;
         if (pricingGrade != null && !pricingGrade.isBlank()) {
             String g = pricingGrade.trim().toUpperCase();
@@ -151,10 +152,10 @@ public class AdminQuotationBuilderController {
         }
 
         List<Material> list = null;
-        if (divisionId != null && grade != null) {
+        if (divisionId != null && grade != null && !Boolean.TRUE.equals(onlyAvailable)) {
             list = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, grade);
         }
-        if (list == null || list.isEmpty()) {
+        if (list == null || list.isEmpty() || Boolean.TRUE.equals(onlyAvailable)) {
             if (divisionId != null) {
                 list = materialRepository.findActiveByDivisionId(divisionId);
             } else if (itemId != null) {
@@ -164,7 +165,7 @@ public class AdminQuotationBuilderController {
             }
         }
         final PricingMode targetGrade = grade;
-        return list.stream().map(m -> {
+        List<Map<String, Object>> result = list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
@@ -201,6 +202,21 @@ public class AdminQuotationBuilderController {
             map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
             return map;
         }).toList();
+
+        if (Boolean.TRUE.equals(onlyAvailable)) {
+            result = result.stream()
+                    .filter(m -> Boolean.TRUE.equals(m.get("available")) && m.get("rate") != null)
+                    .toList();
+        }
+        return result;
+    }
+
+    public List<Map<String, Object>> materials(
+            Long branchId,
+            Long divisionId,
+            Long itemId,
+            String pricingGrade) {
+        return materials(branchId, divisionId, itemId, pricingGrade, false);
     }
 
     public List<Map<String, Object>> materials(Long itemId) {

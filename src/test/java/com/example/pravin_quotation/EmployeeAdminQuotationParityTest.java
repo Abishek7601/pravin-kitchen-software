@@ -192,7 +192,7 @@ public class EmployeeAdminQuotationParityTest {
                 .filter(m -> m.get("id").equals(material.getId()))
                 .findFirst().orElseThrow();
         assertEquals(ADMIN_RATE_MIDDLE, middleMat.get("rate"), "Employee must load Admin-configured MIDDLE rate");
-        assertEquals("HDHMR 18mm with 1mm Acrylic finish", middleMat.get("specification"), "Must load saved specification");
+        assertEquals(material.getSpecification(), middleMat.get("specification"), "Must load saved specification");
 
         // 2. Check Premium grade rate
         List<Map<String, Object>> premMats = employeeQuotationController.builderMaterials(

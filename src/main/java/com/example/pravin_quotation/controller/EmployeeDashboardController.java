@@ -5,11 +5,17 @@ import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.repository.QuotationRepository;
 import com.example.pravin_quotation.repository.UserRepository;
 import com.example.pravin_quotation.service.EmployeeDashboardService;
+import com.example.pravin_quotation.util.PaginationUtils;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -33,6 +39,7 @@ public class EmployeeDashboardController {
 
     @GetMapping("/dashboard")
     public String dashboard(
+            @RequestParam(name = "page", defaultValue = "1") int page,
             Authentication authentication,
             Model model
     ) {
@@ -52,14 +59,19 @@ public class EmployeeDashboardController {
                 );
 
         // =====================================================
-        // GET EMPLOYEE QUOTATIONS
+        // RECENT QUOTATIONS (PAGINATED AT 10 PER PAGE)
         // =====================================================
 
-        List<Quotation> quotations =
-                quotationRepository
-                        .findByEmployeeIdOrderByCreatedAtDesc(
-                                employee.getId()
-                        );
+        int pageIndex = Math.max(0, page - 1);
+        Pageable pageable = PageRequest.of(pageIndex, 10, Sort.by(Sort.Direction.DESC, "createdAt"));
+
+        Page<Quotation> recentQuotationsPage = quotationRepository.findByEmployeeId(employee.getId(), pageable);
+        List<Quotation> recentQuotations = recentQuotationsPage.getContent();
+        long totalRecords = recentQuotationsPage.getTotalElements();
+        int totalPages = recentQuotationsPage.getTotalPages();
+        int currentPage = recentQuotationsPage.getNumber() + 1;
+        long pageStart = totalRecords == 0 ? 0 : ((long) recentQuotationsPage.getNumber() * 10 + 1);
+        long pageEnd = Math.min((long) (recentQuotationsPage.getNumber() + 1) * 10, totalRecords);
 
         // =====================================================
         // QUOTATION SUMMARY COUNTS (SCOPED TO LOGGED-IN EMPLOYEE)
@@ -80,17 +92,7 @@ public class EmployeeDashboardController {
         long sentQuotations =
                 employeeDashboardService.getSentQuotationCount(employee.getId());
 
-        long totalQuotations =
-                quotations.size();
-
-        // =====================================================
-        // RECENT QUOTATIONS
-        // =====================================================
-
-        List<Quotation> recentQuotations =
-                quotations.stream()
-                        .limit(5)
-                        .toList();
+        long totalQuotations = totalRecords;
 
         // =====================================================
         // SEND DATA TO THYMELEAF
@@ -103,7 +105,7 @@ public class EmployeeDashboardController {
 
         model.addAttribute(
                 "quotations",
-                quotations
+                recentQuotations
         );
 
         model.addAttribute(
@@ -114,6 +116,51 @@ public class EmployeeDashboardController {
         model.addAttribute(
                 "totalQuotations",
                 totalQuotations
+        );
+
+        model.addAttribute(
+                "totalRecords",
+                totalRecords
+        );
+
+        model.addAttribute(
+                "totalElements",
+                totalRecords
+        );
+
+        model.addAttribute(
+                "totalPages",
+                totalPages
+        );
+
+        model.addAttribute(
+                "currentPage",
+                currentPage
+        );
+
+        model.addAttribute(
+                "pageStart",
+                pageStart
+        );
+
+        model.addAttribute(
+                "pageEnd",
+                pageEnd
+        );
+
+        model.addAttribute(
+                "hasPrevious",
+                recentQuotationsPage.hasPrevious()
+        );
+
+        model.addAttribute(
+                "hasNext",
+                recentQuotationsPage.hasNext()
+        );
+
+        model.addAttribute(
+                "pageNumbers",
+                PaginationUtils.getPageNumbers(currentPage, totalPages)
         );
 
         model.addAttribute(
@@ -152,5 +199,12 @@ public class EmployeeDashboardController {
         );
 
         return "employee/dashboard";
+    }
+
+    public String dashboard(
+            Authentication authentication,
+            Model model
+    ) {
+        return dashboard(1, authentication, model);
     }
 }
