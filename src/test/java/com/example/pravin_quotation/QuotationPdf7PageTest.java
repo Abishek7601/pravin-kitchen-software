@@ -189,7 +189,7 @@ public class QuotationPdf7PageTest {
         item.setCalculatedSqft(new BigDecimal("80.00"));
         item.setRate(new BigDecimal("1250.00"));
         item.setAmount(new BigDecimal("100000.00"));
-        item.setOfferPrice(new BigDecimal("90000.00"));
+        item.setOfferPrice(new BigDecimal("100000.00"));
         item.setActive(true);
         quotationItemRepository.save(item);
 

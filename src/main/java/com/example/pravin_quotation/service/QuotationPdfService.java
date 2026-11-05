@@ -808,11 +808,11 @@ public class QuotationPdfService {
 
         Font sigFont = new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK);
 
-        PdfPCell sig1 = new PdfPCell(new Paragraph("________________________\nCustomer Signature", sigFont));
+        PdfPCell sig1 = new PdfPCell(new Paragraph("Customer Signature", sigFont));
         sig1.setBorder(Rectangle.NO_BORDER);
         sig1.setHorizontalAlignment(Element.ALIGN_CENTER);
 
-        PdfPCell sig2 = new PdfPCell(new Paragraph("________________________\nFor Pravin KITCHENS & INTERIORS", sigFont));
+        PdfPCell sig2 = new PdfPCell(new Paragraph("For Pravin KITCHENS & INTERIORS", sigFont));
         sig2.setBorder(Rectangle.NO_BORDER);
         sig2.setHorizontalAlignment(Element.ALIGN_CENTER);
 

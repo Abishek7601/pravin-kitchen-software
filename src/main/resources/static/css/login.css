@@ -348,6 +348,49 @@ button:focus-visible {
     outline-offset: 4px;
 }
 
+button.has-spinner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+button:disabled:not(.toggle-pwd),
+button.loading {
+    cursor: not-allowed;
+    transform: none !important;
+    filter: none !important;
+    color: var(--white) !important;
+    background: linear-gradient(
+        110deg,
+        var(--peacock-dark),
+        var(--peacock),
+        var(--peacock-light)
+    ) !important;
+    box-shadow: 0 7px 17px rgba(0, 92, 82, 0.22) !important;
+    opacity: 0.96;
+}
+
+.btn-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: btnSpin 0.75s linear infinite;
+    flex-shrink: 0;
+}
+
+@keyframes btnSpin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 /* Login Messages */
 
 .message {
