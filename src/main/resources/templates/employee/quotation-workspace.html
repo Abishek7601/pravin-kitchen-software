@@ -36,23 +36,6 @@
                 <p>Manage and review quotation details.</p>
             </div>
 
-            <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
-                <a th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
-                   class="btn btn-primary btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #024541; color: white;">
-                    ✏ Edit in Builder
-                </a>
-                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-                   class="btn btn-dark btn-sm" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; text-decoration: none; background: #1e293b; color: white;">
-                    Preview / PDF
-                </a>
-                <button type="button"
-                        onclick="window.print()"
-                        class="btn btn-outline-secondary btn-sm"
-                        style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none;">
-                    Print
-                </button>
-            </div>
-
             <div class="employee-profile">
                 <div class="profile-avatar">
                     <span th:text="${employee != null and employee.name != null and !employee.name.isEmpty() ? #strings.substring(employee.name,0,1).toUpperCase() : (#authentication != null and #authentication.name != null and !#authentication.name.isEmpty() ? #strings.substring(#authentication.name,0,1).toUpperCase() : 'E')}">E</span>
