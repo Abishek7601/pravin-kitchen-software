@@ -43,10 +43,11 @@ public class CustomAuthenticationSuccessHandler
 
         if (roles.contains("ROLE_SUPER_ADMIN")) {
 
-            // Admin does NOT need OTP and has no 8:00 PM restriction
-            session.setAttribute("OTP_VERIFIED", true);
+            // Super Admin requires OTP verification on every new login.
+            // Super Admin has NO 8:00 PM IST auto-logout restriction.
+            session.setAttribute("OTP_VERIFIED", false);
 
-            response.sendRedirect("/admin/dashboard");
+            response.sendRedirect("/admin/otp");
 
         } else if (roles.contains("ROLE_EMPLOYEE")) {
 

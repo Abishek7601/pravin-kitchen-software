@@ -230,10 +230,12 @@
             showErrorMessage('Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.');
           } else if (finalUrl.includes('/employee/otp')) {
             window.location.href = finalUrl;
+          } else if (finalUrl.includes('/admin/otp')) {
+            window.location.href = finalUrl;
           } else if (finalUrl.includes('/admin/dashboard') || finalUrl.includes('/admin')) {
             window.location.href = finalUrl;
           } else {
-            window.location.href = finalUrl || '/employee/otp';
+            window.location.href = finalUrl || '/login';
           }
         } catch (err) {
           form.dataset.submitting = 'false';

@@ -81,9 +81,12 @@ public class OtpController {
             return "redirect:/login?error";
         }
 
-        // Super Admin does not need OTP
+        // Super Admin uses dedicated admin OTP flow
         if (employee.getRole() == Role.SUPER_ADMIN) {
-            return "redirect:/admin/dashboard";
+            if (Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"))) {
+                return "redirect:/admin/dashboard";
+            }
+            return "redirect:/admin/otp";
         }
 
         // Inactive employee cannot login

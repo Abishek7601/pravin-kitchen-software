@@ -71,6 +71,36 @@ public class OtpEmailService {
         }
     }
 
+    public void sendSuperAdminOtp(
+            String adminEmail,
+            String adminName,
+            String otp
+    ) {
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setTo(adminEmail);
+        message.setSubject("Pravin KITCHENS & INTERIORS - Super Admin Login OTP");
+        message.setText(
+                "Hello " + (adminName != null && !adminName.trim().isEmpty() ? adminName.trim() : "Super Admin") + ",\n\n"
+                        + "A login attempt was made for your Super Admin account in the "
+                        + "Pravin KITCHENS & INTERIORS Quotation Management System.\n\n"
+                        + "Your Login Verification OTP: " + otp + "\n\n"
+                        + "This OTP is valid for 5 minutes.\n\n"
+                        + "Maximum verification attempts: 5.\n\n"
+                        + "If you did not initiate this login request, please change your password immediately.\n\n"
+                        + "Regards,\n"
+                        + "Pravin KITCHENS & INTERIORS\n"
+                        + "Quotation Management System"
+        );
+
+        try {
+            mailSender.send(message);
+            log.info("Super Admin login OTP email successfully sent to [{}]", adminEmail);
+        } catch (MailException e) {
+            log.error("Failed to send Super Admin login OTP email to [{}]: {}", adminEmail, e.getMessage(), e);
+            throw e;
+        }
+    }
+
     public void sendPasswordResetOtp(
             String adminEmail,
             String employeeName,

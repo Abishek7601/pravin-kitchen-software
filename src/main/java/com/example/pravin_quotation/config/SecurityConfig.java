@@ -54,6 +54,13 @@ public class SecurityConfig {
                                 "/employee/otp/verify"
                         ).hasRole("EMPLOYEE")
 
+                        // Super Admin OTP
+                        .requestMatchers(
+                                "/admin/otp",
+                                "/admin/otp/send",
+                                "/admin/otp/verify"
+                        ).hasRole("SUPER_ADMIN")
+
                         // Admin
                         .requestMatchers("/admin/**")
                         .hasRole("SUPER_ADMIN")

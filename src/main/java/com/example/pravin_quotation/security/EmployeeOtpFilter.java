@@ -32,11 +32,17 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null
-                && authentication.isAuthenticated()
-                && authentication.getAuthorities()
-                .stream()
-                .anyMatch(authority ->
-                        authority.getAuthority().equals("ROLE_EMPLOYEE"))) {
+                && authentication.isAuthenticated()) {
+
+            boolean isEmployee = authentication.getAuthorities()
+                    .stream()
+                    .anyMatch(authority ->
+                            authority.getAuthority().equals("ROLE_EMPLOYEE"));
+
+            boolean isSuperAdmin = authentication.getAuthorities()
+                    .stream()
+                    .anyMatch(authority ->
+                            authority.getAuthority().equals("ROLE_SUPER_ADMIN"));
 
             String requestUri = request.getRequestURI();
 
@@ -49,55 +55,96 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
             boolean staticResource =
                     requestUri.startsWith("/css/")
                             || requestUri.startsWith("/js/")
-                            || requestUri.startsWith("/images/");
+                            || requestUri.startsWith("/images/")
+                            || requestUri.startsWith("/uploads/");
 
             boolean loginPage = requestUri.equals("/login");
-            boolean forgotPasswordPage = requestUri.startsWith("/employee/forgot-password");
 
-            if (!staticResource && !loginPage && !forgotPasswordPage) {
+            if (isEmployee) {
+                boolean forgotPasswordPage = requestUri.startsWith("/employee/forgot-password");
 
-                HttpSession session = request.getSession(false);
+                if (!staticResource && !loginPage && !forgotPasswordPage) {
 
-                // =========================================================
-                // 1. HARD DEADLINE: 8:00 PM IST AUTO-LOGOUT ENFORCEMENT
-                // =========================================================
-                if (employeeSessionService.isSessionExpired(session)) {
-                    employeeSessionService.invalidateEmployeeSession(request, response);
+                    HttpSession session = request.getSession(false);
 
-                    String xRequestedWith = request.getHeader("X-Requested-With");
-                    String accept = request.getHeader("Accept");
-                    if ("XMLHttpRequest".equalsIgnoreCase(xRequestedWith)
-                            || (accept != null && accept.contains("application/json"))) {
-                        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                        response.setContentType("application/json");
-                        response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.\"}");
+                    // =========================================================
+                    // 1. HARD DEADLINE: 8:00 PM IST AUTO-LOGOUT ENFORCEMENT
+                    // =========================================================
+                    if (employeeSessionService.isSessionExpired(session)) {
+                        employeeSessionService.invalidateEmployeeSession(request, response);
+
+                        String xRequestedWith = request.getHeader("X-Requested-With");
+                        String accept = request.getHeader("Accept");
+                        if ("XMLHttpRequest".equalsIgnoreCase(xRequestedWith)
+                                || (accept != null && accept.contains("application/json"))) {
+                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            response.setContentType("application/json");
+                            response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.\"}");
+                            return;
+                        }
+
+                        response.sendRedirect("/login?expired");
                         return;
                     }
 
-                    response.sendRedirect("/login?expired");
-                    return;
+                    // =========================================================
+                    // 2. EMPLOYEE OTP ENFORCEMENT
+                    // =========================================================
+                    boolean otpPage = requestUri.equals("/employee/otp");
+                    boolean otpSend = requestUri.equals("/employee/otp/send");
+                    boolean otpVerify = requestUri.equals("/employee/otp/verify");
+                    boolean sessionStatus = requestUri.equals("/employee/session-status");
+
+                    boolean otpVerified = session != null
+                            && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
+
+                    if (!otpVerified) {
+                        if (!otpPage && !otpSend && !otpVerify && !sessionStatus) {
+                            response.sendRedirect("/employee/otp");
+                            return;
+                        }
+                    } else {
+                        if (otpPage) {
+                            response.sendRedirect("/employee/dashboard");
+                            return;
+                        }
+                    }
                 }
-
+            } else if (isSuperAdmin) {
                 // =========================================================
-                // 2. AFTER-HOURS SUPER ADMIN OTP ENFORCEMENT
+                // 3. SUPER ADMIN OTP ENFORCEMENT (NO 8:00 PM RESTRICTION)
                 // =========================================================
-                boolean otpPage = requestUri.equals("/employee/otp");
-                boolean otpSend = requestUri.equals("/employee/otp/send");
-                boolean otpVerify = requestUri.equals("/employee/otp/verify");
-                boolean sessionStatus = requestUri.equals("/employee/session-status");
+                if (!staticResource && !loginPage) {
 
-                boolean otpVerified = session != null
-                        && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
+                    HttpSession session = request.getSession(false);
 
-                if (!otpVerified) {
-                    if (!otpPage && !otpSend && !otpVerify && !sessionStatus) {
-                        response.sendRedirect("/employee/otp");
-                        return;
-                    }
-                } else {
-                    if (otpPage) {
-                        response.sendRedirect("/employee/dashboard");
-                        return;
+                    boolean adminOtpPage = requestUri.equals("/admin/otp");
+                    boolean adminOtpSend = requestUri.equals("/admin/otp/send");
+                    boolean adminOtpVerify = requestUri.equals("/admin/otp/verify");
+
+                    boolean otpVerified = session != null
+                            && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
+
+                    if (!otpVerified) {
+                        if (!adminOtpPage && !adminOtpSend && !adminOtpVerify) {
+                            String xRequestedWith = request.getHeader("X-Requested-With");
+                            String accept = request.getHeader("Accept");
+                            if ("XMLHttpRequest".equalsIgnoreCase(xRequestedWith)
+                                    || (accept != null && accept.contains("application/json"))) {
+                                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                                response.setContentType("application/json");
+                                response.getWriter().write("{\"error\":\"OTP_REQUIRED\",\"message\":\"Super Admin OTP verification is required.\"}");
+                                return;
+                            }
+
+                            response.sendRedirect("/admin/otp");
+                            return;
+                        }
+                    } else {
+                        if (adminOtpPage) {
+                            response.sendRedirect("/admin/dashboard");
+                            return;
+                        }
                     }
                 }
             }
