@@ -50,9 +50,7 @@
         <div class="summary-label">Total Portfolio Value</div>
 
         <div class="summary-value">
-            ₹ <span th:text="${totalPortfolioValue != null
-                              ? #numbers.formatDecimal(totalPortfolioValue, 1, 'COMMA', 2, 'POINT')
-                              : '0.00'}">0.00</span>
+            ₹ <span th:text="${@inr.format(totalPortfolioValue)}">0.00</span>
         </div>
     </section>
 
@@ -82,9 +80,7 @@
                               th:text="${quotation.status}">PENDING</span>
                     </td>
                     <td class="text-end"
-                        th:text="${quotation.grandTotal != null
-                                  ? #numbers.formatDecimal(quotation.grandTotal, 1, 'COMMA', 2, 'POINT')
-                                  : '0.00'}">0.00</td>
+                        th:text="${@inr.format(quotation.grandTotal)}">0.00</td>
                 </tr>
 
                 <tr th:if="${#lists.isEmpty(quotations)}">

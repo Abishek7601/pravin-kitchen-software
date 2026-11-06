@@ -2633,7 +2633,7 @@
                         mat.branchRatesList.forEach(function(br) {
                             var r = (grade === 'PREMIUM') ? br.premiumRate : ((grade === 'ECONOMY') ? br.economyRate : br.middleRate);
                             if (r != null && Number(r) >= 0) {
-                                var rFmt = '₹' + Number(r).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                                var rFmt = '₹ ' + Number(r).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
                                 branchRatesHtml += '<span style="font-size: 11px; background: #f8fafc; border: 1px solid #e2e8f0; color: #334155; padding: 2px 7px; border-radius: 4px;">📍 ' + escapeHtml(br.branchName) + ': <strong style="color: #024541;">' + rFmt + '</strong></span>';
                             }
                         });

@@ -553,13 +553,7 @@
                     <span>Subtotal</span>
 
                     <strong>
-                        ₹
-                        <span
-                                th:text="${quotation.subtotal != null
-                                        ? #numbers.formatDecimal(quotation.subtotal, 1, 2)
-                                        : '0.00'}">
-                            0.00
-                        </span>
+                        ₹ <span th:text="${@inr.format(quotation.subtotal)}">0.00</span>
                     </strong>
 
                 </div>
@@ -570,13 +564,7 @@
                     <span>Travel Charge</span>
 
                     <strong>
-                        ₹
-                        <span
-                                th:text="${quotation.travelCharge != null
-                                        ? #numbers.formatDecimal(quotation.travelCharge, 1, 2)
-                                        : '0.00'}">
-                            0.00
-                        </span>
+                        ₹ <span th:text="${@inr.format(quotation.travelCharge)}">0.00</span>
                     </strong>
 
                 </div>
@@ -587,13 +575,7 @@
                     <span>Discount</span>
 
                     <strong>
-                        ₹
-                        <span
-                                th:text="${quotation.discountAmount != null
-                                        ? #numbers.formatDecimal(quotation.discountAmount, 1, 2)
-                                        : '0.00'}">
-                            0.00
-                        </span>
+                        ₹ <span th:text="${@inr.format(quotation.discountAmount)}">0.00</span>
                     </strong>
 
                 </div>
@@ -604,13 +586,7 @@
                     <span>Grand Total</span>
 
                     <strong>
-                        ₹
-                        <span
-                                th:text="${quotation.grandTotal != null
-                                        ? #numbers.formatDecimal(quotation.grandTotal, 1, 2)
-                                        : '0.00'}">
-                            0.00
-                        </span>
+                        ₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
                     </strong>
 
                 </div>

@@ -276,14 +276,7 @@
 
 
                 <strong>
-
-                    ₹<span
-                        th:text="${#numbers.formatDecimal(quotedValue, 1, 2)}">
-
-                        0.00
-
-                    </span>
-
+                    ₹ <span th:text="${@inr.format(quotedValue)}">0.00</span>
                 </strong>
 
             </div>
@@ -767,16 +760,7 @@
                     <td>
 
                         <strong>
-
-                            ₹<span
-                                th:text="${quotation.grandTotal != null
-                                ? #numbers.formatDecimal(quotation.grandTotal, 1, 2)
-                                : '0.00'}">
-
-                                0.00
-
-                            </span>
-
+                            ₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
                         </strong>
 
                     </td>

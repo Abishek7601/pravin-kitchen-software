@@ -38,7 +38,7 @@ public class Quotation {
      * Customer for whom this quotation is created.
      */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_id", nullable = false)
+    @JoinColumn(name = "customer_id", nullable = true)
     private Customer customer;
 
     /*
@@ -139,6 +139,27 @@ public class Quotation {
 
     @Column(name = "valid_until")
     private LocalDate validUntil;
+
+    /*
+     * Auto-save and resume progress fields.
+     */
+    @Column(name = "last_active_step", length = 50)
+    private String lastActiveStep;
+
+    @Column(name = "last_active_floor", length = 100)
+    private String lastActiveFloor;
+
+    @Column(name = "last_active_room", length = 100)
+    private String lastActiveRoom;
+
+    @Column(name = "last_active_category_id")
+    private Long lastActiveCategoryId;
+
+    @Column(name = "last_active_division_id")
+    private Long lastActiveDivisionId;
+
+    @Column(name = "builder_state", columnDefinition = "LONGTEXT")
+    private String builderState;
 
     /*
      * Audit timestamps.
@@ -554,5 +575,53 @@ public class Quotation {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public String getLastActiveStep() {
+        return lastActiveStep;
+    }
+
+    public void setLastActiveStep(String lastActiveStep) {
+        this.lastActiveStep = lastActiveStep;
+    }
+
+    public String getLastActiveFloor() {
+        return lastActiveFloor;
+    }
+
+    public void setLastActiveFloor(String lastActiveFloor) {
+        this.lastActiveFloor = lastActiveFloor;
+    }
+
+    public String getLastActiveRoom() {
+        return lastActiveRoom;
+    }
+
+    public void setLastActiveRoom(String lastActiveRoom) {
+        this.lastActiveRoom = lastActiveRoom;
+    }
+
+    public Long getLastActiveCategoryId() {
+        return lastActiveCategoryId;
+    }
+
+    public void setLastActiveCategoryId(Long lastActiveCategoryId) {
+        this.lastActiveCategoryId = lastActiveCategoryId;
+    }
+
+    public Long getLastActiveDivisionId() {
+        return lastActiveDivisionId;
+    }
+
+    public void setLastActiveDivisionId(Long lastActiveDivisionId) {
+        this.lastActiveDivisionId = lastActiveDivisionId;
+    }
+
+    public String getBuilderState() {
+        return builderState;
+    }
+
+    public void setBuilderState(String builderState) {
+        this.builderState = builderState;
     }
 }

@@ -541,16 +541,8 @@
               ₹
 
               <span
-                      th:text="${pricing.rate != null
-                                        ? #numbers.formatDecimal(
-                                            pricing.rate,
-                                            1,
-                                            2
-                                          )
-                                        : '0.00'}">
-
+                      th:text="${@inr.format(pricing.rate)}">
                                 250.00
-
                             </span>
 
             </strong>

@@ -283,13 +283,7 @@
             <div>
 
               <div class="room-price">
-
-                ₹
-
-                <span th:text="${room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0)}">
-                                    0.00
-                                </span>
-
+                ₹ <span th:text="${@inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">0.00</span>
               </div>
 
             </div>
@@ -314,7 +308,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.subtotal}">
+                th:text="${'₹ ' + @inr.format(quotation.subtotal)}">
           ₹ 0.00
         </strong>
 
@@ -328,7 +322,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.accessoriesAmount}">
+                th:text="${'₹ ' + @inr.format(quotation.accessoriesAmount)}">
           ₹ 0.00
         </strong>
 
@@ -342,7 +336,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.travelCharge}">
+                th:text="${'₹ ' + @inr.format(quotation.travelCharge)}">
           ₹ 0.00
         </strong>
 
@@ -356,7 +350,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.otherCharges}">
+                th:text="${'₹ ' + @inr.format(quotation.otherCharges)}">
           ₹ 0.00
         </strong>
 
@@ -370,7 +364,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.discountAmount}">
+                th:text="${'₹ ' + @inr.format(quotation.discountAmount)}">
           ₹ 0.00
         </strong>
 
@@ -384,7 +378,7 @@
                 </span>
 
         <strong style="color: #059669;"
-                th:text="${'- ₹ ' + quotation.offerAmount}">
+                th:text="${'- ₹ ' + @inr.format(quotation.offerAmount)}">
           - ₹ 0.00
         </strong>
 
@@ -398,7 +392,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.gstAmount}">
+                th:text="${'₹ ' + @inr.format(quotation.gstAmount)}">
           ₹ 0.00
         </strong>
 
@@ -412,7 +406,7 @@
                 </span>
 
         <strong
-                th:text="${'₹ ' + quotation.grandTotal}">
+                th:text="${'₹ ' + @inr.format(quotation.grandTotal)}">
           ₹ 0.00
         </strong>
 

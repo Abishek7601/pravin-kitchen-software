@@ -92,11 +92,17 @@ public class QuotationStatusDashboardTest {
         assertEquals(initialPending + 1, adminDashboardService.getPendingQuotationCount());
         assertEquals(initialWorking, adminDashboardService.getWorkingQuotationCount());
 
-        // Scenario 3: Adding a room / building the quotation moves it from PENDING to WORKING
+        // Scenario 3: Adding a room / building does NOT move incomplete quotation to WORKING (remains PENDING)
         quotationRoomService.create(saved, "Ground Floor", "Living Room", "Full interior woodwork");
         Quotation inProgress = quotationRepository.findById(saved.getId()).orElseThrow();
+        assertEquals(QuotationStatus.PENDING, inProgress.getStatus(),
+                "Incomplete quotation must remain PENDING even when rooms are added");
+
+        // Completing and saving transitions it to WORKING
+        inProgress.setStatus(QuotationStatus.WORKING);
+        inProgress = quotationRepository.save(inProgress);
         assertEquals(QuotationStatus.WORKING, inProgress.getStatus(),
-                "Quotation status should automatically become WORKING once quotation building has started");
+                "Quotation status becomes WORKING once completed and saved");
 
         assertEquals(initialPending, adminDashboardService.getPendingQuotationCount(),
                 "Pending count should return to initial");

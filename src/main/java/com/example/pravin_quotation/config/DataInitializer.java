@@ -18,7 +18,7 @@ public class DataInitializer {
 
         return args -> {
 
-            String adminEmail = "pravinkitchensquotation@gmail.com";
+            String adminEmail = "klassyabishek@gmail.com";
             String adminPassword = "Admin@123";
 
             if (!userRepository.existsByEmail(adminEmail) && !userRepository.existsByRole(Role.SUPER_ADMIN)) {
@@ -49,8 +49,35 @@ public class DataInitializer {
         return args -> {
             try {
                 jdbcTemplate.execute("ALTER TABLE materials MODIFY COLUMN item_id BIGINT NULL");
-            } catch (Exception e) {
-                // Table might not exist yet or already altered
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations MODIFY COLUMN customer_id BIGINT NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN last_active_step VARCHAR(50) NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN last_active_floor VARCHAR(100) NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN last_active_room VARCHAR(100) NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN last_active_category_id BIGINT NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN last_active_division_id BIGINT NULL");
+            } catch (Exception ignored) {
+            }
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN builder_state LONGTEXT NULL");
+            } catch (Exception ignored) {
             }
         };
     }

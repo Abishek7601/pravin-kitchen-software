@@ -1,701 +1,657 @@
 <!DOCTYPE html>
-<html lang="en"
-      xmlns:th="http://www.thymeleaf.org">
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
 
 <head>
 
   <meta charset="UTF-8">
 
-  <meta name="viewport"
-        content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Employee Dashboard | Pravin KITCHENS &amp; INTERIORS</title>
 
-  <link rel="stylesheet"
-        th:href="@{/css/employee-nav.css}">
-  <link rel="stylesheet"
-        th:href="@{/css/employee-dashboard.css}">
-  <link rel="stylesheet"
-        th:href="@{/css/pagination.css}">
+  <link rel="stylesheet" th:href="@{/css/employee-nav.css}">
+  <link rel="stylesheet" th:href="@{/css/employee-dashboard.css}">
+  <link rel="stylesheet" th:href="@{/css/pagination.css}">
 
 </head>
 
 <body>
 
-<div class="dashboard-wrapper">
+  <div class="dashboard-wrapper">
 
-  <!-- =========================
+    <!-- =========================
        SIDEBAR
   ========================== -->
 
-  <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='dashboard')}"></aside>
+    <aside th:replace="~{fragments/employee-navigation :: sidebar(activeTab='dashboard')}"></aside>
 
 
-  <!-- =========================
+    <!-- =========================
        MAIN CONTENT
   ========================== -->
 
-  <main class="main-content">
+    <main class="main-content">
 
 
-    <!-- =========================
+      <!-- =========================
          TOP BAR
     ========================== -->
 
-    <header th:replace="~{fragments/employee-navigation :: topbar(pageLabel='EMPLOYEE PORTAL', pageTitle='Employee Dashboard', pageSubtitle='Manage your quotations and customer activities.')}"></header>
+      <header
+        th:replace="~{fragments/employee-navigation :: topbar(pageLabel='EMPLOYEE PORTAL', pageTitle='Employee Dashboard', pageSubtitle='Manage your quotations and customer activities.')}">
+      </header>
 
 
-    <!-- =========================
+      <!-- =========================
          QUOTATION SUMMARY CARDS
     ========================== -->
 
-    <section class="stats-grid">
+      <section class="stats-grid">
 
 
-      <!-- 1. TOTAL ONE YEAR QUOTATIONS -->
+        <!-- 1. TOTAL ONE YEAR QUOTATIONS -->
 
-      <a th:href="@{/employee/quotations(period='year')}"
-         class="stat-card one-year-card">
+        <a th:href="@{/employee/quotations(period='year')}" class="stat-card one-year-card">
 
-        <div class="stat-icon one-year-icon">
-          🗓
-        </div>
+          <div class="stat-icon one-year-icon">
+            🗓
+          </div>
 
 
-        <div class="stat-content">
+          <div class="stat-content">
 
-          <span>
-            Total One Year Quotations
+            <span>
+              Total One Year Quotations
+            </span>
+
+            <strong th:text="${oneYearQuotations}">
+              0
+            </strong>
+
+          </div>
+
+
+          <span class="stat-arrow">
+            →
           </span>
 
-          <strong
-                  th:text="${oneYearQuotations}">
-            0
-          </strong>
-
-        </div>
+        </a>
 
 
-        <span class="stat-arrow">
-          →
-        </span>
+        <!-- 2. 60 DAYS QUOTATIONS -->
 
-      </a>
+        <a th:href="@{/employee/quotations(period='60')}" class="stat-card sixty-day-card">
 
-
-      <!-- 2. 60 DAYS QUOTATIONS -->
-
-      <a th:href="@{/employee/quotations(period='60')}"
-         class="stat-card sixty-day-card">
-
-        <div class="stat-icon sixty-day-icon">
-          📅
-        </div>
+          <div class="stat-icon sixty-day-icon">
+            📅
+          </div>
 
 
-        <div class="stat-content">
+          <div class="stat-content">
 
-          <span>
-            60 Days Quotations
+            <span>
+              60 Days Quotations
+            </span>
+
+            <strong th:text="${last60DaysQuotations}">
+              0
+            </strong>
+
+          </div>
+
+
+          <span class="stat-arrow">
+            →
           </span>
 
-          <strong
-                  th:text="${last60DaysQuotations}">
-            0
-          </strong>
-
-        </div>
+        </a>
 
 
-        <span class="stat-arrow">
-          →
-        </span>
+        <!-- 3. PENDING QUOTATIONS -->
 
-      </a>
+        <a th:href="@{/employee/quotations(status='PENDING')}" class="stat-card pending-card">
 
-
-      <!-- 3. PENDING QUOTATIONS -->
-
-      <a th:href="@{/employee/quotations(status='PENDING')}"
-         class="stat-card pending-card">
-
-        <div class="stat-icon pending-icon">
-          ⏳
-        </div>
+          <div class="stat-icon pending-icon">
+            ⏳
+          </div>
 
 
-        <div class="stat-content">
+          <div class="stat-content">
 
-          <span>
-            Pending Quotations
+            <span>
+              Pending Quotations
+            </span>
+
+            <strong th:text="${pendingQuotations}">
+              0
+            </strong>
+
+          </div>
+
+
+          <span class="stat-arrow">
+            →
           </span>
 
-          <strong
-                  th:text="${pendingQuotations}">
-            0
-          </strong>
-
-        </div>
+        </a>
 
 
-        <span class="stat-arrow">
-          →
-        </span>
+        <!-- 4. WORKING QUOTATIONS -->
 
-      </a>
+        <a th:href="@{/employee/quotations(status='WORKING')}" class="stat-card working-card">
 
-
-      <!-- 4. WORKING QUOTATIONS -->
-
-      <a th:href="@{/employee/quotations(status='WORKING')}"
-         class="stat-card working-card">
-
-        <div class="stat-icon working-icon">
-          ⚙
-        </div>
+          <div class="stat-icon working-icon">
+            ⚙
+          </div>
 
 
-        <div class="stat-content">
+          <div class="stat-content">
 
-          <span>
-            Working Quotations
+            <span>
+              Working Quotations
+            </span>
+
+            <strong th:text="${workingQuotations}">
+              0
+            </strong>
+
+          </div>
+
+
+          <span class="stat-arrow">
+            →
           </span>
 
-          <strong
-                  th:text="${workingQuotations}">
-            0
-          </strong>
-
-        </div>
+        </a>
 
 
-        <span class="stat-arrow">
-          →
-        </span>
+        <!-- 5. SENT QUOTATIONS -->
 
-      </a>
+        <a th:href="@{/employee/quotations(status='SENT')}" class="stat-card sent-card">
 
-
-      <!-- 5. SENT QUOTATIONS -->
-
-      <a th:href="@{/employee/quotations(status='SENT')}"
-         class="stat-card sent-card">
-
-        <div class="stat-icon sent-icon">
-          ↗
-        </div>
+          <div class="stat-icon sent-icon">
+            ↗
+          </div>
 
 
-        <div class="stat-content">
+          <div class="stat-content">
 
-          <span>
-            Sent Quotations
+            <span>
+              Sent Quotations
+            </span>
+
+            <strong th:text="${sentQuotations}">
+              0
+            </strong>
+
+          </div>
+
+
+          <span class="stat-arrow">
+            →
           </span>
 
-          <strong
-                  th:text="${sentQuotations}">
-            0
-          </strong>
-
-        </div>
+        </a>
 
 
-        <span class="stat-arrow">
-          →
-        </span>
-
-      </a>
+      </section>
 
 
-    </section>
-
-
-    <!-- =========================
+      <!-- =========================
          QUICK ACTIONS
     ========================== -->
 
-    <section class="section-card">
+      <section class="section-card">
 
-      <div class="section-header">
+        <div class="section-header">
 
-        <div>
+          <div>
 
-                    <span class="section-label">
-                        QUICK ACCESS
-                    </span>
+            <span class="section-label">
+              QUICK ACCESS
+            </span>
 
-          <h2>
-            Quick Actions
-          </h2>
+            <h2>
+              Quick Actions
+            </h2>
 
-          <p>
-            Common employee activities
-          </p>
+            <p>
+              Common employee activities
+            </p>
+
+          </div>
 
         </div>
 
-      </div>
+
+        <div class="quick-actions">
 
 
-      <div class="quick-actions">
+          <!-- CREATE QUOTATION (PRIMARY ACTION) -->
 
+          <a th:href="@{/employee/quotations/new}" class="quick-action primary-action">
 
-        <!-- CREATE QUOTATION (PRIMARY ACTION) -->
-
-        <a th:href="@{/employee/quotations/new}"
-           class="quick-action primary-action">
-
-          <div class="action-icon">
-            +
-          </div>
-
-
-          <div class="action-content">
-
-            <div class="action-badge">
-              Primary Action
+            <div class="action-icon">
+              +
             </div>
 
-            <strong>
-              Create Quotation
-            </strong>
 
-            <small>
-              Start a new customer quotation with room configurations, materials, and automated price calculations
-            </small>
+            <div class="action-content">
 
-          </div>
+              <div class="action-badge">
+                Primary Action
+              </div>
 
+              <strong>
+                Create Quotation
+              </strong>
 
-          <div class="action-cta">
+              <small>
+                Start a new customer quotation with room configurations, materials, and automated price calculations
+              </small>
 
-            <span class="action-cta-text">
-              Create Now
-            </span>
-
-            <span class="action-arrow">
-              →
-            </span>
-
-          </div>
-
-        </a>
-
-      </div>
-
-    </section>
+            </div>
 
 
-    <!-- =========================
+            <div class="action-cta">
+
+              <span class="action-cta-text">
+                Create Now
+              </span>
+
+              <span class="action-arrow">
+                →
+              </span>
+
+            </div>
+
+          </a>
+
+        </div>
+
+      </section>
+
+
+      <!-- =========================
          RECENT QUOTATIONS
     ========================== -->
 
-    <section class="section-card">
+      <section class="section-card">
 
-      <div class="section-header">
+        <div class="section-header">
 
-        <div>
+          <div>
 
-                    <span class="section-label">
-                        RECENT ACTIVITY
-                    </span>
+            <span class="section-label">
+              RECENT ACTIVITY
+            </span>
 
-          <h2>
-            Recent Quotations
-          </h2>
+            <h2>
+              Recent Quotations
+            </h2>
 
-          <p>
-            Your latest quotation activity
-          </p>
+            <p>
+              Your latest quotation activity
+            </p>
+
+          </div>
+
+
+          <a th:href="@{/employee/quotations}" class="view-all-btn">
+
+            View All →
+
+          </a>
 
         </div>
 
 
-        <a th:href="@{/employee/quotations}"
-           class="view-all-btn">
+        <!-- HAS QUOTATIONS -->
 
-          View All →
+        <div class="table-wrapper" th:if="${recentQuotations != null and !recentQuotations.isEmpty()}">
 
-        </a>
+          <table class="quotation-table">
 
-      </div>
+            <thead>
 
+              <tr>
 
-      <!-- HAS QUOTATIONS -->
+                <th>
+                  Quotation
+                </th>
 
-      <div class="table-wrapper"
-           th:if="${recentQuotations != null and !recentQuotations.isEmpty()}">
+                <th>
+                  Customer
+                </th>
 
-        <table class="quotation-table">
+                <th>
+                  Date
+                </th>
 
-          <thead>
+                <th>
+                  Status
+                </th>
 
-          <tr>
+                <th>
+                  Amount
+                </th>
 
-            <th>
-              Quotation
-            </th>
+              </tr>
 
-            <th>
-              Customer
-            </th>
-
-            <th>
-              Date
-            </th>
-
-            <th>
-              Status
-            </th>
-
-            <th>
-              Amount
-            </th>
-
-          </tr>
-
-          </thead>
+            </thead>
 
 
-          <tbody>
+            <tbody>
 
-          <tr th:each="quotation : ${recentQuotations}">
-
-
-            <!-- QUOTATION NUMBER -->
-
-            <td>
-
-              <div class="quotation-number">
-
-                                <span class="quotation-icon-small">
-                                    Q
-                                </span>
-
-                <strong
-                        th:text="${quotation.quotationNumber}">
-                  QT-00001
-                </strong>
-
-              </div>
-
-            </td>
+              <tr th:each="quotation : ${recentQuotations}">
 
 
-            <!-- CUSTOMER -->
+                <!-- QUOTATION NUMBER -->
 
-            <td>
+                <td>
 
-                            <span
-                                    th:if="${quotation.customer != null}"
-                                    th:text="${quotation.customer.name}">
-                                Customer
-                            </span>
+                  <div class="quotation-number">
 
-              <span
-                      th:if="${quotation.customer == null}"
-                      class="muted-text">
-                                Not Assigned
-                            </span>
+                    <span class="quotation-icon-small">
+                      Q
+                    </span>
 
-            </td>
+                    <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                      th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
+                      style="color: inherit; text-decoration: none; font-weight: 700;">
+                      <strong th:text="${quotation.quotationNumber}">QT-00001</strong>
+                    </a>
+                    <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                      th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+                      style="color: inherit; text-decoration: none; font-weight: 700;">
+                      <strong th:text="${quotation.quotationNumber}">QT-00001</strong>
+                    </a>
 
+                  </div>
 
-            <!-- DATE -->
-
-            <td>
-
-                            <span
-                                    th:text="${quotation.quotationDate}">
-                                01/01/2026
-                            </span>
-
-            </td>
+                </td>
 
 
-            <!-- STATUS -->
+                <!-- CUSTOMER -->
 
-            <td>
+                <td>
 
-                            <span class="status-badge"
+                  <span th:if="${quotation.customer != null}" th:text="${quotation.customer.name}">
+                    Customer
+                  </span>
 
-                                  th:classappend="${quotation.status != null
+                  <span th:if="${quotation.customer == null}" class="muted-text">
+                    Not Assigned
+                  </span>
+
+                </td>
+
+
+                <!-- DATE -->
+
+                <td>
+
+                  <span th:text="${quotation.quotationDate}">
+                    01/01/2026
+                  </span>
+
+                </td>
+
+
+                <!-- STATUS -->
+
+                <td>
+
+                  <span class="status-badge" th:classappend="${quotation.status != null
                                   ? ' status-' + #strings.toLowerCase(quotation.status.name())
-                                  : ' status-pending'}"
-
-                                  th:text="${quotation.status != null
+                                  : ' status-pending'}" th:text="${quotation.status != null
                                   ? quotation.status.name()
                                   : 'PENDING'}">
 
-                                PENDING
+                    PENDING
 
-                            </span>
+                  </span>
 
-            </td>
+                </td>
 
 
-            <!-- AMOUNT -->
+                <!-- AMOUNT -->
 
-            <td>
+                <td>
 
-              <strong class="amount-value">
+                  <strong class="amount-value">
+                    ₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
+                  </strong>
 
-                ₹<span
-                      th:text="${quotation.grandTotal != null
-                                    ? #numbers.formatDecimal(quotation.grandTotal, 1, 2)
-                                    : '0.00'}">
-                                    0.00
-                                </span>
+                </td>
 
-              </strong>
+              </tr>
 
-            </td>
+            </tbody>
 
-          </tr>
+          </table>
 
-          </tbody>
+          <!-- PAGINATION FOOTER -->
+          <div class="pagination-footer" th:if="${totalElements != null and totalElements > 0}">
+            <div class="pagination-info">
+              Showing <strong><span th:text="${pageStart}">1</span>–<span th:text="${pageEnd}">10</span></strong> of
+              <strong><span th:text="${totalElements}">45</span></strong> records
+            </div>
 
-        </table>
+            <nav class="pagination-nav" aria-label="Recent quotations pagination" th:if="${totalPages > 1}">
+              <!-- Previous Button -->
+              <a th:if="${hasPrevious}" th:href="@{/employee/dashboard(page=${currentPage - 1})}" class="pagination-btn"
+                aria-label="Previous page">
+                Previous
+              </a>
+              <button th:unless="${hasPrevious}" class="pagination-btn disabled" disabled aria-label="Previous page">
+                Previous
+              </button>
 
-        <!-- PAGINATION FOOTER -->
-        <div class="pagination-footer" th:if="${totalElements != null and totalElements > 0}">
-          <div class="pagination-info">
-            Showing <strong><span th:text="${pageStart}">1</span>–<span th:text="${pageEnd}">10</span></strong> of <strong><span th:text="${totalElements}">45</span></strong> records
+              <!-- Page Numbers -->
+              <th:block th:each="pageNum : ${pageNumbers}">
+                <span th:if="${pageNum == -1}" class="pagination-ellipsis">…</span>
+                <a th:if="${pageNum != -1 and pageNum != currentPage}" th:href="@{/employee/dashboard(page=${pageNum})}"
+                  class="pagination-page-btn" th:text="${pageNum}">
+                  1
+                </a>
+                <span th:if="${pageNum != -1 and pageNum == currentPage}" class="pagination-page-btn active"
+                  th:text="${pageNum}">
+                  1
+                </span>
+              </th:block>
+
+              <!-- Next Button -->
+              <a th:if="${hasNext}" th:href="@{/employee/dashboard(page=${currentPage + 1})}" class="pagination-btn"
+                aria-label="Next page">
+                Next
+              </a>
+              <button th:unless="${hasNext}" class="pagination-btn disabled" disabled aria-label="Next page">
+                Next
+              </button>
+            </nav>
           </div>
 
-          <nav class="pagination-nav" aria-label="Recent quotations pagination" th:if="${totalPages > 1}">
-            <!-- Previous Button -->
-            <a th:if="${hasPrevious}"
-               th:href="@{/employee/dashboard(page=${currentPage - 1})}"
-               class="pagination-btn"
-               aria-label="Previous page">
-              Previous
-            </a>
-            <button th:unless="${hasPrevious}"
-                    class="pagination-btn disabled"
-                    disabled
-                    aria-label="Previous page">
-              Previous
-            </button>
-
-            <!-- Page Numbers -->
-            <th:block th:each="pageNum : ${pageNumbers}">
-              <span th:if="${pageNum == -1}" class="pagination-ellipsis">…</span>
-              <a th:if="${pageNum != -1 and pageNum != currentPage}"
-                 th:href="@{/employee/dashboard(page=${pageNum})}"
-                 class="pagination-page-btn"
-                 th:text="${pageNum}">
-                1
-              </a>
-              <span th:if="${pageNum != -1 and pageNum == currentPage}"
-                    class="pagination-page-btn active"
-                    th:text="${pageNum}">
-                1
-              </span>
-            </th:block>
-
-            <!-- Next Button -->
-            <a th:if="${hasNext}"
-               th:href="@{/employee/dashboard(page=${currentPage + 1})}"
-               class="pagination-btn"
-               aria-label="Next page">
-              Next
-            </a>
-            <button th:unless="${hasNext}"
-                    class="pagination-btn disabled"
-                    disabled
-                    aria-label="Next page">
-              Next
-            </button>
-          </nav>
         </div>
 
-      </div>
+
+        <!-- NO QUOTATIONS -->
+
+        <div class="empty-state" th:if="${recentQuotations == null or recentQuotations.isEmpty()}">
+
+          <div class="empty-icon">
+            Q
+          </div>
+
+          <h3>
+            No quotations yet
+          </h3>
+
+          <p>
+            You haven't created any quotations yet.
+            Create your first quotation to get started.
+          </p>
 
 
-      <!-- NO QUOTATIONS -->
+          <a th:href="@{/employee/quotations/new}" class="empty-action">
 
-      <div class="empty-state"
-           th:if="${recentQuotations == null or recentQuotations.isEmpty()}">
+            + Create Quotation
 
-        <div class="empty-icon">
-          Q
+          </a>
+
         </div>
 
-        <h3>
-          No quotations yet
-        </h3>
-
-        <p>
-          You haven't created any quotations yet.
-          Create your first quotation to get started.
-        </p>
+      </section>
 
 
-        <a th:href="@{/employee/quotations/new}"
-           class="empty-action">
-
-          + Create Quotation
-
-        </a>
-
-      </div>
-
-    </section>
-
-
-    <!-- =========================
+      <!-- =========================
          MY ACCOUNT
     ========================== -->
 
-    <section class="section-card">
+      <section class="section-card">
 
-      <div class="section-header">
+        <div class="section-header">
 
-        <div>
+          <div>
 
-                    <span class="section-label">
-                        ACCOUNT
-                    </span>
+            <span class="section-label">
+              ACCOUNT
+            </span>
 
-          <h2>
-            My Account
-          </h2>
+            <h2>
+              My Account
+            </h2>
 
-          <p>
-            Your employee information
-          </p>
+            <p>
+              Your employee information
+            </p>
 
-        </div>
-
-      </div>
-
-
-      <div class="account-grid">
-
-
-        <!-- NAME -->
-
-        <div class="account-item">
-
-                    <span>
-                        Name
-                    </span>
-
-          <strong
-                  th:text="${employee.name}">
-            Employee
-          </strong>
+          </div>
 
         </div>
 
 
-        <!-- EMAIL -->
-
-        <div class="account-item">
-
-                    <span>
-                        Email
-                    </span>
-
-          <strong
-                  th:text="${employee.email}">
-            employee@email.com
-          </strong>
-
-        </div>
+        <div class="account-grid">
 
 
-        <!-- BRANCH -->
+          <!-- NAME -->
 
-        <div class="account-item">
-
-                    <span>
-                        Branch / District
-                    </span>
-
-          <strong
-                  th:text="${employee.branch != null
-                            ? employee.branch.name
-                            : 'Not Assigned'}">
-            Not Assigned
-          </strong>
-
-        </div>
-
-
-        <!-- ROLE -->
-
-        <div class="account-item">
-
-                    <span>
-                        Role
-                    </span>
-
-          <strong>
-            Employee
-          </strong>
-
-        </div>
-
-
-        <!-- STATUS -->
-
-        <div class="account-item">
-
-                    <span>
-                        Account Status
-                    </span>
-
-          <strong class="status-active">
-            ● Active
-          </strong>
-
-        </div>
-
-
-        <!-- JOINED -->
-
-        <div class="account-item">
-
-                    <span>
-                        Joined
-                    </span>
-
-          <strong
-                  th:text="${employee.createdAt != null
-                            ? #temporals.format(employee.createdAt, 'dd MMM yyyy')
-                            : 'Not Available'}">
-            Not Available
-          </strong>
-
-        </div>
-
-      </div>
-
-    </section>
-
-
-    <!-- FOOTER -->
-
-    <footer class="dashboard-footer">
+          <div class="account-item">
 
             <span>
-                © 2026 Pravin KITCHENS &amp; INTERIORS
+              Name
             </span>
 
-      <span>
-                Employee Portal
+            <strong th:text="${employee.name}">
+              Employee
+            </strong>
+
+          </div>
+
+
+          <!-- EMAIL -->
+
+          <div class="account-item">
+
+            <span>
+              Email
             </span>
 
-    </footer>
+            <strong th:text="${employee.email}">
+              employee@email.com
+            </strong>
+
+          </div>
 
 
-  </main>
+          <!-- BRANCH -->
 
-</div>
+          <div class="account-item">
 
-<script th:src="@{/js/employee-session.js}"></script>
+            <span>
+              Branch / District
+            </span>
+
+            <strong th:text="${employee.branch != null
+                            ? employee.branch.name
+                            : 'Not Assigned'}">
+              Not Assigned
+            </strong>
+
+          </div>
+
+
+          <!-- ROLE -->
+
+          <div class="account-item">
+
+            <span>
+              Role
+            </span>
+
+            <strong>
+              Employee
+            </strong>
+
+          </div>
+
+
+          <!-- STATUS -->
+
+          <div class="account-item">
+
+            <span>
+              Account Status
+            </span>
+
+            <strong class="status-active">
+              ● Active
+            </strong>
+
+          </div>
+
+
+          <!-- JOINED -->
+
+          <div class="account-item">
+
+            <span>
+              Joined
+            </span>
+
+            <strong th:text="${employee.createdAt != null
+                            ? #temporals.format(employee.createdAt, 'dd MMM yyyy')
+                            : 'Not Available'}">
+              Not Available
+            </strong>
+
+          </div>
+
+        </div>
+
+      </section>
+
+
+      <!-- FOOTER -->
+
+      <footer class="dashboard-footer">
+
+        <span>
+          © 2026 Pravin KITCHENS &amp; INTERIORS
+        </span>
+
+        <span>
+          Employee Portal
+        </span>
+
+      </footer>
+
+
+    </main>
+
+  </div>
+
+  <script th:src="@{/js/employee-session.js}"></script>
 </body>
 
 </html>

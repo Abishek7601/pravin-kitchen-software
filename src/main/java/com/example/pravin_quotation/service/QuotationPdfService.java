@@ -577,7 +577,7 @@ public class QuotationPdfService {
                     BigDecimal rolls = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE;
                     BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
                             : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : BigDecimal.valueOf(40));
-                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + cov.stripTrailingZeros().toPlainString() + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹" : "Rs. ") + format(rate) + "/Roll)";
+                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + cov.stripTrailingZeros().toPlainString() + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹ " : "Rs. ") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
                     if (specification == null || specification.isBlank()) {
                         specification = rollDetails;
                     } else {
@@ -1319,8 +1319,8 @@ public class QuotationPdfService {
         if (amount == null) {
             amount = BigDecimal.ZERO;
         }
-        String formatted = amount.setScale(2, RoundingMode.HALF_UP).toPlainString();
-        return (hasUnicodeRupee ? "₹" : "Rs. ") + formatted;
+        String formatted = com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(amount);
+        return (hasUnicodeRupee ? "₹ " : "Rs. ") + formatted;
     }
 
     private String format(BigDecimal value) {
