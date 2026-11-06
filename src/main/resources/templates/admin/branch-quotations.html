@@ -302,7 +302,7 @@
                     <td>
 
                         <strong class="amount"
-                                th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal != null ? quotation.grandTotal : 0, 1, 2)}">
+                                th:text="${@inr.rupees(quotation.grandTotal)}">
                             ₹ 0.00
                         </strong>
 

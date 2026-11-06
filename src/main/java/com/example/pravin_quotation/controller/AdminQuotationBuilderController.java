@@ -72,11 +72,25 @@ public class AdminQuotationBuilderController {
         this.fileUploadService = fileUploadService;
     }
 
-    @GetMapping("/builder")
+    @GetMapping({"/builder", "/builder/{quotationId:[0-9]+}"})
     public String builder(
-            @RequestParam(required = false) Long quotationId,
+            @PathVariable(required = false) Long quotationId,
+            @RequestParam(value = "quotationId", required = false) Long paramQuotationId,
             @RequestParam(required = false) Long branchId,
             Model model) {
+        Long effectiveQuotationId = quotationId != null ? quotationId : paramQuotationId;
+        return builderInternal(effectiveQuotationId, branchId, model);
+    }
+
+    public String builder(Long quotationId, Long branchId, Model model) {
+        return builderInternal(quotationId, branchId, model);
+    }
+
+    public String builder(Long branchId, Model model) {
+        return builderInternal(null, branchId, model);
+    }
+
+    private String builderInternal(Long effectiveQuotationId, Long branchId, Model model) {
         model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
         model.addAttribute("customers", branchId != null
                 ? customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(branchId)
@@ -84,7 +98,7 @@ public class AdminQuotationBuilderController {
         model.addAttribute("workCategories", workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc());
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
-        model.addAttribute("editQuotationId", quotationId != null ? quotationId : "");
+        model.addAttribute("editQuotationId", effectiveQuotationId != null ? effectiveQuotationId : "");
         model.addAttribute("selectedBranchId", branchId != null ? branchId : "");
         return "admin/quotation-builder";
     }
@@ -406,6 +420,27 @@ public class AdminQuotationBuilderController {
         }
     }
 
+    @PostMapping("/builder/auto-save")
+    @ResponseBody
+    public ResponseEntity<?> autoSave(
+            @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            Authentication authentication) {
+        try {
+            Quotation quotation = builderService.autoSave(request, authentication.getName());
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("success", true);
+            resp.put("quotationId", quotation.getId());
+            resp.put("quotationNumber", quotation.getQuotationNumber());
+            resp.put("status", quotation.getStatus() != null ? quotation.getStatus().name() : "PENDING");
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> errResp = new LinkedHashMap<>();
+            errResp.put("success", false);
+            errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to auto-save quotation draft.");
+            return ResponseEntity.badRequest().body(errResp);
+        }
+    }
+
     @GetMapping("/builder/load/{id}")
     @ResponseBody
     public ResponseEntity<?> loadQuotation(@PathVariable Long id) {
@@ -413,6 +448,7 @@ public class AdminQuotationBuilderController {
             Map<String, Object> data = new LinkedHashMap<>();
             data.put("id", q.getId());
             data.put("quotationNumber", q.getQuotationNumber());
+            data.put("status", q.getStatus() != null ? q.getStatus().name() : "PENDING");
             data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
             data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
             data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
@@ -423,6 +459,7 @@ public class AdminQuotationBuilderController {
             data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
             data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
             data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
+            data.put("notes", q.getNotes() != null ? q.getNotes() : "");
             data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
             data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
             data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
@@ -437,6 +474,16 @@ public class AdminQuotationBuilderController {
             data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
             data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
             data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+
+            data.put("lastActiveStep", q.getLastActiveStep());
+            data.put("lastActiveFloor", q.getLastActiveFloor());
+            data.put("lastActiveRoom", q.getLastActiveRoom());
+            data.put("lastActiveCategoryId", q.getLastActiveCategoryId());
+            data.put("lastActiveDivisionId", q.getLastActiveDivisionId());
+            data.put("builderState", q.getBuilderState());
+
+            Long branchId = q.getBranch() != null ? q.getBranch().getId() : null;
+            PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
 
             List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(id);
             List<Map<String, Object>> roomList = new ArrayList<>();
@@ -467,7 +514,42 @@ public class AdminQuotationBuilderController {
                     iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
                     iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                     iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
-                    iMap.put("rate", item.getRate());
+
+                    // Validate rate & availability against current Pricing Mode and Branch
+                    boolean rateChanged = false;
+                    boolean materialAvailable = true;
+                    String availabilityMessage = null;
+                    BigDecimal currentRate = null;
+
+                    if (item.getMaterial() != null) {
+                        Material m = item.getMaterial();
+                        if (!Boolean.TRUE.equals(m.getActive())) {
+                            materialAvailable = false;
+                            availabilityMessage = "Material '" + m.getName() + "' is inactive";
+                        } else {
+                            try {
+                                Long optId = item.getMaterialOption() != null ? item.getMaterialOption().getId() : null;
+                                AdminQuotationBuilderService.ResolvedMaterialRate res =
+                                        builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, pricingGrade);
+                                if (!res.available() || res.rate() == null || res.rate().compareTo(BigDecimal.ZERO) <= 0) {
+                                    materialAvailable = false;
+                                    availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                                } else {
+                                    currentRate = res.rate();
+                                    if (item.getRate() != null && currentRate.compareTo(item.getRate()) != 0) {
+                                        rateChanged = true;
+                                    }
+                                }
+                            } catch (Exception ignored) {}
+                        }
+                    }
+
+                    iMap.put("materialAvailable", materialAvailable);
+                    iMap.put("availabilityMessage", availabilityMessage);
+                    iMap.put("currentRate", currentRate);
+                    iMap.put("rateChanged", rateChanged);
+
+                    iMap.put("rate", (rateChanged && currentRate != null) ? currentRate : item.getRate());
                     iMap.put("unit", (item.getMaterial() != null && item.getMaterial().getUnit() != null) ? item.getMaterial().getUnit() : (item.getMeasurementType() == MeasurementType.FILES ? "Files" : (item.getMeasurementType() == MeasurementType.QUANTITY ? "Quantity" : "Sq.ft")));
                     iMap.put("itemDescription", item.getItemDescription());
                     iMap.put("specification", item.getSpecification());

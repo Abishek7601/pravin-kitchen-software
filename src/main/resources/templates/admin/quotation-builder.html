@@ -26,8 +26,12 @@
       <h1>Create Quotation</h1>
       <p>Build the quotation room-by-room using your existing materials and admin pricing.</p>
     </div>
-    <div class="header-actions">
+    <div class="header-actions" style="display: flex; align-items: center; gap: 12px;">
       <span class="quote-number-preview">QT NO - <strong id="quoteNumberPreview">AUTO</strong></span>
+      <div id="autoSaveIndicator" class="auto-save-indicator" style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #4b5563; padding: 4px 10px; border-radius: 9999px; background: #f3f4f6; border: 1px solid #e5e7eb; transition: all 0.25s ease;">
+        <span class="save-status-dot" id="autoSaveDot" style="width: 8px; height: 8px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+        <span id="autoSaveText">All changes saved</span>
+      </div>
       <div class="nav-header-actions" style="display: inline-flex; align-items: center; gap: 8px;">
 <!--          <button type="button" class="btn btn-outline-secondary btn-sm nav-back-btn" onclick="if (window.history.length > 1) { window.history.back(); } else { window.location.href='/admin/quotations'; }" style="display: inline-flex; align-items: center; gap: 5px; padding: 6px 14px; font-size: 13px; font-weight: 600; border-radius: 8px; cursor: pointer; background: #ffffff; border: 1px solid #D6E4E1; color: #024541; text-decoration: none; transition: all 0.2s ease;">-->
 <!--              <span>← Back</span>-->
@@ -513,7 +517,7 @@
             <label for="travelCharge">Travel Charges</label>
             <div class="input-with-prefix">
               <span>₹</span>
-              <input type="number" id="travelCharge" name="travelCharge" min="0" step="0.01" value="0">
+              <input type="text" inputmode="decimal" id="travelCharge" name="travelCharge" value="0.00" class="amount-input-formatted">
             </div>
           </div>
 
@@ -522,7 +526,7 @@
             <label for="otherCharges">Other Charges Amount</label>
             <div class="input-with-prefix">
               <span>₹</span>
-              <input type="number" id="otherCharges" name="otherCharges" min="0" step="0.01" value="0">
+              <input type="text" inputmode="decimal" id="otherCharges" name="otherCharges" value="0.00" class="amount-input-formatted">
             </div>
           </div>
 
@@ -540,7 +544,7 @@
             <label for="discountAmount">Discount</label>
             <div class="input-with-prefix">
               <span>₹</span>
-              <input type="number" id="discountAmount" name="discountAmount" min="0" step="0.01" value="0">
+              <input type="text" inputmode="decimal" id="discountAmount" name="discountAmount" value="0.00" class="amount-input-formatted">
             </div>
           </div>
 
@@ -633,22 +637,22 @@
               <div class="payment-stage-box">
                 <span class="stage-title">10% TOKEN</span>
                 <span class="stage-sub">Commencement of 3D design on receipt of token.</span>
-                <input type="text" class="stage-input" id="tokenPaymentInput" readonly value="&#8377;0">
+                <input type="text" class="stage-input" id="tokenPaymentInput" readonly value="₹ 0.00">
               </div>
               <div class="payment-stage-box">
                 <span class="stage-title">50% ADVANCE</span>
                 <span class="stage-sub">Drawing will be sent for production on receipt of advance.</span>
-                <input type="text" class="stage-input" id="advancePaymentInput" readonly value="&#8377;0">
+                <input type="text" class="stage-input" id="advancePaymentInput" readonly value="₹ 0.00">
               </div>
               <div class="payment-stage-box">
                 <span class="stage-title">35% PART PAYMENT</span>
                 <span class="stage-sub">After the completion of frame work.</span>
-                <input type="text" class="stage-input" id="partPaymentInput" readonly value="&#8377;0">
+                <input type="text" class="stage-input" id="partPaymentInput" readonly value="₹ 0.00">
               </div>
               <div class="payment-stage-box">
                 <span class="stage-title">5% FINAL PAYMENT</span>
                 <span class="stage-sub">The last day of work completion in site.</span>
-                <input type="text" class="stage-input" id="finalPaymentInput" readonly value="&#8377;0">
+                <input type="text" class="stage-input" id="finalPaymentInput" readonly value="₹ 0.00">
               </div>
             </div>
             <div class="payment-notes-box">
@@ -658,23 +662,23 @@
           </div>
           <div class="amount-split-card">
             <div class="split-header">&#128176; AMOUNT SPLIT</div>
-            <div class="split-grand">Grand Total: <strong id="splitGrandTotal">&#8377;0</strong></div>
+            <div class="split-grand">Grand Total: <strong id="splitGrandTotal">₹ 0.00</strong></div>
             <div class="split-list">
               <div class="split-row">
                 <span class="split-pill">10% Token</span>
-                <span class="split-val" id="splitTokenVal">&#8377;0</span>
+                <span class="split-val" id="splitTokenVal">₹ 0.00</span>
               </div>
               <div class="split-row">
                 <span class="split-pill">50% Advance</span>
-                <span class="split-val" id="splitAdvanceVal">&#8377;0</span>
+                <span class="split-val" id="splitAdvanceVal">₹ 0.00</span>
               </div>
               <div class="split-row">
                 <span class="split-pill">35% Part Pay</span>
-                <span class="split-val" id="splitPartVal">&#8377;0</span>
+                <span class="split-val" id="splitPartVal">₹ 0.00</span>
               </div>
               <div class="split-row">
                 <span class="split-pill final">5% Final</span>
-                <span class="split-val final" id="splitFinalVal">&#8377;0</span>
+                <span class="split-val final" id="splitFinalVal">₹ 0.00</span>
               </div>
             </div>
           </div>
@@ -712,9 +716,9 @@
       <div class="size-heading"><div><h3>Add Size</h3><p>Multiple sizes can be added for the same item.</p></div><button type="button" id="addSizeBtn" class="btn btn-secondary">+ Add Size</button></div>
       <div id="sizeRows" class="size-list"></div>
       <div class="item-calculation">
-        <div><span>Current Rate</span><strong id="currentRate">&#8377;0.00</strong></div>
+        <div><span>Current Rate</span><strong id="currentRate">₹ 0.00</strong></div>
         <div><span>Total SQ.FT</span><strong id="currentSqft">0.00</strong></div>
-        <div><span>Total Amount</span><strong id="currentAmount">&#8377;0.00</strong></div>
+        <div><span>Total Amount</span><strong id="currentAmount">₹ 0.00</strong></div>
       </div>
       <div class="builder-actions"><button type="button" id="cancelItemBtn" class="btn btn-light">Cancel</button><button type="button" id="addItemBtn" class="btn btn-primary">Add Item to Quote</button></div>
     </section>
@@ -729,18 +733,256 @@
   const csrfToken = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
   const API_BASE = /*[[@{/admin/quotations/builder}]]*/ '/admin/quotations/builder';
   const editQuotationId = /*[[${editQuotationId}]]*/ '';
+  const urlParams = new URLSearchParams(window.location.search);
+  const paramQuoteId = urlParams.get('quotationId') || urlParams.get('id');
+  const initialQuotationId = (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId)))
+      ? Number(editQuotationId)
+      : (paramQuoteId && !isNaN(Number(paramQuoteId)) ? Number(paramQuoteId) : null);
   const state = {
-      quotationId: (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId))) ? Number(editQuotationId) : null,
+      quotationId: initialQuotationId,
       selectedCustomerId: null,
       customerRequirements: '',
       notes: '',
       rooms: [],
       draft: null,
-      pricingMode: 'MIDDLE'
+      pricingMode: 'MIDDLE',
+      isSaving: false,
+      isRestoring: false
   };
 
+  let autoSaveTimer = null;
+  let isAutoSaving = false;
+  let pendingAutoSave = false;
+
+  function setAutoSaveStatus(status, message) {
+      const indicator = $('autoSaveIndicator');
+      const dot = $('autoSaveDot');
+      const text = $('autoSaveText');
+      if (!indicator || !dot || !text) return;
+
+      if (status === 'saving') {
+          dot.style.background = '#f59e0b';
+          dot.style.boxShadow = '0 0 0 2px rgba(245, 158, 11, 0.2)';
+          text.textContent = message || 'Saving...';
+          indicator.style.cursor = 'default';
+          indicator.onclick = null;
+      } else if (status === 'saved') {
+          dot.style.background = '#10b981';
+          dot.style.boxShadow = '0 0 0 2px rgba(16, 185, 129, 0.2)';
+          text.textContent = message || 'All changes saved';
+          indicator.style.cursor = 'default';
+          indicator.onclick = null;
+      } else if (status === 'error') {
+          dot.style.background = '#ef4444';
+          dot.style.boxShadow = '0 0 0 2px rgba(239, 68, 68, 0.2)';
+          text.textContent = message || 'Unable to save (Retry)';
+          indicator.style.cursor = 'pointer';
+          indicator.title = 'Click to retry auto-saving';
+          indicator.onclick = () => triggerAutoSave(true);
+      }
+  }
+
+  function triggerAutoSave(immediate = false) {
+      if (state.isSaving || state.isRestoring) return;
+      if (autoSaveTimer) {
+          clearTimeout(autoSaveTimer);
+          autoSaveTimer = null;
+      }
+      if (immediate) {
+          performAutoSave();
+      } else {
+          autoSaveTimer = setTimeout(() => {
+              performAutoSave();
+          }, 900);
+      }
+  }
+
+  async function performAutoSave() {
+      if (state.isSaving || state.isRestoring) return;
+      if (isAutoSaving) {
+          pendingAutoSave = true;
+          return;
+      }
+
+      const name = $('customerName') ? $('customerName').value.trim() : '';
+      const phone = $('customerPhone') ? $('customerPhone').value.trim() : '';
+      const branchIdVal = $('branchId') ? $('branchId').value : '';
+      const hasRooms = state.rooms && state.rooms.some(r => r.items && r.items.length > 0);
+
+      // Skip saving if the form is completely untouched and empty
+      if (!state.quotationId && !name && !phone && !branchIdVal && !hasRooms) {
+          return;
+      }
+
+      isAutoSaving = true;
+      setAutoSaveStatus('saving', 'Saving...');
+
+      const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
+      const pricingModeVal = pricingModeEl ? pricingModeEl.value : (state.pricingMode || 'MIDDLE');
+
+      const activeCatBtn = document.querySelector('.category-choice.selected-category');
+      const activeCatId = activeCatBtn ? Number(activeCatBtn.dataset.id) : null;
+      const activeDivId = typeof activeDivisionId !== 'undefined' ? activeDivisionId : null;
+      const curFloor = $('floor') ? $('floor').value : 'Ground Floor';
+      const curRoom = $('roomNumber') ? $('roomNumber').value : 'Room 1';
+
+      const email = $('customerEmail') ? $('customerEmail').value.trim() : '';
+      const address = $('customerAddress') ? $('customerAddress').value.trim() : '';
+      const branchId = branchIdVal ? Number(branchIdVal) : null;
+      const qdVal = $('quotationDate') ? $('quotationDate').value : '';
+      const vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
+      const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
+
+      const payload = {
+          quotationId: state.quotationId,
+          customer: {
+              id: state.selectedCustomerId || null,
+              name: name,
+              phone: phone,
+              email: email,
+              address: address
+          },
+          branchId: branchId,
+          quotationDate: qdVal,
+          validUntil: vuVal,
+          pricingMode: pricingModeVal,
+          customerRequirements: state.customerRequirements || '',
+          notes: notesVal,
+          accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
+          travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
+          otherCharges: Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0)),
+          otherChargesDescription: $('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '',
+          discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
+          gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
+          offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
+          showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
+          lastActiveFloor: curFloor,
+          lastActiveRoom: curRoom,
+          lastActiveCategoryId: activeCatId,
+          lastActiveDivisionId: activeDivId,
+          lastActiveStep: 2,
+          builderState: JSON.stringify({
+              activeCategoryId: activeCatId,
+              activeDivisionId: activeDivId,
+              floor: curFloor,
+              room: curRoom
+          }),
+          rooms: (state.rooms || []).filter(r => r.items && r.items.length > 0).map(r => ({
+              floor: r.floor,
+              room: r.room,
+              workDescription: r.workDescription || '',
+              items: (r.items || []).map(i => ({
+                  workCategoryId: i.categoryId,
+                  divisionId: i.divisionId,
+                  itemId: i.itemId,
+                  materialId: i.materialId,
+                  materialOptionId: i.materialOptionId,
+                  materialSpecificationId: i.materialSpecificationId,
+                  itemDescription: i.itemDescription || '',
+                  specification: i.specification || '',
+                  rate: i.rate != null ? Number(i.rate) : null,
+                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                  coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
+                  quantity: i.quantity != null ? Number(i.quantity) : 1,
+                  imageUrl: i.imageUrl || null,
+                  sizes: (i.sizes || []).map(s => ({
+                      length: s.length,
+                      width: s.width,
+                      height: s.height,
+                      offerPrice: s.offerPrice
+                  }))
+              }))
+          }))
+      };
+
+      try {
+          const response = await fetch(`${API_BASE}/auto-save`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': csrfToken
+              },
+              body: JSON.stringify(payload)
+          });
+          if (!response.ok) {
+              throw new Error('Auto-save response status ' + response.status);
+          }
+          const resData = await response.json();
+          if (resData && resData.quotationId) {
+              state.quotationId = Number(resData.quotationId);
+              if (resData.quotationNumber && $('quoteNumberPreview')) {
+                  $('quoteNumberPreview').textContent = resData.quotationNumber;
+              }
+              try {
+                  const url = new URL(window.location.href);
+                  if (url.searchParams.get('quotationId') !== String(resData.quotationId)) {
+                      url.searchParams.set('quotationId', resData.quotationId);
+                      window.history.replaceState({ quotationId: resData.quotationId }, '', url.toString());
+                  }
+              } catch (e) {
+                  console.warn("Could not replaceState URL", e);
+              }
+          }
+          setAutoSaveStatus('saved', 'All changes saved');
+      } catch (err) {
+          console.error("Auto-save failed:", err);
+          setAutoSaveStatus('error', 'Unable to save (Retry)');
+      } finally {
+          isAutoSaving = false;
+          if (pendingAutoSave) {
+              pendingAutoSave = false;
+              setTimeout(() => triggerAutoSave(true), 200);
+          }
+      }
+  }
+
+  window.addEventListener('beforeunload', function(e) {
+      if (isAutoSaving || pendingAutoSave) {
+          e.preventDefault();
+          e.returnValue = 'Quotation changes are being saved. Are you sure you want to exit?';
+          return e.returnValue;
+      }
+  });
+
   const $ = id => document.getElementById(id);
-  const money = value => '₹' + Number(value || 0).toLocaleString('en-IN', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  function formatIndianNumber(val, decimals = 2) {
+      if (val === null || val === undefined || val === '') return "0.00";
+      const clean = String(val).replace(/[^\d.-]/g, '');
+      const num = Number(clean);
+      if (isNaN(num)) return "0.00";
+      const isNegative = num < 0;
+      const abs = Math.abs(num);
+      const fixed = abs.toFixed(decimals);
+      const parts = fixed.split('.');
+      let intPart = parts[0];
+      const decPart = parts.length > 1 ? parts[1] : '';
+
+      if (intPart.length > 3) {
+          const last3 = intPart.substring(intPart.length - 3);
+          const leading = intPart.substring(0, intPart.length - 3);
+          let groupedLeading = '';
+          const len = leading.length;
+          for (let i = 0; i < len; i++) {
+              groupedLeading += leading.charAt(i);
+              const digitsAfter = len - 1 - i;
+              if (digitsAfter > 0 && digitsAfter % 2 === 0) {
+                  groupedLeading += ',';
+              }
+          }
+          intPart = groupedLeading + ',' + last3;
+      }
+      return (isNegative ? '-' : '') + intPart + (decimals > 0 ? '.' + decPart : '');
+  }
+
+  function parseAmount(val) {
+      if (val === null || val === undefined) return 0;
+      const clean = String(val).replace(/[^\d.-]/g, '');
+      const num = parseFloat(clean);
+      return isNaN(num) ? 0 : num;
+  }
+
+  const money = value => '₹ ' + formatIndianNumber(value, 2);
   const esc = value => String(value ?? '').replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
   const currentRoomKey = () => `${$('floor').value}||${$('roomNumber').value}`;
   const currentRoom = () => state.rooms.find(r => r.key === currentRoomKey());
@@ -902,6 +1144,7 @@
               $('roomNumber').value = btn.dataset.room;
               renderRoomPills();
               showRoomNotice(`Switched to ${btn.dataset.floor} / Room ${btn.dataset.room}. You can add more items below.`);
+              triggerAutoSave(true);
           });
       });
       const pillAdd = $('pillAddRoomBtn');
@@ -937,6 +1180,7 @@
       renderRoomPills();
       showRoomNotice(`Ready to configure another room (${currentFloor} - Room ${$('roomNumber').value || '?'}). Select items below.`);
       $('roomSetupSection').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      triggerAutoSave(true);
   }
 
   async function getJson(url) {
@@ -1107,7 +1351,7 @@
           if ($('materialId')) {
               $('materialId').innerHTML = '<option value="">Select material</option>' + materials.map(m => {
                   const hasRate = m.rate != null && m.rate !== '' && !isNaN(Number(m.rate));
-                  const rateDisplay = hasRate ? (' - ₹' + Number(m.rate).toFixed(2) + ' / ' + esc(m.unit || 'Sq.ft')) : '';
+                  const rateDisplay = hasRate ? (' - ₹ ' + formatIndianNumber(m.rate, 2) + ' / ' + esc(m.unit || 'Sq.ft')) : '';
                   return `<option value="${m.id}" data-formula="${esc(m.formula || '(L + W) × H')}" data-description="${esc(m.description || '')}" data-spec="${esc(m.specification || '')}" data-unit="${esc(m.unit || 'Sq.ft')}" data-rate="${hasRate ? m.rate : ''}">${esc(m.name)}${rateDisplay}</option>`;
               }).join('');
           }
@@ -1295,11 +1539,11 @@
           </div>` : ''}
         </div>`}
         <div class="size-details-calc-box">
-          <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('&#8377;' + Number(material.rate).toFixed(2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('₹ ' + formatIndianNumber(material.rate, 2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Sq.Ft: <strong id="calcSqft-${divisionId}">${isSqft ? '0' : '-'}</strong></span>
           <span class="calc-divider">|</span>
-          <span>Amount: <strong id="calcAmt-${divisionId}">${isSqft ? '&#8377;0.00' : money(Number(material.rate || 0))}</strong></span>
+          <span>Amount: <strong id="calcAmt-${divisionId}">${isSqft ? '₹ 0.00' : money(Number(material.rate || 0))}</strong></span>
         </div>
         <div class="size-details-btn-row">
           <button type="button" class="btn-add-to-quote" id="addQuoteBtn-${divisionId}">Add to Quote</button>
@@ -1327,7 +1571,7 @@
               rateVal = (rawRate !== '' && !isNaN(parsed) && parsed >= 0) ? parsed : 0;
               if (calcRateEl) {
                   calcRateEl.innerHTML = (rawRate !== '' && !isNaN(parsed) && parsed >= 0)
-                      ? ('&#8377;' + rateVal.toFixed(2) + ' / ' + esc(material.unit || 'Files'))
+                      ? ('₹ ' + formatIndianNumber(rateVal, 2) + ' / ' + esc(material.unit || 'Files'))
                       : '<span style="color:#e53e3e;">Invalid rate</span>';
               }
           } else {
@@ -1557,6 +1801,7 @@
               renderRoomPills();
               renderQuoteSummary();
               showRoomNotice(`Added ${material.name} to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
+              triggerAutoSave(true);
           });
       }
   }
@@ -1707,12 +1952,12 @@
 
       // Restore financials
       if ($('discountPercentage') && draft.discountPercentage) $('discountPercentage').value = draft.discountPercentage;
-      if ($('discountAmount') && draft.discountAmount) $('discountAmount').value = draft.discountAmount;
+      if ($('discountAmount') && draft.discountAmount !== undefined && draft.discountAmount !== null) $('discountAmount').value = formatIndianNumber(draft.discountAmount, 2);
       if ($('otherChargesDescription') && draft.otherChargesDescription) $('otherChargesDescription').value = draft.otherChargesDescription;
-      if ($('otherCharges') && draft.otherCharges) $('otherCharges').value = draft.otherCharges;
+      if ($('otherCharges') && draft.otherCharges !== undefined && draft.otherCharges !== null) $('otherCharges').value = formatIndianNumber(draft.otherCharges, 2);
       if ($('gstPercentage') && draft.gstPercentage) $('gstPercentage').value = draft.gstPercentage;
-      if ($('accessoriesAmount') && draft.accessoriesAmount) $('accessoriesAmount').value = draft.accessoriesAmount;
-      if ($('travelCharge') && draft.travelCharge) $('travelCharge').value = draft.travelCharge;
+      if ($('accessoriesAmount') && draft.accessoriesAmount !== undefined && draft.accessoriesAmount !== null) $('accessoriesAmount').value = formatIndianNumber(draft.accessoriesAmount, 2);
+      if ($('travelCharge') && draft.travelCharge !== undefined && draft.travelCharge !== null) $('travelCharge').value = formatIndianNumber(draft.travelCharge, 2);
       if ($('offerPercentage') && draft.offerPercentage) $('offerPercentage').value = draft.offerPercentage;
 
       // Restore showSqftSize toggle
@@ -1986,7 +2231,7 @@
       if (state.draft.rate == null || isNaN(Number(state.draft.rate))) {
           $('currentRate').textContent = 'Not configured';
           $('currentRate').style.color = '#dc2626';
-          $('currentAmount').textContent = '₹0.00';
+          $('currentAmount').textContent = '₹ 0.00';
           return;
       }
       $('currentRate').style.color = '';
@@ -2061,6 +2306,7 @@
       renderRoomPills();
       renderQuoteSummary();
       showRoomNotice(`Added item to ${room.floor} - Room ${room.room}. Total items in room: ${room.items.length}`);
+      triggerAutoSave(true);
   }
 
   let showSqftSize = true;
@@ -2191,7 +2437,7 @@
                         <td class="col-material">
                           <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
-                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${item.coveragePerRoll || 40} Sq.ft/Roll @ ₹${Number(item.rate || 0).toFixed(2)}/Roll)</div>` : ''}
+                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${item.coveragePerRoll || 40} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
                           ${imgHtml}
                         </td>
@@ -2251,11 +2497,11 @@
       const subtotal = explicitSubtotal !== undefined ? Number(explicitSubtotal) : (Number(state.currentSubtotal) || 0);
       state.currentSubtotal = subtotal;
 
-      const acc = Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0);
-      const travel = Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0);
-      const other = Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0);
+      const acc = Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0));
+      const travel = Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0));
+      const other = Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0));
       const otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
-      const disc = Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0);
+      const disc = Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0));
 
       let gstPct = parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0;
       if (gstPct < 0) gstPct = 0;
@@ -2287,11 +2533,8 @@
       const totalAmount = amountAfterDiscount;
 
       function formatInr(val, isNegative) {
-          const num = Math.abs(Number(val) || 0);
-          const formatted = num.toLocaleString("en-IN", {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2
-          });
+          const num = Math.abs(parseAmount(val));
+          const formatted = formatIndianNumber(num, 2);
           return (isNegative ? "- ₹ " : "₹ ") + formatted;
       }
 
@@ -2330,6 +2573,7 @@
           size.offerDiscountPercent = 5;
       }
       renderQuoteSummary();
+      triggerAutoSave(true);
   }
 
   function setItemDiscount(roomKey, itemIdx, sizeIdx, discountPct) {
@@ -2345,6 +2589,7 @@
           size.offerDiscountPercent = discountPct;
       }
       renderQuoteSummary();
+      triggerAutoSave(true);
   }
 
   function removeItemFromQuote(roomKey, itemIdx, sizeIdx) {
@@ -2357,6 +2602,7 @@
       }
       renderRoomPills();
       renderQuoteSummary();
+      triggerAutoSave(true);
   }
 
   function renderPaymentTerms(grandTotal) {
@@ -2366,16 +2612,16 @@
       const part = Math.round(effectiveGrand * 0.35);
       const finalVal = Math.max(0, Math.round(effectiveGrand) - token - advance - part);
 
-      if ($('tokenPaymentInput')) $('tokenPaymentInput').value = '₹' + token.toLocaleString('en-IN');
-      if ($('advancePaymentInput')) $('advancePaymentInput').value = '₹' + advance.toLocaleString('en-IN');
-      if ($('partPaymentInput')) $('partPaymentInput').value = '₹' + part.toLocaleString('en-IN');
-      if ($('finalPaymentInput')) $('finalPaymentInput').value = '₹' + finalVal.toLocaleString('en-IN');
+      if ($('tokenPaymentInput')) $('tokenPaymentInput').value = '₹ ' + formatIndianNumber(token, 2);
+      if ($('advancePaymentInput')) $('advancePaymentInput').value = '₹ ' + formatIndianNumber(advance, 2);
+      if ($('partPaymentInput')) $('partPaymentInput').value = '₹ ' + formatIndianNumber(part, 2);
+      if ($('finalPaymentInput')) $('finalPaymentInput').value = '₹ ' + formatIndianNumber(finalVal, 2);
 
-      if ($('splitGrandTotal')) $('splitGrandTotal').textContent = '₹' + Math.round(effectiveGrand).toLocaleString('en-IN');
-      if ($('splitTokenVal')) $('splitTokenVal').textContent = '₹' + token.toLocaleString('en-IN');
-      if ($('splitAdvanceVal')) $('splitAdvanceVal').textContent = '₹' + advance.toLocaleString('en-IN');
-      if ($('splitPartVal')) $('splitPartVal').textContent = '₹' + part.toLocaleString('en-IN');
-      if ($('splitFinalVal')) $('splitFinalVal').textContent = '₹' + finalVal.toLocaleString('en-IN');
+      if ($('splitGrandTotal')) $('splitGrandTotal').textContent = '₹ ' + formatIndianNumber(effectiveGrand, 2);
+      if ($('splitTokenVal')) $('splitTokenVal').textContent = '₹ ' + formatIndianNumber(token, 2);
+      if ($('splitAdvanceVal')) $('splitAdvanceVal').textContent = '₹ ' + formatIndianNumber(advance, 2);
+      if ($('splitPartVal')) $('splitPartVal').textContent = '₹ ' + formatIndianNumber(part, 2);
+      if ($('splitFinalVal')) $('splitFinalVal').textContent = '₹ ' + formatIndianNumber(finalVal, 2);
   }
 
   async function recalculateAll() {
@@ -2491,7 +2737,7 @@
           return null;
       }
 
-      const otherAmt = Math.max(0, parseFloat($('otherCharges') ? $('otherCharges').value : 0) || 0);
+      const otherAmt = Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0));
       let otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
       if (otherDesc) {
           const firstIdx = otherDesc.search(/\S/);
@@ -2522,11 +2768,11 @@
           pricingMode: state.pricingMode,
           customerRequirements: state.customerRequirements || '',
           notes: notesVal,
-          accessoriesAmount: Math.max(0, parseFloat($('accessoriesAmount') ? $('accessoriesAmount').value : 0) || 0),
-          travelCharge: Math.max(0, parseFloat($('travelCharge') ? $('travelCharge').value : 0) || 0),
+          accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
+          travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
           otherCharges: otherAmt,
           otherChargesDescription: otherDesc,
-          discountAmount: Math.max(0, parseFloat($('discountAmount') ? $('discountAmount').value : 0) || 0),
+          discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
           gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
           offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
           showSqftSize: showSqftSize,
@@ -2631,6 +2877,7 @@
           renderQuoteSummary();
           recalculateFinancials(0);
           showRoomNotice('Quotation cleared. You can add new items above.');
+          triggerAutoSave(true);
       }
   }
 
@@ -2643,7 +2890,18 @@
       });
   }
 
-  document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => loadDivisions(Number(btn.dataset.id), btn.dataset.name)));
+  ['customerName', 'customerPhone', 'customerEmail', 'customerAddress', 'quoteNotes'].forEach(id => {
+      const el = $(id);
+      if (el) {
+          el.addEventListener('input', () => triggerAutoSave(false));
+          el.addEventListener('change', () => triggerAutoSave(true));
+      }
+  });
+
+  document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => {
+      loadDivisions(Number(btn.dataset.id), btn.dataset.name);
+      triggerAutoSave(false);
+  }));
 
   // Ensure category buttons display exactly one emoji per category
   function sanitizeCategoryButtons() {
@@ -2684,15 +2942,41 @@
               }
           }
       };
-      otherChargesDescEl.addEventListener('input', autoCapitalizeFirstLetter);
+      otherChargesDescEl.addEventListener('input', () => {
+          autoCapitalizeFirstLetter.call(otherChargesDescEl);
+          triggerAutoSave(false);
+      });
+      otherChargesDescEl.addEventListener('change', () => triggerAutoSave(true));
       otherChargesDescEl.addEventListener('keyup', autoCapitalizeFirstLetter);
   }
 
-  ['accessoriesAmount', 'travelCharge', 'otherCharges', 'otherChargesDescription', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
+  ['accessoriesAmount', 'travelCharge', 'otherCharges', 'discountAmount', 'gstPercentage', 'offerPercentage'].forEach(id => {
       const inp = $(id);
       if (inp) {
-          inp.addEventListener('input', () => recalculateFinancials());
-          inp.addEventListener('change', () => recalculateFinancials());
+          inp.addEventListener('input', () => {
+              recalculateFinancials();
+              triggerAutoSave(false);
+          });
+          inp.addEventListener('change', () => {
+              recalculateFinancials();
+              triggerAutoSave(true);
+          });
+      }
+  });
+  ['travelCharge', 'otherCharges', 'discountAmount', 'accessoriesAmount'].forEach(id => {
+      const inp = $(id);
+      if (inp) {
+          inp.addEventListener('focus', function() {
+              const num = parseAmount(this.value);
+              this.value = (num === 0 ? '' : num);
+              this.select();
+          });
+          inp.addEventListener('blur', function() {
+              const num = parseAmount(this.value);
+              this.value = formatIndianNumber(num, 2);
+              recalculateFinancials();
+              triggerAutoSave(true);
+          });
       }
   });
   if ($('offerPercentage')) {
@@ -2701,9 +2985,13 @@
           if (isNaN(v) || v < 0) this.value = '0';
           else if (v > 100) this.value = '100';
           recalculateFinancials();
+          triggerAutoSave(true);
       });
   }
-  document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', recalculateAll));
+  document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', () => {
+      recalculateAll();
+      triggerAutoSave(true);
+  }));
   $('branchId').addEventListener('change', () => {
       if (activeDivisionId) {
           const activeCard = $(`wt-card-${activeDivisionId}`);
@@ -2718,9 +3006,16 @@
           refreshDraftRate();
       }
       recalculateAll();
+      triggerAutoSave(true);
   });
-  $('floor').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
-  $('roomNumber').addEventListener('change', () => { if (state.rooms.length) ensureRoom(); });
+  $('floor').addEventListener('change', () => {
+      if (state.rooms.length) ensureRoom();
+      triggerAutoSave(true);
+  });
+  $('roomNumber').addEventListener('change', () => {
+      if (state.rooms.length) ensureRoom();
+      triggerAutoSave(true);
+  });
   if ($('saveQuotationBtn')) $('saveQuotationBtn').addEventListener('click', () => saveQuotation(true));
   if ($('saveQuoteBtn')) $('saveQuoteBtn').addEventListener('click', () => saveQuotation(true));
   if ($('clearQuoteBtn')) $('clearQuoteBtn').addEventListener('click', clearQuote);
@@ -2730,6 +3025,7 @@
           const thElements = document.querySelectorAll('th.col-toggleable');
           thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
           renderQuoteSummary();
+          triggerAutoSave(true);
       });
   }
 
@@ -2813,28 +3109,50 @@
   if ($('validUntilDate')) {
       $('validUntilDate').addEventListener('change', () => {
           validUntilManuallyChanged = true;
+          triggerAutoSave(true);
       });
       $('validUntilDate').addEventListener('input', () => {
           validUntilManuallyChanged = true;
       });
   }
   if ($('quotationDate')) {
-      $('quotationDate').addEventListener('change', syncValidUntil);
+      $('quotationDate').addEventListener('change', () => {
+          syncValidUntil();
+          triggerAutoSave(true);
+      });
       $('quotationDate').addEventListener('input', syncValidUntil);
       syncValidUntil();
   }
 
-  if (sessionStorage.getItem(DRAFT_STORAGE_KEY)) {
-      setTimeout(restoreQuotationBuilderDraftIfPresent, 60);
-  } else if (state.quotationId) {
-      getJson(`${API_BASE}/load/${state.quotationId}`).then(data => {
-          if (!data) return;
-          if (data.quotationNumber) $('quoteNumberPreview').textContent = data.quotationNumber;
-          if (data.customerName) $('customerName').value = toTitleCase(data.customerName);
-          if (data.phone) $('customerPhone').value = data.phone;
-          if (data.email) $('customerEmail').value = data.email ? data.email.toLowerCase() : '';
-          if (data.address) $('customerAddress').value = toTitleCase(data.address);
-          if (data.quotationDate) {
+  async function loadQuotationData(quotationId) {
+      if (!quotationId) return;
+      state.isRestoring = true;
+      setAutoSaveStatus('saving', 'Loading quotation...');
+
+      try {
+          const data = await getJson(`${API_BASE}/load/${quotationId}`);
+          if (!data) {
+              state.isRestoring = false;
+              setAutoSaveStatus('error', 'Quotation not found');
+              return;
+          }
+
+          if (data.quotationNumber && $('quoteNumberPreview')) {
+              $('quoteNumberPreview').textContent = data.quotationNumber;
+          }
+          if (data.customerName && $('customerName')) {
+              $('customerName').value = toTitleCase(data.customerName);
+          }
+          if (data.phone && $('customerPhone')) {
+              $('customerPhone').value = data.phone;
+          }
+          if (data.email && $('customerEmail')) {
+              $('customerEmail').value = data.email ? data.email.toLowerCase() : '';
+          }
+          if (data.address && $('customerAddress')) {
+              $('customerAddress').value = toTitleCase(data.address);
+          }
+          if (data.quotationDate && $('quotationDate')) {
               $('quotationDate').value = data.quotationDate;
               $('quotationDate').readOnly = true;
               $('quotationDate').style.backgroundColor = '#f3f4f6';
@@ -2847,20 +3165,29 @@
           } else {
               syncValidUntil();
           }
-          if (data.branchId) $('branchId').value = data.branchId;
-          if (data.customerRequirements) state.customerRequirements = data.customerRequirements;
+          if (data.branchId && $('branchId')) {
+              $('branchId').value = data.branchId;
+          }
+          if (data.customerRequirements) {
+              state.customerRequirements = data.customerRequirements;
+          }
           if (data.notes) {
               state.notes = data.notes;
               if ($('quoteNotes')) $('quoteNotes').value = data.notes;
           }
-          if (data.customerId) state.selectedCustomerId = data.customerId;
+          if (data.customerId) {
+              state.selectedCustomerId = data.customerId;
+          }
           if (data.pricingMode) {
               const r = document.querySelector(`input[name="pricingMode"][value="${data.pricingMode}"]`);
-              if (r) { r.checked = true; state.pricingMode = data.pricingMode; }
+              if (r) {
+                  r.checked = true;
+                  state.pricingMode = data.pricingMode;
+              }
           }
-          if (data.accessoriesAmount != null && $('accessoriesAmount')) $('accessoriesAmount').value = data.accessoriesAmount;
-          if (data.travelCharge != null && $('travelCharge')) $('travelCharge').value = data.travelCharge;
-          if (data.otherCharges != null && $('otherCharges')) $('otherCharges').value = data.otherCharges;
+          if (data.accessoriesAmount != null && $('accessoriesAmount')) $('accessoriesAmount').value = formatIndianNumber(data.accessoriesAmount, 2);
+          if (data.travelCharge != null && $('travelCharge')) $('travelCharge').value = formatIndianNumber(data.travelCharge, 2);
+          if (data.otherCharges != null && $('otherCharges')) $('otherCharges').value = formatIndianNumber(data.otherCharges, 2);
           if ($('otherChargesDescription')) {
               let loadedDesc = (data.otherChargesDescription || '').trim();
               if (loadedDesc) {
@@ -2871,7 +3198,7 @@
               }
               $('otherChargesDescription').value = loadedDesc;
           }
-          if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = data.discountAmount;
+          if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = formatIndianNumber(data.discountAmount, 2);
           if (data.gstPercentage != null && $('gstPercentage')) $('gstPercentage').value = data.gstPercentage;
           if (data.offerPercentage != null && $('offerPercentage')) $('offerPercentage').value = data.offerPercentage;
           if (data.showSqftSize !== undefined && data.showSqftSize !== null) {
@@ -2889,69 +3216,119 @@
                   floor: r.floor,
                   room: r.room,
                   workDescription: r.workDescription || '',
-                  items: (r.items || []).map(i => ({
-                      categoryId: i.categoryId,
-                      categoryName: i.categoryName,
-                      divisionId: i.divisionId,
-                      divisionName: i.divisionName,
-                      itemId: i.itemId,
-                      itemName: i.itemName,
-                      materialId: i.materialId,
-                      materialName: i.materialName,
-                      materialOptionId: i.materialOptionId,
-                      materialOptionName: i.materialOptionName,
-                      materialSpecificationId: i.materialSpecificationId,
-                      materialSpecificationName: i.materialSpecificationName,
-                      rate: Number(i.rate || 0),
-                      formula: i.formula || '(L + W) × H',
-                      unit: i.unit || 'Sq.ft',
-                      measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
-                      coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
-                      quantity: i.quantity != null ? Number(i.quantity) : 1,
-                      imageUrl: i.imageUrl || null,
-                      itemDescription: i.itemDescription || '',
-                      specification: i.specification || '',
-                      sizes: (i.sizes || []).map(s => {
-                          const mType = (i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
-                          const isRoll = mType === 'ROLL' || (i.unit && i.unit.toLowerCase() === 'roll');
-                          const isSqft = mType === 'SQFT';
-                          let lineBase = 0;
-                          if (isRoll) {
-                              const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
-                              const cov = Number(i.coveragePerRoll || 40);
-                              const rolls = (meas > 0 && cov > 0) ? Math.ceil(meas / cov) : Number(i.quantity || 1);
-                              lineBase = rolls * Number(i.rate || 0);
-                          } else if (isSqft) {
-                              const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
-                              lineBase = meas * Number(i.rate || 0);
-                          } else {
-                              lineBase = Number(i.quantity || 1) * Number(i.rate || 0);
-                          }
-                          let discPct = 0;
-                          if (s.offerPrice != null && lineBase > 0) {
-                              discPct = Math.round((1 - (Number(s.offerPrice) / lineBase)) * 100);
-                              if (discPct < 0) discPct = 0;
-                          }
-                          const hasOffer = s.offerPrice != null && discPct > 0;
-                          return {
-                              length: Number(s.length || 0),
-                              width: Number(s.width || 0),
-                              height: Number(s.height || 0),
-                              offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
-                              offerDiscountPercent: discPct,
-                              offerActive: hasOffer
-                          };
-                      })
-                  }))
+                  items: (r.items || []).map(i => {
+                      let effectiveRate = Number(i.rate || 0);
+                      let rateUnavailable = false;
+                      let availabilityMessage = null;
+
+                      if (i.materialAvailable === false) {
+                          rateUnavailable = true;
+                          availabilityMessage = i.availabilityMessage || 'Material is no longer available';
+                      } else if (i.rateChanged === true && i.currentRate != null && !isNaN(Number(i.currentRate))) {
+                          effectiveRate = Number(i.currentRate);
+                      }
+
+                      return {
+                          categoryId: i.categoryId,
+                          categoryName: i.categoryName,
+                          divisionId: i.divisionId,
+                          divisionName: i.divisionName,
+                          itemId: i.itemId,
+                          itemName: i.itemName,
+                          materialId: i.materialId,
+                          materialName: i.materialName,
+                          materialOptionId: i.materialOptionId,
+                          materialOptionName: i.materialOptionName,
+                          materialSpecificationId: i.materialSpecificationId,
+                          materialSpecificationName: i.materialSpecificationName,
+                          rate: effectiveRate,
+                          rateUnavailable: rateUnavailable,
+                          rateUnavailableMessage: availabilityMessage,
+                          formula: i.formula || '(L + W) × H',
+                          unit: i.unit || 'Sq.ft',
+                          measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                          coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
+                          quantity: i.quantity != null ? Number(i.quantity) : 1,
+                          imageUrl: i.imageUrl || null,
+                          itemDescription: i.itemDescription || '',
+                          specification: i.specification || '',
+                          sizes: (i.sizes || []).map(s => {
+                              const mType = (i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
+                              const isRoll = mType === 'ROLL' || (i.unit && i.unit.toLowerCase() === 'roll');
+                              const isSqft = mType === 'SQFT';
+                              let lineBase = 0;
+                              if (isRoll) {
+                                  const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
+                                  const cov = Number(i.coveragePerRoll || 40);
+                                  const rolls = (meas > 0 && cov > 0) ? Math.ceil(meas / cov) : Number(i.quantity || 1);
+                                  lineBase = rolls * effectiveRate;
+                              } else if (isSqft) {
+                                  const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
+                                  lineBase = meas * effectiveRate;
+                              } else {
+                                  lineBase = Number(i.quantity || 1) * effectiveRate;
+                              }
+                              let discPct = 0;
+                              if (s.offerPrice != null && lineBase > 0) {
+                                  discPct = Math.round((1 - (Number(s.offerPrice) / lineBase)) * 100);
+                                  if (discPct < 0) discPct = 0;
+                              }
+                              const hasOffer = s.offerPrice != null && discPct > 0;
+                              let recalculatedOffer = hasOffer ? Math.round(lineBase * (1 - discPct / 100) * 100) / 100 : null;
+                              return {
+                                  length: Number(s.length || 0),
+                                  width: Number(s.width || 0),
+                                  height: Number(s.height || 0),
+                                  offerPrice: recalculatedOffer,
+                                  offerDiscountPercent: discPct,
+                                  offerActive: hasOffer
+                              };
+                          })
+                      };
+                  })
               }));
-              $('floor').value = state.rooms[0].floor;
-              $('roomNumber').value = state.rooms[0].room;
-              renderRoomPills();
-              renderQuoteSummary();
           }
-      }).catch(err => {
+
+          // Restore floor & room
+          const targetFloor = data.lastActiveFloor || (state.rooms && state.rooms.length > 0 ? state.rooms[0].floor : 'Ground Floor');
+          const targetRoom = data.lastActiveRoom || (state.rooms && state.rooms.length > 0 ? state.rooms[0].room : 'Room 1');
+          if ($('floor')) $('floor').value = targetFloor;
+          if ($('roomNumber')) $('roomNumber').value = targetRoom;
+
+          renderRoomPills();
+          renderQuoteSummary();
+          recalculateFinancials();
+
+          // Restore active category and work type
+          if (data.lastActiveCategoryId) {
+              const catBtn = document.querySelector(`.category-choice[data-id="${data.lastActiveCategoryId}"]`);
+              if (catBtn) {
+                  catBtn.click();
+                  if (data.lastActiveDivisionId) {
+                      setTimeout(() => {
+                          const wtCard = document.getElementById(`wt-card-${data.lastActiveDivisionId}`);
+                          if (wtCard) {
+                              wtCard.click();
+                              try { wtCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
+                          }
+                      }, 350);
+                  }
+              }
+          }
+
+          setAutoSaveStatus('saved', 'All changes saved');
+      } catch (err) {
           console.error("Failed to load quotation", err);
-      });
+          setAutoSaveStatus('error', 'Failed to load (Retry)');
+      } finally {
+          state.isRestoring = false;
+      }
+  }
+
+  if (state.quotationId) {
+      loadQuotationData(state.quotationId);
+  } else if (sessionStorage.getItem(DRAFT_STORAGE_KEY)) {
+      setTimeout(restoreQuotationBuilderDraftIfPresent, 60);
   }
 </script>
 </body>

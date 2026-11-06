@@ -478,7 +478,13 @@ public class AdminQuotationBuilderService {
                     request.discountAmount(),
                     request.gstPercentage(),
                     request.offerPercentage(),
-                    request.showSqftSize()
+                    request.showSqftSize(),
+                    request.lastActiveStep(),
+                    request.lastActiveFloor(),
+                    request.lastActiveRoom(),
+                    request.lastActiveCategoryId(),
+                    request.lastActiveDivisionId(),
+                    request.builderState()
             );
         }
 
@@ -605,10 +611,12 @@ public class AdminQuotationBuilderService {
                 request.pricingMode()
         );
 
-        boolean hasRooms = request.rooms() != null && !request.rooms().isEmpty();
-        quotation.setStatus(
-                hasRooms ? QuotationStatus.WORKING : QuotationStatus.PENDING
-        );
+        // Completing and saving a quotation promotes PENDING to WORKING.
+        // A previously saved WORKING quotation stays WORKING.
+        // If a SENT quotation is edited and saved, preserve SENT.
+        if (quotation.getStatus() == null || quotation.getStatus() == QuotationStatus.PENDING) {
+            quotation.setStatus(QuotationStatus.WORKING);
+        }
 
         quotation.setCustomerRequirements(
                 clean(request.customerRequirements())
@@ -645,95 +653,266 @@ public class AdminQuotationBuilderService {
             quotation.setShowSqftSize(true);
         }
 
+        quotation.setLastActiveStep(request.lastActiveStep());
+        quotation.setLastActiveFloor(request.lastActiveFloor());
+        quotation.setLastActiveRoom(request.lastActiveRoom());
+        quotation.setLastActiveCategoryId(request.lastActiveCategoryId());
+        quotation.setLastActiveDivisionId(request.lastActiveDivisionId());
+        quotation.setBuilderState(request.builderState());
+
         Quotation savedQuotation =
                 quotationRepository.save(
                         quotation
                 );
 
         // =====================================================
-        // ROOMS
+        // ROOMS & ITEMS
         // =====================================================
 
-        for (RoomRequest roomRequest :
-                request.rooms()) {
+        saveRoomsAndItems(savedQuotation, request.rooms(), branch.getId(), request.pricingMode(), existingMaterialIds, isEdit, false);
 
-            QuotationRoom room =
-                    quotationRoomService.create(
-                            savedQuotation,
-                            required(
-                                    roomRequest.floor(),
-                                    "Floor"
-                            ),
-                            required(
-                                    roomRequest.room(),
-                                    "Room"
-                            ),
-                            roomRequest.workDescription()
-                    );
+        // -----------------------------------------------------
+        // Final quotation calculation
+        // -----------------------------------------------------
 
-            // =================================================
-            // ITEMS
-            // =================================================
+        return quotationCalculationService
+                .calculateQuotation(
+                        savedQuotation.getId()
+                );
+    }
 
-            for (ItemRequest itemRequest :
-                    roomRequest.items()) {
 
-                WorkCategory category =
-                        workCategoryRepository
-                                .findById(
-                                        itemRequest.workCategoryId()
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalArgumentException(
-                                                "Work category not found."
-                                        )
-                                );
 
-                Division division =
-                        divisionRepository
-                                .findById(
-                                        itemRequest.divisionId()
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalArgumentException(
-                                                "Division not found."
-                                        )
-                                );
+    // =========================================================
+    // PROGRESSIVE AUTO-SAVE (DRAFT QUOTATIONS)
+    // =========================================================
 
-                Material material =
-                        materialRepository
-                                .findById(
-                                        itemRequest.materialId()
-                                )
-                                .orElseThrow(() ->
-                                        new IllegalArgumentException(
-                                                "Material not found."
-                                        )
-                                );
+    @Transactional
+    public Quotation autoSave(
+            BuilderRequest request,
+            String loggedInEmail) {
+
+        if (request == null) {
+            throw new IllegalArgumentException("Draft quotation request cannot be null.");
+        }
+
+        User loggedInUser = userRepository.findByEmail(loggedInEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Logged-in user was not found."));
+
+        if (!Boolean.TRUE.equals(loggedInUser.getActive())) {
+            throw new IllegalArgumentException("User account is inactive.");
+        }
+
+        Branch branch = null;
+        if (loggedInUser.getRole() == Role.EMPLOYEE) {
+            if (loggedInUser.getBranch() == null) {
+                throw new IllegalStateException("Employee is not assigned to a branch.");
+            }
+            branch = loggedInUser.getBranch();
+            if (request.branchId() != null && !request.branchId().equals(branch.getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot create quotations for another branch.");
+            }
+        } else {
+            if (request.branchId() != null) {
+                branch = branchRepository.findById(request.branchId()).orElse(null);
+            }
+            if (branch == null && branchRepository != null) {
+                branch = branchRepository.findAll().stream().filter(b -> Boolean.TRUE.equals(b.getActive())).findFirst().orElse(null);
+            }
+        }
+
+        Quotation quotation;
+        boolean isEdit = false;
+        java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
+        if (request.quotationId() != null) {
+            quotation = quotationRepository.findById(request.quotationId()).orElseGet(Quotation::new);
+            if (quotation.getId() != null) {
+                isEdit = true;
+                if (loggedInUser.getRole() == Role.EMPLOYEE) {
+                    if (quotation.getBranch() != null && loggedInUser.getBranch() != null
+                            && !quotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                        throw new AccessDeniedException("Unauthorized: Cannot edit quotations for another branch.");
+                    }
+                }
+                List<QuotationRoom> oldRooms = quotationRoomService.getActiveByQuotationId(quotation.getId());
+                for (QuotationRoom oldRoom : oldRooms) {
+                    List<QuotationItem> oldItems = quotationItemService.getActiveByQuotationRoomId(oldRoom.getId());
+                    if (oldItems != null) {
+                        for (QuotationItem oi : oldItems) {
+                            if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
+                                existingMaterialIds.add(oi.getMaterial().getId());
+                            }
+                        }
+                    }
+                    quotationRoomService.deactivate(oldRoom.getId());
+                }
+            } else {
+                quotation.setQuotationNumber(nextQuotationNumber());
+            }
+        } else {
+            quotation = new Quotation();
+            quotation.setQuotationNumber(nextQuotationNumber());
+        }
+
+        // Customer resolution (permissive for drafts)
+        Customer customer = null;
+        if (request.customer() != null) {
+            try {
+                if (request.customer().id() != null) {
+                    customer = customerRepository.findById(request.customer().id()).orElse(null);
+                } else if (request.customer().name() != null && !request.customer().name().isBlank()
+                        && request.customer().phone() != null && !request.customer().phone().isBlank()) {
+                    customer = resolveCustomer(request.customer(), branch, loggedInUser, quotation, isEdit);
+                }
+            } catch (Exception ignored) {
+                // Draft errors during customer resolution should not block progressive saving
+            }
+        }
+        if (customer == null && quotation.getCustomer() != null) {
+            customer = quotation.getCustomer();
+        }
+        quotation.setCustomer(customer);
+
+        if (quotation.getEmployee() == null) {
+            quotation.setEmployee(loggedInUser);
+        }
+        if (branch != null) {
+            quotation.setBranch(branch);
+        }
+
+        LocalDate effectiveDate = request.quotationDate() != null
+                ? request.quotationDate()
+                : (quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now());
+        quotation.setQuotationDate(effectiveDate);
+
+        if (request.validUntil() != null) {
+            quotation.setValidUntil(request.validUntil());
+        } else if (quotation.getValidUntil() == null) {
+            quotation.setValidUntil(effectiveDate.plusDays(365));
+        }
+
+        quotation.setPricingMode(request.pricingMode() != null
+                ? request.pricingMode()
+                : (quotation.getPricingMode() != null ? quotation.getPricingMode() : PricingMode.MIDDLE));
+
+        // Incomplete / auto-saved quotations MUST remain in PENDING status
+        if (quotation.getStatus() == null || quotation.getStatus() == QuotationStatus.PENDING) {
+            quotation.setStatus(QuotationStatus.PENDING);
+        }
+
+        quotation.setCustomerRequirements(clean(request.customerRequirements()));
+        quotation.setNotes(clean(request.notes()));
+        if (request.accessoriesAmount() != null) quotation.setAccessoriesAmount(request.accessoriesAmount());
+        if (request.travelCharge() != null) quotation.setTravelCharge(request.travelCharge());
+        if (request.otherCharges() != null) quotation.setOtherCharges(request.otherCharges());
+        if (request.otherChargesDescription() != null) quotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
+        if (request.discountAmount() != null) quotation.setDiscountAmount(request.discountAmount());
+        if (request.gstPercentage() != null) quotation.setGstPercentage(request.gstPercentage());
+        if (request.offerPercentage() != null) quotation.setOfferPercentage(request.offerPercentage());
+        if (request.showSqftSize() != null) quotation.setShowSqftSize(request.showSqftSize());
+
+        // Resume navigation fields
+        quotation.setLastActiveStep(request.lastActiveStep());
+        quotation.setLastActiveFloor(request.lastActiveFloor());
+        quotation.setLastActiveRoom(request.lastActiveRoom());
+        quotation.setLastActiveCategoryId(request.lastActiveCategoryId());
+        quotation.setLastActiveDivisionId(request.lastActiveDivisionId());
+        quotation.setBuilderState(request.builderState());
+
+        Quotation savedQuotation = quotationRepository.save(quotation);
+
+        if (request.rooms() != null && !request.rooms().isEmpty()) {
+            saveRoomsAndItems(savedQuotation, request.rooms(), branch != null ? branch.getId() : null, savedQuotation.getPricingMode(), existingMaterialIds, isEdit, true);
+        }
+
+        Quotation calculated = quotationCalculationService.calculateQuotation(savedQuotation.getId());
+        if (savedQuotation.getStatus() == QuotationStatus.PENDING && calculated.getStatus() != QuotationStatus.PENDING) {
+            calculated.setStatus(QuotationStatus.PENDING);
+            calculated = quotationRepository.save(calculated);
+        }
+        return calculated;
+    }
+
+    private void saveRoomsAndItems(
+            Quotation savedQuotation,
+            List<RoomRequest> rooms,
+            Long branchId,
+            PricingMode pricingMode,
+            java.util.Set<Long> existingMaterialIds,
+            boolean isEdit,
+            boolean isAutoSave) {
+
+        if (rooms == null || rooms.isEmpty()) {
+            return;
+        }
+
+        for (RoomRequest roomRequest : rooms) {
+            if (roomRequest == null) continue;
+            String floor = roomRequest.floor() != null ? roomRequest.floor().trim() : "";
+            String roomName = roomRequest.room() != null ? roomRequest.room().trim() : "";
+            if (floor.isEmpty() || roomName.isEmpty()) {
+                if (isAutoSave) {
+                    if (floor.isEmpty()) floor = "Ground Floor";
+                    if (roomName.isEmpty()) roomName = "Room 1";
+                } else {
+                    floor = required(roomRequest.floor(), "Floor");
+                    roomName = required(roomRequest.room(), "Room");
+                }
+            }
+
+            QuotationRoom room = quotationRoomService.create(
+                    savedQuotation,
+                    floor,
+                    roomName,
+                    roomRequest.workDescription()
+            );
+
+            if (roomRequest.items() == null || roomRequest.items().isEmpty()) {
+                continue;
+            }
+
+            for (ItemRequest itemRequest : roomRequest.items()) {
+                if (itemRequest == null) continue;
+                if (itemRequest.workCategoryId() == null || itemRequest.divisionId() == null || itemRequest.materialId() == null) {
+                    if (isAutoSave) continue;
+                }
+
+                WorkCategory category = workCategoryRepository.findById(itemRequest.workCategoryId()).orElse(null);
+                if (category == null) {
+                    if (isAutoSave) continue;
+                    throw new IllegalArgumentException("Work category not found.");
+                }
+
+                Division division = divisionRepository.findById(itemRequest.divisionId()).orElse(null);
+                if (division == null) {
+                    if (isAutoSave) continue;
+                    throw new IllegalArgumentException("Division not found.");
+                }
+
+                Material material = materialRepository.findById(itemRequest.materialId()).orElse(null);
+                if (material == null) {
+                    if (isAutoSave) continue;
+                    throw new IllegalArgumentException("Material not found.");
+                }
 
                 if (!Boolean.TRUE.equals(material.getActive())) {
-                    boolean isExistingItemInQuotation = quotation.getId() != null
-                            && existingMaterialIds.contains(material.getId());
+                    boolean isExistingItemInQuotation = isEdit && existingMaterialIds.contains(material.getId());
                     if (!isExistingItemInQuotation) {
+                        if (isAutoSave) continue;
                         throw new IllegalArgumentException("Material '" + material.getName() + "' is inactive and cannot be added to quotations.");
                     }
                 }
 
                 Item item = null;
                 if (itemRequest.itemId() != null) {
-                    item = itemRepository
-                            .findById(itemRequest.itemId())
-                            .orElse(null);
+                    item = itemRepository.findById(itemRequest.itemId()).orElse(null);
                 }
                 if (item == null && material.getItem() != null) {
                     item = material.getItem();
                 }
                 if (item == null) {
-                    item = itemRepository
-                            .findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(division.getId())
-                            .stream()
-                            .findFirst()
-                            .orElse(null);
+                    item = itemRepository.findByDivisionIdAndActiveTrueOrderByDisplayOrderAsc(division.getId())
+                            .stream().findFirst().orElse(null);
                     if (item == null) {
                         Item defaultItem = new Item();
                         defaultItem.setName(division.getName());
@@ -761,36 +940,23 @@ public class AdminQuotationBuilderService {
                     }
                 }
 
-                // -------------------------------------------------
-                // Validate hierarchy
-                // -------------------------------------------------
-
-                if (!option.getMaterial()
-                        .getId()
-                        .equals(material.getId())) {
-
-                    throw new IllegalArgumentException(
-                            "Material option does not belong to the selected material."
-                    );
+                if (option != null && option.getMaterial() != null && !option.getMaterial().getId().equals(material.getId())) {
+                    if (!isAutoSave) {
+                        throw new IllegalArgumentException("Material option does not belong to the selected material.");
+                    }
                 }
 
-                if (!division.getWorkCategory()
-                        .getId()
-                        .equals(category.getId())) {
-
-                    throw new IllegalArgumentException(
-                            "Division does not belong to the selected work category."
-                    );
+                if (division.getWorkCategory() != null && !division.getWorkCategory().getId().equals(category.getId())) {
+                    if (!isAutoSave) {
+                        throw new IllegalArgumentException("Division does not belong to the selected work category.");
+                    }
                 }
 
                 MaterialSpecification materialSpecification = null;
                 if (itemRequest.materialSpecificationId() != null) {
-                    materialSpecification = materialSpecificationRepository
-                            .findById(itemRequest.materialSpecificationId())
-                            .orElse(null);
+                    materialSpecification = materialSpecificationRepository.findById(itemRequest.materialSpecificationId()).orElse(null);
                     if (materialSpecification != null) {
-                        if (materialSpecification.getMaterial() != null
-                                && !materialSpecification.getMaterial().getId().equals(material.getId())) {
+                        if (materialSpecification.getMaterial() != null && !materialSpecification.getMaterial().getId().equals(material.getId())) {
                             materialSpecification = null;
                         }
                         if (materialSpecification != null && materialSpecification.getMaterialOption() != null
@@ -799,10 +965,6 @@ public class AdminQuotationBuilderService {
                         }
                     }
                 }
-
-                // -------------------------------------------------
-                // Resolve measurement type & effective values
-                // -------------------------------------------------
 
                 MeasurementType effectiveType = itemRequest.measurementType();
                 if (effectiveType == null && material != null) {
@@ -815,23 +977,17 @@ public class AdminQuotationBuilderService {
                     effectiveType = MeasurementType.SQFT;
                 }
 
-                // -------------------------------------------------
-                // Resolve rate for this item:
-                // Verify grade and branch availability for all units (Sq.ft, Quantity, Files).
-                // -------------------------------------------------
-
                 ResolvedMaterialRate resolved = resolveMaterialAndRate(
-                        request.branchId(),
+                        branchId,
                         division.getId(),
                         material.getId(),
                         option != null ? option.getId() : null,
-                        request.pricingMode()
+                        pricingMode
                 );
-                boolean isExistingItemInQuotation = quotation.getId() != null
-                        && existingMaterialIds.contains(material.getId());
+                boolean isExistingItemInQuotation = isEdit && existingMaterialIds.contains(material.getId());
 
                 if (!resolved.available() || resolved.rate() == null || resolved.rate().compareTo(BigDecimal.ZERO) <= 0) {
-                    if (isExistingItemInQuotation) {
+                    if (isExistingItemInQuotation || isAutoSave) {
                         BigDecimal fallbackRate = (itemRequest.rate() != null && itemRequest.rate().compareTo(BigDecimal.ZERO) > 0)
                                 ? money(itemRequest.rate())
                                 : (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) > 0 ? money(material.getRate()) : BigDecimal.ONE);
@@ -849,7 +1005,7 @@ public class AdminQuotationBuilderService {
                                 null
                         );
                     } else {
-                        String gradeLabel = request.pricingMode() == PricingMode.PREMIUM ? "Premium" : (request.pricingMode() == PricingMode.ECONOMY ? "Economy" : "Middle");
+                        String gradeLabel = pricingMode == PricingMode.PREMIUM ? "Premium" : (pricingMode == PricingMode.ECONOMY ? "Economy" : "Middle");
                         throw new IllegalArgumentException(resolved.message() != null ? resolved.message() : ("No material available in " + gradeLabel + " Grade"));
                     }
                 }
@@ -857,10 +1013,10 @@ public class AdminQuotationBuilderService {
                 BigDecimal rate;
                 if (effectiveType.isFiles()) {
                     if (itemRequest.rate() != null) {
-                        if (itemRequest.rate().compareTo(BigDecimal.ZERO) < 0) {
+                        if (itemRequest.rate().compareTo(BigDecimal.ZERO) < 0 && !isAutoSave) {
                             throw new IllegalArgumentException("Rate for Files unit must be a valid, non-negative value.");
                         }
-                        rate = money(itemRequest.rate());
+                        rate = money(itemRequest.rate().max(BigDecimal.ZERO));
                     } else {
                         rate = resolved.rate();
                     }
@@ -869,35 +1025,21 @@ public class AdminQuotationBuilderService {
                 }
 
                 Pricing itemPricing = (option != null)
-                        ? pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), request.pricingMode()).orElse(null)
+                        ? pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), pricingMode).orElse(null)
                         : null;
 
                 String itemFormula = (material.getFormula() != null && !material.getFormula().isBlank())
                         ? material.getFormula()
                         : ((itemPricing != null && itemPricing.getFormula() != null && !itemPricing.getFormula().isBlank())
                                 ? itemPricing.getFormula()
-                                : (option.getFormula() != null && !option.getFormula().isBlank() ? option.getFormula() : "(L + W) × H"));
+                                : (option != null && option.getFormula() != null && !option.getFormula().isBlank() ? option.getFormula() : "(L + W) × H"));
 
-                String itemUnit = (itemPricing != null && itemPricing.getUnit() != null) ? itemPricing.getUnit() : "SQFT";
-
-                // =================================================
-                // ONE QuotationItem
-                // MANY QuotationItemSize
-                // =================================================
-
-                BigDecimal totalSqft =
-                        BigDecimal.ZERO;
-
-                BigDecimal totalAmount =
-                        BigDecimal.ZERO;
-
-                BigDecimal totalOfferPrice =
-                        BigDecimal.ZERO;
-
+                BigDecimal totalSqft = BigDecimal.ZERO;
+                BigDecimal totalAmount = BigDecimal.ZERO;
+                BigDecimal totalOfferPrice = BigDecimal.ZERO;
                 BigDecimal firstLength = null;
                 BigDecimal firstWidth = null;
                 BigDecimal firstHeight = null;
-
                 BigDecimal effectiveQuantity = (itemRequest.quantity() != null && itemRequest.quantity().compareTo(BigDecimal.ZERO) > 0)
                         ? itemRequest.quantity()
                         : BigDecimal.ONE;
@@ -906,76 +1048,41 @@ public class AdminQuotationBuilderService {
                         ? itemRequest.imageUrl()
                         : (material != null ? material.getImageUrl() : null);
 
-                // -------------------------------------------------
-                // First pass:
-                // Calculate all sizes and totals
-                // -------------------------------------------------
-
                 BigDecimal coverage = null;
                 if (effectiveType.isSqft()) {
                     if (itemRequest.sizes() != null) {
-                        for (int sizeIndex = 0;
-                             sizeIndex < itemRequest.sizes().size();
-                             sizeIndex++) {
-
-                            SizeRequest size =
-                                    itemRequest.sizes()
-                                            .get(sizeIndex);
-
+                        for (int sizeIndex = 0; sizeIndex < itemRequest.sizes().size(); sizeIndex++) {
+                            SizeRequest size = itemRequest.sizes().get(sizeIndex);
+                            if (size == null) continue;
                             String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
                             boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
                             boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                            BigDecimal length = positive(size.length(), "Length");
-                            BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
-                            BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
-                            com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                            BigDecimal length = isAutoSave ? (size.length() != null ? size.length() : BigDecimal.ZERO) : positive(size.length(), "Length");
+                            BigDecimal width = requiresW ? (isAutoSave ? (size.width() != null ? size.width() : BigDecimal.ZERO) : positive(size.width(), "Width")) : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                            BigDecimal height = requiresH ? (isAutoSave ? (size.height() != null ? size.height() : BigDecimal.ZERO) : positive(size.height(), "Height")) : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                            if (!isAutoSave) {
+                                com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                            }
 
-                            // Save first size in parent item
-                            // for backward compatibility.
                             if (sizeIndex == 0) {
                                 firstLength = length;
                                 firstWidth = width;
                                 firstHeight = height;
                             }
 
-                            BigDecimal sqft =
-                                    quotationItemSizeService
-                                            .calculateSqft(
-                                                    itemFormula,
-                                                    length,
-                                                    width,
-                                                    height,
-                                                    "in"
-                                            );
-
-                            BigDecimal amount =
-                                    money(
-                                            sqft.multiply(rate)
-                                    );
-
+                            BigDecimal sqft = quotationItemSizeService.calculateSqft(itemFormula, length, width, height, "in");
+                            BigDecimal amount = money(sqft.multiply(rate));
                             BigDecimal offerPrice;
-
                             if (size.offerPrice() == null) {
                                 offerPrice = amount;
                             } else {
-                                offerPrice =
-                                        nonNegative(
-                                                size.offerPrice(),
-                                                "Offer price"
-                                        );
+                                offerPrice = isAutoSave ? size.offerPrice().max(BigDecimal.ZERO) : nonNegative(size.offerPrice(), "Offer price");
                             }
 
-                            totalSqft =
-                                    totalSqft.add(sqft);
-
-                            totalAmount =
-                                    totalAmount.add(amount);
-
-                            totalOfferPrice =
-                                    totalOfferPrice.add(
-                                            offerPrice
-                                    );
+                            totalSqft = totalSqft.add(sqft);
+                            totalAmount = totalAmount.add(amount);
+                            totalOfferPrice = totalOfferPrice.add(offerPrice);
                         }
                     }
                 } else if (effectiveType.isRoll()) {
@@ -988,14 +1095,17 @@ public class AdminQuotationBuilderService {
                     if (itemRequest.sizes() != null) {
                         for (int sizeIndex = 0; sizeIndex < itemRequest.sizes().size(); sizeIndex++) {
                             SizeRequest size = itemRequest.sizes().get(sizeIndex);
+                            if (size == null) continue;
                             String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
                             boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
                             boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                            BigDecimal length = positive(size.length(), "Length");
-                            BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
-                            BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
-                            com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                            BigDecimal length = isAutoSave ? (size.length() != null ? size.length() : BigDecimal.ZERO) : positive(size.length(), "Length");
+                            BigDecimal width = requiresW ? (isAutoSave ? (size.width() != null ? size.width() : BigDecimal.ZERO) : positive(size.width(), "Width")) : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                            BigDecimal height = requiresH ? (isAutoSave ? (size.height() != null ? size.height() : BigDecimal.ZERO) : positive(size.height(), "Height")) : (size.height() != null ? size.height() : BigDecimal.ZERO);
+                            if (!isAutoSave) {
+                                com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                            }
 
                             if (sizeIndex == 0) {
                                 firstLength = length;
@@ -1016,114 +1126,71 @@ public class AdminQuotationBuilderService {
                     totalAmount = money(requiredRolls.multiply(rate));
                     BigDecimal offerPrice = totalAmount;
                     if (itemRequest.sizes() != null && !itemRequest.sizes().isEmpty() && itemRequest.sizes().get(0).offerPrice() != null) {
-                        offerPrice = nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
+                        offerPrice = isAutoSave ? itemRequest.sizes().get(0).offerPrice().max(BigDecimal.ZERO) : nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
                     }
                     totalOfferPrice = offerPrice;
                 } else {
-                    // QUANTITY or FILES based item:
                     totalAmount = money(effectiveQuantity.multiply(rate));
                     BigDecimal offerPrice = totalAmount;
                     if (itemRequest.sizes() != null && !itemRequest.sizes().isEmpty() && itemRequest.sizes().get(0).offerPrice() != null) {
-                        offerPrice = nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
+                        offerPrice = isAutoSave ? itemRequest.sizes().get(0).offerPrice().max(BigDecimal.ZERO) : nonNegative(itemRequest.sizes().get(0).offerPrice(), "Offer price");
                     }
                     totalOfferPrice = offerPrice;
                     totalSqft = BigDecimal.ZERO;
                 }
 
-                totalSqft =
-                        money(totalSqft);
-
-                totalAmount =
-                        money(totalAmount);
-
-                totalOfferPrice =
-                        money(totalOfferPrice);
-
-                // =================================================
-                // Create ONE parent QuotationItem
-                // =================================================
+                totalSqft = money(totalSqft);
+                totalAmount = money(totalAmount);
+                totalOfferPrice = money(totalOfferPrice);
 
                 String specText = itemRequest.specification();
                 if ((specText == null || specText.isBlank()) && materialSpecification != null) {
                     specText = materialSpecification.getName();
                 }
 
-                QuotationItem quotationItem =
-                        quotationItemService.create(
-                                room,
-                                category,
-                                division,
-                                item,
-                                material,
-                                option,
-                                materialSpecification,
-                                itemRequest.itemDescription(),
-
-                                firstLength,
-                                firstWidth,
-                                firstHeight,
-
-                                totalSqft,
-                                rate,
-                                totalAmount,
-                                totalOfferPrice,
-
-                                (effectiveType.isSqft() || effectiveType.isRoll()) ? itemFormula : null,
-
-                                specText,
-                                effectiveType,
-                                effectiveQuantity,
-                                effectiveImageUrl,
-                                coverage
-                        );
-
-                // =================================================
-                // Create child QuotationItemSize rows (for Sq.ft and Roll)
-                // =================================================
+                QuotationItem quotationItem = quotationItemService.create(
+                        room,
+                        category,
+                        division,
+                        item,
+                        material,
+                        option,
+                        materialSpecification,
+                        itemRequest.itemDescription(),
+                        firstLength,
+                        firstWidth,
+                        firstHeight,
+                        totalSqft,
+                        rate,
+                        totalAmount,
+                        totalOfferPrice,
+                        (effectiveType.isSqft() || effectiveType.isRoll()) ? itemFormula : null,
+                        specText,
+                        effectiveType,
+                        effectiveQuantity,
+                        effectiveImageUrl,
+                        coverage
+                );
 
                 if ((effectiveType.isSqft() || effectiveType.isRoll()) && itemRequest.sizes() != null) {
-                    for (int sizeIndex = 0;
-                         sizeIndex < itemRequest.sizes().size();
-                         sizeIndex++) {
-
-                        SizeRequest size =
-                                itemRequest.sizes()
-                                        .get(sizeIndex);
-
+                    for (int sizeIndex = 0; sizeIndex < itemRequest.sizes().size(); sizeIndex++) {
+                        SizeRequest size = itemRequest.sizes().get(sizeIndex);
+                        if (size == null) continue;
                         String normFormula = com.example.pravin_quotation.util.CalculationFormula.normalizeFormula(itemFormula);
                         boolean requiresW = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_H);
                         boolean requiresH = !normFormula.equals(com.example.pravin_quotation.util.CalculationFormula.FORMULA_L_X_W);
 
-                        BigDecimal length = positive(size.length(), "Length");
-                        BigDecimal width = requiresW ? positive(size.width(), "Width") : (size.width() != null ? size.width() : BigDecimal.ZERO);
-                        BigDecimal height = requiresH ? positive(size.height(), "Height") : (size.height() != null ? size.height() : BigDecimal.ZERO);
-                        com.example.pravin_quotation.util.CalculationFormula.validateDimensions(normFormula, length, width, height);
+                        BigDecimal length = isAutoSave ? (size.length() != null ? size.length() : BigDecimal.ZERO) : positive(size.length(), "Length");
+                        BigDecimal width = requiresW ? (isAutoSave ? (size.width() != null ? size.width() : BigDecimal.ZERO) : positive(size.width(), "Width")) : (size.width() != null ? size.width() : BigDecimal.ZERO);
+                        BigDecimal height = requiresH ? (isAutoSave ? (size.height() != null ? size.height() : BigDecimal.ZERO) : positive(size.height(), "Height")) : (size.height() != null ? size.height() : BigDecimal.ZERO);
 
-                        BigDecimal sqft =
-                                quotationItemSizeService
-                                        .calculateSqft(
-                                                itemFormula,
-                                                length,
-                                                width,
-                                                height,
-                                                "in"
-                                        );
-
-                        BigDecimal amount =
-                                money(
-                                        sqft.multiply(rate)
-                                );
-
+                        BigDecimal sqft = quotationItemSizeService.calculateSqft(itemFormula, length, width, height, "in");
+                        BigDecimal amount = money(sqft.multiply(rate));
                         BigDecimal offerPrice;
-
                         if (size.offerPrice() == null) {
                             offerPrice = amount;
                         } else {
-                            offerPrice =
-                                    nonNegative(
-                                            size.offerPrice(),
-                                            "Offer price"
-                                    );
+                            offerPrice = isAutoSave ? size.offerPrice().max(BigDecimal.ZERO) : nonNegative(size.offerPrice(), "Offer price");
                         }
 
                         QuotationItemSize createdSize = quotationItemSizeService.create(
@@ -1142,17 +1209,7 @@ public class AdminQuotationBuilderService {
                 }
             }
         }
-
-        // -----------------------------------------------------
-        // Final quotation calculation
-        // -----------------------------------------------------
-
-        return quotationCalculationService
-                .calculateQuotation(
-                        savedQuotation.getId()
-                );
     }
-
     // =========================================================
     // CUSTOMER RESOLUTION & AUTHORIZATION
     // =========================================================
@@ -1549,7 +1606,37 @@ public class AdminQuotationBuilderService {
             BigDecimal discountAmount,
             BigDecimal gstPercentage,
             BigDecimal offerPercentage,
-            Boolean showSqftSize) {
+            Boolean showSqftSize,
+            String lastActiveStep,
+            String lastActiveFloor,
+            String lastActiveRoom,
+            Long lastActiveCategoryId,
+            Long lastActiveDivisionId,
+            String builderState) {
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                LocalDate validUntil,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                String otherChargesDescription,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
+                Boolean showSqftSize) {
+            this(quotationId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges, otherChargesDescription,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    null, null, null, null, null, null);
+        }
 
         public BuilderRequest(
                 Long quotationId,
@@ -1571,7 +1658,8 @@ public class AdminQuotationBuilderService {
             this(quotationId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
-                    discountAmount, gstPercentage, offerPercentage, showSqftSize);
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    null, null, null, null, null, null);
         }
 
         public BuilderRequest(
@@ -1593,7 +1681,8 @@ public class AdminQuotationBuilderService {
             this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
-                    discountAmount, gstPercentage, offerPercentage, showSqftSize);
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    null, null, null, null, null, null);
         }
 
         public BuilderRequest(
@@ -1614,7 +1703,8 @@ public class AdminQuotationBuilderService {
             this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
-                    discountAmount, gstPercentage, offerPercentage, true);
+                    discountAmount, gstPercentage, offerPercentage, true,
+                    null, null, null, null, null, null);
         }
 
         public BuilderRequest(
@@ -1627,7 +1717,8 @@ public class AdminQuotationBuilderService {
                 String notes,
                 List<RoomRequest> rooms) {
             this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
-                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true);
+                    BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, true,
+                    null, null, null, null, null, null);
         }
     }
 

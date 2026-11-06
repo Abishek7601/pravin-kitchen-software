@@ -127,9 +127,15 @@
 
         <tr th:each="quotation : ${quotations}">
 
-            <td class="quotation-number"
-                th:text="${quotation.quotationNumber}">
-                QT-00001
+            <td class="quotation-number">
+                <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                   th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
+                   style="color: inherit; text-decoration: none; font-weight: 700;"
+                   th:text="${quotation.quotationNumber}">QT-00001</a>
+                <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                   th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
+                   style="color: inherit; text-decoration: none; font-weight: 700;"
+                   th:text="${quotation.quotationNumber}">QT-00001</a>
             </td>
 
             <td th:text="${quotation.quotationDate}">
@@ -165,24 +171,34 @@
             </td>
 
             <td>
-                ₹ <span th:text="${quotation.grandTotal}">0.00</span>
+                <strong th:text="${@inr.rupees(quotation.grandTotal)}">₹ 0.00</strong>
             </td>
 
             <td>
                 <div class="table-actions">
+                    <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                       th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
+                       class="action-btn resume-btn"
+                       style="background: #024541; color: #ffffff; font-weight: 600;"
+                       title="Resume Draft">
+                        Resume
+                    </a>
+
                     <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
                        class="action-btn view-btn"
                        title="View">
                         View
                     </a>
 
-                    <a th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
+                    <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                       th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
                        class="action-btn edit-btn"
                        title="Edit">
                         Edit
                     </a>
 
-                    <a href="#"
+                    <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                       href="#"
                        class="action-btn whatsapp-btn"
                        th:attr="
                        data-id=${quotation.id},

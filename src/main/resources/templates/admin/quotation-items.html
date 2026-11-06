@@ -243,12 +243,10 @@
                 </span>
 
                 <strong
-                        th:text="${#numbers.formatDecimal(
+                        th:text="${@inr.format(
                         #aggregates.sum(
                             items.?[active].![amount]
-                        ),
-                        2,
-                        2
+                        )
                     )}">
                     0.00
                 </strong>
@@ -531,13 +529,7 @@
                         </span>
 
                         <span
-                                th:text="${item.rate != null
-                                ? #numbers.formatDecimal(
-                                    item.rate,
-                                    2,
-                                    2
-                                  )
-                                : '0.00'}">
+                                th:text="${@inr.format(item.rate != null ? item.rate : 0)}">
                             0.00
                         </span>
 
@@ -551,13 +543,7 @@
                         <strong>
                             ₹
                             <span
-                                    th:text="${item.amount != null
-                                    ? #numbers.formatDecimal(
-                                        item.amount,
-                                        2,
-                                        2
-                                      )
-                                    : '0.00'}">
+                                    th:text="${@inr.format(item.amount != null ? item.amount : 0)}">
                                 0.00
                             </span>
                         </strong>

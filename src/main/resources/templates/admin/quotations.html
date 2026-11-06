@@ -287,7 +287,14 @@
 
                     <td>
 
-                        <a th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                        <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                           th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
+                           class="quotation-number"
+                           th:text="${quotation.quotationNumber}">
+                            PK-2026-000001
+                        </a>
+                        <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                           th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
                            class="quotation-number"
                            th:text="${quotation.quotationNumber}">
                             PK-2026-000001
@@ -359,7 +366,7 @@
                     <td>
 
                         <strong class="amount"
-                                th:text="${'₹ ' + #numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                                th:text="${@inr.rupees(quotation.grandTotal)}">
                             ₹ 0.00
                         </strong>
 
@@ -386,14 +393,21 @@
 
                         <div class="action-buttons">
 
-                            <a
-                                    th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
-                                    class="action-btn view-btn"
-                                    title="View">
+                            <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
+                               th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
+                               class="action-btn resume-btn"
+                               style="background: #024541; color: #ffffff; font-weight: 600;"
+                               title="Resume Draft">
+                                Resume
+                            </a>
+
+                            <a th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
+                               class="action-btn view-btn"
+                               title="View">
                                 View
                             </a>
 
-                            <a
+                            <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
                                     th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
                                     class="action-btn edit-btn"
                                     title="Edit">

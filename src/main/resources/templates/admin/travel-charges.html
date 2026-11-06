@@ -309,13 +309,7 @@
                     <td>
 
                         <span class="amount"
-                              th:text="${charge.amount != null
-                                  ? '₹ ' + #numbers.formatDecimal(
-                                      charge.amount,
-                                      1,
-                                      2
-                                  )
-                                  : '₹ 0.00'}">
+                              th:text="${@inr.rupees(charge.amount)}">
                             ₹ 0.00
                         </span>
 
@@ -504,13 +498,7 @@
                         </span>
 
                         <strong
-                                th:text="${charge.amount != null
-                                ? '₹ ' + #numbers.formatDecimal(
-                                    charge.amount,
-                                    1,
-                                    2
-                                )
-                                : '₹ 0.00'}">
+                                th:text="${@inr.rupees(charge.amount)}">
                             ₹ 0.00
                         </strong>
 

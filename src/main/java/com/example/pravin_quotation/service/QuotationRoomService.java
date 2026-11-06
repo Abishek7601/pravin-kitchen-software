@@ -227,11 +227,6 @@ public class QuotationRoomService {
                 buildRoomValue(savedRoom)
         );
 
-        if (quotation.getStatus() == QuotationStatus.PENDING) {
-            quotation.setStatus(QuotationStatus.WORKING);
-            quotationRepository.save(quotation);
-        }
-
         return savedRoom;
     }
 

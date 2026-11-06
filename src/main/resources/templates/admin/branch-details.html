@@ -331,11 +331,7 @@
 
                 <strong>
 
-                    ₹<span th:text="${last60DaysValue != null
-                            ? #numbers.formatDecimal(last60DaysValue, 1, 2)
-                            : '0.00'}">
-                        0.00
-                    </span>
+                    ₹ <span th:text="${@inr.format(last60DaysValue)}">0.00</span>
 
                 </strong>
 
@@ -726,14 +722,7 @@
 
                 <strong>
 
-                    ₹<span
-                        th:text="${last60DaysValue != null
-                        ? #numbers.formatDecimal(last60DaysValue, 1, 2)
-                        : '0.00'}">
-
-                        0.00
-
-                    </span>
+                    ₹ <span th:text="${@inr.format(last60DaysValue)}">0.00</span>
 
                 </strong>
 
@@ -750,14 +739,7 @@
 
                 <strong>
 
-                    ₹<span
-                        th:text="${approvedValue != null
-                        ? #numbers.formatDecimal(approvedValue, 1, 2)
-                        : '0.00'}">
-
-                        0.00
-
-                    </span>
+                    ₹ <span th:text="${@inr.format(approvedValue)}">0.00</span>
 
                 </strong>
 
@@ -774,14 +756,7 @@
 
                 <strong>
 
-                    ₹<span
-                        th:text="${totalQuotedValue != null
-                        ? #numbers.formatDecimal(totalQuotedValue, 1, 2)
-                        : '0.00'}">
-
-                        0.00
-
-                    </span>
+                    ₹ <span th:text="${@inr.format(totalQuotedValue)}">0.00</span>
 
                 </strong>
 
@@ -1027,7 +1002,7 @@
 
                             <strong class="amount"
                                     th:if="${quotation.grandTotal != null}"
-                                    th:text="${'₹' + #numbers.formatDecimal(quotation.grandTotal, 1, 2)}">
+                                    th:text="${@inr.rupees(quotation.grandTotal)}">
 
                                 ₹0.00
 

@@ -315,14 +315,10 @@
                     </span>
 
           <h2>
-
-            ₹<span
-                  th:text="${#numbers.formatDecimal(last60DaysQuotedValue, 1, 2)}">
-
+            ₹ <span
+                  th:text="${@inr.format(last60DaysQuotedValue)}">
                             0.00
-
                         </span>
-
           </h2>
 
           <p>
@@ -542,14 +538,10 @@
                     </span>
 
           <h2>
-
-            ₹<span
-                  th:text="${#numbers.formatDecimal(totalPortfolioValue, 1, 2)}">
-
+            ₹ <span
+                  th:text="${@inr.format(totalPortfolioValue)}">
                             0.00
-
                         </span>
-
           </h2>
 
           <p>

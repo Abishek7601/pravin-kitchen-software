@@ -855,9 +855,7 @@
 
           if (previewSqft) previewSqft.textContent = sqft.toFixed(2);
           if (previewAmount) {
-              previewAmount.textContent = amount.toLocaleString("en-IN", {
-                  style: "currency",
-                  currency: "INR",
+              previewAmount.textContent = '₹ ' + amount.toLocaleString("en-IN", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2
               });

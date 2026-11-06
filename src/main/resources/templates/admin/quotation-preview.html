@@ -386,22 +386,11 @@
 
                         <td>
 
-                            ₹
-                            <span th:text="${item.rate != null
-                                ? item.rate : 0}">
-                                200
-                            </span>
-
+                            ₹ <span th:text="${@inr.format(item.rate != null ? item.rate : 0)}">200.00</span>
                         </td>
 
                         <td>
-
-                            ₹
-                            <span th:text="${item.amount != null
-                                ? item.amount : 0}">
-                                122
-                            </span>
-
+                            ₹ <span th:text="${@inr.format(item.amount != null ? item.amount : 0)}">122.00</span>
                         </td>
 
                     </tbody>
@@ -418,13 +407,7 @@
                     </span>
 
                     <strong>
-
-                        ₹
-
-                        <span th:text="${room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0)}">
-                            122
-                        </span>
-
+                        ₹ <span th:text="${@inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">122.00</span>
                     </strong>
 
                 </div>
@@ -466,115 +449,38 @@
                 <div class="amount-row">
 
                     <span>Subtotal</span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.subtotal != null
-                            ? quotation.subtotal : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.subtotal)}">0.00</span></strong>
                 </div>
 
-
                 <div class="amount-row">
-
                     <span>Accessories</span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.accessoriesAmount != null
-                            ? quotation.accessoriesAmount : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.accessoriesAmount)}">0.00</span></strong>
                 </div>
 
-
                 <div class="amount-row">
-
                     <span>Travel Charge</span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.travelCharge != null
-                            ? quotation.travelCharge : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.travelCharge)}">0.00</span></strong>
                 </div>
-
 
                 <div class="amount-row">
-
                     <span th:text="${(quotation.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quotation.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quotation.otherChargesDescription) + ')' : 'Other Charges'}">Other Charges</span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.otherCharges != null
-                            ? quotation.otherCharges : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.otherCharges)}">0.00</span></strong>
                 </div>
-
 
                 <div class="amount-row discount-row">
-
                     <span>Discount</span>
-
-                    <strong>
-
-                        - ₹
-
-                        <span th:text="${quotation.discountAmount != null
-                            ? quotation.discountAmount : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>- ₹ <span th:text="${@inr.format(quotation.discountAmount)}">0.00</span></strong>
                 </div>
 
-
                 <div class="amount-row discount-row" th:if="${quotation.offerAmount != null and quotation.offerAmount > 0}">
-
                     <span>
                         Special Offer
                         (<span th:text="${quotation.offerPercentage != null ? quotation.offerPercentage : 0}">0</span>%)
                     </span>
-
-                    <strong>
-
-                        - ₹
-
-                        <span th:text="${quotation.offerAmount}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>- ₹ <span th:text="${@inr.format(quotation.offerAmount)}">0.00</span></strong>
                 </div>
 
-
                 <div class="amount-row">
-
                     <span>
                         GST
                         (<span th:text="${quotation.gstPercentage != null
@@ -582,36 +488,12 @@
                             0
                         </span>%)
                     </span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.gstAmount != null
-                            ? quotation.gstAmount : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.gstAmount)}">0.00</span></strong>
                 </div>
 
-
                 <div class="grand-total">
-
                     <span>Grand Total</span>
-
-                    <strong>
-
-                        ₹
-
-                        <span th:text="${quotation.grandTotal != null
-                            ? quotation.grandTotal : 0}">
-                            0
-                        </span>
-
-                    </strong>
-
+                    <strong>₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span></strong>
                 </div>
 
             </div>

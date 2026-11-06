@@ -417,17 +417,34 @@ public class EmployeeQuotationController {
 
     @GetMapping({"/new", "/builder"})
     public String builder(
-            @RequestParam(required = false) Long quotationId,
+            @RequestParam(value = "quotationId", required = false) Long quotationId,
+            @RequestParam(value = "id", required = false) Long paramId,
             @RequestParam(required = false) Long branchId,
             Authentication authentication,
             Model model
     ) {
+        Long effectiveQuotationId = quotationId != null ? quotationId : paramId;
+        return builderInternal(effectiveQuotationId, branchId, authentication, model);
+    }
 
+    public String builder(Long quotationId, Long branchId, Authentication authentication, Model model) {
+        return builderInternal(quotationId, branchId, authentication, model);
+    }
+
+    public String builder(Long branchId, Authentication authentication, Model model) {
+        return builderInternal(null, branchId, authentication, model);
+    }
+
+    public String builder(Authentication authentication, Model model) {
+        return builderInternal(null, null, authentication, model);
+    }
+
+    private String builderInternal(Long effectiveQuotationId, Long branchId, Authentication authentication, Model model) {
         User employee =
                 getLoggedInEmployee(authentication);
 
-        if (quotationId != null) {
-            getQuotationAndCheckOwnership(quotationId, employee);
+        if (effectiveQuotationId != null) {
+            getQuotationAndCheckOwnership(effectiveQuotationId, employee);
         }
 
         Long effectiveBranchId = (employee.getBranch() != null) ? employee.getBranch().getId() : branchId;
@@ -456,15 +473,11 @@ public class EmployeeQuotationController {
         model.addAttribute("workCategories", workCategoryRepository.findByActiveTrueOrderByDisplayOrderAsc());
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
-        model.addAttribute("editQuotationId", quotationId != null ? quotationId : "");
+        model.addAttribute("editQuotationId", effectiveQuotationId != null ? effectiveQuotationId : "");
         model.addAttribute("selectedBranchId", effectiveBranchId != null ? effectiveBranchId : "");
         model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : "");
 
         return "employee/quotation-builder";
-    }
-
-    public String builder(Authentication authentication, Model model) {
-        return builder(null, null, authentication, model);
     }
 
     @GetMapping("/builder/customers")
@@ -833,7 +846,13 @@ public class EmployeeQuotationController {
                     request.discountAmount(),
                     request.gstPercentage(),
                     request.offerPercentage(),
-                    request.showSqftSize()
+                    request.showSqftSize(),
+                    request.lastActiveStep(),
+                    request.lastActiveFloor(),
+                    request.lastActiveRoom(),
+                    request.lastActiveCategoryId(),
+                    request.lastActiveDivisionId(),
+                    request.builderState()
             );
 
             Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
@@ -875,6 +894,69 @@ public class EmployeeQuotationController {
         return (String) res;
     }
 
+    @PostMapping("/builder/auto-save")
+    @ResponseBody
+    public ResponseEntity<?> autoSaveBuilderQuotation(
+            @RequestBody AdminQuotationBuilderService.BuilderRequest request,
+            Authentication authentication) {
+        try {
+            User employee = getLoggedInEmployee(authentication);
+            if (employee.getBranch() == null) {
+                throw new IllegalStateException("Employee is not assigned to a branch.");
+            }
+            if (request.quotationId() != null) {
+                getQuotationAndCheckOwnership(request.quotationId(), employee);
+            }
+
+            Long effectiveBranchId = request.branchId();
+            if (effectiveBranchId == null || effectiveBranchId == 0L) {
+                effectiveBranchId = employee.getBranch().getId();
+            }
+            if (!effectiveBranchId.equals(employee.getBranch().getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot create quotations for another branch.");
+            }
+
+            AdminQuotationBuilderService.BuilderRequest effectiveRequest = new AdminQuotationBuilderService.BuilderRequest(
+                    request.quotationId(),
+                    request.customer(),
+                    effectiveBranchId,
+                    request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
+                    request.validUntil(),
+                    request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE,
+                    request.customerRequirements(),
+                    request.notes(),
+                    request.rooms(),
+                    request.accessoriesAmount(),
+                    request.travelCharge(),
+                    request.otherCharges(),
+                    request.otherChargesDescription(),
+                    request.discountAmount(),
+                    request.gstPercentage(),
+                    request.offerPercentage(),
+                    request.showSqftSize(),
+                    request.lastActiveStep(),
+                    request.lastActiveFloor(),
+                    request.lastActiveRoom(),
+                    request.lastActiveCategoryId(),
+                    request.lastActiveDivisionId(),
+                    request.builderState()
+            );
+
+            Quotation quotation = builderService.autoSave(effectiveRequest, authentication.getName());
+            Map<String, Object> resp = new LinkedHashMap<>();
+            resp.put("success", true);
+            resp.put("quotationId", quotation.getId());
+            resp.put("quotationNumber", quotation.getQuotationNumber());
+            resp.put("status", quotation.getStatus() != null ? quotation.getStatus().name() : "PENDING");
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            Map<String, Object> errResp = new LinkedHashMap<>();
+            errResp.put("success", false);
+            errResp.put("message", e.getMessage() != null ? e.getMessage() : "Unable to auto-save quotation draft.");
+            return ResponseEntity.badRequest().body(errResp);
+        }
+    }
+
     @GetMapping("/builder/load/{id}")
     @ResponseBody
     public ResponseEntity<?> builderLoadQuotation(@PathVariable Long id, Authentication authentication) {
@@ -887,6 +969,7 @@ public class EmployeeQuotationController {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("id", q.getId());
         data.put("quotationNumber", q.getQuotationNumber());
+        data.put("status", q.getStatus() != null ? q.getStatus().name() : "PENDING");
         data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
         data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
         data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
@@ -912,6 +995,16 @@ public class EmployeeQuotationController {
         data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
         data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
         data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+
+        data.put("lastActiveStep", q.getLastActiveStep());
+        data.put("lastActiveFloor", q.getLastActiveFloor());
+        data.put("lastActiveRoom", q.getLastActiveRoom());
+        data.put("lastActiveCategoryId", q.getLastActiveCategoryId());
+        data.put("lastActiveDivisionId", q.getLastActiveDivisionId());
+        data.put("builderState", q.getBuilderState());
+
+        Long branchId = q.getBranch() != null ? q.getBranch().getId() : (employee.getBranch() != null ? employee.getBranch().getId() : null);
+        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
 
         List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(id);
         List<Map<String, Object>> roomList = new ArrayList<>();
@@ -942,7 +1035,42 @@ public class EmployeeQuotationController {
                 iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
                 iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                 iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
-                iMap.put("rate", item.getRate());
+
+                // Validate rate & availability against current Pricing Mode and Branch
+                boolean rateChanged = false;
+                boolean materialAvailable = true;
+                String availabilityMessage = null;
+                BigDecimal currentRate = null;
+
+                if (item.getMaterial() != null) {
+                    Material m = item.getMaterial();
+                    if (!Boolean.TRUE.equals(m.getActive())) {
+                        materialAvailable = false;
+                        availabilityMessage = "Material '" + m.getName() + "' is inactive";
+                    } else {
+                        try {
+                            Long optId = item.getMaterialOption() != null ? item.getMaterialOption().getId() : null;
+                            AdminQuotationBuilderService.ResolvedMaterialRate res =
+                                    builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, pricingGrade);
+                            if (!res.available() || res.rate() == null || res.rate().compareTo(BigDecimal.ZERO) <= 0) {
+                                materialAvailable = false;
+                                availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                            } else {
+                                currentRate = res.rate();
+                                if (item.getRate() != null && currentRate.compareTo(item.getRate()) != 0) {
+                                    rateChanged = true;
+                                }
+                            }
+                        } catch (Exception ignored) {}
+                    }
+                }
+
+                iMap.put("materialAvailable", materialAvailable);
+                iMap.put("availabilityMessage", availabilityMessage);
+                iMap.put("currentRate", currentRate);
+                iMap.put("rateChanged", rateChanged);
+
+                iMap.put("rate", (rateChanged && currentRate != null) ? currentRate : item.getRate());
                 iMap.put("unit", (item.getMaterial() != null && item.getMaterial().getUnit() != null) ? item.getMaterial().getUnit() : (item.getMeasurementType() == MeasurementType.FILES ? "Files" : (item.getMeasurementType() == MeasurementType.QUANTITY ? "Quantity" : "Sq.ft")));
                 iMap.put("itemDescription", item.getItemDescription());
                 iMap.put("specification", item.getSpecification());
@@ -4001,7 +4129,7 @@ public class EmployeeQuotationController {
         try {
 
             BigDecimal parsed =
-                    new BigDecimal(
+                    com.example.pravin_quotation.util.IndianCurrencyFormatter.parseAmount(
                             value.trim()
                     );
 
