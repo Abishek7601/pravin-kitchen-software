@@ -446,8 +446,8 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
     }
 
     @Test
-    @DisplayName("Verification 10: Super Admin login remains unaffected at all times without OTP")
-    void test10_SuperAdminLoginUnaffected() throws Exception {
+    @DisplayName("Verification 10: Super Admin login requires OTP verification and is not restricted by 8:00 PM auto-logout")
+    void test10_SuperAdminRequiresOtpAndNotRestrictedBy8Pm() throws Exception {
         LocalDate today = LocalDate.now(ZONE_IST);
 
         // 10A: Morning 10:00 AM IST
@@ -459,15 +459,24 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                         .param("username", testAdmin.getEmail())
                         .param("password", "admin123"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andExpect(redirectedUrl("/admin/otp"))
                 .andReturn();
 
         MockHttpSession session1 = (MockHttpSession) adminLogin1.getRequest().getSession(false);
         assertNotNull(session1);
+        assertEquals(false, session1.getAttribute("OTP_VERIFIED"));
+
+        // Before OTP verification, access to /admin/dashboard redirects to /admin/otp
+        mockMvc.perform(get("/admin/dashboard").session(session1))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/otp"));
+
+        // Verify OTP
+        session1.setAttribute("OTP_VERIFIED", true);
         mockMvc.perform(get("/admin/dashboard").session(session1))
                 .andExpect(status().isOk());
 
-        // 10B: Night 21:30 IST (9:30 PM, after 8:00 PM)
+        // 10B: Night 21:30 IST (9:30 PM, after 8:00 PM) - Super Admin can log in with OTP (no 8 PM auto-logout)
         ZonedDateTime nightTime = today.atTime(21, 30, 0).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(nightTime.toInstant(), ZONE_IST));
 
@@ -476,11 +485,19 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                         .param("username", testAdmin.getEmail())
                         .param("password", "admin123"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/admin/dashboard"))
+                .andExpect(redirectedUrl("/admin/otp"))
                 .andReturn();
 
         MockHttpSession session2 = (MockHttpSession) adminLogin2.getRequest().getSession(false);
         assertNotNull(session2);
+
+        // Before OTP verification, direct URL access is blocked
+        mockMvc.perform(get("/admin/dashboard").session(session2))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/otp"));
+
+        // Verify OTP - access allowed even at night (no 8:00 PM cutoff for Super Admin)
+        session2.setAttribute("OTP_VERIFIED", true);
         mockMvc.perform(get("/admin/dashboard").session(session2))
                 .andExpect(status().isOk());
     }

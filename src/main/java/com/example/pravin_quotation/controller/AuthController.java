@@ -54,11 +54,12 @@ public class AuthController {
         }
         if (userOpt.isPresent()) {
             User user = userOpt.get();
-            boolean isEmployee = user.getRole() == Role.EMPLOYEE && Boolean.TRUE.equals(user.getActive());
+            boolean active = Boolean.TRUE.equals(user.getActive());
+            boolean requiresOtp = active && (user.getRole() == Role.EMPLOYEE || user.getRole() == Role.SUPER_ADMIN);
             return Map.of(
                     "exists", true,
                     "role", user.getRole().name(),
-                    "requiresOtp", isEmployee
+                    "requiresOtp", requiresOtp
             );
         }
         return Map.of("exists", false, "requiresOtp", false);

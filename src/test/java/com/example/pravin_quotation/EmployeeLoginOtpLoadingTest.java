@@ -87,14 +87,14 @@ public class EmployeeLoginOtpLoadingTest {
     }
 
     @Test
-    @DisplayName("Verify /public/auth/check-role returns requiresOtp=false for Super Admin")
-    void testCheckRole_SuperAdminDoesNotRequireOtp() throws Exception {
+    @DisplayName("Verify /public/auth/check-role returns requiresOtp=true for Super Admin")
+    void testCheckRole_SuperAdminRequiresOtp() throws Exception {
         mockMvc.perform(get("/public/auth/check-role")
                         .param("email", testAdmin.getEmail()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.exists").value(true))
                 .andExpect(jsonPath("$.role").value("SUPER_ADMIN"))
-                .andExpect(jsonPath("$.requiresOtp").value(false));
+                .andExpect(jsonPath("$.requiresOtp").value(true));
     }
 
     @Test
