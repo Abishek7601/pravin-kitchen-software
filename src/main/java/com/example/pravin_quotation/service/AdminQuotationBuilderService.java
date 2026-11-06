@@ -1090,7 +1090,10 @@ public class AdminQuotationBuilderService {
                             ? material.getCoveragePerRoll()
                             : (itemRequest.coveragePerRoll() != null && itemRequest.coveragePerRoll().compareTo(BigDecimal.ZERO) > 0
                                     ? itemRequest.coveragePerRoll()
-                                    : BigDecimal.valueOf(40));
+                                    : null);
+                    if (!isAutoSave && (coverage == null || coverage.compareTo(BigDecimal.ZERO) <= 0)) {
+                        throw new IllegalArgumentException("Coverage Per Roll is required and must be greater than zero for Roll material.");
+                    }
 
                     if (itemRequest.sizes() != null) {
                         for (int sizeIndex = 0; sizeIndex < itemRequest.sizes().size(); sizeIndex++) {
@@ -1118,7 +1121,7 @@ public class AdminQuotationBuilderService {
                         }
                     }
 
-                    BigDecimal requiredRolls = (totalSqft.compareTo(BigDecimal.ZERO) > 0 && coverage.compareTo(BigDecimal.ZERO) > 0)
+                    BigDecimal requiredRolls = (totalSqft.compareTo(BigDecimal.ZERO) > 0 && coverage != null && coverage.compareTo(BigDecimal.ZERO) > 0)
                             ? totalSqft.divide(coverage, 0, RoundingMode.CEILING)
                             : BigDecimal.ZERO;
                     effectiveQuantity = requiredRolls;
@@ -1185,7 +1188,10 @@ public class AdminQuotationBuilderService {
                         BigDecimal height = requiresH ? (isAutoSave ? (size.height() != null ? size.height() : BigDecimal.ZERO) : positive(size.height(), "Height")) : (size.height() != null ? size.height() : BigDecimal.ZERO);
 
                         BigDecimal sqft = quotationItemSizeService.calculateSqft(itemFormula, length, width, height, "in");
-                        BigDecimal amount = money(sqft.multiply(rate));
+                        BigDecimal sizeRolls = (effectiveType.isRoll() && coverage != null && coverage.compareTo(BigDecimal.ZERO) > 0 && sqft.compareTo(BigDecimal.ZERO) > 0)
+                                ? sqft.divide(coverage, 0, RoundingMode.CEILING)
+                                : BigDecimal.ZERO;
+                        BigDecimal amount = effectiveType.isRoll() ? money(sizeRolls.multiply(rate)) : money(sqft.multiply(rate));
                         BigDecimal offerPrice;
                         if (size.offerPrice() == null) {
                             offerPrice = amount;

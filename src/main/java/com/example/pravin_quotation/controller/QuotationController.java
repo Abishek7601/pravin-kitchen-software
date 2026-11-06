@@ -109,6 +109,11 @@ public class QuotationController {
         );
 
         model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
+        );
+
+        model.addAttribute(
                 "quotationStatuses",
                 QuotationStatus.values()
         );
@@ -621,6 +626,11 @@ public class QuotationController {
         );
 
         model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
+        );
+
+        model.addAttribute(
                 "quotationStatuses",
                 QuotationStatus.values()
         );
@@ -646,6 +656,11 @@ public class QuotationController {
         model.addAttribute(
                 "quotationList",
                 quotationService.getLast60DaysQuotations()
+        );
+
+        model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
         );
 
         model.addAttribute(

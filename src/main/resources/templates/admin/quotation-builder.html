@@ -1402,7 +1402,7 @@
           unit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementUnit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementType: mType,
-          coveragePerRoll: material.coveragePerRoll ? Number(material.coveragePerRoll) : 40,
+          coveragePerRoll: (material.coveragePerRoll != null && Number(material.coveragePerRoll) > 0) ? Number(material.coveragePerRoll) : null,
           quantity: 1,
           imageUrl: material.imageUrl || null,
           pricingUnit: '₹ / ' + (material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
@@ -1538,13 +1538,25 @@
             </div>
           </div>` : ''}
         </div>`}
+        ${isRoll ? `
+        <div class="size-details-calc-box" style="flex-wrap: wrap; gap: 6px 12px; font-size: 13px;">
+          <span>Total Area: <strong id="calcSqft-${divisionId}">0.00</strong> Sq.ft</span>
+          <span class="calc-divider">|</span>
+          <span>Coverage: <strong id="calcCoverage-${divisionId}">${(material.coveragePerRoll != null && Number(material.coveragePerRoll) > 0) ? Number(material.coveragePerRoll) : '-'}</strong> Sq.ft / Roll</span>
+          <span class="calc-divider">|</span>
+          <span>Required: <strong id="calcRolls-${divisionId}">0</strong> Roll(s)</span>
+          <span class="calc-divider">|</span>
+          <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('₹ ' + formatIndianNumber(material.rate, 2) + ' / Roll') : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span class="calc-divider">|</span>
+          <span>Amount: <strong id="calcAmt-${divisionId}">₹ 0.00</strong></span>
+        </div>` : `
         <div class="size-details-calc-box">
           <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('₹ ' + formatIndianNumber(material.rate, 2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Sq.Ft: <strong id="calcSqft-${divisionId}">${isSqft ? '0' : '-'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Amount: <strong id="calcAmt-${divisionId}">${isSqft ? '₹ 0.00' : money(Number(material.rate || 0))}</strong></span>
-        </div>
+        </div>`}
         <div class="size-details-btn-row">
           <button type="button" class="btn-add-to-quote" id="addQuoteBtn-${divisionId}">Add to Quote</button>
           <button type="button" class="btn-cancel-size" id="cancelSizeBtn-${divisionId}">Cancel</button>
@@ -1584,10 +1596,12 @@
               const H = Number(hgtInput?.value || 0);
               const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
               const roundedSqft = Math.round(sqft * 100) / 100;
-              const cov = Number(material.coveragePerRoll || 40);
+              const cov = Number(material.coveragePerRoll || 0);
               const rolls = (roundedSqft > 0 && cov > 0) ? Math.ceil(roundedSqft / cov) : 0;
               const lineAmt = Math.round(rolls * rateVal * 100) / 100;
-              if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
+              if (sqftEl) sqftEl.textContent = roundedSqft.toFixed(2);
+              const covEl = $(`calcCoverage-${divisionId}`);
+              if (covEl) covEl.textContent = cov > 0 ? cov : '-';
               const rollsEl = $(`calcRolls-${divisionId}`);
               if (rollsEl) rollsEl.textContent = rolls;
               if (amtEl) amtEl.textContent = money(lineAmt);
@@ -1749,13 +1763,21 @@
                   ? specTextarea.value.trim()
                   : (specContent ? (specContent.textContent.trim() === '-' ? '' : specContent.textContent.trim()) : (specText || ''));
 
-              const cov = Number(material.coveragePerRoll || 40);
               let rollCount = 1;
               let calcAreaSqft = 0;
+              let cov = null;
               if (isRoll) {
+                  cov = Number(material.coveragePerRoll || 0);
+                  if (isNaN(cov) || cov <= 0) {
+                      return alert('Coverage Per Roll is not configured or invalid for this material.');
+                  }
                   const sVal = calculateItemMeasurement(material.formula, material.unit, L, W, H);
                   calcAreaSqft = Math.round(sVal * 100) / 100;
-                  rollCount = (calcAreaSqft > 0 && cov > 0) ? Math.ceil(calcAreaSqft / cov) : 0;
+                  if (calcAreaSqft <= 0) {
+                      return alert('Calculated Sq.ft must be greater than zero.');
+                  }
+                  rollCount = Math.ceil(calcAreaSqft / cov);
+                  if (rollCount <= 0) rollCount = 1;
               }
 
               const quoteItem = {
@@ -2369,7 +2391,7 @@
                       } else if (isRoll) {
                           const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
                           sqft = Math.round(meas * 100) / 100;
-                          const cov = Number(item.coveragePerRoll || 40);
+                          const cov = Number(item.coveragePerRoll || (item.material && item.material.coveragePerRoll) || 0);
                           const rolls = (sqft > 0 && cov > 0) ? Math.ceil(sqft / cov) : 0;
                           item.quantity = rolls;
                           item.calculatedSqft = sqft;
@@ -2437,7 +2459,7 @@
                         <td class="col-material">
                           <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
-                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${item.coveragePerRoll || 40} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
+                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${(item.coveragePerRoll != null ? item.coveragePerRoll : (item.material && item.material.coveragePerRoll != null ? item.material.coveragePerRoll : '-'))} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
                           ${imgHtml}
                         </td>
@@ -3259,7 +3281,7 @@
                               let lineBase = 0;
                               if (isRoll) {
                                   const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
-                                  const cov = Number(i.coveragePerRoll || 40);
+                                  const cov = Number(i.coveragePerRoll || (i.material && i.material.coveragePerRoll) || 0);
                                   const rolls = (meas > 0 && cov > 0) ? Math.ceil(meas / cov) : Number(i.quantity || 1);
                                   lineBase = rolls * effectiveRate;
                               } else if (isSqft) {
