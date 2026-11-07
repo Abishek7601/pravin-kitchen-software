@@ -76,7 +76,7 @@ public class QuotationService {
 
     public List<Quotation> getAllQuotations() {
 
-        return quotationRepository.findAllByOrderByCreatedAtDesc();
+        return quotationRepository.findByParentIsNullOrderByCreatedAtDesc();
     }
 
     // ---------------------------------------------------------
@@ -137,7 +137,7 @@ public class QuotationService {
         validateId(customerId, "Customer ID");
 
         return quotationRepository
-                .findByCustomerIdOrderByCreatedAtDesc(
+                .findByParentIsNullAndCustomerIdOrderByCreatedAtDesc(
                         customerId
                 );
     }
@@ -153,7 +153,7 @@ public class QuotationService {
         validateId(employeeId, "Employee ID");
 
         return quotationRepository
-                .findByEmployeeIdOrderByCreatedAtDesc(
+                .findByParentIsNullAndEmployeeIdOrderByCreatedAtDesc(
                         employeeId
                 );
     }
@@ -169,7 +169,7 @@ public class QuotationService {
         validateId(branchId, "Branch ID");
 
         return quotationRepository
-                .findByBranchIdOrderByCreatedAtDesc(
+                .findByParentIsNullAndBranchIdOrderByCreatedAtDesc(
                         branchId
                 );
     }
@@ -190,7 +190,7 @@ public class QuotationService {
         }
 
         return quotationRepository
-                .findByBranchIdAndStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndBranchIdAndStatusOrderByCreatedAtDesc(
                         branchId,
                         status
                 );
@@ -204,10 +204,10 @@ public class QuotationService {
         validateId(branchId, "Branch ID");
 
         if (status == null) {
-            return quotationRepository.countByBranchId(branchId);
+            return quotationRepository.countByParentIsNullAndBranchId(branchId);
         }
 
-        return quotationRepository.countByBranchIdAndStatus(
+        return quotationRepository.countByParentIsNullAndBranchIdAndStatus(
                 branchId,
                 status
         );
@@ -228,7 +228,7 @@ public class QuotationService {
         }
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         status
                 );
     }
@@ -245,7 +245,7 @@ public class QuotationService {
         validateDateRange(startDate, endDate);
 
         return quotationRepository
-                .findByQuotationDateBetweenOrderByQuotationDateDesc(
+                .findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                         startDate,
                         endDate
                 );
@@ -269,7 +269,7 @@ public class QuotationService {
         );
 
         return quotationRepository
-                .findByBranchIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+                .findByParentIsNullAndBranchIdAndQuotationDateBetweenOrderByQuotationDateDesc(
                         branchId,
                         startDate,
                         endDate
@@ -333,7 +333,7 @@ public class QuotationService {
     public List<Quotation> getApprovedQuotations() {
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         QuotationStatus.SENT
                 );
     }
@@ -341,7 +341,7 @@ public class QuotationService {
     public List<Quotation> getWorkingQuotations() {
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         QuotationStatus.WORKING
                 );
     }
@@ -353,7 +353,7 @@ public class QuotationService {
     public List<Quotation> getPendingQuotations() {
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         QuotationStatus.PENDING
                 );
     }
@@ -1240,5 +1240,30 @@ public class QuotationService {
         return oldValue.equals(
                 newValue
         );
+    }
+
+    @Transactional
+    public Quotation confirmCustomerGrade(Long parentQuotationId, PricingMode grade, String loggedInEmail) {
+        if (parentQuotationId == null) {
+            throw new IllegalArgumentException("Quotation ID is required.");
+        }
+        if (grade == null) {
+            throw new IllegalArgumentException("Customer selected grade is required.");
+        }
+        Quotation parent = getById(parentQuotationId);
+        if (parent.getParent() != null) {
+            parent = parent.getParent();
+        }
+        Quotation child = parent.getChildForGrade(grade);
+        if (child == null && !parent.isParentQuotation()) {
+            if (parent.getPricingMode() != grade) {
+                throw new IllegalArgumentException("Grade " + grade + " has not been prepared for this quotation.");
+            }
+        } else if (child == null) {
+            throw new IllegalArgumentException("Grade " + grade + " has not been prepared for this quotation.");
+        }
+
+        parent.setSelectedGrade(grade);
+        return quotationRepository.save(parent);
     }
 }

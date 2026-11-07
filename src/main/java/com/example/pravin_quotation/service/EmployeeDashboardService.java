@@ -32,7 +32,7 @@ public class EmployeeDashboardService {
 
         LocalDate startDate = today.minusDays(59);
 
-        return quotationRepository.countByEmployeeIdAndQuotationDateBetween(
+        return quotationRepository.countByParentIsNullAndEmployeeIdAndQuotationDateBetween(
                 employeeId,
                 startDate,
                 today
@@ -54,7 +54,7 @@ public class EmployeeDashboardService {
 
         LocalDate startDate = today.minusYears(1);
 
-        return quotationRepository.countByEmployeeIdAndQuotationDateBetween(
+        return quotationRepository.countByParentIsNullAndEmployeeIdAndQuotationDateBetween(
                 employeeId,
                 startDate,
                 today
@@ -70,7 +70,7 @@ public class EmployeeDashboardService {
             return 0;
         }
 
-        return quotationRepository.countByEmployeeIdAndStatus(
+        return quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(
                 employeeId,
                 QuotationStatus.PENDING
         );
@@ -85,7 +85,7 @@ public class EmployeeDashboardService {
             return 0;
         }
 
-        return quotationRepository.countByEmployeeIdAndStatus(
+        return quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(
                 employeeId,
                 QuotationStatus.WORKING
         );
@@ -100,7 +100,7 @@ public class EmployeeDashboardService {
             return 0;
         }
 
-        return quotationRepository.countByEmployeeIdAndStatus(
+        return quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(
                 employeeId,
                 QuotationStatus.SENT
         );

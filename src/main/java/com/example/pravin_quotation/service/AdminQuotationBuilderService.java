@@ -437,32 +437,44 @@ public class AdminQuotationBuilderService {
     // SAVE COMPLETE QUOTATION
     // =========================================================
 
+    // =========================================================
+    // SAVE / AUTO-SAVE
+    // =========================================================
+
     @Transactional
     public Quotation save(
             BuilderRequest request,
             String loggedInEmail) {
+        return processQuotationSave(request, loggedInEmail, false);
+    }
 
-        // -----------------------------------------------------
-        // Logged-in user (Admin or Employee)
-        // -----------------------------------------------------
+    @Transactional
+    public Quotation autoSave(
+            BuilderRequest request,
+            String loggedInEmail) {
+        return processQuotationSave(request, loggedInEmail, true);
+    }
 
-        User loggedInUser =
-                userRepository.findByEmail(loggedInEmail)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Logged-in user was not found."
-                                )
-                        );
+    private Quotation processQuotationSave(
+            BuilderRequest request,
+            String loggedInEmail,
+            boolean isAutoSave) {
 
-        if (!Boolean.TRUE.equals(loggedInUser.getActive())) {
-            throw new IllegalArgumentException(
-                    "User account is inactive."
-            );
+        if (request == null) {
+            throw new IllegalArgumentException("Quotation request cannot be null.");
         }
 
-        if (request != null && loggedInUser.getRole() == Role.EMPLOYEE && loggedInUser.getBranch() != null && (request.branchId() == null || request.branchId() == 0L)) {
+        User loggedInUser = userRepository.findByEmail(loggedInEmail)
+                .orElseThrow(() -> new IllegalArgumentException("Logged-in user was not found."));
+
+        if (!Boolean.TRUE.equals(loggedInUser.getActive())) {
+            throw new IllegalArgumentException("User account is inactive.");
+        }
+
+        if (loggedInUser.getRole() == Role.EMPLOYEE && loggedInUser.getBranch() != null && (request.branchId() == null || request.branchId() == 0L)) {
             request = new BuilderRequest(
                     request.quotationId(),
+                    request.parentId(),
                     request.customer(),
                     loggedInUser.getBranch().getId(),
                     request.quotationDate(),
@@ -488,219 +500,8 @@ public class AdminQuotationBuilderService {
             );
         }
 
-        validateRequest(request);
-
-        // -----------------------------------------------------
-        // Branch resolution & authorization
-        // -----------------------------------------------------
-
-        Branch branch;
-        if (loggedInUser.getRole() == Role.EMPLOYEE) {
-            if (loggedInUser.getBranch() == null) {
-                throw new IllegalStateException("Employee is not assigned to a branch.");
-            }
-            branch = loggedInUser.getBranch();
-            if (request.branchId() != null && !request.branchId().equals(branch.getId())) {
-                throw new AccessDeniedException("Unauthorized: Cannot create quotations for another branch.");
-            }
-        } else {
-            if (request.branchId() == null) {
-                throw new IllegalArgumentException("Branch is required.");
-            }
-            branch = branchRepository.findById(request.branchId())
-                    .orElseThrow(() -> new IllegalArgumentException("Branch not found."));
-        }
-
-        // -----------------------------------------------------
-        // Quotation lookup or creation
-        // -----------------------------------------------------
-
-        Quotation quotation;
-        boolean isEdit = false;
-        java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
-        if (request.quotationId() != null) {
-            quotation = quotationRepository.findById(request.quotationId())
-                    .orElseGet(Quotation::new);
-            if (quotation.getId() != null) {
-                isEdit = true;
-                List<QuotationRoom> oldRooms =
-                        quotationRoomService.getActiveByQuotationId(quotation.getId());
-                for (QuotationRoom oldRoom : oldRooms) {
-                    List<QuotationItem> oldItems = quotationItemService.getActiveByQuotationRoomId(oldRoom.getId());
-                    if (oldItems != null) {
-                        for (QuotationItem oi : oldItems) {
-                            if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
-                                existingMaterialIds.add(oi.getMaterial().getId());
-                            }
-                        }
-                    }
-                    quotationRoomService.deactivate(oldRoom.getId());
-                }
-            } else {
-                quotation.setQuotationNumber(nextQuotationNumber());
-            }
-        } else {
-            quotation = new Quotation();
-            quotation.setQuotationNumber(nextQuotationNumber());
-        }
-
-        // -----------------------------------------------------
-        // Customer resolution & authorization
-        // -----------------------------------------------------
-
-        Customer customer =
-                resolveCustomer(
-                        request.customer(),
-                        branch,
-                        loggedInUser,
-                        quotation,
-                        isEdit
-                );
-
-        quotation.setCustomer(
-                customer
-        );
-
-        quotation.setEmployee(
-                loggedInUser
-        );
-
-        quotation.setBranch(
-                branch
-        );
-
-        LocalDate effectiveQuotationDate;
-        if (quotation.getId() != null) {
-            // Existing quotation being edited: preserve original quotationDate and validUntil
-            if (quotation.getQuotationDate() == null) {
-                quotation.setQuotationDate(
-                        request.quotationDate() == null ? LocalDate.now() : request.quotationDate()
-                );
-            }
-            effectiveQuotationDate = quotation.getQuotationDate();
-
-            if (request.validUntil() != null) {
-                if (request.validUntil().isBefore(effectiveQuotationDate)) {
-                    throw new IllegalArgumentException(
-                            "Valid until date cannot be earlier than quotation date."
-                    );
-                }
-                quotation.setValidUntil(request.validUntil());
-            } else if (quotation.getValidUntil() == null) {
-                quotation.setValidUntil(effectiveQuotationDate.plusDays(365));
-            }
-        } else {
-            // New quotation creation
-            LocalDate qDate = request.quotationDate() == null ? LocalDate.now() : request.quotationDate();
-            quotation.setQuotationDate(qDate);
-            effectiveQuotationDate = qDate;
-
-            if (request.validUntil() != null) {
-                if (request.validUntil().isBefore(effectiveQuotationDate)) {
-                    throw new IllegalArgumentException(
-                            "Valid until date cannot be earlier than quotation date."
-                    );
-                }
-                quotation.setValidUntil(request.validUntil());
-            } else {
-                quotation.setValidUntil(qDate.plusDays(365));
-            }
-        }
-
-        quotation.setPricingMode(
-                request.pricingMode()
-        );
-
-        // Completing and saving a quotation promotes PENDING to WORKING.
-        // A previously saved WORKING quotation stays WORKING.
-        // If a SENT quotation is edited and saved, preserve SENT.
-        if (quotation.getStatus() == null || quotation.getStatus() == QuotationStatus.PENDING) {
-            quotation.setStatus(QuotationStatus.WORKING);
-        }
-
-        quotation.setCustomerRequirements(
-                clean(request.customerRequirements())
-        );
-
-        quotation.setNotes(
-                clean(request.notes())
-        );
-
-        if (request.accessoriesAmount() != null) {
-            quotation.setAccessoriesAmount(request.accessoriesAmount());
-        }
-        if (request.travelCharge() != null) {
-            quotation.setTravelCharge(request.travelCharge());
-        }
-        if (request.otherCharges() != null) {
-            quotation.setOtherCharges(request.otherCharges());
-        }
-        if (request.otherChargesDescription() != null) {
-            quotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
-        }
-        if (request.discountAmount() != null) {
-            quotation.setDiscountAmount(request.discountAmount());
-        }
-        if (request.gstPercentage() != null) {
-            quotation.setGstPercentage(request.gstPercentage());
-        }
-        if (request.offerPercentage() != null) {
-            quotation.setOfferPercentage(request.offerPercentage());
-        }
-        if (request.showSqftSize() != null) {
-            quotation.setShowSqftSize(request.showSqftSize());
-        } else if (quotation.getShowSqftSize() == null) {
-            quotation.setShowSqftSize(true);
-        }
-
-        quotation.setLastActiveStep(request.lastActiveStep());
-        quotation.setLastActiveFloor(request.lastActiveFloor());
-        quotation.setLastActiveRoom(request.lastActiveRoom());
-        quotation.setLastActiveCategoryId(request.lastActiveCategoryId());
-        quotation.setLastActiveDivisionId(request.lastActiveDivisionId());
-        quotation.setBuilderState(request.builderState());
-
-        Quotation savedQuotation =
-                quotationRepository.save(
-                        quotation
-                );
-
-        // =====================================================
-        // ROOMS & ITEMS
-        // =====================================================
-
-        saveRoomsAndItems(savedQuotation, request.rooms(), branch.getId(), request.pricingMode(), existingMaterialIds, isEdit, false);
-
-        // -----------------------------------------------------
-        // Final quotation calculation
-        // -----------------------------------------------------
-
-        return quotationCalculationService
-                .calculateQuotation(
-                        savedQuotation.getId()
-                );
-    }
-
-
-
-    // =========================================================
-    // PROGRESSIVE AUTO-SAVE (DRAFT QUOTATIONS)
-    // =========================================================
-
-    @Transactional
-    public Quotation autoSave(
-            BuilderRequest request,
-            String loggedInEmail) {
-
-        if (request == null) {
-            throw new IllegalArgumentException("Draft quotation request cannot be null.");
-        }
-
-        User loggedInUser = userRepository.findByEmail(loggedInEmail)
-                .orElseThrow(() -> new IllegalArgumentException("Logged-in user was not found."));
-
-        if (!Boolean.TRUE.equals(loggedInUser.getActive())) {
-            throw new IllegalArgumentException("User account is inactive.");
+        if (!isAutoSave) {
+            validateRequest(request);
         }
 
         Branch branch = null;
@@ -719,42 +520,108 @@ public class AdminQuotationBuilderService {
             if (branch == null && branchRepository != null) {
                 branch = branchRepository.findAll().stream().filter(b -> Boolean.TRUE.equals(b.getActive())).findFirst().orElse(null);
             }
+            if (branch == null && !isAutoSave) {
+                throw new IllegalArgumentException("Branch is required.");
+            }
         }
 
-        Quotation quotation;
+        PricingMode requestedMode = request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE;
+
+        // Resolve Parent Quotation & Target Quotation
+        Quotation parentQuotation = null;
+        Quotation targetQuotation = null;
         boolean isEdit = false;
         java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
-        if (request.quotationId() != null) {
-            quotation = quotationRepository.findById(request.quotationId()).orElseGet(Quotation::new);
-            if (quotation.getId() != null) {
-                isEdit = true;
-                if (loggedInUser.getRole() == Role.EMPLOYEE) {
-                    if (quotation.getBranch() != null && loggedInUser.getBranch() != null
-                            && !quotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
-                        throw new AccessDeniedException("Unauthorized: Cannot edit quotations for another branch.");
-                    }
-                }
-                List<QuotationRoom> oldRooms = quotationRoomService.getActiveByQuotationId(quotation.getId());
-                for (QuotationRoom oldRoom : oldRooms) {
-                    List<QuotationItem> oldItems = quotationItemService.getActiveByQuotationRoomId(oldRoom.getId());
-                    if (oldItems != null) {
-                        for (QuotationItem oi : oldItems) {
-                            if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
-                                existingMaterialIds.add(oi.getMaterial().getId());
-                            }
-                        }
-                    }
-                    quotationRoomService.deactivate(oldRoom.getId());
-                }
-            } else {
-                quotation.setQuotationNumber(nextQuotationNumber());
+
+        if (request.parentId() != null) {
+            parentQuotation = quotationRepository.findById(request.parentId())
+                    .orElseThrow(() -> new IllegalArgumentException("Parent quotation not found."));
+            if (parentQuotation.getParent() != null) {
+                parentQuotation = parentQuotation.getParent();
             }
-        } else {
-            quotation = new Quotation();
-            quotation.setQuotationNumber(nextQuotationNumber());
+            if (loggedInUser.getRole() == Role.EMPLOYEE && parentQuotation.getBranch() != null && loggedInUser.getBranch() != null
+                    && !parentQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot modify quotation for another branch.");
+            }
+            if (request.quotationId() != null) {
+                targetQuotation = quotationRepository.findById(request.quotationId()).orElse(null);
+            }
+            if (targetQuotation == null) {
+                targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
+            }
+            if (targetQuotation == null) {
+                targetQuotation = new Quotation();
+                targetQuotation.setParent(parentQuotation);
+                targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
+                targetQuotation.setPricingMode(requestedMode);
+            } else {
+                isEdit = true;
+            }
+        } else if (request.quotationId() != null) {
+            Quotation existing = quotationRepository.findById(request.quotationId()).orElse(null);
+            if (existing != null) {
+                if (existing.getParent() != null) {
+                    parentQuotation = existing.getParent();
+                    targetQuotation = existing;
+                    isEdit = true;
+                } else if (existing.isParentQuotation()) {
+                    parentQuotation = existing;
+                    targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
+                    if (targetQuotation == null) {
+                        targetQuotation = new Quotation();
+                        targetQuotation.setParent(parentQuotation);
+                        targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
+                        targetQuotation.setPricingMode(requestedMode);
+                        isEdit = false;
+                    } else {
+                        isEdit = true;
+                    }
+                } else {
+                    targetQuotation = existing;
+                    isEdit = true;
+                }
+            }
         }
 
-        // Customer resolution (permissive for drafts)
+        if (targetQuotation == null && parentQuotation == null) {
+            parentQuotation = new Quotation();
+            parentQuotation.setQuotationNumber(nextQuotationNumber());
+            parentQuotation.setPricingMode(requestedMode);
+            parentQuotation.setStatus(isAutoSave ? QuotationStatus.PENDING : QuotationStatus.WORKING);
+            parentQuotation.setEmployee(loggedInUser);
+            if (branch != null) parentQuotation.setBranch(branch);
+
+            targetQuotation = new Quotation();
+            targetQuotation.setParent(parentQuotation);
+            targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
+            targetQuotation.setPricingMode(requestedMode);
+        } else if (targetQuotation == null) {
+            targetQuotation = new Quotation();
+            targetQuotation.setParent(parentQuotation);
+            targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
+            targetQuotation.setPricingMode(requestedMode);
+        }
+
+        if (isEdit && targetQuotation.getId() != null) {
+            if (loggedInUser.getRole() == Role.EMPLOYEE && targetQuotation.getBranch() != null && loggedInUser.getBranch() != null
+                    && !targetQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+                throw new AccessDeniedException("Unauthorized: Cannot edit quotations for another branch.");
+            }
+            List<QuotationRoom> oldRooms = quotationRoomService.getActiveByQuotationId(targetQuotation.getId());
+            for (QuotationRoom oldRoom : oldRooms) {
+                List<QuotationItem> oldItems = quotationItemService.getActiveByQuotationRoomId(oldRoom.getId());
+                if (oldItems != null) {
+                    for (QuotationItem oi : oldItems) {
+                        if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
+                            existingMaterialIds.add(oi.getMaterial().getId());
+                        }
+                    }
+                }
+                quotationRoomService.deactivate(oldRoom.getId());
+            }
+        }
+
+        // Customer resolution
         Customer customer = null;
         if (request.customer() != null) {
             try {
@@ -762,74 +629,100 @@ public class AdminQuotationBuilderService {
                     customer = customerRepository.findById(request.customer().id()).orElse(null);
                 } else if (request.customer().name() != null && !request.customer().name().isBlank()
                         && request.customer().phone() != null && !request.customer().phone().isBlank()) {
-                    customer = resolveCustomer(request.customer(), branch, loggedInUser, quotation, isEdit);
+                    customer = resolveCustomer(request.customer(), branch, loggedInUser, parentQuotation != null ? parentQuotation : targetQuotation, isEdit);
                 }
-            } catch (Exception ignored) {
-                // Draft errors during customer resolution should not block progressive saving
+            } catch (Exception ex) {
+                if (!isAutoSave) {
+                    throw ex;
+                }
             }
         }
-        if (customer == null && quotation.getCustomer() != null) {
-            customer = quotation.getCustomer();
-        }
-        quotation.setCustomer(customer);
-
-        if (quotation.getEmployee() == null) {
-            quotation.setEmployee(loggedInUser);
-        }
-        if (branch != null) {
-            quotation.setBranch(branch);
+        if (customer == null) {
+            if (parentQuotation != null && parentQuotation.getCustomer() != null) {
+                customer = parentQuotation.getCustomer();
+            } else if (targetQuotation.getCustomer() != null) {
+                customer = targetQuotation.getCustomer();
+            }
         }
 
-        LocalDate effectiveDate = request.quotationDate() != null
+        LocalDate effectiveQuotationDate = request.quotationDate() != null
                 ? request.quotationDate()
-                : (quotation.getQuotationDate() != null ? quotation.getQuotationDate() : LocalDate.now());
-        quotation.setQuotationDate(effectiveDate);
+                : (parentQuotation != null && parentQuotation.getQuotationDate() != null ? parentQuotation.getQuotationDate() : LocalDate.now());
 
-        if (request.validUntil() != null) {
-            quotation.setValidUntil(request.validUntil());
-        } else if (quotation.getValidUntil() == null) {
-            quotation.setValidUntil(effectiveDate.plusDays(365));
+        LocalDate validUntil = request.validUntil();
+        if (validUntil == null) {
+            validUntil = effectiveQuotationDate.plusDays(365);
         }
 
-        quotation.setPricingMode(request.pricingMode() != null
-                ? request.pricingMode()
-                : (quotation.getPricingMode() != null ? quotation.getPricingMode() : PricingMode.MIDDLE));
-
-        // Incomplete / auto-saved quotations MUST remain in PENDING status
-        if (quotation.getStatus() == null || quotation.getStatus() == QuotationStatus.PENDING) {
-            quotation.setStatus(QuotationStatus.PENDING);
+        if (parentQuotation != null) {
+            if (customer != null) parentQuotation.setCustomer(customer);
+            if (branch != null) parentQuotation.setBranch(branch);
+            if (parentQuotation.getEmployee() == null) parentQuotation.setEmployee(loggedInUser);
+            if (parentQuotation.getQuotationDate() == null) parentQuotation.setQuotationDate(effectiveQuotationDate);
+            if (parentQuotation.getValidUntil() == null) parentQuotation.setValidUntil(validUntil);
+            if (!isAutoSave && (parentQuotation.getStatus() == null || parentQuotation.getStatus() == QuotationStatus.PENDING)) {
+                parentQuotation.setStatus(QuotationStatus.WORKING);
+            }
+            parentQuotation = quotationRepository.save(parentQuotation);
+            targetQuotation.setParent(parentQuotation);
         }
 
-        quotation.setCustomerRequirements(clean(request.customerRequirements()));
-        quotation.setNotes(clean(request.notes()));
-        if (request.accessoriesAmount() != null) quotation.setAccessoriesAmount(request.accessoriesAmount());
-        if (request.travelCharge() != null) quotation.setTravelCharge(request.travelCharge());
-        if (request.otherCharges() != null) quotation.setOtherCharges(request.otherCharges());
-        if (request.otherChargesDescription() != null) quotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
-        if (request.discountAmount() != null) quotation.setDiscountAmount(request.discountAmount());
-        if (request.gstPercentage() != null) quotation.setGstPercentage(request.gstPercentage());
-        if (request.offerPercentage() != null) quotation.setOfferPercentage(request.offerPercentage());
-        if (request.showSqftSize() != null) quotation.setShowSqftSize(request.showSqftSize());
+        targetQuotation.setCustomer(customer);
+        if (branch != null) targetQuotation.setBranch(branch);
+        if (targetQuotation.getEmployee() == null) targetQuotation.setEmployee(loggedInUser);
+        targetQuotation.setQuotationDate(effectiveQuotationDate);
+        targetQuotation.setValidUntil(validUntil);
+        targetQuotation.setPricingMode(requestedMode);
 
-        // Resume navigation fields
-        quotation.setLastActiveStep(request.lastActiveStep());
-        quotation.setLastActiveFloor(request.lastActiveFloor());
-        quotation.setLastActiveRoom(request.lastActiveRoom());
-        quotation.setLastActiveCategoryId(request.lastActiveCategoryId());
-        quotation.setLastActiveDivisionId(request.lastActiveDivisionId());
-        quotation.setBuilderState(request.builderState());
+        if (isAutoSave) {
+            if (targetQuotation.getStatus() == null || targetQuotation.getStatus() == QuotationStatus.PENDING) {
+                targetQuotation.setStatus(QuotationStatus.PENDING);
+            }
+        } else {
+            if (targetQuotation.getStatus() == null || targetQuotation.getStatus() == QuotationStatus.PENDING) {
+                targetQuotation.setStatus(QuotationStatus.WORKING);
+            }
+        }
 
-        Quotation savedQuotation = quotationRepository.save(quotation);
+        targetQuotation.setCustomerRequirements(clean(request.customerRequirements()));
+        targetQuotation.setNotes(clean(request.notes()));
+        if (request.accessoriesAmount() != null) targetQuotation.setAccessoriesAmount(request.accessoriesAmount());
+        if (request.travelCharge() != null) targetQuotation.setTravelCharge(request.travelCharge());
+        if (request.otherCharges() != null) targetQuotation.setOtherCharges(request.otherCharges());
+        if (request.otherChargesDescription() != null) targetQuotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
+        if (request.discountAmount() != null) targetQuotation.setDiscountAmount(request.discountAmount());
+        if (request.gstPercentage() != null) targetQuotation.setGstPercentage(request.gstPercentage());
+        if (request.offerPercentage() != null) targetQuotation.setOfferPercentage(request.offerPercentage());
+        if (request.showSqftSize() != null) {
+            targetQuotation.setShowSqftSize(request.showSqftSize());
+        } else if (targetQuotation.getShowSqftSize() == null) {
+            targetQuotation.setShowSqftSize(true);
+        }
+
+        targetQuotation.setLastActiveStep(request.lastActiveStep());
+        targetQuotation.setLastActiveFloor(request.lastActiveFloor());
+        targetQuotation.setLastActiveRoom(request.lastActiveRoom());
+        targetQuotation.setLastActiveCategoryId(request.lastActiveCategoryId());
+        targetQuotation.setLastActiveDivisionId(request.lastActiveDivisionId());
+        targetQuotation.setBuilderState(request.builderState());
+
+        Quotation savedQuotation = quotationRepository.save(targetQuotation);
 
         if (request.rooms() != null && !request.rooms().isEmpty()) {
-            saveRoomsAndItems(savedQuotation, request.rooms(), branch != null ? branch.getId() : null, savedQuotation.getPricingMode(), existingMaterialIds, isEdit, true);
+            saveRoomsAndItems(savedQuotation, request.rooms(), branch != null ? branch.getId() : null, requestedMode, existingMaterialIds, isEdit, isAutoSave);
         }
 
         Quotation calculated = quotationCalculationService.calculateQuotation(savedQuotation.getId());
-        if (savedQuotation.getStatus() == QuotationStatus.PENDING && calculated.getStatus() != QuotationStatus.PENDING) {
+        if (isAutoSave && savedQuotation.getStatus() == QuotationStatus.PENDING && calculated.getStatus() != QuotationStatus.PENDING) {
             calculated.setStatus(QuotationStatus.PENDING);
             calculated = quotationRepository.save(calculated);
         }
+
+        if (!isAutoSave && parentQuotation != null && parentQuotation.getStatus() == QuotationStatus.PENDING) {
+            parentQuotation.setStatus(QuotationStatus.WORKING);
+            parentQuotation = quotationRepository.save(parentQuotation);
+        }
+
         return calculated;
     }
 
@@ -1597,6 +1490,7 @@ public class AdminQuotationBuilderService {
 
     public record BuilderRequest(
             Long quotationId,
+            Long parentId,
             CustomerRequest customer,
             Long branchId,
             LocalDate quotationDate,
@@ -1637,8 +1531,63 @@ public class AdminQuotationBuilderService {
                 BigDecimal discountAmount,
                 BigDecimal gstPercentage,
                 BigDecimal offerPercentage,
+                Boolean showSqftSize,
+                String lastActiveStep,
+                String lastActiveFloor,
+                String lastActiveRoom,
+                Long lastActiveCategoryId,
+                Long lastActiveDivisionId,
+                String builderState) {
+            this(quotationId, null, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges, otherChargesDescription,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    lastActiveStep, lastActiveFloor, lastActiveRoom, lastActiveCategoryId, lastActiveDivisionId, builderState);
+        }
+
+        public BuilderRequest(
+                Long quotationId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                LocalDate validUntil,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                String otherChargesDescription,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
                 Boolean showSqftSize) {
-            this(quotationId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+            this(quotationId, null, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges, otherChargesDescription,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    null, null, null, null, null, null);
+        }
+
+        public BuilderRequest(
+                Long quotationId,
+                Long parentId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                LocalDate validUntil,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                String otherChargesDescription,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
+                Boolean showSqftSize) {
+            this(quotationId, parentId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges, otherChargesDescription,
                     discountAmount, gstPercentage, offerPercentage, showSqftSize,
                     null, null, null, null, null, null);
@@ -1661,7 +1610,7 @@ public class AdminQuotationBuilderService {
                 BigDecimal gstPercentage,
                 BigDecimal offerPercentage,
                 Boolean showSqftSize) {
-            this(quotationId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+            this(quotationId, null, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
                     discountAmount, gstPercentage, offerPercentage, showSqftSize,
@@ -1684,7 +1633,7 @@ public class AdminQuotationBuilderService {
                 BigDecimal gstPercentage,
                 BigDecimal offerPercentage,
                 Boolean showSqftSize) {
-            this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
+            this(quotationId, null, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
                     discountAmount, gstPercentage, offerPercentage, showSqftSize,
@@ -1706,7 +1655,7 @@ public class AdminQuotationBuilderService {
                 BigDecimal discountAmount,
                 BigDecimal gstPercentage,
                 BigDecimal offerPercentage) {
-            this(quotationId, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
+            this(quotationId, null, customer, branchId, quotationDate, null, pricingMode, customerRequirements, notes, rooms,
                     accessoriesAmount, travelCharge, otherCharges,
                     (otherCharges != null && otherCharges.compareTo(BigDecimal.ZERO) > 0) ? "Other Charges" : null,
                     discountAmount, gstPercentage, offerPercentage, true,

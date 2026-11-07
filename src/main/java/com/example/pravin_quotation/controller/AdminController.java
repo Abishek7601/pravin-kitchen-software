@@ -80,14 +80,16 @@ public class AdminController {
 
         List<Quotation> quotations =
                 quotationRepository
-                        .findByQuotationDateBetweenOrderByQuotationDateDesc(
+                        .findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                                 startDate,
                                 endDate
                         );
 
         BigDecimal totalQuotedValue = quotations.stream()
-                .map(Quotation::getGrandTotal)
-                .filter(amount -> amount != null)
+                .map(quotation -> {
+                    BigDecimal amt = quotation.getEffectiveGrandTotal();
+                    return amt != null ? amt : BigDecimal.ZERO;
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         model.addAttribute("quotations", quotations);
@@ -103,11 +105,13 @@ public class AdminController {
     @GetMapping("/portfolio")
     public String portfolio(Model model) {
 
-        List<Quotation> quotations = quotationRepository.findAll();
+        List<Quotation> quotations = quotationRepository.findByParentIsNullOrderByCreatedAtDesc();
 
         BigDecimal totalPortfolioValue = quotations.stream()
-                .map(Quotation::getGrandTotal)
-                .filter(amount -> amount != null)
+                .map(quotation -> {
+                    BigDecimal amt = quotation.getEffectiveGrandTotal();
+                    return amt != null ? amt : BigDecimal.ZERO;
+                })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         model.addAttribute("quotations", quotations);

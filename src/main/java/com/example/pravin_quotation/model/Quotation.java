@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(
@@ -82,6 +84,29 @@ public class Quotation {
     @Enumerated(EnumType.STRING)
     @Column(name = "pricing_mode", nullable = false, length = 20)
     private PricingMode pricingMode;
+
+    /*
+     * Parent quotation for multi-grade quotations.
+     * Null for parent quotations and legacy single-grade quotations.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "parent_id")
+    private Quotation parent;
+
+    /*
+     * Child quotations representing independent grade estimates (Premium, Middle, Economy).
+     */
+    @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OrderBy("id ASC")
+    private List<Quotation> childQuotations = new ArrayList<>();
+
+    /*
+     * Customer's confirmed/selected grade for this quotation project.
+     * Stored on the parent quotation.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "selected_grade", length = 20)
+    private PricingMode selectedGrade;
 
     /*
      * Financial calculations.
@@ -322,11 +347,98 @@ public class Quotation {
     }
 
     public String getQuotationNumber() {
+        if (this.parent != null && this.parent.getQuotationNumber() != null) {
+            return this.parent.getQuotationNumber();
+        }
         return quotationNumber;
+    }
+
+    public String getRawQuotationNumber() {
+        return quotationNumber;
+    }
+
+    public String getDisplayQuotationNumber() {
+        return getQuotationNumber();
     }
 
     public void setQuotationNumber(String quotationNumber) {
         this.quotationNumber = quotationNumber;
+    }
+
+    public Quotation getParent() {
+        return parent;
+    }
+
+    public void setParent(Quotation parent) {
+        this.parent = parent;
+    }
+
+    public List<Quotation> getChildQuotations() {
+        return childQuotations;
+    }
+
+    public void setChildQuotations(List<Quotation> childQuotations) {
+        this.childQuotations = childQuotations;
+    }
+
+    public PricingMode getSelectedGrade() {
+        return selectedGrade;
+    }
+
+    public void setSelectedGrade(PricingMode selectedGrade) {
+        this.selectedGrade = selectedGrade;
+    }
+
+    public boolean isParentQuotation() {
+        return this.parent == null && this.childQuotations != null && !this.childQuotations.isEmpty();
+    }
+
+    public boolean isChildQuotation() {
+        return this.parent != null;
+    }
+
+    public boolean isMultiGrade() {
+        return isParentQuotation() || isChildQuotation();
+    }
+
+    public Quotation getChildForGrade(PricingMode mode) {
+        if (mode == null) return null;
+        if (this.childQuotations != null) {
+            for (Quotation child : this.childQuotations) {
+                if (child.getPricingMode() == mode) {
+                    return child;
+                }
+            }
+        }
+        return null;
+    }
+
+    public boolean hasGrade(PricingMode mode) {
+        return getChildForGrade(mode) != null;
+    }
+
+    public BigDecimal getEffectiveGrandTotal() {
+        if (this.parent != null) {
+            return this.grandTotal;
+        }
+        if (isParentQuotation()) {
+            if (this.selectedGrade != null) {
+                Quotation selectedChild = getChildForGrade(this.selectedGrade);
+                if (selectedChild != null && selectedChild.getGrandTotal() != null) {
+                    return selectedChild.getGrandTotal();
+                }
+            }
+            return null; // Not confirmed yet
+        }
+        // Legacy single-grade quotation
+        return this.grandTotal;
+    }
+
+    public PricingMode getEffectivePricingMode() {
+        if (isParentQuotation()) {
+            return this.selectedGrade;
+        }
+        return this.pricingMode;
     }
 
     public Customer getCustomer() {

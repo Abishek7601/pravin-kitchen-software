@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+</head>
+<body>
+
+<div th:fragment="breakdownTable(quote, rooms, itemsByRoom, sizesByItem)" class="breakdown-table-wrapper">
+    <table class="breakdown-table">
+        <thead>
+            <tr>
+                <th class="col-sno text-center">S.No.</th>
+                <th class="col-floor">Floor</th>
+                <th class="col-room">Room No.</th>
+                <th class="col-category">Category</th>
+                <th class="col-worktype">Work Type</th>
+                <th class="col-material">Material</th>
+                <th class="col-spec">Specifications</th>
+                <th class="col-dimensions" th:if="${quote.showSqftSize == null || quote.showSqftSize}">Size / Dimensions</th>
+                <th class="col-sqft text-right" th:if="${quote.showSqftSize == null || quote.showSqftSize}">Sq.Ft.</th>
+                <th class="col-rate text-right">Unit Rate</th>
+                <th class="col-amount text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            <th:block th:each="room, roomStat : ${rooms}">
+                <!-- Room Grouping Banner -->
+                <tr class="room-group-row">
+                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 11 : 9}">
+                        <div class="room-group-banner">
+                            <div class="room-group-title">
+                                <span class="room-badge" th:text="'Room #' + ${roomStat.count}">Room #1</span>
+                                <span class="room-floor-tag" th:text="${room.floor}">Ground Floor</span>
+                                <span class="room-sep">•</span>
+                                <strong class="room-name-tag" th:text="${room.room}">Kitchen</strong>
+                                <span class="room-desc-tag"
+                                      th:if="${room.workDescription != null && !#strings.isEmpty(room.workDescription)}"
+                                      th:text="${'— ' + room.workDescription}"></span>
+                            </div>
+                            <div class="room-group-total">
+                                <span class="room-total-label">Room Subtotal:</span>
+                                <strong class="room-total-val"
+                                        th:text="${'₹ ' + @inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">₹ 0.00</strong>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- Room Items -->
+                <tr th:each="item, itemStat : ${itemsByRoom[room.id]}" class="breakdown-item-row">
+                    <td class="text-center cell-sno" th:text="${roomStat.count + '.' + itemStat.count}">1.1</td>
+                    <td class="cell-floor" th:text="${room.floor}">Ground Floor</td>
+                    <td class="cell-room" th:text="${room.room}">Kitchen</td>
+                    <td class="cell-category">
+                        <span class="badge-category"
+                              th:text="${item.workCategory != null ? item.workCategory.name : '-'}">Modular Kitchen</span>
+                    </td>
+                    <td class="cell-worktype">
+                        <strong class="worktype-name"
+                                th:text="${item.item != null ? item.item.name : (item.itemDescription != null ? item.itemDescription : (item.division != null ? item.division.name : 'Work Item'))}">
+                            Base Cabinet
+                        </strong>
+                    </td>
+                    <td class="cell-material">
+                        <div class="material-name" th:text="${item.material != null ? item.material.name : 'N/A'}">Marine Ply</div>
+                        <div class="material-option-text"
+                             th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
+                             th:text="${item.materialOption.name}">18mm</div>
+                        <div th:if="${item.imageUrl != null and !#strings.isEmpty(item.imageUrl)}" style="margin-top: 6px;">
+                            <a th:href="@{${item.imageUrl}}" target="_blank" title="View attached image">
+                                <img th:src="@{${item.imageUrl}}" alt="Attached image" style="max-height: 48px; max-width: 80px; border-radius: 4px; border: 1px solid #cbd5e1; object-fit: cover;">
+                            </a>
+                        </div>
+                    </td>
+                    <td class="cell-spec">
+                        <div class="spec-main"
+                             th:if="${item.specification != null && !#strings.isEmpty(item.specification)}"
+                             th:text="${item.specification}">Standard spec</div>
+                        <div class="spec-mat"
+                             th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification != null}"
+                             th:text="${item.materialSpecification.name}">Specification</div>
+                        <div class="spec-formula"
+                             th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT') or item.measurementType.name().equals('ROLL')}">
+                            <span th:if="${item.formula != null && !#strings.isEmpty(item.formula)}" th:text="${'Formula: ' + item.formula}"></span>
+                        </div>
+                        <div th:if="${item.measurementType != null and item.measurementType.name().equals('ROLL')}" style="margin-top: 4px; font-size: 11px; font-weight: 600; color: #0d9488;">
+                            <span th:text="${(item.quantity != null ? item.quantity : 1) + ' Roll(s) (Coverage: ' + (item.coveragePerRoll != null ? item.coveragePerRoll : 0) + ' Sq.ft/Roll)'}"></span>
+                        </div>
+                        <span class="spec-empty"
+                              th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula)) and (item.measurementType == null or !item.measurementType.name().equals('ROLL'))}">-</span>
+                    </td>
+                    <td class="cell-dimensions" th:if="${quote.showSqftSize == null || quote.showSqftSize}">
+                        <div th:if="${item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')}">
+                            <span class="size-vals" style="font-weight: 600; color: #0f766e;" th:text="${'Qty: ' + (item.quantity != null ? item.quantity : 1)}">Qty: 1</span>
+                        </div>
+                        <div th:if="${item.measurementType == null or item.measurementType.name().equals('SQFT') or item.measurementType.name().equals('ROLL')}">
+                            <div th:if="${sizesByItem[item.id] != null && !#lists.isEmpty(sizesByItem[item.id])}">
+                                <div th:each="sz, szStat : ${sizesByItem[item.id]}"
+                                     th:if="${sz.active == null || sz.active}"
+                                     class="dimension-line">
+                                     <span class="size-idx"
+                                           th:if="${#lists.size(sizesByItem[item.id]) > 1}"
+                                           th:text="${'#' + szStat.count + ': '}">#1: </span>
+                                     <span class="size-vals"
+                                           th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                </div>
+                            </div>
+                            <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
+                                <span class="size-vals"
+                                      th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="text-right cell-sqft"
+                        th:if="${quote.showSqftSize == null || quote.showSqftSize}"
+                        th:text="${(item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')) ? '-' : #numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
+                        0.00
+                    </td>
+                    <td class="text-right cell-rate"
+                        th:text="${'₹ ' + @inr.format(item.rate != null ? item.rate : 0) + (item.measurementType != null and item.measurementType.name().equals('ROLL') ? ' / roll' : '')}">
+                        ₹ 0.00
+                    </td>
+                    <td class="text-right cell-amount">
+                        <div th:if="${item.offerPrice != null && item.offerPrice > 0 && item.offerPrice < item.amount}">
+                            <span style="text-decoration: line-through; color: #94a3b8; font-size: 11px; margin-right: 4px;" th:text="${'₹ ' + @inr.format(item.amount)}">₹ 0.00</span>
+                            <strong th:text="${'₹ ' + @inr.format(item.offerPrice)}">₹ 0.00</strong>
+                        </div>
+                        <div th:unless="${item.offerPrice != null && item.offerPrice > 0 && item.offerPrice < item.amount}">
+                            <span th:text="${'₹ ' + @inr.format(item.amount != null ? item.amount : 0)}">₹ 0.00</span>
+                        </div>
+                    </td>
+                </tr>
+
+                <!-- If room has no active items -->
+                <tr th:if="${itemsByRoom[room.id] == null || #lists.isEmpty(itemsByRoom[room.id])}" class="empty-room-row">
+                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 11 : 9}" class="text-center text-muted">
+                        No active work items added to this room.
+                    </td>
+                </tr>
+
+                <!-- Room Subtotal Row -->
+                <tr class="room-subtotal-row">
+                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right room-subtotal-label">
+                        <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
+                    </td>
+                    <td class="text-right room-subtotal-val">
+                        <strong th:text="${'₹ ' + @inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">₹ 0.00</strong>
+                    </td>
+                </tr>
+            </th:block>
+        </tbody>
+        <tfoot>
+            <!-- Accessories -->
+            <tr class="tfoot-charge-row" th:if="${quote.accessoriesAmount != null && quote.accessoriesAmount > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Accessories</td>
+                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.accessoriesAmount)}">₹ 0.00</td>
+            </tr>
+            <!-- Travel Charges -->
+            <tr class="tfoot-charge-row" th:if="${quote.travelCharge != null && quote.travelCharge > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Travel Charges</td>
+                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.travelCharge)}">₹ 0.00</td>
+            </tr>
+            <!-- Other Charges -->
+            <tr class="tfoot-charge-row" th:if="${quote.otherCharges != null && quote.otherCharges > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label"
+                    th:text="${(quote.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quote.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quote.otherChargesDescription) + ')' : 'Other Charges'}">Other Charges</td>
+                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.otherCharges)}">₹ 0.00</td>
+            </tr>
+            <!-- Discount -->
+            <tr class="tfoot-charge-row discount-charge-row" th:if="${quote.discountAmount != null && quote.discountAmount > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Discount</td>
+                <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + @inr.format(quote.discountAmount)}">- ₹ 0.00</td>
+            </tr>
+            <!-- Special Offer / Discount (Applied BEFORE GST) -->
+            <tr class="tfoot-charge-row offer-charge-row" th:if="${quote.offerAmount != null && quote.offerAmount > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quote.offerPercentage != null ? quote.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
+                <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + @inr.format(quote.offerAmount)}">- ₹ 0.00</td>
+            </tr>
+            <!-- GST (Applied on Taxable Amount After Offer) -->
+            <tr class="tfoot-charge-row" th:if="${quote.gstAmount != null && quote.gstAmount > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quote.gstPercentage != null ? quote.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
+                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.gstAmount)}">₹ 0.00</td>
+            </tr>
+            <!-- Grand Total -->
+            <tr class="tfoot-grand-total-row">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right grand-total-label">
+                    <strong>Grand Total</strong>
+                </td>
+                <td class="text-right grand-total-amount">
+                    <strong th:text="${'₹ ' + @inr.format(quote.grandTotal != null ? quote.grandTotal : (quote.totalAmount != null ? quote.totalAmount : (quote.subtotal != null ? quote.subtotal : 0)))}">₹ 0.00</strong>
+                </td>
+            </tr>
+        </tfoot>
+    </table>
+</div>
+
+</body>
+</html>
+

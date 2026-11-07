@@ -387,14 +387,29 @@
 
                     <td>
 
-                        <span class="pricing-badge"
-                              th:if="${quotation.pricingMode != null}"
-                              th:text="${quotation.pricingMode}">
-                            PREMIUM
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <span class="pricing-badge"
+                                  th:if="${quotation.selectedGrade != null}"
+                                  style="background: #eaf5f1; color: #13795b; font-weight: 700; border: 1px solid #c2e5d9;"
+                                  th:text="'✓ ' + ${quotation.selectedGrade}">
+                                ✓ PREMIUM
+                            </span>
+                            <span class="pricing-badge"
+                                  th:unless="${quotation.selectedGrade != null}"
+                                  style="background: #f1f5f9; color: #475569; font-weight: 600; border: 1px solid #cbd5e1;">
+                                Multi-Grade
+                            </span>
                         </span>
-                        <span th:if="${quotation.pricingMode == null}"
-                              style="color: #64748b; font-style: italic;">
-                            —
+                        <span th:unless="${quotation.isMultiGrade()}">
+                            <span class="pricing-badge"
+                                  th:if="${quotation.pricingMode != null}"
+                                  th:text="${quotation.pricingMode}">
+                                PREMIUM
+                            </span>
+                            <span th:if="${quotation.pricingMode == null}"
+                                  style="color: #64748b; font-style: italic;">
+                                —
+                            </span>
                         </span>
 
                     </td>
@@ -404,20 +419,33 @@
 
                     <td>
 
-                        <strong class="amount"
-                                th:if="${quotation.grandTotal != null && quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
-                                th:text="${@inr.rupees(quotation.grandTotal)}">
-                            ₹ 0.00
-                        </strong>
-                        <span th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and quotation.status != null and quotation.status.name() == 'PENDING'}"
-                              style="color: #64748b; font-style: italic;">
-                            Not calculated
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <strong class="amount"
+                                    th:if="${quotation.effectiveGrandTotal != null}"
+                                    th:text="${@inr.rupees(quotation.effectiveGrandTotal)}">
+                                ₹ 0.00
+                            </strong>
+                            <span th:unless="${quotation.effectiveGrandTotal != null}"
+                                  style="color: #64748b; font-style: italic;">
+                                Not Confirmed
+                            </span>
                         </span>
-                        <strong class="amount"
-                                th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and (quotation.status == null or quotation.status.name() != 'PENDING')}"
-                                th:text="${@inr.rupees(quotation.grandTotal != null ? quotation.grandTotal : 0)}">
-                            ₹ 0.00
-                        </strong>
+                        <span th:unless="${quotation.isMultiGrade()}">
+                            <strong class="amount"
+                                    th:if="${quotation.grandTotal != null && quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                    th:text="${@inr.rupees(quotation.grandTotal)}">
+                                ₹ 0.00
+                            </strong>
+                            <span th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and quotation.status != null and quotation.status.name() == 'PENDING'}"
+                                  style="color: #64748b; font-style: italic;">
+                                Not calculated
+                            </span>
+                            <strong class="amount"
+                                    th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and (quotation.status == null or quotation.status.name() != 'PENDING')}"
+                                    th:text="${@inr.rupees(quotation.grandTotal != null ? quotation.grandTotal : 0)}">
+                                ₹ 0.00
+                            </strong>
+                        </span>
 
                     </td>
 
