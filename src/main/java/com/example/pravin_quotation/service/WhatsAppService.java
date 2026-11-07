@@ -278,6 +278,16 @@ public class WhatsAppService {
             String customerName = quotation.getCustomer().getName() != null ? quotation.getCustomer().getName() : "Customer";
             String totalAmount = quotation.getGrandTotal() != null ? quotation.getGrandTotal().toPlainString() : "0.00";
 
+            String gradeText = "";
+            if (quotation.getPricingMode() != null) {
+                switch (quotation.getPricingMode()) {
+                    case PREMIUM: gradeText = " (Premium Grade)"; break;
+                    case MIDDLE: gradeText = " (Middle Grade)"; break;
+                    case ECONOMY: gradeText = " (Economy Grade)"; break;
+                    default: gradeText = " (" + quotation.getPricingMode().name() + " Grade)"; break;
+                }
+            }
+
             // Generate a secure, time-limited tokenized media URL for providers that download media
             String secureMediaUrl = temporaryMediaTokenService.buildSecureMediaUrl(baseUrl, quotation.getId());
 
@@ -296,7 +306,7 @@ public class WhatsAppService {
 
             // 2. Standard direct WhatsApp sharing flow (no API credentials or paid provider required)
             String message = "Hello " + customerName + ",\n\n"
-                    + "Please find attached your quotation (" + quotationNumber + ") from Pravin Kitchens & Interiors.\n\n"
+                    + "Please find attached your quotation (" + quotationNumber + gradeText + ") from Pravin Kitchens & Interiors.\n\n"
                     + "Total Amount: ₹" + totalAmount + "\n\n"
                     + "Thank you,\n"
                     + "Pravin KITCHENS & INTERIORS";
@@ -309,12 +319,28 @@ public class WhatsAppService {
                     QuotationCommunication.CommunicationType.WHATSAPP,
                     normalizedPhone,
                     QuotationCommunication.CommunicationStatus.SENT,
-                    "Quotation PDF generated (" + pdfBytes.length + " bytes). Direct WhatsApp chat opened for customer " + normalizedPhone + " to attach PDF."
+                    "Quotation PDF generated" + gradeText + " (" + pdfBytes.length + " bytes). Direct WhatsApp chat opened for customer " + normalizedPhone + " to attach PDF."
             );
 
             if (quotation.getStatus() == QuotationStatus.PENDING || quotation.getStatus() == QuotationStatus.WORKING) {
                 quotation.setStatus(QuotationStatus.SENT);
                 quotationRepository.save(quotation);
+            }
+
+            if (quotation.getParent() != null) {
+                Quotation parent = quotation.getParent();
+                if (parent.getStatus() == QuotationStatus.PENDING || parent.getStatus() == QuotationStatus.WORKING) {
+                    parent.setStatus(QuotationStatus.SENT);
+                    quotationRepository.save(parent);
+                }
+            }
+
+            if (quotation.getParent() != null) {
+                Quotation parent = quotation.getParent();
+                if (parent.getStatus() == QuotationStatus.PENDING || parent.getStatus() == QuotationStatus.WORKING) {
+                    parent.setStatus(QuotationStatus.SENT);
+                    quotationRepository.save(parent);
+                }
             }
 
             log.info("Direct WhatsApp sharing flow prepared for quotation ID {}, customer masked phone: {}",
@@ -353,7 +379,8 @@ public class WhatsAppService {
             String totalAmount,
             String secureMediaUrl
     ) {
-        String filename = "Quotation-" + quotationNumber + ".pdf";
+        String gradeSuffix = quotation.getPricingMode() != null ? "-" + quotation.getPricingMode().name() : "";
+        String filename = "Quotation-" + quotationNumber + gradeSuffix + ".pdf";
         String caption = "Your quotation from Pravin Kitchens & Interiors";
 
         log.info("Sending quotation PDF document to customer WhatsApp via provider '{}'. Quotation ID: {}, Masked Phone: {}",
@@ -398,6 +425,14 @@ public class WhatsAppService {
             if (quotation.getStatus() == QuotationStatus.PENDING || quotation.getStatus() == QuotationStatus.WORKING) {
                 quotation.setStatus(QuotationStatus.SENT);
                 quotationRepository.save(quotation);
+            }
+
+            if (quotation.getParent() != null) {
+                Quotation parent = quotation.getParent();
+                if (parent.getStatus() == QuotationStatus.PENDING || parent.getStatus() == QuotationStatus.WORKING) {
+                    parent.setStatus(QuotationStatus.SENT);
+                    quotationRepository.save(parent);
+                }
             }
 
             log.info("Quotation PDF document successfully accepted by WhatsApp provider '{}' for quotation ID {}. Message ID: {}",

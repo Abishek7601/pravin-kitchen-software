@@ -18,7 +18,7 @@ public class DataInitializer {
 
         return args -> {
 
-            String adminEmail = "klassyabishek@gmail.com";
+            String adminEmail = "pravinkitchensquotation@gmail.com";
             String adminPassword = "Admin@123";
 
             if (!userRepository.existsByEmail(adminEmail) && !userRepository.existsByRole(Role.SUPER_ADMIN)) {
@@ -77,6 +77,41 @@ public class DataInitializer {
             }
             try {
                 jdbcTemplate.execute("ALTER TABLE quotations ADD COLUMN builder_state LONGTEXT NULL");
+            } catch (Exception ignored) {
+            }
+
+            // Reconcile any existing duplicate child quotations for (parent_id, pricing_mode) safely
+            try {
+                java.util.List<java.util.Map<String, Object>> duplicates = jdbcTemplate.queryForList(
+                        "SELECT parent_id, pricing_mode, COUNT(*) as cnt FROM quotations " +
+                        "WHERE parent_id IS NOT NULL AND pricing_mode IS NOT NULL " +
+                        "GROUP BY parent_id, pricing_mode HAVING COUNT(*) > 1"
+                );
+                for (java.util.Map<String, Object> dup : duplicates) {
+                    Long pId = ((Number) dup.get("parent_id")).longValue();
+                    String mode = (String) dup.get("pricing_mode");
+                    java.util.List<java.util.Map<String, Object>> rows = jdbcTemplate.queryForList(
+                            "SELECT id, grand_total, quotation_number FROM quotations " +
+                            "WHERE parent_id = ? AND pricing_mode = ? ORDER BY grand_total DESC, id DESC",
+                            pId, mode
+                    );
+                    if (rows.size() > 1) {
+                        Long keepId = ((Number) rows.get(0).get("id")).longValue();
+                        for (int i = 1; i < rows.size(); i++) {
+                            Long discardId = ((Number) rows.get(i).get("id")).longValue();
+                            // Reassign any child rooms from discardId to keepId
+                            jdbcTemplate.update("UPDATE quotation_rooms SET quotation_id = ? WHERE quotation_id = ?", keepId, discardId);
+                            // Delete the empty/duplicate quotation record
+                            jdbcTemplate.update("DELETE FROM quotations WHERE id = ?", discardId);
+                        }
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+
+            // Enforce database-level uniqueness for (parent_id, pricing_mode)
+            try {
+                jdbcTemplate.execute("ALTER TABLE quotations ADD CONSTRAINT uk_quotation_parent_grade UNIQUE (parent_id, pricing_mode)");
             } catch (Exception ignored) {
             }
         };

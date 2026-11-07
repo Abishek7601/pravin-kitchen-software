@@ -387,6 +387,22 @@ public class QuotationPdfService {
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
         String titleText = "MARKETING QUOTATION";
+        if (quotation.getPricingMode() != null) {
+            switch (quotation.getPricingMode()) {
+                case PREMIUM:
+                    titleText = "PREMIUM GRADE QUOTATION";
+                    break;
+                case MIDDLE:
+                    titleText = "MIDDLE GRADE QUOTATION";
+                    break;
+                case ECONOMY:
+                    titleText = "ECONOMY GRADE QUOTATION";
+                    break;
+                default:
+                    titleText = quotation.getPricingMode().name() + " GRADE QUOTATION";
+                    break;
+            }
+        }
         Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_NAVY));
         titlePar.setAlignment(Element.ALIGN_RIGHT);
         titlePar.setSpacingAfter(4f);

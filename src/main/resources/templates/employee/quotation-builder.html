@@ -107,18 +107,29 @@
       <div class="pricing-mode-bar">
         <span class="pricing-mode-title">Pricing Mode:</span>
         <div class="pricing-segmented-control" id="pricingModes">
-          <label class="segmented-pill premium">
-            <input type="radio" name="pricingMode" value="PREMIUM">
-            <span>Premium</span>
-          </label>
-          <label class="segmented-pill middle">
-            <input type="radio" name="pricingMode" value="MIDDLE" checked>
-            <span>Middle / Standard</span>
-          </label>
-          <label class="segmented-pill economy">
-            <input type="radio" name="pricingMode" value="ECONOMY">
-            <span>Economy</span>
-          </label>
+          <th:block th:if="${pricingModes != null}">
+            <label th:each="mode, iterStat : ${pricingModes}"
+                   th:class="'segmented-pill ' + ${#strings.toLowerCase(mode.name())}">
+              <input type="radio" name="pricingMode" 
+                     th:value="${mode.name()}"
+                     th:checked="${(targetGrade != null and targetGrade != '' and targetGrade == mode.name()) or ((targetGrade == null or targetGrade == '') and iterStat.first)}">
+              <span th:text="${mode.name() == 'PREMIUM' ? 'Premium' : (mode.name() == 'MIDDLE' ? 'Middle / Standard' : (mode.name() == 'ECONOMY' ? 'Economy' : mode.name()))}">Premium</span>
+            </label>
+          </th:block>
+          <th:block th:if="${pricingModes == null}">
+            <label class="segmented-pill premium">
+              <input type="radio" name="pricingMode" value="PREMIUM" checked>
+              <span>Premium</span>
+            </label>
+            <label class="segmented-pill middle">
+              <input type="radio" name="pricingMode" value="MIDDLE">
+              <span>Middle / Standard</span>
+            </label>
+            <label class="segmented-pill economy">
+              <input type="radio" name="pricingMode" value="ECONOMY">
+              <span>Economy</span>
+            </label>
+          </th:block>
         </div>
       </div>
       <div id="pricingMessage" class="inline-message"></div>
@@ -715,9 +726,9 @@
       </div>
       <div id="saveMessage" class="save-message" style="margin-top: 14px; font-weight: 600; color: #024541;"></div>
       <div class="quote-actions-bar">
-        <button type="button" id="saveQuoteBtn" class="btn-save-quote">Save Quote</button>
+        <button type="button" id="saveQuoteBtn" class="btn-save-quote" onclick="saveQuotation(true)">Save Quote</button>
         <button type="button" id="clearQuoteBtn" class="btn-clear-quote">Clear Quote</button>
-        <button id="saveQuotationBtn" type="button" style="display:none;"></button>
+        <button id="saveQuotationBtn" type="button" style="display:none;" onclick="saveQuotation(true)"></button>
       </div>
     </section>
 
@@ -761,6 +772,7 @@
   const csrfToken = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
   const API_BASE = /*[[@{/employee/quotations/builder}]]*/ '/employee/quotations/builder';
   const IS_ADMIN = false;
+  const DRAFT_STORAGE_KEY = 'pravin_employee_quotation_builder_draft';
   const editQuotationId = /*[[${editQuotationId}]]*/ '';
   const serverParentId = /*[[${parentId}]]*/ '';
   const serverTargetGrade = /*[[${targetGrade}]]*/ '';
@@ -778,6 +790,18 @@
       ? serverTargetGrade.trim().toUpperCase()
       : (paramGrade ? paramGrade.trim().toUpperCase() : null);
 
+  const isCompletelyNewQuotation = !initialQuotationId && !initialParentId && !initialTargetGrade;
+
+  function getFirstConfiguredGrade() {
+      const firstRadio = document.querySelector('#pricingModes input[name="pricingMode"]');
+      if (firstRadio && firstRadio.value) {
+          return firstRadio.value;
+      }
+      return 'PREMIUM';
+  }
+
+  const defaultGrade = isCompletelyNewQuotation ? getFirstConfiguredGrade() : (initialTargetGrade || getFirstConfiguredGrade());
+
   const state = {
       quotationId: initialQuotationId,
       parentId: initialParentId,
@@ -787,10 +811,59 @@
       notes: '',
       rooms: [],
       draft: null,
-      pricingMode: initialTargetGrade || 'MIDDLE',
+      pricingMode: defaultGrade,
       isSaving: false,
       isRestoring: false
   };
+
+  function initInitialGrade(force = false) {
+      if (!force && !isCompletelyNewQuotation) return;
+      const radios = Array.from(document.querySelectorAll('#pricingModes input[name="pricingMode"]'));
+      if (radios.length === 0) return;
+      const firstRadio = radios[0];
+      radios.forEach((r, idx) => {
+          r.checked = (idx === 0);
+      });
+      state.pricingMode = firstRadio.value;
+  }
+
+  function getDraftStorageKey(grade = (state.pricingMode || state.targetGrade), parentId = state.parentId, quotationId = state.quotationId) {
+      const prefix = DRAFT_STORAGE_KEY;
+      if (parentId && grade) {
+          return `${prefix}_p${parentId}_${grade}`;
+      }
+      if (quotationId && grade) {
+          return `${prefix}_q${quotationId}_${grade}`;
+      }
+      if (grade) {
+          return `${prefix}_${grade}`;
+      }
+      return prefix;
+  }
+
+  function clearAllDrafts() {
+      try {
+          sessionStorage.removeItem(DRAFT_STORAGE_KEY);
+          sessionStorage.removeItem('pravin_quotation_builder_draft');
+          if (typeof getDraftStorageKey === 'function') {
+              sessionStorage.removeItem(getDraftStorageKey());
+          }
+          for (let i = sessionStorage.length - 1; i >= 0; i--) {
+              const k = sessionStorage.key(i);
+              if (k && (k.startsWith(DRAFT_STORAGE_KEY) || k.startsWith('pravin_quotation_builder_draft'))) {
+                  if (state.parentId && k.includes(`_p${state.parentId}_`)) {
+                      sessionStorage.removeItem(k);
+                  } else if (state.quotationId && k.includes(`_q${state.quotationId}_`)) {
+                      sessionStorage.removeItem(k);
+                  } else if (!state.parentId && !state.quotationId) {
+                      sessionStorage.removeItem(k);
+                  }
+              }
+          }
+      } catch (e) {
+          console.warn("Could not clear sessionStorage draft", e);
+      }
+  }
 
   let autoSaveTimer = null;
   let isAutoSaving = false;
@@ -860,7 +933,7 @@
       setAutoSaveStatus('saving', 'Saving...');
 
       const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
-      const pricingModeVal = pricingModeEl ? pricingModeEl.value : (state.pricingMode || 'MIDDLE');
+      const pricingModeVal = pricingModeEl ? pricingModeEl.value : (state.pricingMode || getFirstConfiguredGrade());
 
       const activeCatBtn = document.querySelector('.category-choice.selected-category');
       const activeCatId = activeCatBtn ? Number(activeCatBtn.dataset.id) : null;
@@ -954,6 +1027,9 @@
           const resData = await response.json();
           if (resData && resData.quotationId) {
               state.quotationId = Number(resData.quotationId);
+              if (resData.parentId) {
+                  state.parentId = Number(resData.parentId);
+              }
               if (resData.quotationNumber && $('quoteNumberPreview')) {
                   $('quoteNumberPreview').textContent = resData.quotationNumber;
               }
@@ -961,10 +1037,16 @@
                   const url = new URL(window.location.href);
                   if (url.searchParams.get('quotationId') !== String(resData.quotationId)) {
                       url.searchParams.set('quotationId', resData.quotationId);
-                      window.history.replaceState({ quotationId: resData.quotationId }, '', url.toString());
                   }
+                  if (resData.parentId && url.searchParams.get('parentId') !== String(resData.parentId)) {
+                      url.searchParams.set('parentId', resData.parentId);
+                  }
+                  window.history.replaceState({ quotationId: resData.quotationId, parentId: resData.parentId }, '', url.toString());
               } catch (e) {
                   console.warn("Could not replaceState URL", e);
+              }
+              if (typeof updateMultiGradeBanner === 'function') {
+                  updateMultiGradeBanner(resData.quotationNumber);
               }
           }
           setAutoSaveStatus('saved', 'All changes saved');
@@ -2579,125 +2661,336 @@
       if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
   }
 
-  async function saveQuotation(redirectOnSuccess = true) {
-      if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
-      if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
-      if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
+  function saveQuotationBuilderDraft(divisionId, divisionName, categoryId, categoryName) {
+      const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
+      const draft = {
+          quotationId: state.quotationId,
+          parentId: state.parentId,
+          targetGrade: state.targetGrade,
+          selectedCustomerId: state.selectedCustomerId,
+          customerName: $('customerName') ? $('customerName').value : '',
+          customerPhone: $('customerPhone') ? $('customerPhone').value : '',
+          customerEmail: $('customerEmail') ? $('customerEmail').value : '',
+          customerAddress: $('customerAddress') ? $('customerAddress').value : '',
+          quotationDate: $('quotationDate') ? $('quotationDate').value : '',
+          validUntilDate: $('validUntilDate') ? $('validUntilDate').value : '',
+          validUntilManuallyChanged: typeof validUntilManuallyChanged !== 'undefined' ? validUntilManuallyChanged : false,
+          branchId: $('branchId') ? $('branchId').value : '',
+          pricingMode: pricingModeEl ? pricingModeEl.value : state.pricingMode,
+          notes: $('quoteNotes') ? $('quoteNotes').value : (state.notes || ''),
+          customerRequirements: state.customerRequirements || '',
+          floor: $('floor') ? $('floor').value : 'Ground Floor',
+          roomNumber: $('roomNumber') ? $('roomNumber').value : 'Kitchen',
+          workDescription: $('workDescription') ? $('workDescription').value : '',
+          discountPercentage: $('discountPercentage') ? $('discountPercentage').value : '',
+          discountAmount: $('discountAmount') ? $('discountAmount').value : '',
+          otherChargesDescription: $('otherChargesDescription') ? $('otherChargesDescription').value : '',
+          otherCharges: $('otherCharges') ? $('otherCharges').value : '',
+          gstPercentage: $('gstPercentage') ? $('gstPercentage').value : '',
+          accessoriesAmount: $('accessoriesAmount') ? $('accessoriesAmount').value : '',
+          travelCharge: $('travelCharge') ? $('travelCharge').value : '',
+          offerPercentage: $('offerPercentage') ? $('offerPercentage').value : '',
+          showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
+          rooms: JSON.parse(JSON.stringify(state.rooms || [])),
+          activeCategoryId: categoryId || null,
+          activeCategoryName: categoryName || null,
+          activeWorkTypeId: divisionId || null,
+          activeWorkTypeName: divisionName || null,
+          savedAt: Date.now()
+      };
+      try {
+          const specificKey = getDraftStorageKey(draft.pricingMode, draft.parentId, draft.quotationId);
+          sessionStorage.setItem(specificKey, JSON.stringify(draft));
+          sessionStorage.setItem(DRAFT_STORAGE_KEY, JSON.stringify(draft));
+      } catch (e) {
+          console.warn("Could not save draft to sessionStorage", e);
+      }
+      return draft;
+  }
 
-      const name = $('customerName').value.trim();
-      const phone = $('customerPhone').value.trim();
-      let branchId = Number($('branchId').value || 0);
-      if (!branchId && $('branchId').dataset && $('branchId').dataset.employeeBranch) {
-          branchId = Number($('branchId').dataset.employeeBranch);
+  async function restoreQuotationBuilderDraftIfPresent() {
+      let draftJson = null;
+      const specificKey = getDraftStorageKey();
+      try {
+          draftJson = sessionStorage.getItem(specificKey) || sessionStorage.getItem(DRAFT_STORAGE_KEY);
+      } catch (e) {
+          console.warn("Could not read draft from sessionStorage", e);
       }
-      const qdVal = $('quotationDate') ? $('quotationDate').value : '';
-      const vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
+      if (!draftJson) return false;
 
-      if (!name || !phone || !branchId || !qdVal) {
-          alert('Customer Name, Phone, Branch and Date are required.');
-          return null;
-      }
-      if (!vuVal) {
-          alert('Valid Until date is required.');
-          return null;
-      }
-      if (qdVal && vuVal < qdVal) {
-          alert('Valid Until date cannot be earlier than Quotation Date.');
-          return null;
-      }
-      if (!state.rooms.some(r => r.items && r.items.length > 0)) {
-          alert('Add at least one item to the quotation.');
-          return null;
+      let draft = null;
+      try {
+          draft = JSON.parse(draftJson);
+      } catch (e) {
+          clearAllDrafts();
+          return false;
       }
 
-      const hasUnavailableRates = state.rooms.some(r => (r.items || []).some(i => {
-          return (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)) || Number(i.rate) <= 0);
-      }));
-      if (hasUnavailableRates) {
-          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle'); alert(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
-          return null;
+      if (!draft) return false;
+
+      // If draft is for a specific quotation ID or parent ID, do not restore onto a different quotation
+      if (draft.quotationId != null && (state.quotationId == null || Number(draft.quotationId) !== Number(state.quotationId))) {
+          clearAllDrafts();
+          return false;
+      }
+      if (draft.parentId != null && (state.parentId == null || Number(draft.parentId) !== Number(state.parentId))) {
+          clearAllDrafts();
+          return false;
+      }
+      if (draft.pricingMode && state.targetGrade && draft.pricingMode !== state.targetGrade) {
+          clearAllDrafts();
+          return false;
       }
 
-      const otherAmt = Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0));
-      let otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
-      if (otherDesc) {
-          const firstIdx = otherDesc.search(/\S/);
-          if (firstIdx !== -1) {
-              otherDesc = otherDesc.substring(0, firstIdx) + otherDesc.charAt(firstIdx).toUpperCase() + otherDesc.substring(firstIdx + 1);
+      // Check URL for saved material params
+      const hasSavedReturn = urlParams.get('savedMaterialId') || urlParams.get('savedWorkTypeId');
+      if (isCompletelyNewQuotation && !hasSavedReturn) {
+          // Genuinely new quotation: do not let old stale browser session/localStorage draft override defaults!
+          clearAllDrafts();
+          return false;
+      }
+
+      clearAllDrafts();
+
+      if ($('customerName') && draft.customerName) $('customerName').value = draft.customerName;
+      if ($('customerPhone') && draft.customerPhone) $('customerPhone').value = draft.customerPhone;
+      if ($('customerEmail') && draft.customerEmail) $('customerEmail').value = draft.customerEmail;
+      if ($('customerAddress') && draft.customerAddress) $('customerAddress').value = draft.customerAddress;
+      if (draft.selectedCustomerId) state.selectedCustomerId = draft.selectedCustomerId;
+
+      if ($('quotationDate') && draft.quotationDate) $('quotationDate').value = draft.quotationDate;
+      if ($('validUntilDate') && draft.validUntilDate) {
+          if (draft.validUntilManuallyChanged) validUntilManuallyChanged = true;
+          $('validUntilDate').value = draft.validUntilDate;
+      }
+      if ($('branchId') && draft.branchId) $('branchId').value = draft.branchId;
+
+      if (draft.pricingMode) {
+          const r = document.querySelector(`input[name="pricingMode"][value="${draft.pricingMode}"]`);
+          if (r) {
+              r.checked = true;
+              state.pricingMode = draft.pricingMode;
           }
       }
-      if (otherAmt > 0 && !otherDesc) {
-          alert('Please enter a description for Other Charges explaining the purpose of the charge.');
-          if ($('otherChargesDescription')) $('otherChargesDescription').focus();
+
+      if (draft.notes) {
+          state.notes = draft.notes;
+          if ($('quoteNotes')) $('quoteNotes').value = draft.notes;
+      }
+      if (draft.customerRequirements) state.customerRequirements = draft.customerRequirements;
+
+      if ($('floor') && draft.floor) $('floor').value = draft.floor;
+      if ($('roomNumber') && draft.roomNumber) $('roomNumber').value = draft.roomNumber;
+      if ($('workDescription') && draft.workDescription) $('workDescription').value = draft.workDescription;
+
+      if ($('discountPercentage') && draft.discountPercentage) $('discountPercentage').value = draft.discountPercentage;
+      if ($('discountAmount') && draft.discountAmount !== undefined && draft.discountAmount !== null) $('discountAmount').value = formatIndianNumber(draft.discountAmount, 2);
+      if ($('otherChargesDescription') && draft.otherChargesDescription) $('otherChargesDescription').value = draft.otherChargesDescription;
+      if ($('otherCharges') && draft.otherCharges !== undefined && draft.otherCharges !== null) $('otherCharges').value = formatIndianNumber(draft.otherCharges, 2);
+      if ($('gstPercentage') && draft.gstPercentage) $('gstPercentage').value = draft.gstPercentage;
+      if ($('accessoriesAmount') && draft.accessoriesAmount !== undefined && draft.accessoriesAmount !== null) $('accessoriesAmount').value = formatIndianNumber(draft.accessoriesAmount, 2);
+      if ($('travelCharge') && draft.travelCharge !== undefined && draft.travelCharge !== null) $('travelCharge').value = formatIndianNumber(draft.travelCharge, 2);
+      if ($('offerPercentage') && draft.offerPercentage) $('offerPercentage').value = draft.offerPercentage;
+
+      if (draft.showSqftSize !== undefined) {
+          showSqftSize = draft.showSqftSize;
+          if ($('toggleSqftSize')) $('toggleSqftSize').checked = showSqftSize;
+          const thElements = document.querySelectorAll('th.col-toggleable');
+          thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+      }
+
+      if (draft.rooms && Array.isArray(draft.rooms) && draft.rooms.length > 0) {
+          state.rooms = draft.rooms;
+          renderRoomPills();
+          renderQuoteSummary();
+          renderPaymentTerms();
+      }
+
+      const targetCatId = draft.activeCategoryId;
+      const targetCatName = draft.activeCategoryName;
+      const targetWtId = draft.activeWorkTypeId;
+      const targetWtName = draft.activeWorkTypeName;
+
+      if (targetCatId) {
+          await loadDivisions(targetCatId, targetCatName || '');
+          if (targetWtId) {
+              await toggleWorkTypeCard(targetWtId, targetWtName || '', targetCatId, targetCatName || '');
+          }
+      }
+      return true;
+  }
+
+  async function saveQuotation(redirectOnSuccess = true) {
+      console.log('saveQuotation() invoked', { isSaving: state.isSaving, isAutoSaving, pricingMode: state.pricingMode });
+      const button = $('saveQuoteBtn') || $('saveQuotationBtn');
+      if (state.isSaving) {
+          console.warn('saveQuotation() already in progress, ignoring duplicate click');
           return null;
       }
 
-      const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
+      function handleSaveError(errMsg) {
+          state.isSaving = false;
+          if (button) {
+              button.disabled = false;
+              button.textContent = 'Save Quote';
+          }
+          if ($('saveMessage')) {
+              $('saveMessage').style.color = '#dc2626';
+              $('saveMessage').textContent = errMsg;
+          }
+          const clientBanner = $('clientErrorBanner');
+          if (clientBanner) {
+              clientBanner.textContent = errMsg;
+              clientBanner.style.display = 'block';
+              clientBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }
+          setTimeout(() => {
+              alert(errMsg);
+          }, 50);
+          return null;
+      }
 
-      const payload = {
-          quotationId: state.quotationId,
-          parentId: state.parentId || null,
-          customer: {
-              id: state.selectedCustomerId || null,
-              name,
-              phone,
-              email: $('customerEmail') ? $('customerEmail').value.trim() : '',
-              address: $('customerAddress') ? $('customerAddress').value.trim() : ''
-          },
-          branchId,
-          quotationDate: qdVal,
-          validUntil: vuVal,
-          pricingMode: state.pricingMode,
-          customerRequirements: state.customerRequirements || '',
-          notes: notesVal,
-          accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
-          travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
-          otherCharges: otherAmt,
-          otherChargesDescription: otherDesc,
-          discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
-          gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
-          offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
-          showSqftSize: showSqftSize,
-          rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
-              floor: r.floor,
-              room: r.room,
-              workDescription: r.workDescription || '',
-              items: r.items.map(i => ({
-                  workCategoryId: i.categoryId,
-                  divisionId: i.divisionId,
-                  itemId: i.itemId,
-                  materialId: i.materialId,
-                  materialOptionId: i.materialOptionId,
-                  materialSpecificationId: i.materialSpecificationId,
-                  itemDescription: i.itemDescription || '',
-                  specification: i.specification || '',
-                  rate: i.rate != null ? Number(i.rate) : null,
-                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
-                  coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
-                  quantity: i.quantity != null ? Number(i.quantity) : 1,
-                  imageUrl: i.imageUrl || null,
-                  sizes: (i.sizes || []).map(s => ({
-                      length: s.length,
-                      width: s.width,
-                      height: s.height,
-                      offerPrice: s.offerPrice
-                  }))
-              }))
-          }))
-      };
-
-      if (state.isSaving) return null;
-      const button = $('saveQuoteBtn') || $('saveQuotationBtn');
       state.isSaving = true;
       if (button) {
           button.disabled = true;
           button.textContent = 'Saving Quote...';
       }
-      if ($('saveMessage')) $('saveMessage').textContent = 'Saving customer, rooms, items and pricing...';
+      if ($('saveMessage')) {
+          $('saveMessage').style.color = '#024541';
+          $('saveMessage').textContent = 'Validating quotation details...';
+      }
       const clientBanner = $('clientErrorBanner');
       if (clientBanner) clientBanner.style.display = 'none';
 
       try {
+          if ($('customerName')) $('customerName').value = toTitleCase($('customerName').value.trim());
+          if ($('customerAddress')) $('customerAddress').value = toTitleCase($('customerAddress').value.trim());
+          if ($('customerEmail') && $('customerEmail').value) $('customerEmail').value = $('customerEmail').value.trim().toLowerCase();
+
+          const name = $('customerName') ? $('customerName').value.trim() : '';
+          const phone = $('customerPhone') ? $('customerPhone').value.trim() : '';
+          let branchId = Number($('branchId') ? $('branchId').value : 0);
+          if (!branchId && $('branchId') && $('branchId').dataset && $('branchId').dataset.employeeBranch) {
+              branchId = Number($('branchId').dataset.employeeBranch);
+          }
+          const qdVal = $('quotationDate') ? $('quotationDate').value : '';
+          let vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
+
+          if (!name || !phone || !branchId || !qdVal) {
+              return handleSaveError('Customer Name, Phone, Branch and Date are required.');
+          }
+          if (!vuVal && qdVal) {
+              const d = new Date(qdVal);
+              d.setDate(d.getDate() + 15);
+              const y = d.getFullYear();
+              const m = String(d.getMonth() + 1).padStart(2, '0');
+              const day = String(d.getDate()).padStart(2, '0');
+              vuVal = `${y}-${m}-${day}`;
+              if ($('validUntilDate')) $('validUntilDate').value = vuVal;
+          }
+          if (qdVal && vuVal && vuVal < qdVal) {
+              return handleSaveError('Valid Until date cannot be earlier than Quotation Date.');
+          }
+          if (!state.rooms || !state.rooms.some(r => r.items && r.items.length > 0)) {
+              return handleSaveError('Add at least one item to the quotation.');
+          }
+
+          const hasUnavailableRates = state.rooms.some(r => (r.items || []).some(i => {
+              return (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)) || Number(i.rate) <= 0);
+          }));
+          if (hasUnavailableRates) {
+              const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+              return handleSaveError(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
+          }
+
+          const otherAmt = Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0));
+          let otherDesc = ($('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '');
+          if (otherDesc) {
+              const firstIdx = otherDesc.search(/\S/);
+              if (firstIdx !== -1) {
+                  otherDesc = otherDesc.substring(0, firstIdx) + otherDesc.charAt(firstIdx).toUpperCase() + otherDesc.substring(firstIdx + 1);
+              }
+          }
+          if (otherAmt > 0 && !otherDesc) {
+              if ($('otherChargesDescription')) $('otherChargesDescription').focus();
+              return handleSaveError('Please enter a description for Other Charges explaining the purpose of the charge.');
+          }
+
+          // Await any in-flight auto-save gracefully
+          let waitCount = 0;
+          while (isAutoSaving && waitCount < 10) {
+              await new Promise(r => setTimeout(r, 100));
+              waitCount++;
+          }
+          if (autoSaveTimer) {
+              clearTimeout(autoSaveTimer);
+              autoSaveTimer = null;
+          }
+          pendingAutoSave = false;
+
+          const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
+          const currentPricingMode = pricingModeEl ? pricingModeEl.value : (state.pricingMode || getFirstConfiguredGrade());
+          state.pricingMode = currentPricingMode;
+
+          const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
+
+          const payload = {
+              quotationId: state.quotationId,
+              parentId: state.parentId || null,
+              customer: {
+                  id: state.selectedCustomerId || null,
+                  name,
+                  phone,
+                  email: $('customerEmail') ? $('customerEmail').value.trim() : '',
+                  address: $('customerAddress') ? $('customerAddress').value.trim() : ''
+              },
+              branchId,
+              quotationDate: qdVal,
+              validUntil: vuVal,
+              pricingMode: state.pricingMode,
+              customerRequirements: state.customerRequirements || '',
+              notes: notesVal,
+              accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
+              travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
+              otherCharges: otherAmt,
+              otherChargesDescription: otherDesc,
+              discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
+              gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
+              offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
+              showSqftSize: showSqftSize,
+              rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
+                  floor: r.floor,
+                  room: r.room,
+                  workDescription: r.workDescription || '',
+                  items: r.items.map(i => ({
+                      workCategoryId: i.categoryId,
+                      divisionId: i.divisionId,
+                      itemId: i.itemId,
+                      materialId: i.materialId,
+                      materialOptionId: i.materialOptionId,
+                      materialSpecificationId: i.materialSpecificationId,
+                      itemDescription: i.itemDescription || '',
+                      specification: i.specification || '',
+                      rate: i.rate != null ? Number(i.rate) : null,
+                      measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                      coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
+                      quantity: i.quantity != null ? Number(i.quantity) : 1,
+                      imageUrl: i.imageUrl || null,
+                      sizes: (i.sizes || []).map(s => ({
+                          length: s.length,
+                          width: s.width,
+                          height: s.height,
+                          offerPrice: s.offerPrice
+                      }))
+                  }))
+              }))
+          };
+
+          if ($('saveMessage')) {
+              $('saveMessage').style.color = '#024541';
+              $('saveMessage').textContent = 'Saving quotation to database...';
+          }
+
           const response = await fetch(`${API_BASE}/save`, {
               method: 'POST',
               headers: {
@@ -2709,23 +3002,36 @@
           });
 
           const contentType = response.headers.get('content-type') || '';
+          let data = null;
           if (contentType.includes('application/json')) {
-              const data = await response.json();
-              if (response.ok && data.success && data.redirectUrl) {
-                  if (redirectOnSuccess) {
-                      window.location.href = data.redirectUrl;
-                      return null;
-                  } else {
-                      const parts = data.redirectUrl.split('/');
-                      return parts[parts.length - 1];
-                  }
-              } else if (!response.ok || !data.success) {
-                  throw new Error(data.message || 'Unable to save quotation.');
+              data = await response.json();
+          } else {
+              const text = await response.text();
+              try { data = JSON.parse(text); } catch (_) {}
+          }
+
+          if (response.ok && (!data || data.success !== false)) {
+              clearAllDrafts();
+              const redirectUrl = (data && data.redirectUrl) || '/employee/quotations';
+              const savedId = (data && data.quotationId) ? data.quotationId : null;
+              if ($('saveMessage')) {
+                  $('saveMessage').style.color = '#10b981';
+                  $('saveMessage').textContent = 'Quotation saved successfully! Redirecting...';
               }
+              if (button) {
+                  button.disabled = false;
+                  button.textContent = 'Saved!';
+              }
+              if (redirectOnSuccess) {
+                  window.location.href = redirectUrl;
+                  return null;
+              }
+              return savedId;
           }
 
           if (response.redirected) {
               if (response.url && !response.url.includes('/builder')) {
+                  clearAllDrafts();
                   if (redirectOnSuccess) {
                       window.location.href = response.url;
                       return null;
@@ -2738,27 +3044,15 @@
               }
           }
 
-          if (!response.ok) {
-              const text = await response.text();
-              throw new Error(text || 'Unable to save quotation.');
-          }
-
-          if (redirectOnSuccess) {
-              window.location.href = '/employee/quotations';
-              return null;
-          }
+          const errMsg = (data && data.message) ? data.message : 'Unable to save quotation.';
+          throw new Error(errMsg);
       } catch (e) {
-          if ($('saveMessage')) $('saveMessage').textContent = e.message;
-          if (clientBanner) {
-              clientBanner.textContent = e.message;
-              clientBanner.style.display = 'block';
-              clientBanner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-          alert('Error saving quotation: ' + e.message);
-          return null;
+          console.error('Error saving quotation:', e);
+          const errMsg = e.message || 'Error saving quotation. Please try again.';
+          return handleSaveError(errMsg);
       } finally {
           state.isSaving = false;
-          if (button) {
+          if (button && button.textContent === 'Saving Quote...') {
               button.disabled = false;
               button.textContent = 'Save Quote';
           }
@@ -2767,6 +3061,7 @@
 
   function clearQuote() {
       if (confirm('Are you sure you want to clear all items in this quotation?')) {
+          clearAllDrafts();
           state.rooms = [];
           state.draft = null;
           if ($('quoteNotes')) $('quoteNotes').value = '';
@@ -2940,6 +3235,7 @@
   });
   if ($('saveQuotationBtn')) $('saveQuotationBtn').addEventListener('click', () => saveQuotation(true));
   if ($('saveQuoteBtn')) $('saveQuoteBtn').addEventListener('click', () => saveQuotation(true));
+  window.saveQuotation = saveQuotation;
   if ($('clearQuoteBtn')) $('clearQuoteBtn').addEventListener('click', clearQuote);
   if ($('toggleSqftSize')) {
       $('toggleSqftSize').addEventListener('change', e => {
@@ -2992,19 +3288,33 @@
       }
   }
 
-  // Auto-select initial category (matches Screenshot 1 where MODULAR KITCHEN or first category is active)
-  function initInitialCategory() {
-      if (state.quotationId) return; // If editing quotation, let load data handle it
+  // Auto-select initial category: dynamically select the first displayed category in its configured order
+  function initInitialCategory(force = false) {
+      if (!force) {
+          if (state.quotationId) return; // If editing quotation, let loadQuotationData handle it
+          if (document.querySelector('.category-choice.selected-category')) return; // Already selected
+          const hasSavedReturn = urlParams.get('savedMaterialId') || urlParams.get('savedWorkTypeId');
+          if (hasSavedReturn && (sessionStorage.getItem(getDraftStorageKey ? getDraftStorageKey() : DRAFT_STORAGE_KEY) || sessionStorage.getItem(DRAFT_STORAGE_KEY))) {
+              return; // Let restore draft handle it
+          }
+      }
       const catButtons = Array.from(document.querySelectorAll('.category-choice'));
       if (catButtons.length === 0) return;
-      let target = catButtons.find(b => (b.dataset.name || '').toUpperCase().includes('MODULAR KITCHEN'))
-                || catButtons.find(b => (b.dataset.name || '').toUpperCase().includes('KITCHEN'))
-                || catButtons[0];
+      const target = catButtons[0];
       if (target) {
           loadDivisions(Number(target.dataset.id), target.dataset.name);
       }
   }
-  setTimeout(initInitialCategory, 80);
+  if (isCompletelyNewQuotation) {
+      initInitialGrade();
+      initInitialCategory();
+  }
+  setTimeout(() => {
+      if (isCompletelyNewQuotation) {
+          initInitialGrade();
+          initInitialCategory();
+      }
+  }, 80);
 
   if ($('quoteNumberPreview')) $('quoteNumberPreview').textContent = 'AUTO';
   addSizeRow();
@@ -3051,7 +3361,7 @@
       if (!banner) return;
       banner.style.display = 'flex';
       if ($('mgBannerParentNo')) $('mgBannerParentNo').textContent = quoteNo || (state.parentId ? 'Parent #' + state.parentId : '');
-      const grade = state.pricingMode || state.targetGrade || 'MIDDLE';
+      const grade = state.pricingMode || state.targetGrade || getFirstConfiguredGrade();
       if ($('mgBannerActiveGrade')) $('mgBannerActiveGrade').textContent = grade;
 
       const pId = state.parentId || state.quotationId;
@@ -3315,8 +3625,17 @@
       loadQuotationData(state.quotationId);
   } else if (state.parentId) {
       loadQuotationData(state.parentId);
-  } else if (sessionStorage.getItem(DRAFT_STORAGE_KEY)) {
+  } else if (!isCompletelyNewQuotation && (sessionStorage.getItem(getDraftStorageKey ? getDraftStorageKey() : DRAFT_STORAGE_KEY) || sessionStorage.getItem(DRAFT_STORAGE_KEY))) {
       setTimeout(restoreQuotationBuilderDraftIfPresent, 60);
+  } else if (isCompletelyNewQuotation) {
+      const hasSavedReturn = urlParams.get('savedMaterialId') || urlParams.get('savedWorkTypeId');
+      if (hasSavedReturn && (sessionStorage.getItem(getDraftStorageKey ? getDraftStorageKey() : DRAFT_STORAGE_KEY) || sessionStorage.getItem(DRAFT_STORAGE_KEY))) {
+          setTimeout(restoreQuotationBuilderDraftIfPresent, 60);
+      } else {
+          clearAllDrafts();
+          initInitialGrade();
+          initInitialCategory();
+      }
   }
 </script>
 <script th:src="@{/js/employee-session.js}"></script>

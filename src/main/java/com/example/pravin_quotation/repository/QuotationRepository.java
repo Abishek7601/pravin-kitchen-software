@@ -26,6 +26,8 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     boolean existsByParentIdAndPricingMode(Long parentId, PricingMode pricingMode);
 
+    boolean existsByParentId(Long parentId);
+
     // Queries scoped to parent quotations (and legacy single-grade quotations)
     List<Quotation> findByParentIsNullOrderByCreatedAtDesc();
 

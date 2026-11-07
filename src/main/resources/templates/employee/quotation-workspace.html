@@ -264,21 +264,60 @@
                             <span th:unless="${premiumGrade != null}" style="color: #94a3b8; font-size: 1.25rem;">—</span>
                         </div>
                         <div class="grade-card-meta" th:if="${premiumGrade != null}">
-                            <span>Rooms: <strong th:text="${gradeRooms['PREMIUM'] != null ? #lists.size(gradeRooms['PREMIUM']) : 0}">0</strong></span>
-                            <span>Status: <strong th:text="${premiumGrade.status}">WORKING</strong></span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <span>Rooms: <strong th:text="${gradeRooms['PREMIUM'] != null ? #lists.size(gradeRooms['PREMIUM']) : 0}">0</strong></span>
+                                <span>Status: 
+                                    <strong th:if="${premiumGrade.status.name() == 'SENT'}" style="color: #10b981; font-weight: 700;">● SENT</strong>
+                                    <strong th:if="${premiumGrade.status.name() == 'WORKING'}" style="color: #0284c7; font-weight: 700;">● WORKING</strong>
+                                    <strong th:if="${premiumGrade.status.name() == 'PENDING'}" style="color: #f59e0b; font-weight: 700;">● PENDING</strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="grade-card-actions">
                         <th:block th:if="${premiumGrade != null}">
                             <form th:if="${quotation.selectedGrade == null or quotation.selectedGrade.name() != 'PREMIUM'}"
                                   th:action="@{/employee/quotations/{id}/confirm-grade(id=${quotation.id})}"
-                                  method="post" style="width: 100%;">
+                                  method="post" style="width: 100%; margin: 0;">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                 <input type="hidden" name="grade" value="PREMIUM">
                                 <button type="submit" class="btn-confirm-grade">✓ Confirm This Grade</button>
                             </form>
-                            <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='PREMIUM')}" class="btn-grade-edit">✏ Edit Premium</a>
-                            <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='PREMIUM')}" class="btn-grade-pdf">↓ PDF</a>
+                            <div th:if="${quotation.selectedGrade != null and quotation.selectedGrade.name() == 'PREMIUM'}"
+                                 class="btn-grade-confirmed-pill">
+                                ✓ Customer Selected Grade
+                            </div>
+                            <div class="grade-actions-grid">
+                                <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id}, grade='PREMIUM') + '#pane-PREMIUM'}"
+                                   class="btn-grade-view"
+                                   onclick="switchGradeBreakdown('PREMIUM'); document.querySelector('.quotation-work-section').scrollIntoView({behavior: 'smooth'}); return false;"
+                                   title="View Premium Quotation Details">👁 View</a>
+                                <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='PREMIUM')}"
+                                   class="btn-grade-edit"
+                                   title="Edit Premium Quotation">✏ Edit</a>
+                                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='PREMIUM')}"
+                                   target="_blank"
+                                   class="btn-grade-pdf"
+                                   title="Download Premium PDF">↓ PDF</a>
+                                <button type="button"
+                                        class="btn-grade-whatsapp"
+                                        th:data-id="${quotation.id}"
+                                        th:data-number="${quotation.quotationNumber}"
+                                        th:data-name="${quotation.customer != null ? quotation.customer.name : ''}"
+                                        data-grade="PREMIUM"
+                                        onclick="openWhatsAppEmployee(this)"
+                                        title="Share Premium PDF via WhatsApp">💬 WhatsApp</button>
+                                <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
+                                      method="post"
+                                      style="display: contents;">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" name="grade" value="PREMIUM">
+                                    <button type="submit"
+                                            class="btn-grade-email"
+                                            title="Email Premium Quotation PDF to customer"
+                                            onclick="return confirm('Send Premium Grade Quotation PDF to customer via email?');">📧 Email</button>
+                                </form>
+                            </div>
                         </th:block>
                         <th:block th:unless="${premiumGrade != null}">
                             <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='PREMIUM')}" class="btn-grade-prepare">+ Prepare Premium Quotation</a>
@@ -303,21 +342,60 @@
                             <span th:unless="${middleGrade != null}" style="color: #94a3b8; font-size: 1.25rem;">—</span>
                         </div>
                         <div class="grade-card-meta" th:if="${middleGrade != null}">
-                            <span>Rooms: <strong th:text="${gradeRooms['MIDDLE'] != null ? #lists.size(gradeRooms['MIDDLE']) : 0}">0</strong></span>
-                            <span>Status: <strong th:text="${middleGrade.status}">WORKING</strong></span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <span>Rooms: <strong th:text="${gradeRooms['MIDDLE'] != null ? #lists.size(gradeRooms['MIDDLE']) : 0}">0</strong></span>
+                                <span>Status: 
+                                    <strong th:if="${middleGrade.status.name() == 'SENT'}" style="color: #10b981; font-weight: 700;">● SENT</strong>
+                                    <strong th:if="${middleGrade.status.name() == 'WORKING'}" style="color: #0284c7; font-weight: 700;">● WORKING</strong>
+                                    <strong th:if="${middleGrade.status.name() == 'PENDING'}" style="color: #f59e0b; font-weight: 700;">● PENDING</strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="grade-card-actions">
                         <th:block th:if="${middleGrade != null}">
                             <form th:if="${quotation.selectedGrade == null or quotation.selectedGrade.name() != 'MIDDLE'}"
                                   th:action="@{/employee/quotations/{id}/confirm-grade(id=${quotation.id})}"
-                                  method="post" style="width: 100%;">
+                                  method="post" style="width: 100%; margin: 0;">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                 <input type="hidden" name="grade" value="MIDDLE">
                                 <button type="submit" class="btn-confirm-grade">✓ Confirm This Grade</button>
                             </form>
-                            <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='MIDDLE')}" class="btn-grade-edit">✏ Edit Middle</a>
-                            <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='MIDDLE')}" class="btn-grade-pdf">↓ PDF</a>
+                            <div th:if="${quotation.selectedGrade != null and quotation.selectedGrade.name() == 'MIDDLE'}"
+                                 class="btn-grade-confirmed-pill">
+                                ✓ Customer Selected Grade
+                            </div>
+                            <div class="grade-actions-grid">
+                                <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id}, grade='MIDDLE') + '#pane-MIDDLE'}"
+                                   class="btn-grade-view"
+                                   onclick="switchGradeBreakdown('MIDDLE'); document.querySelector('.quotation-work-section').scrollIntoView({behavior: 'smooth'}); return false;"
+                                   title="View Middle Quotation Details">👁 View</a>
+                                <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='MIDDLE')}"
+                                   class="btn-grade-edit"
+                                   title="Edit Middle Quotation">✏ Edit</a>
+                                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='MIDDLE')}"
+                                   target="_blank"
+                                   class="btn-grade-pdf"
+                                   title="Download Middle PDF">↓ PDF</a>
+                                <button type="button"
+                                        class="btn-grade-whatsapp"
+                                        th:data-id="${quotation.id}"
+                                        th:data-number="${quotation.quotationNumber}"
+                                        th:data-name="${quotation.customer != null ? quotation.customer.name : ''}"
+                                        data-grade="MIDDLE"
+                                        onclick="openWhatsAppEmployee(this)"
+                                        title="Share Middle PDF via WhatsApp">💬 WhatsApp</button>
+                                <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
+                                      method="post"
+                                      style="display: contents;">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" name="grade" value="MIDDLE">
+                                    <button type="submit"
+                                            class="btn-grade-email"
+                                            title="Email Middle Quotation PDF to customer"
+                                            onclick="return confirm('Send Middle Grade Quotation PDF to customer via email?');">📧 Email</button>
+                                </form>
+                            </div>
                         </th:block>
                         <th:block th:unless="${middleGrade != null}">
                             <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='MIDDLE')}" class="btn-grade-prepare">+ Prepare Middle Quotation</a>
@@ -342,21 +420,60 @@
                             <span th:unless="${economyGrade != null}" style="color: #94a3b8; font-size: 1.25rem;">—</span>
                         </div>
                         <div class="grade-card-meta" th:if="${economyGrade != null}">
-                            <span>Rooms: <strong th:text="${gradeRooms['ECONOMY'] != null ? #lists.size(gradeRooms['ECONOMY']) : 0}">0</strong></span>
-                            <span>Status: <strong th:text="${economyGrade.status}">WORKING</strong></span>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                <span>Rooms: <strong th:text="${gradeRooms['ECONOMY'] != null ? #lists.size(gradeRooms['ECONOMY']) : 0}">0</strong></span>
+                                <span>Status: 
+                                    <strong th:if="${economyGrade.status.name() == 'SENT'}" style="color: #10b981; font-weight: 700;">● SENT</strong>
+                                    <strong th:if="${economyGrade.status.name() == 'WORKING'}" style="color: #0284c7; font-weight: 700;">● WORKING</strong>
+                                    <strong th:if="${economyGrade.status.name() == 'PENDING'}" style="color: #f59e0b; font-weight: 700;">● PENDING</strong>
+                                </span>
+                            </div>
                         </div>
                     </div>
                     <div class="grade-card-actions">
                         <th:block th:if="${economyGrade != null}">
                             <form th:if="${quotation.selectedGrade == null or quotation.selectedGrade.name() != 'ECONOMY'}"
                                   th:action="@{/employee/quotations/{id}/confirm-grade(id=${quotation.id})}"
-                                  method="post" style="width: 100%;">
+                                  method="post" style="width: 100%; margin: 0;">
                                 <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
                                 <input type="hidden" name="grade" value="ECONOMY">
                                 <button type="submit" class="btn-confirm-grade">✓ Confirm This Grade</button>
                             </form>
-                            <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='ECONOMY')}" class="btn-grade-edit">✏ Edit Economy</a>
-                            <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='ECONOMY')}" class="btn-grade-pdf">↓ PDF</a>
+                            <div th:if="${quotation.selectedGrade != null and quotation.selectedGrade.name() == 'ECONOMY'}"
+                                 class="btn-grade-confirmed-pill">
+                                ✓ Customer Selected Grade
+                            </div>
+                            <div class="grade-actions-grid">
+                                <a th:href="@{/employee/quotations/view/{id}(id=${quotation.id}, grade='ECONOMY') + '#pane-ECONOMY'}"
+                                   class="btn-grade-view"
+                                   onclick="switchGradeBreakdown('ECONOMY'); document.querySelector('.quotation-work-section').scrollIntoView({behavior: 'smooth'}); return false;"
+                                   title="View Economy Quotation Details">👁 View</a>
+                                <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='ECONOMY')}"
+                                   class="btn-grade-edit"
+                                   title="Edit Economy Quotation">✏ Edit</a>
+                                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id}, grade='ECONOMY')}"
+                                   target="_blank"
+                                   class="btn-grade-pdf"
+                                   title="Download Economy PDF">↓ PDF</a>
+                                <button type="button"
+                                        class="btn-grade-whatsapp"
+                                        th:data-id="${quotation.id}"
+                                        th:data-number="${quotation.quotationNumber}"
+                                        th:data-name="${quotation.customer != null ? quotation.customer.name : ''}"
+                                        data-grade="ECONOMY"
+                                        onclick="openWhatsAppEmployee(this)"
+                                        title="Share Economy PDF via WhatsApp">💬 WhatsApp</button>
+                                <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
+                                      method="post"
+                                      style="display: contents;">
+                                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
+                                    <input type="hidden" name="grade" value="ECONOMY">
+                                    <button type="submit"
+                                            class="btn-grade-email"
+                                            title="Email Economy Quotation PDF to customer"
+                                            onclick="return confirm('Send Economy Grade Quotation PDF to customer via email?');">📧 Email</button>
+                                </form>
+                            </div>
                         </th:block>
                         <th:block th:unless="${economyGrade != null}">
                             <a th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade='ECONOMY')}" class="btn-grade-prepare">+ Prepare Economy Quotation</a>
@@ -656,142 +773,6 @@
                 </div>
             </section>
 
-            <!-- =====================================================
-                 COMMUNICATION HISTORY
-            ====================================================== -->
-            <section class="history-card communication-history-card">
-                <div class="section-heading">
-                    <div>
-                        <p class="eyebrow">
-                            ACTIVITY
-                        </p>
-                        <h2>
-                            Communication History
-                        </h2>
-                    </div>
-
-                    <span class="history-count"
-                          th:text="${communicationHistory != null ? #lists.size(communicationHistory) : 0}">
-                        0
-                    </span>
-                </div>
-
-                <div th:if="${communicationHistory == null || #lists.isEmpty(communicationHistory)}"
-                     class="empty-history">
-                    <div class="empty-history-icon">
-                        📭
-                    </div>
-                    <h3>
-                        No communication yet
-                    </h3>
-                    <p>
-                        Email, WhatsApp and PDF activities will appear here.
-                    </p>
-                </div>
-
-                <div th:unless="${communicationHistory == null || #lists.isEmpty(communicationHistory)}"
-                     class="communication-list">
-                    <div class="communication-item"
-                         th:each="communication : ${communicationHistory}">
-                        <div class="communication-icon"
-                             th:switch="${communication.type}">
-                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">📧</span>
-                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">💬</span>
-                            <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">📄</span>
-                            <span th:case="*">📌</span>
-                        </div>
-
-                        <div class="communication-content">
-                            <div class="communication-top">
-                                <h3 th:switch="${communication.type}">
-                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).EMAIL}">Email</span>
-                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).WHATSAPP}">WhatsApp</span>
-                                    <span th:case="${T(com.example.pravin_quotation.model.QuotationCommunication.CommunicationType).PDF}">PDF</span>
-                                    <span th:case="*" th:text="${communication.type}"></span>
-                                </h3>
-
-                                <span class="communication-status"
-                                      th:classappend="${communication.status.name() == 'SENT'} ? ' status-success' : ' status-failed'"
-                                      th:text="${communication.status}">
-                                    SENT
-                                </span>
-                            </div>
-
-                            <p class="communication-recipient"
-                               th:if="${communication.recipient != null}"
-                               th:text="${communication.recipient}">
-                                Recipient
-                            </p>
-
-                            <p class="communication-message"
-                               th:if="${communication.message != null}"
-                               th:text="${communication.message}">
-                                Communication details
-                            </p>
-
-                            <p class="communication-date"
-                               th:if="${communication.sentAt != null}"
-                               th:text="${#temporals.format(communication.sentAt, 'dd MMM yyyy, hh:mm a')}">
-                                05 Oct 2026, 04:30 PM
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- =====================================================
-                 BOTTOM ACTIONS
-            ====================================================== -->
-            <section class="bottom-actions">
-                <a th:if="${quotation.isMultiGrade()}"
-                   th:href="@{/employee/quotations/builder(parentId=${quotation.id}, grade=${quotation.selectedGrade != null ? quotation.selectedGrade.name() : (premiumGrade != null ? 'PREMIUM' : (middleGrade != null ? 'MIDDLE' : 'ECONOMY'))})}"
-                   class="btn btn-secondary">
-                    ✏ Edit in Builder
-                </a>
-
-                <a th:unless="${quotation.isMultiGrade()}"
-                   th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
-                   class="btn btn-secondary">
-                    ✏ Edit in Builder
-                </a>
-
-                <a th:href="@{/employee/quotations/pdf/{id}(id=${quotation.id})}"
-                   class="btn btn-success">
-                    ↓ Download PDF
-                </a>
-
-                <button type="button"
-                        class="btn btn-dark"
-                        onclick="window.print()">
-                    🖨 Print
-                </button>
-
-                <a href="#"
-                   class="btn btn-whatsapp"
-                   th:attr="
-                   data-id=${quotation.id},
-                   data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
-                   data-name=${quotation.customer != null ? quotation.customer.name : ''},
-                   data-number=${quotation.quotationNumber},
-                   data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
-                   onclick="openWhatsApp(this); return false;"
-                   title="Send quotation PDF document via WhatsApp">
-                    💬 Send Quotation via WhatsApp
-                </a>
-
-                <form th:action="@{/employee/quotations/email/{id}(id=${quotation.id})}"
-                      method="post"
-                      style="display: inline;">
-                    <input type="hidden"
-                           th:name="${_csrf.parameterName}"
-                           th:value="${_csrf.token}" />
-                    <button type="submit"
-                            class="btn btn-email">
-                        📧 Email Quotation
-                    </button>
-                </form>
-            </section>
-
         </div>
     </main>
 </div>
@@ -946,15 +927,17 @@
         const quotationId = button.dataset.id;
         const quotationNumber = button.dataset.number;
         const name = button.dataset.name;
+        const grade = button.dataset.grade || "";
         const originalHtml = button.innerHTML;
 
         button.dataset.sending = "true";
-        button.innerHTML = "⏳ Preparing PDF...";
+        button.innerHTML = "⏳ Preparing...";
         button.style.pointerEvents = "none";
         button.style.opacity = "0.7";
 
         try {
-            const response = await fetch("/employee/quotations/whatsapp/" + quotationId, {
+            const waEndpoint = "/employee/quotations/whatsapp/" + quotationId + (grade ? "?grade=" + encodeURIComponent(grade) : "");
+            const response = await fetch(waEndpoint, {
                 headers: { "Accept": "application/json" }
             });
 
@@ -964,7 +947,8 @@
                 throw new Error(data.message || "Failed to prepare quotation for WhatsApp sharing.");
             }
 
-            const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + ".pdf";
+            const gradeSuffix = grade ? "-" + grade : "";
+            const fileName = "Quotation-" + (data.quotationNumber || quotationNumber) + gradeSuffix + ".pdf";
 
             // If API provider is configured and accepted delivery (future-ready)
             if (data.method === "API") {
@@ -974,7 +958,7 @@
             }
 
             // Fetch the generated quotation PDF blob from existing download endpoint
-            const pdfEndpoint = "/employee/quotations/pdf/" + quotationId;
+            const pdfEndpoint = "/employee/quotations/pdf/" + quotationId + (grade ? "?grade=" + encodeURIComponent(grade) : "");
             let pdfBlob = null;
             try {
                 const pdfResp = await fetch(pdfEndpoint);
@@ -988,7 +972,8 @@
             // Populate WhatsApp Share Modal details
             document.getElementById("waModalCustName").innerText = data.customerName || name || "Customer";
             document.getElementById("waModalCustPhone").innerText = data.phone ? ("+" + data.phone) : "N/A";
-            document.getElementById("waModalQuotationNo").innerText = data.quotationNumber || quotationNumber || "";
+            const quoteLabel = (data.quotationNumber || quotationNumber) + (grade ? " (" + grade + " Grade)" : "");
+            document.getElementById("waModalQuotationNo").innerText = quoteLabel;
             document.getElementById("waDownloadBtnLabel").innerText = "Download PDF (" + fileName + ")";
             document.getElementById("waInstructionFileName").innerText = fileName;
 
