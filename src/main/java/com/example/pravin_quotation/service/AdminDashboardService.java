@@ -61,7 +61,7 @@ public class AdminDashboardService {
             return 0;
         }
         LocalDate startDate = today.minusYears(1);
-        return quotationRepository.countByQuotationDateBetween(
+        return quotationRepository.countByParentIsNullAndQuotationDateBetween(
                 startDate,
                 today
         );
@@ -76,7 +76,7 @@ public class AdminDashboardService {
             return List.of();
         }
         LocalDate startDate = today.minusYears(1);
-        return quotationRepository.findByQuotationDateBetweenOrderByQuotationDateDesc(
+        return quotationRepository.findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                 startDate,
                 today
         );
@@ -95,7 +95,7 @@ public class AdminDashboardService {
             return 0;
         }
         LocalDate startDate = today.minusDays(59);
-        return quotationRepository.countByQuotationDateBetween(
+        return quotationRepository.countByParentIsNullAndQuotationDateBetween(
                 startDate,
                 today
         );
@@ -115,7 +115,7 @@ public class AdminDashboardService {
         }
         LocalDate startDate = today.minusDays(59);
         return quotationRepository
-                .findByQuotationDateBetweenOrderByQuotationDateDesc(
+                .findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                         startDate,
                         today
                 );
@@ -134,10 +134,8 @@ public class AdminDashboardService {
 
         return quotations.stream()
                 .map(quotation -> {
-                    if (quotation.getGrandTotal() == null) {
-                        return BigDecimal.ZERO;
-                    }
-                    return quotation.getGrandTotal();
+                    BigDecimal amt = quotation.getEffectiveGrandTotal();
+                    return amt != null ? amt : BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
@@ -158,7 +156,7 @@ public class AdminDashboardService {
 
         List<Quotation> quotations =
                 quotationRepository
-                        .findByQuotationDateBetweenOrderByQuotationDateDesc(
+                        .findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                                 startDate,
                                 today
                         );
@@ -186,7 +184,7 @@ public class AdminDashboardService {
         LocalDate startDate = today.minusYears(1);
 
         return quotationRepository
-                .findByQuotationDateBetweenOrderByQuotationDateDesc(
+                .findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
                         startDate,
                         today
                 );
@@ -199,7 +197,7 @@ public class AdminDashboardService {
     public long getApprovedCustomerCount() {
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         com.example.pravin_quotation.model.QuotationStatus.SENT
                 )
                 .stream()
@@ -215,7 +213,7 @@ public class AdminDashboardService {
     // ==============================
 
     public long getSentQuotationCount() {
-        return quotationRepository.countByStatus(
+        return quotationRepository.countByParentIsNullAndStatus(
                 com.example.pravin_quotation.model.QuotationStatus.SENT
         );
     }
@@ -225,7 +223,7 @@ public class AdminDashboardService {
     // ==============================
 
     public long getWorkingQuotationCount() {
-        return quotationRepository.countByStatus(
+        return quotationRepository.countByParentIsNullAndStatus(
                 com.example.pravin_quotation.model.QuotationStatus.WORKING
         );
     }
@@ -235,7 +233,7 @@ public class AdminDashboardService {
     // ==============================
 
     public long getPendingQuotationCount() {
-        return quotationRepository.countByStatus(
+        return quotationRepository.countByParentIsNullAndStatus(
                 com.example.pravin_quotation.model.QuotationStatus.PENDING
         );
     }
@@ -247,7 +245,7 @@ public class AdminDashboardService {
     public List<Quotation> getApprovedQuotations() {
 
         return quotationRepository
-                .findByStatusOrderByCreatedAtDesc(
+                .findByParentIsNullAndStatusOrderByCreatedAtDesc(
                         com.example.pravin_quotation.model.QuotationStatus.SENT
                 );
     }
@@ -259,15 +257,11 @@ public class AdminDashboardService {
     public BigDecimal getTotalPortfolioValue() {
 
         return quotationRepository
-                .findAll()
+                .findByParentIsNullOrderByCreatedAtDesc()
                 .stream()
                 .map(quotation -> {
-
-                    if (quotation.getGrandTotal() == null) {
-                        return BigDecimal.ZERO;
-                    }
-
-                    return quotation.getGrandTotal();
+                    BigDecimal amt = quotation.getEffectiveGrandTotal();
+                    return amt != null ? amt : BigDecimal.ZERO;
                 })
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }

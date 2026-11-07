@@ -109,6 +109,11 @@ public class QuotationController {
         );
 
         model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
+        );
+
+        model.addAttribute(
                 "quotationStatuses",
                 QuotationStatus.values()
         );
@@ -229,36 +234,83 @@ public class QuotationController {
         Quotation quotation =
                 quotationService.getById(id);
 
+        if (quotation.getParent() != null) {
+            return "redirect:/admin/quotations/view/" + quotation.getParent().getId();
+        }
+
         model.addAttribute(
                 "quotation",
                 quotation
         );
 
+        // Multi-grade child quotations
+        Quotation premiumGrade = quotation.getChildForGrade(PricingMode.PREMIUM);
+        Quotation middleGrade = quotation.getChildForGrade(PricingMode.MIDDLE);
+        Quotation economyGrade = quotation.getChildForGrade(PricingMode.ECONOMY);
+
+        model.addAttribute("premiumGrade", premiumGrade);
+        model.addAttribute("middleGrade", middleGrade);
+        model.addAttribute("economyGrade", economyGrade);
+
+        // Grade breakdowns
+        Map<String, List<QuotationRoom>> gradeRooms = new HashMap<>();
+        Map<String, Map<Long, List<QuotationItem>>> gradeItemsByRoom = new HashMap<>();
+        Map<String, Map<Long, List<QuotationItemSize>>> gradeSizesByItem = new HashMap<>();
+
+        for (PricingMode mode : PricingMode.values()) {
+            Quotation child = quotation.getChildForGrade(mode);
+            if (child != null) {
+                List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(child.getId());
+                gradeRooms.put(mode.name(), rooms);
+                Map<Long, List<QuotationItem>> itemsMap = new HashMap<>();
+                Map<Long, List<QuotationItemSize>> sizesMap = new HashMap<>();
+                for (QuotationRoom r : rooms) {
+                    List<QuotationItem> items = quotationItemService.getActiveByQuotationRoomId(r.getId());
+                    itemsMap.put(r.getId(), items);
+                    for (QuotationItem it : items) {
+                        sizesMap.put(it.getId(), quotationItemSizeService.getActiveSizes(it.getId()));
+                    }
+                }
+                gradeItemsByRoom.put(mode.name(), itemsMap);
+                gradeSizesByItem.put(mode.name(), sizesMap);
+            }
+        }
+
+        model.addAttribute("gradeRooms", gradeRooms);
+        model.addAttribute("gradeItemsByRoom", gradeItemsByRoom);
+        model.addAttribute("gradeSizesByItem", gradeSizesByItem);
+
+        String activeGradeTab = "MIDDLE";
+        if (quotation.getSelectedGrade() != null) {
+            activeGradeTab = quotation.getSelectedGrade().name();
+        } else if (premiumGrade != null) {
+            activeGradeTab = "PREMIUM";
+        } else if (middleGrade != null) {
+            activeGradeTab = "MIDDLE";
+        } else if (economyGrade != null) {
+            activeGradeTab = "ECONOMY";
+        }
+        model.addAttribute("activeGradeTab", activeGradeTab);
 
         // -----------------------------------------------------
-        // ACTIVE ROOMS
+        // ACTIVE ROOMS (Legacy & active grade fallback)
         // -----------------------------------------------------
+
+        Quotation displayTarget = quotation.isParentQuotation()
+                ? (quotation.getChildForGrade(PricingMode.valueOf(activeGradeTab)) != null ? quotation.getChildForGrade(PricingMode.valueOf(activeGradeTab)) : quotation)
+                : quotation;
 
         List<QuotationRoom> quotationRooms =
                 quotationRoomService
-                        .getActiveByQuotationId(id);
+                        .getActiveByQuotationId(displayTarget.getId());
 
         model.addAttribute(
                 "quotationRooms",
                 quotationRooms
         );
 
-
-// -----------------------------------------------------
-// ACTIVE ITEMS BY ROOM
-// -----------------------------------------------------
-
         Map<Long, List<QuotationItem>> itemsByRoom =
                 new HashMap<>();
-
-// -----------------------------------------------------
-// ACTIVE SIZES BY ITEM
-// -----------------------------------------------------
 
         Map<Long, List<QuotationItemSize>> sizesByItem =
                 new HashMap<>();
@@ -275,10 +327,6 @@ public class QuotationController {
                     room.getId(),
                     items
             );
-
-            // ---------------------------------------------
-            // Get all sizes for every item
-            // ---------------------------------------------
 
             for (QuotationItem item : items) {
 
@@ -305,7 +353,6 @@ public class QuotationController {
                 sizesByItem
         );
 
-
         // -----------------------------------------------------
         // STATUS HISTORY
         // -----------------------------------------------------
@@ -315,7 +362,6 @@ public class QuotationController {
                 quotationStatusHistoryService
                         .getByQuotationId(id)
         );
-
 
         // -----------------------------------------------------
         // COMMUNICATION HISTORY
@@ -327,8 +373,28 @@ public class QuotationController {
                         .getByQuotationId(id)
         );
 
-
         return "admin/quotation-view";
+    }
+
+    // =========================================================
+    // CONFIRM CUSTOMER SELECTED GRADE
+    // =========================================================
+
+    @PostMapping("/{id}/confirm-grade")
+    public String confirmGrade(
+            @PathVariable Long id,
+            @RequestParam PricingMode grade,
+            org.springframework.security.core.Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        try {
+            String loggedInEmail = authentication != null ? authentication.getName() : "ADMIN";
+            quotationService.confirmCustomerGrade(id, grade, loggedInEmail);
+            redirectAttributes.addFlashAttribute("successMessage",
+                    grade.name() + " Grade confirmed as Customer's Selected Grade successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/admin/quotations/view/" + id;
     }
 
 
@@ -621,6 +687,11 @@ public class QuotationController {
         );
 
         model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
+        );
+
+        model.addAttribute(
                 "quotationStatuses",
                 QuotationStatus.values()
         );
@@ -646,6 +717,11 @@ public class QuotationController {
         model.addAttribute(
                 "quotationList",
                 quotationService.getLast60DaysQuotations()
+        );
+
+        model.addAttribute(
+                "allQuotationList",
+                quotationService.getAllQuotations()
         );
 
         model.addAttribute(

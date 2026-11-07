@@ -576,8 +576,9 @@ public class QuotationPdfService {
                 if (isRoll) {
                     BigDecimal rolls = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE;
                     BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
-                            : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : BigDecimal.valueOf(40));
-                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + cov.stripTrailingZeros().toPlainString() + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹ " : "Rs. ") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
+                            : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : null);
+                    String covText = cov != null ? cov.stripTrailingZeros().toPlainString() : "-";
+                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + covText + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹ " : "Rs. ") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
                     if (specification == null || specification.isBlank()) {
                         specification = rollDetails;
                     } else {

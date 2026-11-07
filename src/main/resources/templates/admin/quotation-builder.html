@@ -44,6 +44,25 @@
   </header>
 
   <div class="builder-content">
+    <!-- MULTI-GRADE WORKFLOW BANNER -->
+    <div id="multiGradeBanner" style="display: none; background: #f0fdf4; border: 1.5px solid #86efac; border-radius: 12px; padding: 12px 18px; margin-bottom: 16px; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="font-size: 1.25rem;">🏷️</span>
+        <div>
+          <strong style="color: #166534; font-size: 14px;">Multi-Grade Quotation: <span id="mgBannerParentNo">Parent</span></strong>
+          <div style="font-size: 12px; color: #15803d;">
+            Currently Editing: <strong id="mgBannerActiveGrade">PREMIUM</strong> Grade
+          </div>
+        </div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 12px; color: #15803d; font-weight: 600;">Switch Grade:</span>
+        <a id="mgSwitchPremium" href="#" style="background: #ffffff; color: #92400e; border: 1px solid #fde68a; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none;">★ Premium</a>
+        <a id="mgSwitchMiddle" href="#" style="background: #ffffff; color: #0369a1; border: 1px solid #bae6fd; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none;">✦ Middle</a>
+        <a id="mgSwitchEconomy" href="#" style="background: #ffffff; color: #15803d; border: 1px solid #bbf7d0; padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none;">☘ Economy</a>
+        <a id="mgViewParent" href="#" style="background: #024541; color: #ffffff; padding: 4px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; margin-left: 6px;">← Back to Quotation Details</a>
+      </div>
+    </div>
     <section class="card customer-card">
       <div class="section-heading">
         <span class="step">01</span>
@@ -732,20 +751,34 @@
 <script th:inline="javascript">
   const csrfToken = /*[[${_csrf != null ? _csrf.token : ''}]]*/ '';
   const API_BASE = /*[[@{/admin/quotations/builder}]]*/ '/admin/quotations/builder';
+  const IS_ADMIN = true;
   const editQuotationId = /*[[${editQuotationId}]]*/ '';
+  const serverParentId = /*[[${parentId}]]*/ '';
+  const serverTargetGrade = /*[[${targetGrade}]]*/ '';
   const urlParams = new URLSearchParams(window.location.search);
   const paramQuoteId = urlParams.get('quotationId') || urlParams.get('id');
+  const paramParentId = urlParams.get('parentId');
+  const paramGrade = urlParams.get('grade');
   const initialQuotationId = (editQuotationId !== null && editQuotationId !== '' && !isNaN(Number(editQuotationId)))
       ? Number(editQuotationId)
       : (paramQuoteId && !isNaN(Number(paramQuoteId)) ? Number(paramQuoteId) : null);
+  const initialParentId = (serverParentId !== null && serverParentId !== '' && !isNaN(Number(serverParentId)))
+      ? Number(serverParentId)
+      : (paramParentId && !isNaN(Number(paramParentId)) ? Number(paramParentId) : null);
+  const initialTargetGrade = (serverTargetGrade && serverTargetGrade.trim())
+      ? serverTargetGrade.trim().toUpperCase()
+      : (paramGrade ? paramGrade.trim().toUpperCase() : null);
+
   const state = {
       quotationId: initialQuotationId,
+      parentId: initialParentId,
+      targetGrade: initialTargetGrade,
       selectedCustomerId: null,
       customerRequirements: '',
       notes: '',
       rooms: [],
       draft: null,
-      pricingMode: 'MIDDLE',
+      pricingMode: initialTargetGrade || 'MIDDLE',
       isSaving: false,
       isRestoring: false
   };
@@ -835,6 +868,7 @@
 
       const payload = {
           quotationId: state.quotationId,
+          parentId: state.parentId || null,
           customer: {
               id: state.selectedCustomerId || null,
               name: name,
@@ -1193,10 +1227,10 @@
   function showArea(id, html) { $(id).classList.remove('hidden'); $(id).innerHTML = html; }
   function hide(id) { $(id).classList.add('hidden'); }
 
-  const IS_ADMIN = true;
   let activeDivisionId = null;
 
   async function loadDivisions(categoryId, categoryName) {
+      if (!categoryId) return;
       if (!$('floor').value || !$('roomNumber').value) {
           $('floor').value = 'Ground Floor';
           $('roomNumber').value = '1';
@@ -1220,45 +1254,61 @@
       const divisionSection = $('divisionSection');
       if (divisionSection) divisionSection.classList.remove('hidden');
 
-      const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
-      if (!data || data.length === 0) {
-          showArea('divisionArea', `<div class="empty-state" style="grid-column: 1 / -1; padding: 28px; text-align: center; color: #687873; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">No active work types configured for <strong>${esc(categoryName)}</strong>.</div>`);
-      } else {
-          showArea('divisionArea', data.map((d, index) => `
-              <div class="work-type-card" id="wt-card-${d.id}" data-id="${d.id}" data-name="${esc(d.name)}">
-                <div class="wt-card-header">
-                  <span class="wt-badge">${index + 1}</span>
-                  <span class="wt-name">${esc(d.name)}</span>
-                </div>
-                <div class="wt-divider"></div>
-                <div class="wt-actions">
-                  <button type="button" class="wt-click-me-btn" id="wt-click-btn-${d.id}">Click Me</button>
-                </div>
-                <div class="wt-material-container hidden" id="wt-mat-container-${d.id}">
-                  <div class="wt-material-divider"></div>
-                  <div class="wt-material-heading">CHOOSE MATERIAL</div>
-                  <div class="wt-material-list" id="wt-mat-list-${d.id}">
-                    <div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>
+      try {
+          const data = await getJson(`${API_BASE}/divisions?workCategoryId=${categoryId}`);
+          if (!data || data.length === 0) {
+              showArea('divisionArea', `<div class="empty-state" style="grid-column: 1 / -1; padding: 28px; text-align: center; color: #687873; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 12px;">No active work types configured for <strong>${esc(categoryName)}</strong>.</div>`);
+          } else {
+              showArea('divisionArea', data.map((d, index) => `
+                  <div class="work-type-card" id="wt-card-${d.id}" data-id="${d.id}" data-name="${esc(d.name)}" style="cursor: pointer;">
+                    <div class="wt-card-header">
+                      <span class="wt-badge">${index + 1}</span>
+                      <span class="wt-name">${esc(d.name)}</span>
+                    </div>
+                    <div class="wt-divider"></div>
+                    <div class="wt-actions">
+                      <button type="button" class="wt-click-me-btn" id="wt-click-btn-${d.id}">Click Me</button>
+                    </div>
+                    <div class="wt-material-container hidden" id="wt-mat-container-${d.id}">
+                      <div class="wt-material-divider"></div>
+                      <div class="wt-material-heading">CHOOSE MATERIAL</div>
+                      <div class="wt-material-list" id="wt-mat-list-${d.id}">
+                        <div style="font-size: 12px; color: #64748b; padding: 6px 0;">Loading materials...</div>
+                      </div>
+                      <div class="wt-size-panel hidden" id="wt-size-panel-${d.id}"></div>
+                      ${IS_ADMIN ? `<button type="button" class="wt-add-material-btn" id="wt-add-mat-btn-${d.id}" onclick="openAddMaterial(${d.id}, '${esc(d.name).replace(/'/g, "\\'")}', ${categoryId}, '${esc(categoryName).replace(/'/g, "\\'")}')">+ Add Material</button>` : ''}
+                    </div>
                   </div>
-                  <div class="wt-size-panel hidden" id="wt-size-panel-${d.id}"></div>
-                  ${IS_ADMIN ? `<button type="button" class="wt-add-material-btn" id="wt-add-mat-btn-${d.id}" onclick="openAddMaterial(${d.id}, '${esc(d.name).replace(/'/g, "\\'")}', ${categoryId}, '${esc(categoryName).replace(/'/g, "\\'")}')">+ Add Material</button>` : ''}
-                </div>
-              </div>
-          `).join(''));
+              `).join(''));
 
-          data.forEach(d => {
-              const btn = $(`wt-click-btn-${d.id}`);
-              if (btn) {
-                  btn.addEventListener('click', () => toggleWorkTypeCard(d.id, d.name, categoryId, categoryName));
-              }
-              const addMatBtn = $(`wt-add-mat-btn-${d.id}`);
-              if (addMatBtn) {
-                  addMatBtn.addEventListener('click', (e) => {
-                      e.stopPropagation();
-                      openAddMaterial(d.id, d.name, categoryId, categoryName);
-                  });
-              }
-          });
+              data.forEach(d => {
+                  const card = $(`wt-card-${d.id}`);
+                  const btn = $(`wt-click-btn-${d.id}`);
+                  const toggleHandler = () => toggleWorkTypeCard(d.id, d.name, categoryId, categoryName);
+                  if (btn) {
+                      btn.addEventListener('click', (e) => {
+                          e.stopPropagation();
+                          toggleHandler();
+                      });
+                  }
+                  if (card) {
+                      card.addEventListener('click', (e) => {
+                          if (e.target.closest('.wt-material-container') || e.target.closest('button')) return;
+                          toggleHandler();
+                      });
+                  }
+                  const addMatBtn = $(`wt-add-mat-btn-${d.id}`);
+                  if (addMatBtn) {
+                      addMatBtn.addEventListener('click', (e) => {
+                          e.stopPropagation();
+                          openAddMaterial(d.id, d.name, categoryId, categoryName);
+                      });
+                  }
+              });
+          }
+      } catch (err) {
+          console.error('Failed to load divisions:', err);
+          showArea('divisionArea', `<div class="empty-state" style="grid-column: 1 / -1; padding: 28px; text-align: center; color: #ef4444; background: #ffffff; border: 1px solid #fee2e2; border-radius: 12px;">Failed to load work types for <strong>${esc(categoryName)}</strong>. Please try again.</div>`);
       }
   }
 
@@ -1402,7 +1452,7 @@
           unit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementUnit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementType: mType,
-          coveragePerRoll: material.coveragePerRoll ? Number(material.coveragePerRoll) : 40,
+          coveragePerRoll: (material.coveragePerRoll != null && Number(material.coveragePerRoll) > 0) ? Number(material.coveragePerRoll) : null,
           quantity: 1,
           imageUrl: material.imageUrl || null,
           pricingUnit: '₹ / ' + (material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
@@ -1538,13 +1588,25 @@
             </div>
           </div>` : ''}
         </div>`}
+        ${isRoll ? `
+        <div class="size-details-calc-box" style="flex-wrap: wrap; gap: 6px 12px; font-size: 13px;">
+          <span>Total Area: <strong id="calcSqft-${divisionId}">0.00</strong> Sq.ft</span>
+          <span class="calc-divider">|</span>
+          <span>Coverage: <strong id="calcCoverage-${divisionId}">${(material.coveragePerRoll != null && Number(material.coveragePerRoll) > 0) ? Number(material.coveragePerRoll) : '-'}</strong> Sq.ft / Roll</span>
+          <span class="calc-divider">|</span>
+          <span>Required: <strong id="calcRolls-${divisionId}">0</strong> Roll(s)</span>
+          <span class="calc-divider">|</span>
+          <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('₹ ' + formatIndianNumber(material.rate, 2) + ' / Roll') : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
+          <span class="calc-divider">|</span>
+          <span>Amount: <strong id="calcAmt-${divisionId}">₹ 0.00</strong></span>
+        </div>` : `
         <div class="size-details-calc-box">
           <span>Rate: <strong id="calcRate-${divisionId}">${(material.rate != null && Number(material.rate) >= 0) ? ('₹ ' + formatIndianNumber(material.rate, 2) + ' / ' + esc(material.unit || (isQuantity ? 'Qty' : (isFiles ? 'Files' : 'Sq.ft')))) : '<span style="color:#e53e3e;">Rate not configured</span>'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Sq.Ft: <strong id="calcSqft-${divisionId}">${isSqft ? '0' : '-'}</strong></span>
           <span class="calc-divider">|</span>
           <span>Amount: <strong id="calcAmt-${divisionId}">${isSqft ? '₹ 0.00' : money(Number(material.rate || 0))}</strong></span>
-        </div>
+        </div>`}
         <div class="size-details-btn-row">
           <button type="button" class="btn-add-to-quote" id="addQuoteBtn-${divisionId}">Add to Quote</button>
           <button type="button" class="btn-cancel-size" id="cancelSizeBtn-${divisionId}">Cancel</button>
@@ -1584,10 +1646,12 @@
               const H = Number(hgtInput?.value || 0);
               const sqft = calculateItemMeasurement(material.formula, material.unit, L, W, H);
               const roundedSqft = Math.round(sqft * 100) / 100;
-              const cov = Number(material.coveragePerRoll || 40);
+              const cov = Number(material.coveragePerRoll || 0);
               const rolls = (roundedSqft > 0 && cov > 0) ? Math.ceil(roundedSqft / cov) : 0;
               const lineAmt = Math.round(rolls * rateVal * 100) / 100;
-              if (sqftEl) sqftEl.textContent = (roundedSqft % 1 === 0 ? roundedSqft.toFixed(0) : roundedSqft.toFixed(2));
+              if (sqftEl) sqftEl.textContent = roundedSqft.toFixed(2);
+              const covEl = $(`calcCoverage-${divisionId}`);
+              if (covEl) covEl.textContent = cov > 0 ? cov : '-';
               const rollsEl = $(`calcRolls-${divisionId}`);
               if (rollsEl) rollsEl.textContent = rolls;
               if (amtEl) amtEl.textContent = money(lineAmt);
@@ -1749,13 +1813,21 @@
                   ? specTextarea.value.trim()
                   : (specContent ? (specContent.textContent.trim() === '-' ? '' : specContent.textContent.trim()) : (specText || ''));
 
-              const cov = Number(material.coveragePerRoll || 40);
               let rollCount = 1;
               let calcAreaSqft = 0;
+              let cov = null;
               if (isRoll) {
+                  cov = Number(material.coveragePerRoll || 0);
+                  if (isNaN(cov) || cov <= 0) {
+                      return alert('Coverage Per Roll is not configured or invalid for this material.');
+                  }
                   const sVal = calculateItemMeasurement(material.formula, material.unit, L, W, H);
                   calcAreaSqft = Math.round(sVal * 100) / 100;
-                  rollCount = (calcAreaSqft > 0 && cov > 0) ? Math.ceil(calcAreaSqft / cov) : 0;
+                  if (calcAreaSqft <= 0) {
+                      return alert('Calculated Sq.ft must be greater than zero.');
+                  }
+                  rollCount = Math.ceil(calcAreaSqft / cov);
+                  if (rollCount <= 0) rollCount = 1;
               }
 
               const quoteItem = {
@@ -2369,7 +2441,7 @@
                       } else if (isRoll) {
                           const meas = calculateItemMeasurement(item.formula, item.unit, size.length, size.width, size.height);
                           sqft = Math.round(meas * 100) / 100;
-                          const cov = Number(item.coveragePerRoll || 40);
+                          const cov = Number(item.coveragePerRoll || (item.material && item.material.coveragePerRoll) || 0);
                           const rolls = (sqft > 0 && cov > 0) ? Math.ceil(sqft / cov) : 0;
                           item.quantity = rolls;
                           item.calculatedSqft = sqft;
@@ -2437,7 +2509,7 @@
                         <td class="col-material">
                           <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
-                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${item.coveragePerRoll || 40} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
+                          ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${(item.coveragePerRoll != null ? item.coveragePerRoll : (item.material && item.material.coveragePerRoll != null ? item.material.coveragePerRoll : '-'))} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
                           ${imgHtml}
                         </td>
@@ -2755,6 +2827,7 @@
 
       const payload = {
           quotationId: state.quotationId,
+          parentId: state.parentId || null,
           customer: {
               id: state.selectedCustomerId || null,
               name,
@@ -2898,10 +2971,32 @@
       }
   });
 
-  document.querySelectorAll('.category-choice').forEach(btn => btn.addEventListener('click', () => {
-      loadDivisions(Number(btn.dataset.id), btn.dataset.name);
+  function handleCategorySelect(btn) {
+      if (!btn) return;
+      const catId = Number(btn.dataset.id);
+      const catName = btn.dataset.name || '';
+      if (!catId) return;
+      loadDivisions(catId, catName);
       triggerAutoSave(false);
-  }));
+  }
+
+  document.querySelectorAll('.category-choice').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+          e.preventDefault();
+          handleCategorySelect(btn);
+      });
+  });
+
+  const categoryGridEl = $('categoryGrid');
+  if (categoryGridEl) {
+      categoryGridEl.addEventListener('click', (e) => {
+          const btn = e.target.closest('.category-choice');
+          if (btn) {
+              e.preventDefault();
+              handleCategorySelect(btn);
+          }
+      });
+  }
 
   // Ensure category buttons display exactly one emoji per category
   function sanitizeCategoryButtons() {
@@ -3124,17 +3219,74 @@
       syncValidUntil();
   }
 
+  function updateMultiGradeBanner(quoteNo) {
+      if (!state.parentId && !state.targetGrade) return;
+      const banner = $('multiGradeBanner');
+      if (!banner) return;
+      banner.style.display = 'flex';
+      if ($('mgBannerParentNo')) $('mgBannerParentNo').textContent = quoteNo || (state.parentId ? 'Parent #' + state.parentId : '');
+      const grade = state.pricingMode || state.targetGrade || 'MIDDLE';
+      if ($('mgBannerActiveGrade')) $('mgBannerActiveGrade').textContent = grade;
+
+      const pId = state.parentId || state.quotationId;
+      const viewBase = IS_ADMIN ? '/admin/quotations/view/' : '/employee/quotations/view/';
+      const builderBase = IS_ADMIN ? '/admin/quotations/builder' : '/employee/quotations/builder';
+      if ($('mgViewParent')) $('mgViewParent').href = `${viewBase}${pId}`;
+      if ($('mgSwitchPremium')) $('mgSwitchPremium').href = `${builderBase}?parentId=${pId}&grade=PREMIUM`;
+      if ($('mgSwitchMiddle')) $('mgSwitchMiddle').href = `${builderBase}?parentId=${pId}&grade=MIDDLE`;
+      if ($('mgSwitchEconomy')) $('mgSwitchEconomy').href = `${builderBase}?parentId=${pId}&grade=ECONOMY`;
+
+      // Highlight active switch button
+      const btnPrem = $('mgSwitchPremium');
+      const btnMid = $('mgSwitchMiddle');
+      const btnEcon = $('mgSwitchEconomy');
+      if (btnPrem) btnPrem.style.fontWeight = grade === 'PREMIUM' ? '800' : '600';
+      if (btnMid) btnMid.style.fontWeight = grade === 'MIDDLE' ? '800' : '600';
+      if (btnEcon) btnEcon.style.fontWeight = grade === 'ECONOMY' ? '800' : '600';
+
+      // Lock pricing mode radio to active grade
+      const radios = document.querySelectorAll('input[name="pricingMode"]');
+      radios.forEach(r => {
+          if (r.value === grade) {
+              r.checked = true;
+              r.disabled = false;
+          } else {
+              r.disabled = true;
+              if (r.parentElement) {
+                  r.parentElement.style.opacity = '0.5';
+                  r.parentElement.style.cursor = 'not-allowed';
+                  r.parentElement.title = 'Switch grade using the top multi-grade links to keep grades isolated.';
+              }
+          }
+      });
+      if ($('pricingMessage')) {
+          $('pricingMessage').innerHTML = `<span style="color: #0d9488; font-size: 12px; font-weight: 600;">🔒 Locked to ${grade} Grade for this multi-grade quotation. Use tabs above to edit other grades.</span>`;
+      }
+  }
+
   async function loadQuotationData(quotationId) {
       if (!quotationId) return;
       state.isRestoring = true;
       setAutoSaveStatus('saving', 'Loading quotation...');
 
       try {
-          const data = await getJson(`${API_BASE}/load/${quotationId}`);
+          const loadUrl = state.targetGrade
+              ? `${API_BASE}/load/${quotationId}?grade=${encodeURIComponent(state.targetGrade)}`
+              : `${API_BASE}/load/${quotationId}`;
+          const data = await getJson(loadUrl);
           if (!data) {
               state.isRestoring = false;
               setAutoSaveStatus('error', 'Quotation not found');
               return;
+          }
+
+          if (data.parentId) {
+              state.parentId = data.parentId;
+          }
+          if (data.id) {
+              state.quotationId = data.id;
+          } else if (data.isPrepared === false) {
+              state.quotationId = null;
           }
 
           if (data.quotationNumber && $('quoteNumberPreview')) {
@@ -3259,7 +3411,7 @@
                               let lineBase = 0;
                               if (isRoll) {
                                   const meas = calculateItemMeasurement(i.formula, i.unit, s.length, s.width, s.height);
-                                  const cov = Number(i.coveragePerRoll || 40);
+                                  const cov = Number(i.coveragePerRoll || (i.material && i.material.coveragePerRoll) || 0);
                                   const rolls = (meas > 0 && cov > 0) ? Math.ceil(meas / cov) : Number(i.quantity || 1);
                                   lineBase = rolls * effectiveRate;
                               } else if (isSqft) {
@@ -3308,12 +3460,15 @@
                       setTimeout(() => {
                           const wtCard = document.getElementById(`wt-card-${data.lastActiveDivisionId}`);
                           if (wtCard) {
-                              wtCard.click();
+                              const btn = wtCard.querySelector('.wt-click-me-btn') || wtCard;
+                              btn.click();
                               try { wtCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); } catch (_) {}
                           }
                       }, 350);
                   }
               }
+          } else {
+              initInitialCategory();
           }
 
           setAutoSaveStatus('saved', 'All changes saved');
@@ -3325,8 +3480,14 @@
       }
   }
 
+  if (state.parentId || state.targetGrade) {
+      updateMultiGradeBanner();
+  }
+
   if (state.quotationId) {
       loadQuotationData(state.quotationId);
+  } else if (state.parentId) {
+      loadQuotationData(state.parentId);
   } else if (sessionStorage.getItem(DRAFT_STORAGE_KEY)) {
       setTimeout(restoreQuotationBuilderDraftIfPresent, 60);
   }

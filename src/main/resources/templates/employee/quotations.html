@@ -125,33 +125,55 @@
 
         <tbody>
 
-        <tr th:each="quotation : ${quotations}">
+        <tr th:each="quotation : ${quotations}"
+            th:data-status="${quotation.status != null ? quotation.status.name() : 'PENDING'}">
 
             <td class="quotation-number">
                 <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
                    th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
                    style="color: inherit; text-decoration: none; font-weight: 700;"
-                   th:text="${quotation.quotationNumber}">QT-00001</a>
+                   th:text="${quotation.quotationNumber != null && !quotation.quotationNumber.isBlank() ? quotation.quotationNumber : 'QT-' + quotation.id}">QT-00001</a>
                 <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
                    th:href="@{/employee/quotations/view/{id}(id=${quotation.id})}"
                    style="color: inherit; text-decoration: none; font-weight: 700;"
-                   th:text="${quotation.quotationNumber}">QT-00001</a>
+                   th:text="${quotation.quotationNumber != null && !quotation.quotationNumber.isBlank() ? quotation.quotationNumber : 'QT-' + quotation.id}">QT-00001</a>
             </td>
 
-            <td th:text="${quotation.quotationDate}">
-                01/10/2026
+            <td>
+                <span th:if="${quotation.quotationDate != null}"
+                      th:text="${#temporals.format(quotation.quotationDate, 'dd MMM yyyy')}">
+                    01 Oct 2026
+                </span>
+                <span th:if="${quotation.quotationDate == null and quotation.createdAt != null}"
+                      th:text="${#temporals.format(quotation.createdAt, 'dd MMM yyyy')}">
+                    01 Oct 2026
+                </span>
+                <span th:if="${quotation.quotationDate == null and quotation.createdAt == null}"
+                      style="color: #64748b; font-style: italic;">
+                    —
+                </span>
             </td>
 
-            <td th:text="${quotation.customer != null
-                    ? quotation.customer.name
-                    : 'N/A'}">
-                Customer
+            <td>
+                <div th:if="${quotation.customer != null}">
+                    <strong th:if="${quotation.customer.name != null && !quotation.customer.name.isBlank()}"
+                            th:text="${quotation.customer.name}">Customer Name</strong>
+                    <span th:if="${quotation.customer.name == null || quotation.customer.name.isBlank()}"
+                          style="color: #64748b; font-style: italic;">Not selected</span>
+                    <span th:if="${quotation.customer.phone != null && !quotation.customer.phone.isBlank()}"
+                          style="display: block; font-size: 12px; color: #64748b;"
+                          th:text="${quotation.customer.phone}">Phone</span>
+                </div>
+                <div th:if="${quotation.customer == null}">
+                    <span style="color: #64748b; font-style: italic;">Not selected</span>
+                </div>
             </td>
 
-            <td th:text="${quotation.branch != null
-                    ? quotation.branch.name
-                    : 'N/A'}">
-                Branch
+            <td>
+                <span th:if="${quotation.branch != null && quotation.branch.name != null && !quotation.branch.name.isBlank()}"
+                      th:text="${quotation.branch.name}">Branch</span>
+                <span th:if="${quotation.branch == null || quotation.branch.name == null || quotation.branch.name.isBlank()}"
+                      style="color: #64748b; font-style: italic;">Not selected</span>
             </td>
 
             <td>
@@ -162,16 +184,39 @@
                           : (quotation.status != null
                               and quotation.status.name() == 'WORKING'
                               ? ' status-working'
-                              : (quotation.status != null
-                                  and quotation.status.name() == 'PENDING'
-                                  ? ' status-pending' : ''))}"
-                      th:text="${quotation.status}">
+                              : ' status-pending')}"
+                      th:text="${quotation.status != null ? quotation.status : 'PENDING'}">
                     PENDING
                 </span>
             </td>
 
             <td>
-                <strong th:text="${@inr.rupees(quotation.grandTotal)}">₹ 0.00</strong>
+                <span th:if="${quotation.isMultiGrade()}">
+                    <strong class="amount"
+                            th:if="${quotation.effectiveGrandTotal != null}"
+                            th:text="${@inr.rupees(quotation.effectiveGrandTotal)}">
+                        ₹ 0.00
+                    </strong>
+                    <span th:unless="${quotation.effectiveGrandTotal != null}"
+                          style="color: #64748b; font-style: italic;">
+                        Not Confirmed
+                    </span>
+                    <span th:if="${quotation.selectedGrade != null}"
+                          style="display: block; font-size: 11px; color: #10b981; font-weight: 600;"
+                          th:text="'(' + ${quotation.selectedGrade} + ')'"></span>
+                    <span th:unless="${quotation.selectedGrade != null}"
+                          style="display: block; font-size: 11px; color: #64748b; font-weight: 500;">
+                        (Multi-Grade)
+                    </span>
+                </span>
+                <span th:unless="${quotation.isMultiGrade()}">
+                    <strong class="amount" th:if="${quotation.grandTotal != null && quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                            th:text="${@inr.rupees(quotation.grandTotal)}">₹ 0.00</strong>
+                    <span th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and quotation.status != null and quotation.status.name() == 'PENDING'}"
+                          style="color: #64748b; font-style: italic;">Not calculated</span>
+                    <strong class="amount" th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and (quotation.status == null or quotation.status.name() != 'PENDING')}"
+                            th:text="${@inr.rupees(quotation.grandTotal != null ? quotation.grandTotal : 0)}">₹ 0.00</strong>
+                </span>
             </td>
 
             <td>
@@ -191,7 +236,7 @@
                     </a>
 
                     <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
-                       th:href="@{/employee/quotations/builder/{id}(id=${quotation.id})}"
+                       th:href="@{/employee/quotations/builder(quotationId=${quotation.id})}"
                        class="action-btn edit-btn"
                        title="Edit">
                         Edit
@@ -204,7 +249,7 @@
                        data-id=${quotation.id},
                        data-phone=${quotation.customer != null ? quotation.customer.phone : ''},
                        data-name=${quotation.customer != null ? quotation.customer.name : ''},
-                       data-number=${quotation.quotationNumber},
+                       data-number=${quotation.quotationNumber != null ? quotation.quotationNumber : ('QT-' + quotation.id)},
                        data-total=${quotation.grandTotal != null ? quotation.grandTotal : 0}"
                        onclick="openWhatsAppEmployee(this); return false;"
                        title="Send quotation PDF via WhatsApp">
@@ -214,7 +259,7 @@
                     <form th:action="@{/employee/quotations/delete/{id}(id=${quotation.id})}"
                           method="post"
                           style="display: inline; margin: 0;"
-                          th:data-quotation-number="${quotation.quotationNumber}"
+                          th:data-quotation-number="${quotation.quotationNumber != null ? quotation.quotationNumber : ('QT-' + quotation.id)}"
                           onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
                         <input type="hidden"
                                th:if="${_csrf != null}"

@@ -100,7 +100,17 @@
                     </td>
 
                     <td class="amount">
-                        ₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <span th:if="${quotation.effectiveGrandTotal != null}">
+                                ₹ <span th:text="${@inr.format(quotation.effectiveGrandTotal)}">0.00</span>
+                            </span>
+                            <span th:unless="${quotation.effectiveGrandTotal != null}" style="color: #64748b; font-style: italic;">
+                                Not Confirmed
+                            </span>
+                        </span>
+                        <span th:unless="${quotation.isMultiGrade()}">
+                            ₹ <span th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
+                        </span>
                     </td>
                 </tr>
                 </tbody>

@@ -257,7 +257,17 @@ public class QuotationCalculationService {
                     for (QuotationItemSize sz : sizes) {
                         BigDecimal szOffer = sz.getOfferPrice();
                         BigDecimal szSqft = zeroIfNull(sz.getCalculatedSqft());
-                        BigDecimal szBase = money(szSqft.multiply(zeroIfNull(item.getRate())));
+                        BigDecimal szBase;
+                        if (item.getMeasurementType() == com.example.pravin_quotation.model.MeasurementType.ROLL) {
+                            BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
+                                    : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null);
+                            BigDecimal rolls = (cov != null && cov.compareTo(BigDecimal.ZERO) > 0 && szSqft.compareTo(BigDecimal.ZERO) > 0)
+                                    ? szSqft.divide(cov, 0, java.math.RoundingMode.CEILING)
+                                    : (item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO);
+                            szBase = money(rolls.multiply(zeroIfNull(item.getRate())));
+                        } else {
+                            szBase = money(szSqft.multiply(zeroIfNull(item.getRate())));
+                        }
                         if (szOffer != null && szOffer.compareTo(BigDecimal.ZERO) > 0) {
                             sizesOfferTotal = sizesOfferTotal.add(szOffer);
                             if (szOffer.compareTo(szBase) != 0) {
@@ -893,10 +903,18 @@ public class QuotationCalculationService {
                 // New total amount
                 // -------------------------------------------------
 
-                BigDecimal newAmount =
-                        money(
-                                totalSqft.multiply(newRate)
-                        );
+                BigDecimal newAmount;
+                if (item.getMeasurementType() == com.example.pravin_quotation.model.MeasurementType.ROLL) {
+                    BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
+                            : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null);
+                    BigDecimal rolls = (cov != null && cov.compareTo(BigDecimal.ZERO) > 0 && totalSqft.compareTo(BigDecimal.ZERO) > 0)
+                            ? totalSqft.divide(cov, 0, java.math.RoundingMode.CEILING)
+                            : (item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO);
+                    item.setQuantity(rolls);
+                    newAmount = money(rolls.multiply(newRate));
+                } else {
+                    newAmount = money(totalSqft.multiply(newRate));
+                }
 
                 // -------------------------------------------------
                 // Child sizes
@@ -918,15 +936,20 @@ public class QuotationCalculationService {
                                     size.getCalculatedSqft()
                             );
 
-                    BigDecimal oldSizeAmount =
-                            money(
-                                    sizeSqft.multiply(oldRate)
-                            );
-
-                    BigDecimal newSizeAmount =
-                            money(
-                                    sizeSqft.multiply(newRate)
-                            );
+                    BigDecimal oldSizeAmount;
+                    BigDecimal newSizeAmount;
+                    if (item.getMeasurementType() == com.example.pravin_quotation.model.MeasurementType.ROLL) {
+                        BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
+                                : (item.getMaterial() != null ? item.getMaterial().getCoveragePerRoll() : null);
+                        BigDecimal sizeRolls = (cov != null && cov.compareTo(BigDecimal.ZERO) > 0 && sizeSqft.compareTo(BigDecimal.ZERO) > 0)
+                                ? sizeSqft.divide(cov, 0, java.math.RoundingMode.CEILING)
+                                : (item.getQuantity() != null ? item.getQuantity() : BigDecimal.ZERO);
+                        oldSizeAmount = money(sizeRolls.multiply(oldRate));
+                        newSizeAmount = money(sizeRolls.multiply(newRate));
+                    } else {
+                        oldSizeAmount = money(sizeSqft.multiply(oldRate));
+                        newSizeAmount = money(sizeSqft.multiply(newRate));
+                    }
 
                     BigDecimal offerPrice =
                             size.getOfferPrice();

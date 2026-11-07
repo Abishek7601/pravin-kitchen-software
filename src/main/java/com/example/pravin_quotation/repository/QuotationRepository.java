@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.repository;
 
+import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationStatus;
 import org.springframework.data.domain.Page;
@@ -18,6 +19,101 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
 
     boolean existsByQuotationNumber(String quotationNumber);
 
+    // Multi-grade child queries
+    List<Quotation> findByParentIdOrderByIdAsc(Long parentId);
+
+    Optional<Quotation> findByParentIdAndPricingMode(Long parentId, PricingMode pricingMode);
+
+    boolean existsByParentIdAndPricingMode(Long parentId, PricingMode pricingMode);
+
+    // Queries scoped to parent quotations (and legacy single-grade quotations)
+    List<Quotation> findByParentIsNullOrderByCreatedAtDesc();
+
+    List<Quotation> findByParentIsNullAndStatusOrderByCreatedAtDesc(
+            QuotationStatus status
+    );
+
+    List<Quotation> findByParentIsNullAndCustomerIdOrderByCreatedAtDesc(
+            Long customerId
+    );
+
+    List<Quotation> findByParentIsNullAndEmployeeIdOrderByCreatedAtDesc(
+            Long employeeId
+    );
+
+    List<Quotation> findByParentIsNullAndBranchIdOrderByCreatedAtDesc(
+            Long branchId
+    );
+
+    List<Quotation> findByParentIsNullAndQuotationDateBetweenOrderByQuotationDateDesc(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<Quotation> findByParentIsNullAndBranchIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+            Long branchId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<Quotation> findByParentIsNullAndStatusAndQuotationDateBetweenOrderByQuotationDateDesc(
+            QuotationStatus status,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<Quotation> findByParentIsNullAndBranchIdAndStatusOrderByCreatedAtDesc(
+            Long branchId,
+            QuotationStatus status
+    );
+
+    List<Quotation> findByParentIsNullAndEmployeeIdAndStatusOrderByCreatedAtDesc(
+            Long employeeId,
+            QuotationStatus status
+    );
+
+    List<Quotation> findByParentIsNullAndEmployeeIdAndQuotationDateBetweenOrderByQuotationDateDesc(
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    long countByParentIsNull();
+
+    long countByParentIsNullAndStatus(QuotationStatus status);
+
+    long countByParentIsNullAndBranchId(Long branchId);
+
+    long countByParentIsNullAndEmployeeId(Long employeeId);
+
+    long countByParentIsNullAndEmployeeIdAndStatus(
+            Long employeeId,
+            QuotationStatus status
+    );
+
+    long countByParentIsNullAndBranchIdAndStatus(
+            Long branchId,
+            QuotationStatus status
+    );
+
+    long countByParentIsNullAndQuotationDateBetween(
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    long countByParentIsNullAndBranchIdAndQuotationDateBetween(
+            Long branchId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    long countByParentIsNullAndEmployeeIdAndQuotationDateBetween(
+            Long employeeId,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    // Legacy queries kept for backwards compatibility
     List<Quotation> findAllByOrderByCreatedAtDesc();
 
     List<Quotation> findByStatusOrderByCreatedAtDesc(
@@ -117,6 +213,7 @@ public interface QuotationRepository extends JpaRepository<Quotation, Long> {
     Page<Quotation> findByEmployeeId(Long employeeId, Pageable pageable);
 
     @Query("SELECT q FROM Quotation q LEFT JOIN q.customer c WHERE q.employee.id = :employeeId " +
+           "AND q.parent IS NULL " +
            "AND (:status IS NULL OR q.status = :status) " +
            "AND (:startDate IS NULL OR q.quotationDate >= :startDate) " +
            "AND (:endDate IS NULL OR q.quotationDate <= :endDate) " +

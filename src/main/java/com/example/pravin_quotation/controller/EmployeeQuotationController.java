@@ -419,32 +419,37 @@ public class EmployeeQuotationController {
     public String builder(
             @RequestParam(value = "quotationId", required = false) Long quotationId,
             @RequestParam(value = "id", required = false) Long paramId,
+            @RequestParam(value = "parentId", required = false) Long parentId,
+            @RequestParam(value = "grade", required = false) String grade,
             @RequestParam(required = false) Long branchId,
             Authentication authentication,
             Model model
     ) {
         Long effectiveQuotationId = quotationId != null ? quotationId : paramId;
-        return builderInternal(effectiveQuotationId, branchId, authentication, model);
+        return builderInternal(effectiveQuotationId, parentId, grade, branchId, authentication, model);
     }
 
     public String builder(Long quotationId, Long branchId, Authentication authentication, Model model) {
-        return builderInternal(quotationId, branchId, authentication, model);
+        return builderInternal(quotationId, null, null, branchId, authentication, model);
     }
 
     public String builder(Long branchId, Authentication authentication, Model model) {
-        return builderInternal(null, branchId, authentication, model);
+        return builderInternal(null, null, null, branchId, authentication, model);
     }
 
     public String builder(Authentication authentication, Model model) {
-        return builderInternal(null, null, authentication, model);
+        return builderInternal(null, null, null, null, authentication, model);
     }
 
-    private String builderInternal(Long effectiveQuotationId, Long branchId, Authentication authentication, Model model) {
+    private String builderInternal(Long effectiveQuotationId, Long parentId, String grade, Long branchId, Authentication authentication, Model model) {
         User employee =
                 getLoggedInEmployee(authentication);
 
         if (effectiveQuotationId != null) {
             getQuotationAndCheckOwnership(effectiveQuotationId, employee);
+        }
+        if (parentId != null) {
+            getQuotationAndCheckOwnership(parentId, employee);
         }
 
         Long effectiveBranchId = (employee.getBranch() != null) ? employee.getBranch().getId() : branchId;
@@ -474,6 +479,8 @@ public class EmployeeQuotationController {
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("editQuotationId", effectiveQuotationId != null ? effectiveQuotationId : "");
+        model.addAttribute("parentId", parentId != null ? parentId : "");
+        model.addAttribute("targetGrade", grade != null ? grade.toUpperCase() : "");
         model.addAttribute("selectedBranchId", effectiveBranchId != null ? effectiveBranchId : "");
         model.addAttribute("employeeBranchId", employee.getBranch() != null ? employee.getBranch().getId() : "");
 
@@ -831,6 +838,7 @@ public class EmployeeQuotationController {
 
             AdminQuotationBuilderService.BuilderRequest effectiveRequest = new AdminQuotationBuilderService.BuilderRequest(
                     request.quotationId(),
+                    request.parentId(),
                     request.customer(),
                     effectiveBranchId,
                     request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
@@ -856,20 +864,22 @@ public class EmployeeQuotationController {
             );
 
             Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
-            String redirectUrl = "/employee/quotations/view/" + quotation.getId();
+            Long redirectId = (quotation.getParent() != null) ? quotation.getParent().getId() : quotation.getId();
+            String redirectUrl = "/employee/quotations/view/" + redirectId;
 
             if (acceptsJson) {
                 Map<String, Object> resp = new LinkedHashMap<>();
                 resp.put("success", true);
                 resp.put("redirectUrl", redirectUrl);
                 resp.put("quotationId", quotation.getId());
+                resp.put("parentId", quotation.getParent() != null ? quotation.getParent().getId() : redirectId);
                 resp.put("quotationNumber", quotation.getQuotationNumber());
                 return ResponseEntity.ok(resp);
             }
 
             if (redirectAttributes != null) {
                 redirectAttributes.addFlashAttribute("successMessage",
-                        "Quotation " + quotation.getQuotationNumber() + " created successfully.");
+                        "Quotation " + quotation.getQuotationNumber() + " saved successfully.");
             }
             return "redirect:" + redirectUrl;
         } catch (Exception e) {
@@ -918,6 +928,7 @@ public class EmployeeQuotationController {
 
             AdminQuotationBuilderService.BuilderRequest effectiveRequest = new AdminQuotationBuilderService.BuilderRequest(
                     request.quotationId(),
+                    request.parentId(),
                     request.customer(),
                     effectiveBranchId,
                     request.quotationDate() != null ? request.quotationDate() : LocalDate.now(),
@@ -946,6 +957,7 @@ public class EmployeeQuotationController {
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("success", true);
             resp.put("quotationId", quotation.getId());
+            resp.put("parentId", quotation.getParent() != null ? quotation.getParent().getId() : null);
             resp.put("quotationNumber", quotation.getQuotationNumber());
             resp.put("status", quotation.getStatus() != null ? quotation.getStatus().name() : "PENDING");
             return ResponseEntity.ok(resp);
@@ -957,18 +969,80 @@ public class EmployeeQuotationController {
         }
     }
 
+    public ResponseEntity<?> builderLoadQuotation(Long id, Authentication authentication) {
+        return builderLoadQuotation(id, null, authentication);
+    }
+
     @GetMapping("/builder/load/{id}")
     @ResponseBody
-    public ResponseEntity<?> builderLoadQuotation(@PathVariable Long id, Authentication authentication) {
+    public ResponseEntity<?> builderLoadQuotation(
+            @PathVariable Long id,
+            @RequestParam(required = false) String grade,
+            Authentication authentication) {
         User employee = getLoggedInEmployee(authentication);
-        Quotation q = getQuotationAndCheckOwnership(id, employee);
-        if (q == null) {
+        Quotation requested = getQuotationAndCheckOwnership(id, employee);
+        if (requested == null) {
             return ResponseEntity.notFound().build();
         }
 
+        Quotation parent = requested.getParent() != null ? requested.getParent() : requested;
+
+        PricingMode targetMode = null;
+        if (grade != null && !grade.isBlank()) {
+            try {
+                targetMode = PricingMode.valueOf(grade.trim().toUpperCase());
+            } catch (Exception ignored) {}
+        }
+
+        Quotation q;
+        boolean isPrepared = true;
+        if (targetMode != null) {
+            Quotation child = parent.getChildForGrade(targetMode);
+            if (child != null) {
+                q = child;
+            } else if (!parent.isParentQuotation() && parent.getPricingMode() == targetMode) {
+                q = parent;
+            } else {
+                q = new Quotation();
+                q.setParent(parent);
+                q.setQuotationNumber(parent.getQuotationNumber() + "-" + targetMode.name());
+                q.setCustomer(parent.getCustomer());
+                q.setBranch(parent.getBranch());
+                q.setEmployee(parent.getEmployee());
+                q.setQuotationDate(parent.getQuotationDate());
+                q.setValidUntil(parent.getValidUntil());
+                q.setPricingMode(targetMode);
+                q.setStatus(QuotationStatus.PENDING);
+                isPrepared = false;
+            }
+        } else if (requested.isParentQuotation()) {
+            PricingMode pick = parent.getSelectedGrade() != null
+                    ? parent.getSelectedGrade()
+                    : (parent.getChildQuotations() != null && !parent.getChildQuotations().isEmpty()
+                            ? parent.getChildQuotations().get(0).getPricingMode()
+                            : PricingMode.MIDDLE);
+            q = parent.getChildForGrade(pick);
+            if (q == null) q = requested;
+        } else {
+            q = requested;
+        }
+
         Map<String, Object> data = new LinkedHashMap<>();
-        data.put("id", q.getId());
-        data.put("quotationNumber", q.getQuotationNumber());
+        data.put("id", isPrepared ? q.getId() : null);
+        data.put("parentId", parent != null && parent != q ? parent.getId() : (q.getParent() != null ? q.getParent().getId() : null));
+        data.put("isPrepared", isPrepared);
+        data.put("quotationNumber", parent != null ? parent.getQuotationNumber() : q.getQuotationNumber());
+        data.put("selectedGrade", parent != null ? (parent.getSelectedGrade() != null ? parent.getSelectedGrade().name() : null) : null);
+
+        List<String> preparedGrades = new ArrayList<>();
+        if (parent != null && parent.getChildQuotations() != null) {
+            for (Quotation c : parent.getChildQuotations()) {
+                if (c.getPricingMode() != null) {
+                    preparedGrades.add(c.getPricingMode().name());
+                }
+            }
+        }
+        data.put("preparedGrades", preparedGrades);
         data.put("status", q.getStatus() != null ? q.getStatus().name() : "PENDING");
         data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
         data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
@@ -1006,7 +1080,9 @@ public class EmployeeQuotationController {
         Long branchId = q.getBranch() != null ? q.getBranch().getId() : (employee.getBranch() != null ? employee.getBranch().getId() : null);
         PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
 
-        List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(id);
+        List<QuotationRoom> rooms = (isPrepared && q.getId() != null)
+                ? quotationRoomService.getActiveByQuotationId(q.getId())
+                : Collections.emptyList();
         List<Map<String, Object>> roomList = new ArrayList<>();
         for (QuotationRoom room : rooms) {
             Map<String, Object> rMap = new LinkedHashMap<>();
@@ -2267,138 +2343,122 @@ public class EmployeeQuotationController {
 
     @GetMapping("/view/{id}")
     public String viewQuotation(
-
             @PathVariable Long id,
-
             Authentication authentication,
-
             Model model
     ) {
+        User employee = getLoggedInEmployee(authentication);
+        Quotation quotation = getQuotationAndCheckOwnership(id, employee);
 
-        User employee =
-                getLoggedInEmployee(authentication);
+        if (quotation.getParent() != null) {
+            return "redirect:/employee/quotations/view/" + quotation.getParent().getId();
+        }
 
-        Quotation quotation =
-                getQuotationAndCheckOwnership(
-                        id,
-                        employee
-                );
+        // Multi-grade child quotations
+        Quotation premiumGrade = quotation.getChildForGrade(PricingMode.PREMIUM);
+        Quotation middleGrade = quotation.getChildForGrade(PricingMode.MIDDLE);
+        Quotation economyGrade = quotation.getChildForGrade(PricingMode.ECONOMY);
 
-        quotationCalculationService
-                .calculateQuotation(id);
+        model.addAttribute("premiumGrade", premiumGrade);
+        model.addAttribute("middleGrade", middleGrade);
+        model.addAttribute("economyGrade", economyGrade);
 
-        quotation =
-                quotationRepository.findById(id)
-                        .orElseThrow(() ->
-                                new IllegalArgumentException(
-                                        "Quotation not found"
-                                )
-                        );
+        // Grade breakdowns
+        Map<String, List<QuotationRoom>> gradeRooms = new HashMap<>();
+        Map<String, Map<Long, List<QuotationItem>>> gradeItemsByRoom = new HashMap<>();
+        Map<String, Map<Long, List<QuotationItemSize>>> gradeSizesByItem = new HashMap<>();
 
-        List<QuotationRoom> rooms =
-                quotationRoomService
-                        .getActiveByQuotationId(id);
-
-        Map<Long, List<QuotationItem>> roomItems =
-                new HashMap<>();
-
-        Map<Long, List<QuotationItemSize>> sizesByItem =
-                new HashMap<>();
-
-        for (QuotationRoom room : rooms) {
-
-            List<QuotationItem> items =
-                    quotationItemService
-                            .getActiveByQuotationRoomId(
-                                    room.getId()
-                            );
-
-            roomItems.put(
-                    room.getId(),
-                    items
-            );
-
-            for (QuotationItem item : items) {
-                List<QuotationItemSize> sizes =
-                        quotationItemSizeService
-                                .getActiveSizes(
-                                        item.getId()
-                                );
-                sizesByItem.put(
-                        item.getId(),
-                        sizes
-                );
+        for (PricingMode mode : PricingMode.values()) {
+            Quotation child = quotation.getChildForGrade(mode);
+            if (child != null) {
+                List<QuotationRoom> chRooms = quotationRoomService.getActiveByQuotationId(child.getId());
+                gradeRooms.put(mode.name(), chRooms);
+                Map<Long, List<QuotationItem>> itemsMap = new HashMap<>();
+                Map<Long, List<QuotationItemSize>> sizesMap = new HashMap<>();
+                for (QuotationRoom r : chRooms) {
+                    List<QuotationItem> items = quotationItemService.getActiveByQuotationRoomId(r.getId());
+                    itemsMap.put(r.getId(), items);
+                    for (QuotationItem it : items) {
+                        sizesMap.put(it.getId(), quotationItemSizeService.getActiveSizes(it.getId()));
+                    }
+                }
+                gradeItemsByRoom.put(mode.name(), itemsMap);
+                gradeSizesByItem.put(mode.name(), sizesMap);
             }
         }
 
-        model.addAttribute(
-                "employee",
-                employee
-        );
+        model.addAttribute("gradeRooms", gradeRooms);
+        model.addAttribute("gradeItemsByRoom", gradeItemsByRoom);
+        model.addAttribute("gradeSizesByItem", gradeSizesByItem);
 
-        model.addAttribute(
-                "quotation",
-                quotation
-        );
+        String activeGradeTab = "MIDDLE";
+        if (quotation.getSelectedGrade() != null) {
+            activeGradeTab = quotation.getSelectedGrade().name();
+        } else if (premiumGrade != null) {
+            activeGradeTab = "PREMIUM";
+        } else if (middleGrade != null) {
+            activeGradeTab = "MIDDLE";
+        } else if (economyGrade != null) {
+            activeGradeTab = "ECONOMY";
+        }
+        model.addAttribute("activeGradeTab", activeGradeTab);
 
-        model.addAttribute(
-                "rooms",
-                rooms
-        );
+        Quotation displayTarget = quotation.isParentQuotation()
+                ? (quotation.getChildForGrade(PricingMode.valueOf(activeGradeTab)) != null ? quotation.getChildForGrade(PricingMode.valueOf(activeGradeTab)) : quotation)
+                : quotation;
 
-        model.addAttribute(
-                "quotationRooms",
-                rooms
-        );
+        List<QuotationRoom> rooms = quotationRoomService.getActiveByQuotationId(displayTarget.getId());
 
-        model.addAttribute(
-                "roomItems",
-                roomItems
-        );
+        Map<Long, List<QuotationItem>> roomItems = new HashMap<>();
+        Map<Long, List<QuotationItemSize>> sizesByItem = new HashMap<>();
 
-        model.addAttribute(
-                "itemsByRoom",
-                roomItems
-        );
+        for (QuotationRoom room : rooms) {
+            List<QuotationItem> items = quotationItemService.getActiveByQuotationRoomId(room.getId());
+            roomItems.put(room.getId(), items);
+            for (QuotationItem item : items) {
+                List<QuotationItemSize> sizes = quotationItemSizeService.getActiveSizes(item.getId());
+                sizesByItem.put(item.getId(), sizes);
+            }
+        }
 
-        model.addAttribute(
-                "sizesByItem",
-                sizesByItem
-        );
+        model.addAttribute("employee", employee);
+        model.addAttribute("quotation", quotation);
+        model.addAttribute("rooms", rooms);
+        model.addAttribute("quotationRooms", rooms);
+        model.addAttribute("roomItems", roomItems);
+        model.addAttribute("itemsByRoom", roomItems);
+        model.addAttribute("sizesByItem", sizesByItem);
 
-        // ========================================================
-        // STATUS HISTORY
-        // ========================================================
-
-        List<QuotationStatusHistory> statusHistory =
-                quotationStatusHistoryService
-                        .getByQuotationId(id);
-
-        model.addAttribute(
-                "statusHistory",
-                statusHistory
-        );
-
-        // ========================================================
-        // COMMUNICATION HISTORY
-        // ========================================================
-
-        model.addAttribute(
-                "communicationHistory",
-                quotationCommunicationService
-                        .getByQuotationId(id)
-        );
-
-        // ========================================================
-        // AVAILABLE STATUSES
-        // ========================================================
-
-        model.addAttribute(
-                "quotationStatuses",
-                QuotationStatus.values()
-        );
+        List<QuotationStatusHistory> statusHistory = quotationStatusHistoryService.getByQuotationId(id);
+        model.addAttribute("statusHistory", statusHistory);
+        model.addAttribute("communicationHistory", quotationCommunicationService.getByQuotationId(id));
+        model.addAttribute("quotationStatuses", QuotationStatus.values());
 
         return "employee/quotation-workspace";
+    }
+
+    // ============================================================
+    // CONFIRM CUSTOMER SELECTED GRADE
+    // ============================================================
+
+    @PostMapping("/{id}/confirm-grade")
+    public String confirmGrade(
+            @PathVariable Long id,
+            @RequestParam PricingMode grade,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes) {
+        try {
+            User employee = getLoggedInEmployee(authentication);
+            Quotation q = quotationService.getById(id);
+            if (q.getParent() != null) q = q.getParent();
+            getQuotationAndCheckOwnership(q.getId(), employee);
+            quotationService.confirmCustomerGrade(q.getId(), grade, authentication.getName());
+            redirectAttributes.addFlashAttribute("successMessage",
+                    grade.name() + " Grade confirmed as Customer's Selected Grade successfully.");
+        } catch (Exception e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+        }
+        return "redirect:/employee/quotations/view/" + id;
     }
 
 
@@ -3263,11 +3323,17 @@ public class EmployeeQuotationController {
     // DOWNLOAD QUOTATION PDF
     // ============================================================
 
+    public ResponseEntity<byte[]> downloadQuotationPdf(
+            Long id,
+            Authentication authentication
+    ) {
+        return downloadQuotationPdf(id, null, authentication);
+    }
+
     @GetMapping("/pdf/{id}")
     public ResponseEntity<byte[]> downloadQuotationPdf(
-
             @PathVariable Long id,
-
+            @RequestParam(required = false) PricingMode grade,
             Authentication authentication
     ) {
 
@@ -3282,16 +3348,32 @@ public class EmployeeQuotationController {
                         employee
                 );
 
+        Quotation targetQuotation = quotation;
+        if (grade != null) {
+            Quotation child = quotation.getChildForGrade(grade);
+            if (child != null) {
+                targetQuotation = child;
+            }
+        } else if (quotation.getSelectedGrade() != null) {
+            Quotation child = quotation.getChildForGrade(quotation.getSelectedGrade());
+            if (child != null) {
+                targetQuotation = child;
+            }
+        } else if (quotation.isParentQuotation() && quotation.getChildQuotations() != null && !quotation.getChildQuotations().isEmpty()) {
+            targetQuotation = quotation.getChildQuotations().get(0);
+        }
+
         byte[] pdf =
                 quotationPdfService
-                        .generateQuotationPdf(id);
+                        .generateQuotationPdf(targetQuotation.getId());
+
+        String gradeSuffix = targetQuotation.getPricingMode() != null ? "-" + targetQuotation.getPricingMode().name() : "";
+        String filename = targetQuotation.getQuotationNumber() + gradeSuffix + ".pdf";
 
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=quotation-"
-                                + quotation.getId()
-                                + ".pdf"
+                        "attachment; filename=" + filename
                 )
                 .contentType(
                         MediaType.APPLICATION_PDF

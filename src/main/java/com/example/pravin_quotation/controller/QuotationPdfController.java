@@ -36,34 +36,51 @@ public class QuotationPdfController {
     // Download quotation PDF
     // ---------------------------------------------------------
 
+    public ResponseEntity<byte[]> downloadQuotationPdf(Long id) {
+        return downloadQuotationPdf(id, null);
+    }
+
     @GetMapping("/pdf/{id}")
     public ResponseEntity<byte[]> downloadQuotationPdf(
-            @PathVariable Long id) {
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) com.example.pravin_quotation.model.PricingMode grade) {
 
         Quotation quotation =
                 quotationService.getById(id);
 
-        /*
-         * Generate PDF first.
-         *
-         * We record the communication only after
-         * successful PDF generation.
-         */
+        Quotation targetQuotation = quotation;
+        if (grade != null) {
+            Quotation child = quotation.getChildForGrade(grade);
+            if (child != null) {
+                targetQuotation = child;
+            }
+        } else if (quotation.getSelectedGrade() != null) {
+            Quotation child = quotation.getChildForGrade(quotation.getSelectedGrade());
+            if (child != null) {
+                targetQuotation = child;
+            }
+        } else if (quotation.isParentQuotation() && quotation.getChildQuotations() != null && !quotation.getChildQuotations().isEmpty()) {
+            targetQuotation = quotation.getChildQuotations().get(0);
+        }
+
         byte[] pdf =
-                quotationPdfService.generateQuotationPdf(id);
+                quotationPdfService.generateQuotationPdf(targetQuotation.getId());
 
         quotationCommunicationService.record(
-                quotation,
+                targetQuotation,
                 QuotationCommunication.CommunicationType.PDF,
-                "Quotation PDF",
+                "Quotation PDF" + (targetQuotation.getPricingMode() != null ? " (" + targetQuotation.getPricingMode().name() + ")" : ""),
                 QuotationCommunication.CommunicationStatus.SENT,
                 "Quotation PDF generated/downloaded successfully."
         );
 
+        String gradeSuffix = targetQuotation.getPricingMode() != null ? "-" + targetQuotation.getPricingMode().name() : "";
+        String filename = targetQuotation.getQuotationNumber() + gradeSuffix + ".pdf";
+
         return ResponseEntity.ok()
                 .header(
                         HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=quotation-" + id + ".pdf"
+                        "attachment; filename=" + filename
                 )
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);

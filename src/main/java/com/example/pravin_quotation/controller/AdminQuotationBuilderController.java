@@ -76,21 +76,24 @@ public class AdminQuotationBuilderController {
     public String builder(
             @PathVariable(required = false) Long quotationId,
             @RequestParam(value = "quotationId", required = false) Long paramQuotationId,
+            @RequestParam(value = "id", required = false) Long id,
+            @RequestParam(value = "parentId", required = false) Long parentId,
+            @RequestParam(value = "grade", required = false) String grade,
             @RequestParam(required = false) Long branchId,
             Model model) {
-        Long effectiveQuotationId = quotationId != null ? quotationId : paramQuotationId;
-        return builderInternal(effectiveQuotationId, branchId, model);
+        Long effectiveQuotationId = quotationId != null ? quotationId : (paramQuotationId != null ? paramQuotationId : id);
+        return builderInternal(effectiveQuotationId, parentId, grade, branchId, model);
     }
 
     public String builder(Long quotationId, Long branchId, Model model) {
-        return builderInternal(quotationId, branchId, model);
+        return builderInternal(quotationId, null, null, branchId, model);
     }
 
     public String builder(Long branchId, Model model) {
-        return builderInternal(null, branchId, model);
+        return builderInternal(null, null, null, branchId, model);
     }
 
-    private String builderInternal(Long effectiveQuotationId, Long branchId, Model model) {
+    private String builderInternal(Long effectiveQuotationId, Long parentId, String grade, Long branchId, Model model) {
         model.addAttribute("branches", branchRepository.findByActiveTrueOrderByNameAsc());
         model.addAttribute("customers", branchId != null
                 ? customerRepository.findByBranchIdAndActiveTrueOrderByNameAsc(branchId)
@@ -99,6 +102,8 @@ public class AdminQuotationBuilderController {
         model.addAttribute("pricingModes", PricingMode.values());
         model.addAttribute("today", LocalDate.now());
         model.addAttribute("editQuotationId", effectiveQuotationId != null ? effectiveQuotationId : "");
+        model.addAttribute("parentId", parentId != null ? parentId : "");
+        model.addAttribute("targetGrade", grade != null ? grade.toUpperCase() : "");
         model.addAttribute("selectedBranchId", branchId != null ? branchId : "");
         return "admin/quotation-builder";
     }
@@ -396,17 +401,19 @@ public class AdminQuotationBuilderController {
                 && httpRequest.getHeader("Accept").contains(org.springframework.http.MediaType.APPLICATION_JSON_VALUE);
         try {
             Quotation quotation = builderService.save(request, authentication.getName());
-            String redirectUrl = "/admin/quotations/view/" + quotation.getId();
+            Long redirectId = (quotation.getParent() != null) ? quotation.getParent().getId() : quotation.getId();
+            String redirectUrl = "/admin/quotations/view/" + redirectId;
             if (acceptsJson) {
                 Map<String, Object> resp = new LinkedHashMap<>();
                 resp.put("success", true);
                 resp.put("redirectUrl", redirectUrl);
                 resp.put("quotationId", quotation.getId());
+                resp.put("parentId", quotation.getParent() != null ? quotation.getParent().getId() : redirectId);
                 resp.put("quotationNumber", quotation.getQuotationNumber());
                 return ResponseEntity.ok(resp);
             }
             redirectAttributes.addFlashAttribute("successMessage",
-                    "Quotation " + quotation.getQuotationNumber() + " created successfully.");
+                    "Quotation " + quotation.getQuotationNumber() + " saved successfully.");
             return "redirect:" + redirectUrl;
         } catch (Exception e) {
             if (acceptsJson) {
@@ -430,6 +437,7 @@ public class AdminQuotationBuilderController {
             Map<String, Object> resp = new LinkedHashMap<>();
             resp.put("success", true);
             resp.put("quotationId", quotation.getId());
+            resp.put("parentId", quotation.getParent() != null ? quotation.getParent().getId() : null);
             resp.put("quotationNumber", quotation.getQuotationNumber());
             resp.put("status", quotation.getStatus() != null ? quotation.getStatus().name() : "PENDING");
             return ResponseEntity.ok(resp);
@@ -441,51 +449,119 @@ public class AdminQuotationBuilderController {
         }
     }
 
+    public ResponseEntity<?> loadQuotation(Long id) {
+        return loadQuotation(id, null);
+    }
+
     @GetMapping("/builder/load/{id}")
     @ResponseBody
-    public ResponseEntity<?> loadQuotation(@PathVariable Long id) {
-        return quotationRepository.findById(id).map(q -> {
-            Map<String, Object> data = new LinkedHashMap<>();
-            data.put("id", q.getId());
-            data.put("quotationNumber", q.getQuotationNumber());
-            data.put("status", q.getStatus() != null ? q.getStatus().name() : "PENDING");
-            data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
-            data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
-            data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
-            data.put("email", q.getCustomer() != null ? q.getCustomer().getEmail() : "");
-            data.put("address", q.getCustomer() != null ? q.getCustomer().getAddress() : "");
-            data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
-            data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
-            data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
-            data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
-            data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
-            data.put("notes", q.getNotes() != null ? q.getNotes() : "");
-            data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
-            data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
-            data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
-            data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
-            data.put("otherChargesDescription", q.getOtherChargesDescription() != null ? q.getOtherChargesDescription() : "");
-            data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
-            data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
-            data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
-            data.put("gstAmount", q.getGstAmount() != null ? q.getGstAmount() : BigDecimal.ZERO);
-            data.put("totalAmount", q.getTotalAmount() != null ? q.getTotalAmount() : q.getGrandTotal());
-            data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
-            data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
-            data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
-            data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+    public ResponseEntity<?> loadQuotation(
+            @PathVariable Long id,
+            @RequestParam(required = false) String grade) {
+        Quotation requested = quotationRepository.findById(id).orElse(null);
+        if (requested == null) {
+            return ResponseEntity.notFound().build();
+        }
 
-            data.put("lastActiveStep", q.getLastActiveStep());
-            data.put("lastActiveFloor", q.getLastActiveFloor());
-            data.put("lastActiveRoom", q.getLastActiveRoom());
-            data.put("lastActiveCategoryId", q.getLastActiveCategoryId());
-            data.put("lastActiveDivisionId", q.getLastActiveDivisionId());
-            data.put("builderState", q.getBuilderState());
+        Quotation parent = requested.getParent() != null ? requested.getParent() : requested;
 
-            Long branchId = q.getBranch() != null ? q.getBranch().getId() : null;
-            PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
+        PricingMode targetMode = null;
+        if (grade != null && !grade.isBlank()) {
+            try {
+                targetMode = PricingMode.valueOf(grade.trim().toUpperCase());
+            } catch (Exception ignored) {}
+        }
 
-            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(id);
+        Quotation q;
+        boolean isPrepared = true;
+        if (targetMode != null) {
+            Quotation child = parent.getChildForGrade(targetMode);
+            if (child != null) {
+                q = child;
+            } else if (!parent.isParentQuotation() && parent.getPricingMode() == targetMode) {
+                q = parent;
+            } else {
+                q = new Quotation();
+                q.setParent(parent);
+                q.setQuotationNumber(parent.getQuotationNumber() + "-" + targetMode.name());
+                q.setCustomer(parent.getCustomer());
+                q.setBranch(parent.getBranch());
+                q.setEmployee(parent.getEmployee());
+                q.setQuotationDate(parent.getQuotationDate());
+                q.setValidUntil(parent.getValidUntil());
+                q.setPricingMode(targetMode);
+                q.setStatus(QuotationStatus.PENDING);
+                isPrepared = false;
+            }
+        } else if (requested.isParentQuotation()) {
+            PricingMode pick = parent.getSelectedGrade() != null
+                    ? parent.getSelectedGrade()
+                    : (parent.getChildQuotations() != null && !parent.getChildQuotations().isEmpty()
+                            ? parent.getChildQuotations().get(0).getPricingMode()
+                            : PricingMode.MIDDLE);
+            q = parent.getChildForGrade(pick);
+            if (q == null) q = requested;
+        } else {
+            q = requested;
+        }
+
+        Map<String, Object> data = new LinkedHashMap<>();
+        data.put("id", isPrepared ? q.getId() : null);
+        data.put("parentId", parent != null && parent != q ? parent.getId() : (q.getParent() != null ? q.getParent().getId() : null));
+        data.put("isPrepared", isPrepared);
+        data.put("quotationNumber", parent != null ? parent.getQuotationNumber() : q.getQuotationNumber());
+        data.put("selectedGrade", parent != null ? (parent.getSelectedGrade() != null ? parent.getSelectedGrade().name() : null) : null);
+
+        List<String> preparedGrades = new ArrayList<>();
+        if (parent != null && parent.getChildQuotations() != null) {
+            for (Quotation c : parent.getChildQuotations()) {
+                if (c.getPricingMode() != null) {
+                    preparedGrades.add(c.getPricingMode().name());
+                }
+            }
+        }
+        data.put("preparedGrades", preparedGrades);
+
+        data.put("status", q.getStatus() != null ? q.getStatus().name() : "PENDING");
+        data.put("customerId", q.getCustomer() != null ? q.getCustomer().getId() : null);
+        data.put("customerName", q.getCustomer() != null ? q.getCustomer().getName() : "");
+        data.put("phone", q.getCustomer() != null ? q.getCustomer().getPhone() : "");
+        data.put("email", q.getCustomer() != null ? q.getCustomer().getEmail() : "");
+        data.put("address", q.getCustomer() != null ? q.getCustomer().getAddress() : "");
+        data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
+        data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
+        data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
+        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
+        data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
+        data.put("notes", q.getNotes() != null ? q.getNotes() : "");
+        data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
+        data.put("accessoriesAmount", q.getAccessoriesAmount() != null ? q.getAccessoriesAmount() : BigDecimal.ZERO);
+        data.put("travelCharge", q.getTravelCharge() != null ? q.getTravelCharge() : BigDecimal.ZERO);
+        data.put("otherCharges", q.getOtherCharges() != null ? q.getOtherCharges() : BigDecimal.ZERO);
+        data.put("otherChargesDescription", q.getOtherChargesDescription() != null ? q.getOtherChargesDescription() : "");
+        data.put("discountAmount", q.getDiscountAmount() != null ? q.getDiscountAmount() : BigDecimal.ZERO);
+        data.put("taxableAmount", q.getTaxableAmount() != null ? q.getTaxableAmount() : BigDecimal.ZERO);
+        data.put("gstPercentage", q.getGstPercentage() != null ? q.getGstPercentage() : BigDecimal.ZERO);
+        data.put("gstAmount", q.getGstAmount() != null ? q.getGstAmount() : BigDecimal.ZERO);
+        data.put("totalAmount", q.getTotalAmount() != null ? q.getTotalAmount() : q.getGrandTotal());
+        data.put("offerPercentage", q.getOfferPercentage() != null ? q.getOfferPercentage() : BigDecimal.ZERO);
+        data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
+        data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
+        data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+
+        data.put("lastActiveStep", q.getLastActiveStep());
+        data.put("lastActiveFloor", q.getLastActiveFloor());
+        data.put("lastActiveRoom", q.getLastActiveRoom());
+        data.put("lastActiveCategoryId", q.getLastActiveCategoryId());
+        data.put("lastActiveDivisionId", q.getLastActiveDivisionId());
+        data.put("builderState", q.getBuilderState());
+
+        Long branchId = q.getBranch() != null ? q.getBranch().getId() : null;
+        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
+
+        List<QuotationRoom> rooms = (isPrepared && q.getId() != null)
+                ? quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(q.getId())
+                : java.util.Collections.emptyList();
             List<Map<String, Object>> roomList = new ArrayList<>();
             for (QuotationRoom room : rooms) {
                 Map<String, Object> rMap = new LinkedHashMap<>();
@@ -593,7 +669,6 @@ public class AdminQuotationBuilderController {
             }
             data.put("rooms", roomList);
             return ResponseEntity.ok(data);
-        }).orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping("/builder/upload-image")

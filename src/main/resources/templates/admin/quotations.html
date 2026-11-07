@@ -107,7 +107,7 @@
             <div>
                 <span>Total Quotations</span>
 
-                <strong th:text="${quotationList.size()}">
+                <strong th:text="${(allQuotationList != null ? allQuotationList : quotationList).size()}">
                     0
                 </strong>
             </div>
@@ -125,7 +125,7 @@
                 <span>Pending</span>
 
                 <strong
-                        th:text="${quotationList.?[status.name() == 'PENDING'].size()}">
+                        th:text="${(allQuotationList != null ? allQuotationList : quotationList).?[status != null and status.name() == 'PENDING'].size()}">
                     0
                 </strong>
             </div>
@@ -143,7 +143,7 @@
                 <span>Working</span>
 
                 <strong
-                        th:text="${quotationList.?[status.name() == 'WORKING'].size()}">
+                        th:text="${(allQuotationList != null ? allQuotationList : quotationList).?[status != null and status.name() == 'WORKING'].size()}">
                     0
                 </strong>
             </div>
@@ -161,7 +161,7 @@
                 <span>Sent</span>
 
                 <strong
-                        th:text="${quotationList.?[status.name() == 'SENT'].size()}">
+                        th:text="${(allQuotationList != null ? allQuotationList : quotationList).?[status != null and status.name() == 'SENT'].size()}">
                     0
                 </strong>
             </div>
@@ -281,7 +281,8 @@
                 <tbody>
 
                 <tr th:each="quotation : ${quotationList}"
-                    class="quotation-row">
+                    class="quotation-row"
+                    th:data-status="${quotation.status != null ? quotation.status.name() : 'PENDING'}">
 
                     <!-- Quotation Number -->
 
@@ -290,13 +291,13 @@
                         <a th:if="${quotation.status != null and quotation.status.name() == 'PENDING'}"
                            th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
                            class="quotation-number"
-                           th:text="${quotation.quotationNumber}">
+                           th:text="${quotation.quotationNumber != null && !quotation.quotationNumber.isBlank() ? quotation.quotationNumber : 'QT-' + quotation.id}">
                             PK-2026-000001
                         </a>
                         <a th:unless="${quotation.status != null and quotation.status.name() == 'PENDING'}"
                            th:href="@{/admin/quotations/view/{id}(id=${quotation.id})}"
                            class="quotation-number"
-                           th:text="${quotation.quotationNumber}">
+                           th:text="${quotation.quotationNumber != null && !quotation.quotationNumber.isBlank() ? quotation.quotationNumber : 'QT-' + quotation.id}">
                             PK-2026-000001
                         </a>
 
@@ -305,9 +306,19 @@
 
                     <!-- Date -->
 
-                    <td
-                            th:text="${#temporals.format(quotation.quotationDate, 'dd MMM yyyy')}">
-                        01 Oct 2026
+                    <td>
+                        <span th:if="${quotation.quotationDate != null}"
+                              th:text="${#temporals.format(quotation.quotationDate, 'dd MMM yyyy')}">
+                            01 Oct 2026
+                        </span>
+                        <span th:if="${quotation.quotationDate == null and quotation.createdAt != null}"
+                              th:text="${#temporals.format(quotation.createdAt, 'dd MMM yyyy')}">
+                            01 Oct 2026
+                        </span>
+                        <span th:if="${quotation.quotationDate == null and quotation.createdAt == null}"
+                              style="color: #64748b; font-style: italic;">
+                            —
+                        </span>
                     </td>
 
 
@@ -315,19 +326,26 @@
 
                     <td>
 
-                        <div class="customer-cell">
+                        <div class="customer-cell" th:if="${quotation.customer != null}">
 
-                            <strong
+                            <strong th:if="${quotation.customer.name != null && !quotation.customer.name.isBlank()}"
                                     th:text="${quotation.customer.name}">
                                 Customer Name
                             </strong>
+                            <span th:if="${quotation.customer.name == null || quotation.customer.name.isBlank()}"
+                                  style="color: #64748b; font-style: italic;">
+                                Not selected
+                            </span>
 
-                            <span
-                                    th:if="${quotation.customer.phone}"
-                                    th:text="${quotation.customer.phone}">
+                            <span th:if="${quotation.customer.phone != null && !quotation.customer.phone.isBlank()}"
+                                  th:text="${quotation.customer.phone}">
                                 Phone
                             </span>
 
+                        </div>
+
+                        <div class="customer-cell" th:if="${quotation.customer == null}">
+                            <span style="color: #64748b; font-style: italic;">Not selected</span>
                         </div>
 
                     </td>
@@ -335,17 +353,33 @@
 
                     <!-- District -->
 
-                    <td
-                            th:text="${quotation.branch.name}">
-                        Kanyakumari
+                    <td>
+                        <span th:if="${quotation.branch != null && quotation.branch.name != null && !quotation.branch.name.isBlank()}"
+                              th:text="${quotation.branch.name}">
+                            Kanyakumari
+                        </span>
+                        <span th:if="${quotation.branch == null || quotation.branch.name == null || quotation.branch.name.isBlank()}"
+                              style="color: #64748b; font-style: italic;">
+                            Not selected
+                        </span>
                     </td>
 
 
                     <!-- Employee -->
 
-                    <td
-                            th:text="${quotation.employee.name}">
-                        Employee
+                    <td>
+                        <span th:if="${quotation.employee != null && quotation.employee.name != null && !quotation.employee.name.isBlank()}"
+                              th:text="${quotation.employee.name}">
+                            Employee
+                        </span>
+                        <span th:if="${quotation.employee != null && (quotation.employee.name == null || quotation.employee.name.isBlank()) && quotation.employee.email != null && !quotation.employee.email.isBlank()}"
+                              th:text="${quotation.employee.email}">
+                            employee@example.com
+                        </span>
+                        <span th:if="${quotation.employee == null || ((quotation.employee.name == null || quotation.employee.name.isBlank()) && (quotation.employee.email == null || quotation.employee.email.isBlank()))}"
+                              style="color: #64748b; font-style: italic;">
+                            —
+                        </span>
                     </td>
 
 
@@ -353,9 +387,29 @@
 
                     <td>
 
-                        <span class="pricing-badge"
-                              th:text="${quotation.pricingMode}">
-                            PREMIUM
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <span class="pricing-badge"
+                                  th:if="${quotation.selectedGrade != null}"
+                                  style="background: #eaf5f1; color: #13795b; font-weight: 700; border: 1px solid #c2e5d9;"
+                                  th:text="'✓ ' + ${quotation.selectedGrade}">
+                                ✓ PREMIUM
+                            </span>
+                            <span class="pricing-badge"
+                                  th:unless="${quotation.selectedGrade != null}"
+                                  style="background: #f1f5f9; color: #475569; font-weight: 600; border: 1px solid #cbd5e1;">
+                                Multi-Grade
+                            </span>
+                        </span>
+                        <span th:unless="${quotation.isMultiGrade()}">
+                            <span class="pricing-badge"
+                                  th:if="${quotation.pricingMode != null}"
+                                  th:text="${quotation.pricingMode}">
+                                PREMIUM
+                            </span>
+                            <span th:if="${quotation.pricingMode == null}"
+                                  style="color: #64748b; font-style: italic;">
+                                —
+                            </span>
                         </span>
 
                     </td>
@@ -365,10 +419,33 @@
 
                     <td>
 
-                        <strong class="amount"
-                                th:text="${@inr.rupees(quotation.grandTotal)}">
-                            ₹ 0.00
-                        </strong>
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <strong class="amount"
+                                    th:if="${quotation.effectiveGrandTotal != null}"
+                                    th:text="${@inr.rupees(quotation.effectiveGrandTotal)}">
+                                ₹ 0.00
+                            </strong>
+                            <span th:unless="${quotation.effectiveGrandTotal != null}"
+                                  style="color: #64748b; font-style: italic;">
+                                Not Confirmed
+                            </span>
+                        </span>
+                        <span th:unless="${quotation.isMultiGrade()}">
+                            <strong class="amount"
+                                    th:if="${quotation.grandTotal != null && quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) > 0}"
+                                    th:text="${@inr.rupees(quotation.grandTotal)}">
+                                ₹ 0.00
+                            </strong>
+                            <span th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and quotation.status != null and quotation.status.name() == 'PENDING'}"
+                                  style="color: #64748b; font-style: italic;">
+                                Not calculated
+                            </span>
+                            <strong class="amount"
+                                    th:if="${(quotation.grandTotal == null || quotation.grandTotal.compareTo(T(java.math.BigDecimal).ZERO) <= 0) and (quotation.status == null or quotation.status.name() != 'PENDING')}"
+                                    th:text="${@inr.rupees(quotation.grandTotal != null ? quotation.grandTotal : 0)}">
+                                ₹ 0.00
+                            </strong>
+                        </span>
 
                     </td>
 
@@ -379,9 +456,14 @@
 
                         <span
                                 class="status-badge"
+                                th:if="${quotation.status != null}"
                                 th:classappend="${' status-' + quotation.status.name().toLowerCase()}"
                                 th:text="${quotation.status}">
                             DRAFT
+                        </span>
+                        <span th:if="${quotation.status == null}"
+                              class="status-badge status-pending">
+                            PENDING
                         </span>
 
                     </td>
@@ -417,9 +499,10 @@
                             <form th:action="@{/admin/quotations/delete/{id}(id=${quotation.id})}"
                                   method="post"
                                   style="display: inline; margin: 0;"
-                                  th:data-quotation-number="${quotation.quotationNumber}"
+                                  th:data-quotation-number="${quotation.quotationNumber != null ? quotation.quotationNumber : ('QT-' + quotation.id)}"
                                   onsubmit="return confirm('Are you sure you want to delete quotation ' + (this.getAttribute('data-quotation-number') || '') + '? This action cannot be undone.');">
                                 <input type="hidden"
+                                       th:if="${_csrf != null}"
                                        th:name="${_csrf.parameterName}"
                                        th:value="${_csrf.token}">
                                 <button type="submit"
@@ -494,6 +577,9 @@
     const searchInput =
         document.getElementById("quotationSearch");
 
+    const statusFilter =
+        document.getElementById("statusFilter");
+
     const table =
         document.getElementById("quotationTable");
 
@@ -506,41 +592,69 @@
         });
     }
 
-    if (searchInput && table) {
-        searchInput.addEventListener("input", function () {
-            const searchValue = this.value.toLowerCase().trim();
-            const rows = table.querySelectorAll(".quotation-row");
+    function applyFilters() {
+        if (!table) return;
+        const searchValue = searchInput ? searchInput.value.toLowerCase().trim() : "";
+        const selectedStatus = statusFilter ? statusFilter.value.toUpperCase().trim() : "";
+        const rows = table.querySelectorAll(".quotation-row");
 
-            rows.forEach(function (row) {
-                const rowText = row.textContent.toLowerCase();
-                if (rowText.includes(searchValue)) {
-                    row.removeAttribute("data-filtered-out");
+        rows.forEach(function (row) {
+            const rowText = row.innerText.toLowerCase();
+            const rowStatus = (row.getAttribute("data-status") || "").toUpperCase();
+
+            const matchesSearch = !searchValue || rowText.includes(searchValue);
+            const matchesStatus = !selectedStatus || rowStatus === selectedStatus;
+
+            if (matchesSearch && matchesStatus) {
+                row.removeAttribute("data-filtered-out");
+            } else {
+                row.setAttribute("data-filtered-out", "true");
+            }
+        });
+
+        if (quotationPagination) {
+            quotationPagination.currentPage = 1;
+            quotationPagination.applyFilterAndRender();
+        }
+    }
+
+    if (searchInput) {
+        searchInput.addEventListener("input", applyFilters);
+    }
+
+    if (statusFilter) {
+        statusFilter.addEventListener("change", function () {
+            const isServerStatusRoute = window.location.pathname.includes("/admin/quotations/status/");
+            if (isServerStatusRoute) {
+                if (!this.value) {
+                    window.location.href = "/admin/quotations";
                 } else {
-                    row.setAttribute("data-filtered-out", "true");
+                    window.location.href = "/admin/quotations/status/" + this.value;
                 }
-            });
-
-            if (quotationPagination) {
-                quotationPagination.currentPage = 1;
-                quotationPagination.applyFilterAndRender();
+            } else {
+                applyFilters();
             }
         });
     }
 
     function filterByStatus(status) {
-
-        const url =
-            "/admin/quotations/status/" + status;
-
-        if (!status) {
-
-            window.location.href =
-                "/admin/quotations";
-
-            return;
+        if (statusFilter) {
+            statusFilter.value = status;
         }
+        const isServerStatusRoute = window.location.pathname.includes("/admin/quotations/status/");
+        if (isServerStatusRoute) {
+            if (!status) {
+                window.location.href = "/admin/quotations";
+            } else {
+                window.location.href = "/admin/quotations/status/" + status;
+            }
+        } else {
+            applyFilters();
+        }
+    }
 
-        window.location.href = url;
+    if (statusFilter && statusFilter.value && !window.location.pathname.includes("/admin/quotations/status/")) {
+        applyFilters();
     }
 
 </script>

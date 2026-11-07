@@ -79,8 +79,13 @@
                         <span class="status-badge"
                               th:text="${quotation.status}">PENDING</span>
                     </td>
-                    <td class="text-end"
-                        th:text="${@inr.format(quotation.grandTotal)}">0.00</td>
+                    <td class="text-end">
+                        <span th:if="${quotation.isMultiGrade()}">
+                            <span th:if="${quotation.effectiveGrandTotal != null}" th:text="${@inr.format(quotation.effectiveGrandTotal)}">0.00</span>
+                            <span th:unless="${quotation.effectiveGrandTotal != null}" style="color: #64748b; font-style: italic;">Not Confirmed</span>
+                        </span>
+                        <span th:unless="${quotation.isMultiGrade()}" th:text="${@inr.format(quotation.grandTotal)}">0.00</span>
+                    </td>
                 </tr>
 
                 <tr th:if="${#lists.isEmpty(quotations)}">

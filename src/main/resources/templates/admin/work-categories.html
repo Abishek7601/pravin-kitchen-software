@@ -2618,7 +2618,7 @@
                             imgThumbnail = '<a href="' + escapeHtml(mat.imageUrl) + '" target="_blank" title="View image" style="margin-right: 4px; display: inline-flex;"><img src="' + escapeHtml(mat.imageUrl) + '" alt="' + escapeHtml(name) + '" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid #cbd5e1; vertical-align: middle;"></a>';
                         }
                     } else if (mType === 'ROLL' || unit === 'Roll') {
-                        var cov = mat.coveragePerRoll ? mat.coveragePerRoll : 40;
+                        var cov = (mat.coveragePerRoll != null && Number(mat.coveragePerRoll) > 0) ? mat.coveragePerRoll : '-';
                         typeBadge = '<span style="font-size: 11px; background: #faf5ff; color: #6b21a8; border: 1px solid #e9d5ff; padding: 2px 8px; border-radius: 6px; font-weight: 600;">🧻 Roll (' + cov + ' Sq.ft) — ' + escapeHtml(formula) + '</span>';
                         unitLabel = 'per Roll';
                     } else {
@@ -3100,6 +3100,7 @@
                         var formula = editBtn.getAttribute('data-formula') || 'L × W';
                         var mType = editBtn.getAttribute('data-type') || 'SQFT';
                         var imgUrl = editBtn.getAttribute('data-image') || '';
+                        var covVal = editBtn.getAttribute('data-coverage') || '';
                         var isActiveVal = editBtn.getAttribute('data-active') !== 'false';
                         var foundMat = null;
                         if (currentMaterialsData && currentMaterialsData.materials) {
@@ -3121,6 +3122,7 @@
                                 formula: formula,
                                 measurementType: mType,
                                 imageUrl: imgUrl,
+                                coveragePerRoll: covVal,
                                 active: isActiveVal
                             });
                         }
