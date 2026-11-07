@@ -55,6 +55,9 @@ public class QuotationSaveNewEmployeeTest {
     private EmployeeService employeeService;
 
     @Autowired
+    private AdminQuotationBuilderService builderService;
+
+    @Autowired
     private EmployeeQuotationController employeeQuotationController;
 
     @Autowired
@@ -136,8 +139,12 @@ public class QuotationSaveNewEmployeeTest {
         WorkCategory cat = workCategoryRepository.findAll().stream().filter(c -> Boolean.TRUE.equals(c.getActive())).findFirst().orElseThrow();
         Division div = divisionRepository.findAll().stream().filter(d -> Boolean.TRUE.equals(d.getActive())).findFirst().orElseThrow();
         Item item = itemRepository.findAll().stream().filter(i -> Boolean.TRUE.equals(i.getActive())).findFirst().orElseThrow();
-        Material mat = materialRepository.findAll().stream().filter(m -> Boolean.TRUE.equals(m.getActive())).findFirst().orElseThrow();
-        MaterialOption opt = materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow();
+        Material mat = materialRepository.findAll().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getActive()) && (m.getPricingGrade() == PricingMode.MIDDLE || builderService.hasPositiveRateForGrade(m, PricingMode.MIDDLE)))
+                .findFirst().orElseThrow();
+        MaterialOption opt = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId()).stream()
+                .findFirst()
+                .orElseGet(() -> materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow());
 
         AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
                 new BigDecimal("24"), new BigDecimal("36"), new BigDecimal("30"), null
@@ -208,8 +215,12 @@ public class QuotationSaveNewEmployeeTest {
         WorkCategory cat = workCategoryRepository.findAll().stream().filter(c -> Boolean.TRUE.equals(c.getActive())).findFirst().orElseThrow();
         Division div = divisionRepository.findAll().stream().filter(d -> Boolean.TRUE.equals(d.getActive())).findFirst().orElseThrow();
         Item item = itemRepository.findAll().stream().filter(i -> Boolean.TRUE.equals(i.getActive())).findFirst().orElseThrow();
-        Material mat = materialRepository.findAll().stream().filter(m -> Boolean.TRUE.equals(m.getActive())).findFirst().orElseThrow();
-        MaterialOption opt = materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow();
+        Material mat = materialRepository.findAll().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getActive()) && (m.getPricingGrade() == PricingMode.MIDDLE || builderService.hasPositiveRateForGrade(m, PricingMode.MIDDLE)))
+                .findFirst().orElseThrow();
+        MaterialOption opt = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId()).stream()
+                .findFirst()
+                .orElseGet(() -> materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow());
 
         AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
                 new BigDecimal("24"), new BigDecimal("36"), new BigDecimal("30"), null
@@ -252,8 +263,12 @@ public class QuotationSaveNewEmployeeTest {
         WorkCategory cat = workCategoryRepository.findAll().stream().filter(c -> Boolean.TRUE.equals(c.getActive())).findFirst().orElseThrow();
         Division div = divisionRepository.findAll().stream().filter(d -> Boolean.TRUE.equals(d.getActive())).findFirst().orElseThrow();
         Item item = itemRepository.findAll().stream().filter(i -> Boolean.TRUE.equals(i.getActive())).findFirst().orElseThrow();
-        Material mat = materialRepository.findAll().stream().filter(m -> Boolean.TRUE.equals(m.getActive())).findFirst().orElseThrow();
-        MaterialOption opt = materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow();
+        Material mat = materialRepository.findAll().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getActive()) && (m.getPricingGrade() == PricingMode.MIDDLE || builderService.hasPositiveRateForGrade(m, PricingMode.MIDDLE)))
+                .findFirst().orElseThrow();
+        MaterialOption opt = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId()).stream()
+                .findFirst()
+                .orElseGet(() -> materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow());
 
         // 1. Success case with Accept: application/json
         String jsonSuccess = String.format("""
@@ -372,8 +387,12 @@ public class QuotationSaveNewEmployeeTest {
         WorkCategory cat = workCategoryRepository.findAll().stream().filter(c -> Boolean.TRUE.equals(c.getActive())).findFirst().orElseThrow();
         Division div = divisionRepository.findAll().stream().filter(d -> Boolean.TRUE.equals(d.getActive())).findFirst().orElseThrow();
         Item item = itemRepository.findAll().stream().filter(i -> Boolean.TRUE.equals(i.getActive())).findFirst().orElseThrow();
-        Material mat = materialRepository.findAll().stream().filter(m -> Boolean.TRUE.equals(m.getActive())).findFirst().orElseThrow();
-        MaterialOption opt = materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow();
+        Material mat = materialRepository.findAll().stream()
+                .filter(m -> Boolean.TRUE.equals(m.getActive()) && (m.getPricingGrade() == PricingMode.MIDDLE || builderService.hasPositiveRateForGrade(m, PricingMode.MIDDLE)))
+                .findFirst().orElseThrow();
+        MaterialOption opt = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId()).stream()
+                .findFirst()
+                .orElseGet(() -> materialOptionRepository.findAll().stream().filter(o -> Boolean.TRUE.equals(o.getActive())).findFirst().orElseThrow());
 
         AdminQuotationBuilderService.SizeRequest size = new AdminQuotationBuilderService.SizeRequest(
                 new BigDecimal("20"), new BigDecimal("30"), new BigDecimal("25"), null

@@ -325,6 +325,10 @@ public class AdminQuotationBuilderService {
     }
 
     public boolean hasPositiveRateForGrade(Material m, PricingMode grade) {
+        return hasPositiveRateForGrade(null, m, grade);
+    }
+
+    public boolean hasPositiveRateForGrade(Long branchId, Material m, PricingMode grade) {
         if (m == null) return false;
         if (m.getPricingGrade() == grade && m.getRate() != null && m.getRate().compareTo(BigDecimal.ZERO) > 0) {
             return true;
@@ -332,8 +336,11 @@ public class AdminQuotationBuilderService {
         List<MaterialOption> opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(m.getId());
         for (MaterialOption opt : opts) {
             Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(opt.getId(), grade).orElse(null);
-            if (p != null && p.getRate() != null && p.getRate().compareTo(BigDecimal.ZERO) > 0) {
-                return true;
+            if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                BigDecimal r = resolveRateFromPricing(branchId, p);
+                if (r != null && r.compareTo(BigDecimal.ZERO) > 0) {
+                    return true;
+                }
             }
         }
         return false;
@@ -525,7 +532,7 @@ public class AdminQuotationBuilderService {
             }
         }
 
-        PricingMode requestedMode = request.pricingMode() != null ? request.pricingMode() : PricingMode.MIDDLE;
+        PricingMode requestedMode = request.pricingMode() != null ? request.pricingMode() : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM);
 
         // Resolve Parent Quotation & Target Quotation
         Quotation parentQuotation = null;
@@ -533,56 +540,94 @@ public class AdminQuotationBuilderService {
         boolean isEdit = false;
         java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
 
+        // 1. Resolve Parent Quotation
         if (request.parentId() != null) {
             parentQuotation = quotationRepository.findById(request.parentId())
                     .orElseThrow(() -> new IllegalArgumentException("Parent quotation not found."));
             if (parentQuotation.getParent() != null) {
                 parentQuotation = parentQuotation.getParent();
             }
-            if (loggedInUser.getRole() == Role.EMPLOYEE && parentQuotation.getBranch() != null && loggedInUser.getBranch() != null
-                    && !parentQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
-                throw new AccessDeniedException("Unauthorized: Cannot modify quotation for another branch.");
-            }
-            if (request.quotationId() != null) {
-                targetQuotation = quotationRepository.findById(request.quotationId()).orElse(null);
-            }
-            if (targetQuotation == null) {
-                targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
-            }
-            if (targetQuotation == null) {
-                targetQuotation = new Quotation();
-                targetQuotation.setParent(parentQuotation);
-                targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
-                targetQuotation.setPricingMode(requestedMode);
-            } else {
-                isEdit = true;
-            }
         } else if (request.quotationId() != null) {
             Quotation existing = quotationRepository.findById(request.quotationId()).orElse(null);
             if (existing != null) {
                 if (existing.getParent() != null) {
                     parentQuotation = existing.getParent();
-                    targetQuotation = existing;
-                    isEdit = true;
-                } else if (existing.isParentQuotation()) {
-                    parentQuotation = existing;
-                    targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
-                    if (targetQuotation == null) {
-                        targetQuotation = new Quotation();
-                        targetQuotation.setParent(parentQuotation);
-                        targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
-                        targetQuotation.setPricingMode(requestedMode);
-                        isEdit = false;
-                    } else {
+                    if (existing.getPricingMode() == requestedMode) {
+                        targetQuotation = existing;
                         isEdit = true;
                     }
+                } else if (existing.isParentQuotation() || quotationRepository.existsByParentId(existing.getId())) {
+                    parentQuotation = existing;
                 } else {
-                    targetQuotation = existing;
-                    isEdit = true;
+                    // Standalone quotation without children
+                    if (existing.getPricingMode() == requestedMode) {
+                        targetQuotation = existing;
+                        isEdit = true;
+                    } else {
+                        // Grade differs: convert standalone into parent quotation
+                        parentQuotation = existing;
+                    }
                 }
             }
         }
 
+        if (parentQuotation != null && loggedInUser.getRole() == Role.EMPLOYEE && parentQuotation.getBranch() != null && loggedInUser.getBranch() != null
+                && !parentQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+            throw new AccessDeniedException("Unauthorized: Cannot modify quotation for another branch.");
+        }
+
+        // 2. Resolve Target Child Quotation for the requested grade
+        if (parentQuotation != null && targetQuotation == null) {
+            String parentRawNumber = parentQuotation.getRawQuotationNumber() != null
+                    ? parentQuotation.getRawQuotationNumber()
+                    : parentQuotation.getQuotationNumber();
+            String expectedChildNumber = parentRawNumber + "-" + requestedMode.name();
+
+            // A. Check if request.quotationId() points directly to this grade's child
+            if (request.quotationId() != null) {
+                Quotation requestedQuote = quotationRepository.findById(request.quotationId()).orElse(null);
+                if (requestedQuote != null && !requestedQuote.getId().equals(parentQuotation.getId())) {
+                    if (requestedQuote.getPricingMode() == requestedMode) {
+                        targetQuotation = requestedQuote;
+                    }
+                }
+            }
+
+            // B. Look up by (parent.id, requestedMode)
+            if (targetQuotation == null && parentQuotation.getId() != null) {
+                targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
+            }
+
+            // C. Look up by expected quotation number
+            if (targetQuotation == null) {
+                targetQuotation = quotationRepository.findByQuotationNumber(expectedChildNumber).orElse(null);
+            }
+
+            // D. Check parent's childQuotations collection if present
+            if (targetQuotation == null && parentQuotation.getChildQuotations() != null) {
+                for (Quotation child : parentQuotation.getChildQuotations()) {
+                    if (child.getPricingMode() == requestedMode
+                            || (child.getRawQuotationNumber() != null && child.getRawQuotationNumber().equals(expectedChildNumber))) {
+                        targetQuotation = child;
+                        break;
+                    }
+                }
+            }
+
+            if (targetQuotation != null) {
+                isEdit = true;
+                targetQuotation.setParent(parentQuotation);
+                targetQuotation.setPricingMode(requestedMode);
+            } else {
+                targetQuotation = new Quotation();
+                targetQuotation.setParent(parentQuotation);
+                targetQuotation.setQuotationNumber(expectedChildNumber);
+                targetQuotation.setPricingMode(requestedMode);
+                isEdit = false;
+            }
+        }
+
+        // 3. Brand new Quotation (no parent yet)
         if (targetQuotation == null && parentQuotation == null) {
             parentQuotation = new Quotation();
             parentQuotation.setQuotationNumber(nextQuotationNumber());
@@ -591,15 +636,17 @@ public class AdminQuotationBuilderService {
             parentQuotation.setEmployee(loggedInUser);
             if (branch != null) parentQuotation.setBranch(branch);
 
-            targetQuotation = new Quotation();
-            targetQuotation.setParent(parentQuotation);
-            targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
-            targetQuotation.setPricingMode(requestedMode);
-        } else if (targetQuotation == null) {
-            targetQuotation = new Quotation();
-            targetQuotation.setParent(parentQuotation);
-            targetQuotation.setQuotationNumber(parentQuotation.getQuotationNumber() + "-" + requestedMode.name());
-            targetQuotation.setPricingMode(requestedMode);
+            String expectedChildNumber = parentQuotation.getQuotationNumber() + "-" + requestedMode.name();
+            targetQuotation = quotationRepository.findByQuotationNumber(expectedChildNumber).orElse(null);
+            if (targetQuotation == null) {
+                targetQuotation = new Quotation();
+                targetQuotation.setParent(parentQuotation);
+                targetQuotation.setQuotationNumber(expectedChildNumber);
+                targetQuotation.setPricingMode(requestedMode);
+                isEdit = false;
+            } else {
+                isEdit = true;
+            }
         }
 
         if (isEdit && targetQuotation.getId() != null) {
@@ -706,7 +753,57 @@ public class AdminQuotationBuilderService {
         targetQuotation.setLastActiveDivisionId(request.lastActiveDivisionId());
         targetQuotation.setBuilderState(request.builderState());
 
-        Quotation savedQuotation = quotationRepository.save(targetQuotation);
+        Quotation savedQuotation;
+        try {
+            savedQuotation = quotationRepository.save(targetQuotation);
+        } catch (org.springframework.dao.DataIntegrityViolationException dive) {
+            String expectedChildNumber = (parentQuotation != null && parentQuotation.getRawQuotationNumber() != null)
+                    ? parentQuotation.getRawQuotationNumber() + "-" + requestedMode.name()
+                    : targetQuotation.getRawQuotationNumber();
+            Quotation existingChild = null;
+            if (parentQuotation != null && parentQuotation.getId() != null) {
+                existingChild = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
+            }
+            if (existingChild == null && expectedChildNumber != null) {
+                existingChild = quotationRepository.findByQuotationNumber(expectedChildNumber).orElse(null);
+            }
+            if (existingChild != null) {
+                targetQuotation = existingChild;
+                targetQuotation.setCustomer(customer);
+                if (branch != null) targetQuotation.setBranch(branch);
+                targetQuotation.setQuotationDate(effectiveQuotationDate);
+                targetQuotation.setValidUntil(validUntil);
+                targetQuotation.setPricingMode(requestedMode);
+                if (isAutoSave) {
+                    if (targetQuotation.getStatus() == null || targetQuotation.getStatus() == QuotationStatus.PENDING) {
+                        targetQuotation.setStatus(QuotationStatus.PENDING);
+                    }
+                } else {
+                    targetQuotation.setStatus(QuotationStatus.WORKING);
+                }
+                targetQuotation.setCustomerRequirements(clean(request.customerRequirements()));
+                targetQuotation.setNotes(clean(request.notes()));
+                if (request.accessoriesAmount() != null) targetQuotation.setAccessoriesAmount(request.accessoriesAmount());
+                if (request.travelCharge() != null) targetQuotation.setTravelCharge(request.travelCharge());
+                if (request.otherCharges() != null) targetQuotation.setOtherCharges(request.otherCharges());
+                if (request.otherChargesDescription() != null) targetQuotation.setOtherChargesDescription(clean(request.otherChargesDescription()));
+                if (request.discountAmount() != null) targetQuotation.setDiscountAmount(request.discountAmount());
+                if (request.gstPercentage() != null) targetQuotation.setGstPercentage(request.gstPercentage());
+                if (request.offerPercentage() != null) targetQuotation.setOfferPercentage(request.offerPercentage());
+                if (request.showSqftSize() != null) targetQuotation.setShowSqftSize(request.showSqftSize());
+                targetQuotation.setLastActiveStep(request.lastActiveStep());
+                targetQuotation.setLastActiveFloor(request.lastActiveFloor());
+                targetQuotation.setLastActiveRoom(request.lastActiveRoom());
+                targetQuotation.setLastActiveCategoryId(request.lastActiveCategoryId());
+                targetQuotation.setLastActiveDivisionId(request.lastActiveDivisionId());
+                targetQuotation.setBuilderState(request.builderState());
+                if (parentQuotation != null) targetQuotation.setParent(parentQuotation);
+                savedQuotation = quotationRepository.save(targetQuotation);
+                isEdit = true;
+            } else {
+                throw dive;
+            }
+        }
 
         if (request.rooms() != null && !request.rooms().isEmpty()) {
             saveRoomsAndItems(savedQuotation, request.rooms(), branch != null ? branch.getId() : null, requestedMode, existingMaterialIds, isEdit, isAutoSave);

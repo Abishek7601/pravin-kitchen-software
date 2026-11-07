@@ -184,7 +184,7 @@ public class AdminQuotationBuilderController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(branchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -203,7 +203,7 @@ public class AdminQuotationBuilderController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(branchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -222,7 +222,7 @@ public class AdminQuotationBuilderController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(branchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -475,11 +475,23 @@ public class AdminQuotationBuilderController {
         Quotation q;
         boolean isPrepared = true;
         if (targetMode != null) {
-            Quotation child = parent.getChildForGrade(targetMode);
+            Quotation child = null;
+            if (parent.getId() != null) {
+                child = quotationRepository.findByParentIdAndPricingMode(parent.getId(), targetMode).orElse(null);
+                if (child == null) {
+                    String expectedNo = (parent.getRawQuotationNumber() != null ? parent.getRawQuotationNumber() : parent.getQuotationNumber()) + "-" + targetMode.name();
+                    child = quotationRepository.findByQuotationNumber(expectedNo).orElse(null);
+                }
+            }
+            if (child == null) {
+                child = parent.getChildForGrade(targetMode);
+            }
             if (child != null) {
                 q = child;
+                isPrepared = true;
             } else if (!parent.isParentQuotation() && parent.getPricingMode() == targetMode) {
                 q = parent;
+                isPrepared = true;
             } else {
                 q = new Quotation();
                 q.setParent(parent);
@@ -498,7 +510,7 @@ public class AdminQuotationBuilderController {
                     ? parent.getSelectedGrade()
                     : (parent.getChildQuotations() != null && !parent.getChildQuotations().isEmpty()
                             ? parent.getChildQuotations().get(0).getPricingMode()
-                            : PricingMode.MIDDLE);
+                            : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM));
             q = parent.getChildForGrade(pick);
             if (q == null) q = requested;
         } else {
@@ -531,7 +543,7 @@ public class AdminQuotationBuilderController {
         data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
         data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
         data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
-        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
+        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : (PricingMode.values().length > 0 ? PricingMode.values()[0].name() : "PREMIUM"));
         data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
         data.put("notes", q.getNotes() != null ? q.getNotes() : "");
         data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
@@ -557,7 +569,7 @@ public class AdminQuotationBuilderController {
         data.put("builderState", q.getBuilderState());
 
         Long branchId = q.getBranch() != null ? q.getBranch().getId() : null;
-        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
+        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM);
 
         List<QuotationRoom> rooms = (isPrepared && q.getId() != null)
                 ? quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(q.getId())

@@ -221,9 +221,14 @@ public class QuotationController {
     // VIEW QUOTATION
     // =========================================================
 
+    public String viewQuotation(Long id, Model model) {
+        return viewQuotation(id, null, model);
+    }
+
     @GetMapping("/view/{id}")
     public String viewQuotation(
             @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade,
             Model model
     ) {
 
@@ -235,7 +240,8 @@ public class QuotationController {
                 quotationService.getById(id);
 
         if (quotation.getParent() != null) {
-            return "redirect:/admin/quotations/view/" + quotation.getParent().getId();
+            return "redirect:/admin/quotations/view/" + quotation.getParent().getId()
+                    + (quotation.getPricingMode() != null ? "?grade=" + quotation.getPricingMode().name() : "");
         }
 
         model.addAttribute(
@@ -281,7 +287,9 @@ public class QuotationController {
         model.addAttribute("gradeSizesByItem", gradeSizesByItem);
 
         String activeGradeTab = "MIDDLE";
-        if (quotation.getSelectedGrade() != null) {
+        if (grade != null && quotation.getChildForGrade(grade) != null) {
+            activeGradeTab = grade.name();
+        } else if (quotation.getSelectedGrade() != null) {
             activeGradeTab = quotation.getSelectedGrade().name();
         } else if (premiumGrade != null) {
             activeGradeTab = "PREMIUM";
@@ -539,9 +547,14 @@ public class QuotationController {
     // SEND EMAIL
     // =========================================================
 
+    public String sendQuotationEmail(Long id, RedirectAttributes redirectAttributes) {
+        return sendQuotationEmail(id, null, redirectAttributes);
+    }
+
     @PostMapping("/email/{id}")
     public String sendQuotationEmail(
             @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade,
             RedirectAttributes redirectAttributes
     ) {
 
@@ -550,14 +563,22 @@ public class QuotationController {
             Quotation quotation =
                     quotationService.getById(id);
 
+            Quotation targetQuotation = quotation;
+            if (grade != null) {
+                Quotation child = quotation.getChildForGrade(grade);
+                if (child != null) {
+                    targetQuotation = child;
+                }
+            }
+
             quotationEmailService.sendQuotationEmail(
-                    quotation
+                    targetQuotation
             );
 
 
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    "Quotation email sent successfully."
+                    (grade != null ? grade.name() + " Grade " : "") + "Quotation email sent successfully."
             );
 
         } catch (Exception e) {
@@ -569,7 +590,7 @@ public class QuotationController {
             );
         }
 
-        return "redirect:/admin/quotations/view/" + id;
+        return "redirect:/admin/quotations/view/" + id + (grade != null ? "?grade=" + grade.name() : "");
     }
 
 
@@ -577,9 +598,14 @@ public class QuotationController {
     // WHATSAPP TRACKING
     // =========================================================
 
+    public Object trackWhatsApp(Long id, HttpServletRequest request, RedirectAttributes redirectAttributes) {
+        return trackWhatsApp(id, null, request, redirectAttributes);
+    }
+
     @GetMapping("/whatsapp/{id}")
     public Object trackWhatsApp(
             @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade,
             HttpServletRequest request,
             RedirectAttributes redirectAttributes
     ) {
@@ -594,8 +620,16 @@ public class QuotationController {
             Quotation quotation =
                     quotationService.getById(id);
 
+            Quotation targetQuotation = quotation;
+            if (grade != null) {
+                Quotation child = quotation.getChildForGrade(grade);
+                if (child != null) {
+                    targetQuotation = child;
+                }
+            }
+
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, baseUrl);
+            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(targetQuotation, baseUrl);
 
             if (wantsJson) {
                 return ResponseEntity.ok(result);
@@ -606,7 +640,7 @@ public class QuotationController {
                         "successMessage",
                         result.getMessage()
                 );
-                return "redirect:/admin/quotations/view/" + id;
+                return "redirect:/admin/quotations/view/" + id + (grade != null ? "?grade=" + grade.name() : "");
             }
 
             return "redirect:" + result.getWhatsappUrl();

@@ -81,6 +81,14 @@ public class MultiGradeQuotationWorkflowTest {
         adminUser.setRole(Role.SUPER_ADMIN);
         adminUser.setActive(true);
 
+        User employeeUser = new User();
+        employeeUser.setId(20L);
+        employeeUser.setEmail("employee@pravinkitchens.com");
+        employeeUser.setName("Employee User");
+        employeeUser.setRole(Role.EMPLOYEE);
+        employeeUser.setBranch(branchMadurai);
+        employeeUser.setActive(true);
+
         customer = new Customer();
         customer.setId(500L);
         customer.setName("Karthik");
@@ -109,8 +117,19 @@ public class MultiGradeQuotationWorkflowTest {
                     } else if ("findById".equals(name)) {
                         Long id = (Long) args[0];
                         return Optional.ofNullable(quotationStore.get(id));
+                    } else if ("findByQuotationNumber".equals(name)) {
+                        String num = (String) args[0];
+                        return quotationStore.values().stream()
+                                .filter(q -> num.equals(q.getRawQuotationNumber()) || num.equals(q.getQuotationNumber()))
+                                .findFirst();
                     } else if ("existsByQuotationNumber".equals(name)) {
-                        return false;
+                        String num = (String) args[0];
+                        return quotationStore.values().stream()
+                                .anyMatch(q -> num.equals(q.getRawQuotationNumber()) || num.equals(q.getQuotationNumber()));
+                    } else if ("existsByParentId".equals(name)) {
+                        Long pId = (Long) args[0];
+                        return quotationStore.values().stream()
+                                .anyMatch(q -> q.getParent() != null && q.getParent().getId().equals(pId));
                     } else if ("count".equals(name)) {
                         return (long) quotationStore.size();
                     } else if ("countByParentIsNull".equals(name)) {
@@ -148,6 +167,7 @@ public class MultiGradeQuotationWorkflowTest {
                     if ("findByEmail".equals(method.getName())) {
                         String email = (String) args[0];
                         if ("admin@pravinkitchens.com".equals(email)) return Optional.of(adminUser);
+                        if ("employee@pravinkitchens.com".equals(email)) return Optional.of(employeeUser);
                     }
                     return Optional.empty();
                 }
@@ -668,5 +688,390 @@ public class MultiGradeQuotationWorkflowTest {
         assertEquals("QT-00010", legacy.getQuotationNumber());
         assertEquals(PricingMode.MIDDLE, legacy.getEffectivePricingMode());
         assertEquals(new BigDecimal("85000.00"), legacy.getEffectiveGrandTotal());
+    }
+
+    @Test
+    @DisplayName("Auto-save then final save for same grade updates the same record and never duplicates")
+    public void testAutoSaveThenSaveMiddleDoesNotDuplicate() {
+        // 1. Create parent quotation QT-00042 with Premium
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                500L, "Karthik", "9876543210", "karthik@example.com", "Madurai"
+        );
+        AdminQuotationBuilderService.SizeRequest size1 = new AdminQuotationBuilderService.SizeRequest(
+                BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), null
+        );
+        AdminQuotationBuilderService.ItemRequest premItem = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Standard", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1500.0)
+        );
+        AdminQuotationBuilderService.RoomRequest premRoom = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Kitchen Premium Work", List.of(premItem)
+        );
+        AdminQuotationBuilderService.BuilderRequest premRequest = new AdminQuotationBuilderService.BuilderRequest(
+                null, null, custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.PREMIUM, "Requirements", "Notes",
+                List.of(premRoom), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+        Quotation premChild = builderService.save(premRequest, "admin@pravinkitchens.com");
+        Quotation parent = premChild.getParent();
+        assertNotNull(parent);
+
+        // 2. Auto-save Middle under QT-00042 (quotationId is null on first auto-save)
+        AdminQuotationBuilderService.ItemRequest midItem1 = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Middle standard draft", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1000.0)
+        );
+        AdminQuotationBuilderService.RoomRequest midRoom1 = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Kitchen Middle Draft", List.of(midItem1)
+        );
+        AdminQuotationBuilderService.BuilderRequest autoSaveMidReq = new AdminQuotationBuilderService.BuilderRequest(
+                null, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Requirements", "Notes",
+                List.of(midRoom1), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+        Quotation autoSavedMid = builderService.autoSave(autoSaveMidReq, "admin@pravinkitchens.com");
+        assertNotNull(autoSavedMid);
+        Long midChildId = autoSavedMid.getId();
+        assertEquals(PricingMode.MIDDLE, autoSavedMid.getPricingMode());
+        assertEquals(QuotationStatus.PENDING, autoSavedMid.getStatus());
+
+        // 3. User clicks Final Save for Middle under QT-00042 (even if quotationId was null or passed)
+        AdminQuotationBuilderService.ItemRequest midItemFinal = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Middle standard final", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1000.0)
+        );
+        AdminQuotationBuilderService.RoomRequest midRoomFinal = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Kitchen Middle Final", List.of(midItemFinal)
+        );
+        AdminQuotationBuilderService.BuilderRequest finalSaveMidReq = new AdminQuotationBuilderService.BuilderRequest(
+                null, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Requirements", "Final Notes",
+                List.of(midRoomFinal), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+        Quotation finalSavedMid = builderService.save(finalSaveMidReq, "admin@pravinkitchens.com");
+        assertNotNull(finalSavedMid);
+
+        // Verification: Must update the exact same child record, NOT create a second Middle record!
+        assertEquals(midChildId, finalSavedMid.getId(), "Final save must update the auto-saved Middle record without creating duplicates");
+        assertEquals(QuotationStatus.WORKING, finalSavedMid.getStatus());
+
+        // Ensure parent only has 1 Middle child
+        long middleCount = parent.getChildQuotations().stream()
+                .filter(c -> c.getPricingMode() == PricingMode.MIDDLE)
+                .count();
+        assertEquals(1, middleCount, "There must be exactly one Middle grade quotation under parent QT-00042");
+    }
+
+    @Test
+    @DisplayName("Repeated Save clicks do not create duplicates")
+    public void testRepeatedSaveQuoteDoesNotDuplicate() {
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                500L, "Karthik", "9876543210", "karthik@example.com", "Madurai"
+        );
+        AdminQuotationBuilderService.SizeRequest size1 = new AdminQuotationBuilderService.SizeRequest(
+                BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), null
+        );
+        AdminQuotationBuilderService.ItemRequest item = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Standard", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1000.0)
+        );
+        AdminQuotationBuilderService.RoomRequest room = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Work", List.of(item)
+        );
+        AdminQuotationBuilderService.BuilderRequest req1 = new AdminQuotationBuilderService.BuilderRequest(
+                null, null, custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Requirements", "Notes",
+                List.of(room), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+
+        Quotation firstSave = builderService.save(req1, "admin@pravinkitchens.com");
+        Long firstId = firstSave.getId();
+        Quotation parent = firstSave.getParent();
+
+        // Immediate second save click with same parent and mode
+        AdminQuotationBuilderService.BuilderRequest req2 = new AdminQuotationBuilderService.BuilderRequest(
+                null, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Requirements", "Notes Updated",
+                List.of(room), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+        Quotation secondSave = builderService.save(req2, "admin@pravinkitchens.com");
+
+        assertEquals(firstId, secondSave.getId(), "Second save must update the existing record rather than create a duplicate");
+    }
+
+    @Test
+    @DisplayName("Verify Save Quote button attributes, onclick handlers, and absence of undeclared variable references")
+    public void testSaveQuoteButtonPropertiesAndTemplateIntegrity() throws Exception {
+        java.nio.file.Path adminPath = java.nio.file.Paths.get("src/main/resources/templates/admin/quotation-builder.html");
+        java.nio.file.Path empPath = java.nio.file.Paths.get("src/main/resources/templates/employee/quotation-builder.html");
+
+        String adminHtml = java.nio.file.Files.readString(adminPath);
+        String empHtml = java.nio.file.Files.readString(empPath);
+
+        // 1. Check Button attributes in Admin template
+        assertTrue(adminHtml.contains("id=\"saveQuoteBtn\""), "Admin template must contain id='saveQuoteBtn'");
+        assertTrue(adminHtml.contains("onclick=\"saveQuotation(true)\""), "Admin template save button must have onclick='saveQuotation(true)'");
+        assertTrue(adminHtml.contains("window.saveQuotation = saveQuotation;"), "Admin template must expose saveQuotation globally");
+
+        // 2. Check Button attributes in Employee template
+        assertTrue(empHtml.contains("id=\"saveQuoteBtn\""), "Employee template must contain id='saveQuoteBtn'");
+        assertTrue(empHtml.contains("onclick=\"saveQuotation(true)\""), "Employee template save button must have onclick='saveQuotation(true)'");
+        assertTrue(empHtml.contains("window.saveQuotation = saveQuotation;"), "Employee template must expose saveQuotation globally");
+
+        // 3. Ensure NO undeclared autoSaveTimeout variable exists in templates
+        assertFalse(adminHtml.contains("autoSaveTimeout"), "Admin template must NOT contain undeclared autoSaveTimeout");
+        assertFalse(empHtml.contains("autoSaveTimeout"), "Employee template must NOT contain undeclared autoSaveTimeout");
+
+        // 4. Verify DRAFT_STORAGE_KEY declarations and functions in both templates
+        assertTrue(adminHtml.contains("const DRAFT_STORAGE_KEY = 'pravin_quotation_builder_draft'"),
+                "Admin template must declare DRAFT_STORAGE_KEY");
+        assertTrue(empHtml.contains("const DRAFT_STORAGE_KEY = 'pravin_employee_quotation_builder_draft'"),
+                "Employee template must declare DRAFT_STORAGE_KEY");
+        assertTrue(adminHtml.contains("function getDraftStorageKey("), "Admin template must define getDraftStorageKey");
+        assertTrue(empHtml.contains("function getDraftStorageKey("), "Employee template must define getDraftStorageKey");
+        assertTrue(adminHtml.contains("function clearAllDrafts("), "Admin template must define clearAllDrafts");
+        assertTrue(empHtml.contains("function clearAllDrafts("), "Employee template must define clearAllDrafts");
+        assertTrue(adminHtml.contains("restoreQuotationBuilderDraftIfPresent"), "Admin template must define restoreQuotationBuilderDraftIfPresent");
+        assertTrue(empHtml.contains("restoreQuotationBuilderDraftIfPresent"), "Employee template must define restoreQuotationBuilderDraftIfPresent");
+    }
+
+    @Test
+    @DisplayName("Employee prepares and saves Premium, Middle, and Economy grade quotations under one parent without duplicates")
+    public void testEmployeeMultiGradeQuotationSaveAndWorkflow() {
+        AdminQuotationBuilderService.CustomerRequest custReq = new AdminQuotationBuilderService.CustomerRequest(
+                500L, "Karthik", "9876543210", "karthik@example.com", "Madurai"
+        );
+        AdminQuotationBuilderService.SizeRequest size1 = new AdminQuotationBuilderService.SizeRequest(
+                BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), BigDecimal.valueOf(10.0), null
+        );
+
+        // 1. Employee saves Premium quotation
+        AdminQuotationBuilderService.ItemRequest premItem = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Premium Grade Material", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(2500.0)
+        );
+        AdminQuotationBuilderService.RoomRequest premRoom = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Premium Kitchen", List.of(premItem)
+        );
+        AdminQuotationBuilderService.BuilderRequest reqPrem = new AdminQuotationBuilderService.BuilderRequest(
+                null, null, custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.PREMIUM, "Premium Specs", "Employee Premium Notes",
+                List.of(premRoom), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+
+        Quotation savedPrem = builderService.save(reqPrem, "employee@pravinkitchens.com");
+        assertNotNull(savedPrem);
+        assertNotNull(savedPrem.getParent(), "Saved grade quotation must be attached to a parent");
+        Quotation parent = savedPrem.getParent();
+        assertEquals(PricingMode.PREMIUM, savedPrem.getPricingMode());
+        assertEquals(parent.getQuotationNumber(), savedPrem.getQuotationNumber(), "Child must display parent quotation number");
+        assertTrue(savedPrem.getRawQuotationNumber().endsWith("-PREMIUM"), "Raw quotation number must end with -PREMIUM");
+        assertEquals(QuotationStatus.WORKING, savedPrem.getStatus());
+
+        // 2. Employee saves Middle quotation under the same parent
+        AdminQuotationBuilderService.ItemRequest midItem = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Middle Grade Material", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1800.0)
+        );
+        AdminQuotationBuilderService.RoomRequest midRoom = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Middle Kitchen", List.of(midItem)
+        );
+        AdminQuotationBuilderService.BuilderRequest reqMid = new AdminQuotationBuilderService.BuilderRequest(
+                null, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Middle Specs", "Employee Middle Notes",
+                List.of(midRoom), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+
+        Quotation savedMid = builderService.save(reqMid, "employee@pravinkitchens.com");
+        assertNotNull(savedMid);
+        assertEquals(parent.getId(), savedMid.getParent().getId(), "Middle must share parent ID");
+        assertEquals(PricingMode.MIDDLE, savedMid.getPricingMode());
+        assertEquals(parent.getQuotationNumber(), savedMid.getQuotationNumber(), "Middle must display parent quotation number");
+        assertTrue(savedMid.getRawQuotationNumber().endsWith("-MIDDLE"), "Raw quotation number must end with -MIDDLE");
+        assertEquals(QuotationStatus.WORKING, savedMid.getStatus());
+
+        // 3. Employee saves Economy quotation under the same parent
+        AdminQuotationBuilderService.ItemRequest econItem = new AdminQuotationBuilderService.ItemRequest(
+                1L, 1L, 1L, 1L, 1L, null,
+                "Base Cabinet", "Economy Grade Material", List.of(size1), MeasurementType.SQFT, BigDecimal.ONE, null, BigDecimal.valueOf(1200.0)
+        );
+        AdminQuotationBuilderService.RoomRequest econRoom = new AdminQuotationBuilderService.RoomRequest(
+                "Ground Floor", "Kitchen", "Economy Kitchen", List.of(econItem)
+        );
+        AdminQuotationBuilderService.BuilderRequest reqEcon = new AdminQuotationBuilderService.BuilderRequest(
+                null, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.ECONOMY, "Economy Specs", "Employee Economy Notes",
+                List.of(econRoom), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+
+        Quotation savedEcon = builderService.save(reqEcon, "employee@pravinkitchens.com");
+        assertNotNull(savedEcon);
+        assertEquals(parent.getId(), savedEcon.getParent().getId(), "Economy must share parent ID");
+        assertEquals(PricingMode.ECONOMY, savedEcon.getPricingMode());
+        assertEquals(parent.getQuotationNumber(), savedEcon.getQuotationNumber(), "Economy must display parent quotation number");
+        assertTrue(savedEcon.getRawQuotationNumber().endsWith("-ECONOMY"), "Raw quotation number must end with -ECONOMY");
+        assertEquals(QuotationStatus.WORKING, savedEcon.getStatus());
+
+        // Verify parent has all 3 grades
+        assertEquals(3, parent.getChildQuotations().size(), "Parent must have exactly 3 child quotations");
+
+        // 4. Employee updates the Middle quotation
+        Long midId = savedMid.getId();
+        AdminQuotationBuilderService.BuilderRequest reqMidUpdate = new AdminQuotationBuilderService.BuilderRequest(
+                midId, parent.getId(), custReq, 1L, LocalDate.now(), LocalDate.now().plusDays(30),
+                PricingMode.MIDDLE, "Updated Middle Specs", "Updated Middle Notes",
+                List.of(midRoom), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO, null, BigDecimal.ZERO, BigDecimal.valueOf(18.0), BigDecimal.ZERO, true,
+                "1", "Ground Floor", "Kitchen", 1L, 1L, null
+        );
+
+        Quotation updatedMid = builderService.save(reqMidUpdate, "employee@pravinkitchens.com");
+        assertEquals(midId, updatedMid.getId(), "Updating existing grade must update the same quotation record without creating duplicates");
+        assertEquals(3, parent.getChildQuotations().size(), "Child count must still be 3 after update");
+    }
+
+    @Test
+    @DisplayName("Verify View, PDF, WhatsApp, Email, Edit, Confirm buttons in Admin and Employee grade cards")
+    public void testGradeCardButtonsInTemplates() throws Exception {
+        String adminHtml = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/resources/templates/admin/quotation-view.html")
+        );
+        String employeeHtml = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/resources/templates/employee/quotation-workspace.html")
+        );
+
+        for (String html : List.of(adminHtml, employeeHtml)) {
+            // View buttons
+            assertTrue(html.contains("btn-grade-view"), "Must contain btn-grade-view");
+            assertTrue(html.contains("View Premium Quotation Details") || html.contains("title=\"View Premium"), "Must have view premium action");
+            assertTrue(html.contains("View Middle Quotation Details") || html.contains("title=\"View Middle"), "Must have view middle action");
+            assertTrue(html.contains("View Economy Quotation Details") || html.contains("title=\"View Economy"), "Must have view economy action");
+
+            // Edit buttons
+            assertTrue(html.contains("btn-grade-edit"), "Must contain btn-grade-edit");
+            assertTrue(html.contains("Edit Premium"), "Must contain Edit Premium");
+            assertTrue(html.contains("Edit Middle"), "Must contain Edit Middle");
+            assertTrue(html.contains("Edit Economy"), "Must contain Edit Economy");
+
+            // PDF buttons
+            assertTrue(html.contains("btn-grade-pdf"), "Must contain btn-grade-pdf");
+            assertTrue(html.contains("grade='PREMIUM'"), "Must support grade=PREMIUM param");
+            assertTrue(html.contains("grade='MIDDLE'"), "Must support grade=MIDDLE param");
+            assertTrue(html.contains("grade='ECONOMY'"), "Must support grade=ECONOMY param");
+
+            // WhatsApp buttons
+            assertTrue(html.contains("btn-grade-whatsapp"), "Must contain btn-grade-whatsapp");
+            assertTrue(html.contains("data-grade=\"PREMIUM\""), "Must have data-grade=PREMIUM");
+            assertTrue(html.contains("data-grade=\"MIDDLE\""), "Must have data-grade=MIDDLE");
+            assertTrue(html.contains("data-grade=\"ECONOMY\""), "Must have data-grade=ECONOMY");
+
+            // Email buttons
+            assertTrue(html.contains("btn-grade-email"), "Must contain btn-grade-email");
+            assertTrue(html.contains("name=\"grade\" value=\"PREMIUM\""), "Must submit grade=PREMIUM on email");
+            assertTrue(html.contains("name=\"grade\" value=\"MIDDLE\""), "Must submit grade=MIDDLE on email");
+            assertTrue(html.contains("name=\"grade\" value=\"ECONOMY\""), "Must submit grade=ECONOMY on email");
+
+            // Confirm buttons
+            assertTrue(html.contains("btn-confirm-grade"), "Must contain btn-confirm-grade");
+            assertTrue(html.contains("Confirm This Grade"), "Must contain Confirm This Grade text");
+
+            // Individual grade sending status
+            assertTrue(html.contains("premiumGrade.status.name() == 'SENT'"), "Must display SENT status for premium");
+            assertTrue(html.contains("middleGrade.status.name() == 'SENT'"), "Must display SENT status for middle");
+            assertTrue(html.contains("economyGrade.status.name() == 'SENT'"), "Must display SENT status for economy");
+
+            // Unprepared state shows only Prepare button
+            assertTrue(html.contains("+ Prepare Premium Quotation"), "Must show + Prepare Premium Quotation");
+            assertTrue(html.contains("+ Prepare Middle Quotation"), "Must show + Prepare Middle Quotation");
+            assertTrue(html.contains("+ Prepare Economy Quotation"), "Must show + Prepare Economy Quotation");
+        }
+    }
+
+    @Test
+    @DisplayName("Verify individual grade sending status maintains independent status without marking sibling grades as sent")
+    public void testIndividualGradeIndependentSendingStatus() {
+        Quotation parent = new Quotation();
+        parent.setId(101L);
+        parent.setQuotationNumber("QT-00050");
+        parent.setStatus(QuotationStatus.WORKING);
+        parent.setCustomer(customer);
+
+        Quotation premium = new Quotation();
+        premium.setId(102L);
+        premium.setParent(parent);
+        premium.setQuotationNumber("QT-00050-PREMIUM");
+        premium.setPricingMode(PricingMode.PREMIUM);
+        premium.setStatus(QuotationStatus.WORKING);
+        premium.setCustomer(customer);
+        premium.setGrandTotal(BigDecimal.valueOf(150000.00));
+
+        Quotation middle = new Quotation();
+        middle.setId(103L);
+        middle.setParent(parent);
+        middle.setQuotationNumber("QT-00050-MIDDLE");
+        middle.setPricingMode(PricingMode.MIDDLE);
+        middle.setStatus(QuotationStatus.WORKING);
+        middle.setCustomer(customer);
+        middle.setGrandTotal(BigDecimal.valueOf(100000.00));
+
+        Quotation economy = new Quotation();
+        economy.setId(104L);
+        economy.setParent(parent);
+        economy.setQuotationNumber("QT-00050-ECONOMY");
+        economy.setPricingMode(PricingMode.ECONOMY);
+        economy.setStatus(QuotationStatus.WORKING);
+        economy.setCustomer(customer);
+        economy.setGrandTotal(BigDecimal.valueOf(75000.00));
+
+        parent.setChildQuotations(new ArrayList<>(List.of(premium, middle, economy)));
+
+        // Simulate sending Premium
+        premium.setStatus(QuotationStatus.SENT);
+        if (premium.getParent() != null && premium.getParent().getStatus() != QuotationStatus.SENT) {
+            premium.getParent().setStatus(QuotationStatus.SENT);
+        }
+
+        // Verify Premium is SENT, parent is SENT, but Middle and Economy remain WORKING!
+        assertEquals(QuotationStatus.SENT, premium.getStatus(), "Premium must be SENT");
+        assertEquals(QuotationStatus.SENT, parent.getStatus(), "Parent quotation reflects SENT");
+        assertEquals(QuotationStatus.WORKING, middle.getStatus(), "Middle grade must remain WORKING");
+        assertEquals(QuotationStatus.WORKING, economy.getStatus(), "Economy grade must remain WORKING");
+    }
+
+    @Test
+    @DisplayName("Verify Communication History and bottom-actions panels are completely removed from Admin and Employee quotation details templates")
+    public void testCommunicationHistoryAndBottomActionsRemovedFromTemplates() throws Exception {
+        String adminHtml = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/resources/templates/admin/quotation-view.html")
+        );
+        String employeeHtml = java.nio.file.Files.readString(
+                java.nio.file.Path.of("src/main/resources/templates/employee/quotation-workspace.html")
+        );
+
+        for (String html : List.of(adminHtml, employeeHtml)) {
+            // Communication History section completely removed
+            assertFalse(html.contains("Communication History"), "Must not contain Communication History title");
+            assertFalse(html.contains("communication-history-card"), "Must not contain communication-history-card");
+            assertFalse(html.contains("No communication yet"), "Must not contain No communication yet");
+            assertFalse(html.contains("Email, WhatsApp and PDF activities"),
+                    "Must not contain placeholder text for communication activities");
+
+            // Bottom actions panel completely removed
+            assertFalse(html.contains("class=\"bottom-actions\""), "Must not contain bottom-actions class");
+            assertFalse(html.contains("Edit in Builder"), "Must not contain Edit in Builder in bottom panel");
+            assertFalse(html.contains("Send Quotation via WhatsApp"), "Must not contain Send Quotation via WhatsApp in bottom panel");
+            assertFalse(html.contains("Email Quotation"), "Must not contain Email Quotation in bottom panel");
+
+            // Still preserves grade cards and the WhatsApp modal
+            assertTrue(html.contains("multi-grade-grid"), "Must preserve multi-grade-grid");
+            assertTrue(html.contains("waShareModal"), "Must preserve waShareModal for grade card WhatsApp");
+        }
     }
 }

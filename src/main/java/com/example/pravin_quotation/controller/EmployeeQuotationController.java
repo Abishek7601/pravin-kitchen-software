@@ -64,6 +64,8 @@ import java.util.Map;
 @RequestMapping("/employee/quotations")
 public class EmployeeQuotationController {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(EmployeeQuotationController.class);
+
     private final QuotationRepository quotationRepository;
     private final UserRepository userRepository;
     private final CustomerRepository customerRepository;
@@ -457,7 +459,8 @@ public class EmployeeQuotationController {
         Quotation quotation = new Quotation();
         quotation.setQuotationNumber(previewQuotationNumber());
         quotation.setQuotationDate(LocalDate.now());
-        quotation.setPricingMode(PricingMode.MIDDLE);
+        PricingMode defaultGrade = PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM;
+        quotation.setPricingMode(defaultGrade);
         quotation.setBranch(employee.getBranch());
         quotation.setSubtotal(BigDecimal.ZERO);
         quotation.setGstAmount(BigDecimal.ZERO);
@@ -567,6 +570,7 @@ public class EmployeeQuotationController {
             } catch (Exception ignored) {}
         }
 
+        final Long finalBranchId = effectiveBranchId;
         List<Material> list = null;
         if (divisionId != null) {
             if (grade != null) {
@@ -580,7 +584,7 @@ public class EmployeeQuotationController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(finalBranchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -599,7 +603,7 @@ public class EmployeeQuotationController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(finalBranchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -618,7 +622,7 @@ public class EmployeeQuotationController {
                                 return true;
                             }
                             if (m.getPricingGrade() == null) {
-                                return !requireAvailable || builderService.hasPositiveRateForGrade(m, filterGrade);
+                                return !requireAvailable || builderService.hasPositiveRateForGrade(finalBranchId, m, filterGrade);
                             }
                             return false;
                         })
@@ -633,7 +637,6 @@ public class EmployeeQuotationController {
             list = Collections.emptyList();
         }
         final PricingMode targetGrade = grade;
-        final Long finalBranchId = effectiveBranchId;
         List<Map<String, Object>> result = list.stream().map(m -> {
             Map<String, Object> map = new LinkedHashMap<>();
             map.put("id", m.getId());
@@ -883,6 +886,7 @@ public class EmployeeQuotationController {
             }
             return "redirect:" + redirectUrl;
         } catch (Exception e) {
+            log.error("Error saving quotation in EmployeeQuotationController: ", e);
             if (acceptsJson) {
                 Map<String, Object> errResp = new LinkedHashMap<>();
                 errResp.put("success", false);
@@ -997,11 +1001,23 @@ public class EmployeeQuotationController {
         Quotation q;
         boolean isPrepared = true;
         if (targetMode != null) {
-            Quotation child = parent.getChildForGrade(targetMode);
+            Quotation child = null;
+            if (parent.getId() != null) {
+                child = quotationRepository.findByParentIdAndPricingMode(parent.getId(), targetMode).orElse(null);
+                if (child == null) {
+                    String expectedNo = (parent.getRawQuotationNumber() != null ? parent.getRawQuotationNumber() : parent.getQuotationNumber()) + "-" + targetMode.name();
+                    child = quotationRepository.findByQuotationNumber(expectedNo).orElse(null);
+                }
+            }
+            if (child == null) {
+                child = parent.getChildForGrade(targetMode);
+            }
             if (child != null) {
                 q = child;
+                isPrepared = true;
             } else if (!parent.isParentQuotation() && parent.getPricingMode() == targetMode) {
                 q = parent;
+                isPrepared = true;
             } else {
                 q = new Quotation();
                 q.setParent(parent);
@@ -1020,7 +1036,7 @@ public class EmployeeQuotationController {
                     ? parent.getSelectedGrade()
                     : (parent.getChildQuotations() != null && !parent.getChildQuotations().isEmpty()
                             ? parent.getChildQuotations().get(0).getPricingMode()
-                            : PricingMode.MIDDLE);
+                            : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM));
             q = parent.getChildForGrade(pick);
             if (q == null) q = requested;
         } else {
@@ -1052,7 +1068,7 @@ public class EmployeeQuotationController {
         data.put("branchId", q.getBranch() != null ? q.getBranch().getId() : null);
         data.put("quotationDate", q.getQuotationDate() != null ? q.getQuotationDate().toString() : "");
         data.put("validUntil", q.getValidUntil() != null ? q.getValidUntil().toString() : "");
-        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : "MIDDLE");
+        data.put("pricingMode", q.getPricingMode() != null ? q.getPricingMode().name() : (PricingMode.values().length > 0 ? PricingMode.values()[0].name() : "PREMIUM"));
         data.put("customerRequirements", q.getCustomerRequirements() != null ? q.getCustomerRequirements() : "");
         data.put("notes", q.getNotes() != null ? q.getNotes() : "");
         data.put("subtotal", q.getSubtotal() != null ? q.getSubtotal() : BigDecimal.ZERO);
@@ -1078,7 +1094,7 @@ public class EmployeeQuotationController {
         data.put("builderState", q.getBuilderState());
 
         Long branchId = q.getBranch() != null ? q.getBranch().getId() : (employee.getBranch() != null ? employee.getBranch().getId() : null);
-        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : PricingMode.MIDDLE;
+        PricingMode pricingGrade = q.getPricingMode() != null ? q.getPricingMode() : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM);
 
         List<QuotationRoom> rooms = (isPrepared && q.getId() != null)
                 ? quotationRoomService.getActiveByQuotationId(q.getId())
@@ -2341,9 +2357,18 @@ public class EmployeeQuotationController {
     // VIEW QUOTATION WORKSPACE
     // ============================================================
 
+    public String viewQuotation(
+            Long id,
+            Authentication authentication,
+            Model model
+    ) {
+        return viewQuotation(id, null, authentication, model);
+    }
+
     @GetMapping("/view/{id}")
     public String viewQuotation(
             @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade,
             Authentication authentication,
             Model model
     ) {
@@ -2351,7 +2376,8 @@ public class EmployeeQuotationController {
         Quotation quotation = getQuotationAndCheckOwnership(id, employee);
 
         if (quotation.getParent() != null) {
-            return "redirect:/employee/quotations/view/" + quotation.getParent().getId();
+            return "redirect:/employee/quotations/view/" + quotation.getParent().getId()
+                    + (quotation.getPricingMode() != null ? "?grade=" + quotation.getPricingMode().name() : "");
         }
 
         // Multi-grade child quotations
@@ -2392,7 +2418,9 @@ public class EmployeeQuotationController {
         model.addAttribute("gradeSizesByItem", gradeSizesByItem);
 
         String activeGradeTab = "MIDDLE";
-        if (quotation.getSelectedGrade() != null) {
+        if (grade != null && quotation.getChildForGrade(grade) != null) {
+            activeGradeTab = grade.name();
+        } else if (quotation.getSelectedGrade() != null) {
             activeGradeTab = quotation.getSelectedGrade().name();
         } else if (premiumGrade != null) {
             activeGradeTab = "PREMIUM";
@@ -3386,10 +3414,20 @@ public class EmployeeQuotationController {
     // SEND QUOTATION EMAIL
     // ============================================================
 
+    public String sendQuotationEmail(
+            Long id,
+            Authentication authentication,
+            RedirectAttributes redirectAttributes
+    ) {
+        return sendQuotationEmail(id, null, authentication, redirectAttributes);
+    }
+
     @PostMapping("/email/{id}")
     public String sendQuotationEmail(
 
             @PathVariable Long id,
+
+            @RequestParam(required = false) PricingMode grade,
 
             Authentication authentication,
 
@@ -3409,14 +3447,22 @@ public class EmployeeQuotationController {
                             employee
                     );
 
+            Quotation targetQuotation = quotation;
+            if (grade != null) {
+                Quotation child = quotation.getChildForGrade(grade);
+                if (child != null) {
+                    targetQuotation = child;
+                }
+            }
+
             quotationEmailService
                     .sendQuotationEmail(
-                            quotation
+                            targetQuotation
                     );
 
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    "Quotation PDF emailed successfully."
+                    (grade != null ? grade.name() + " Grade " : "") + "Quotation PDF emailed successfully."
             );
 
         } catch (Exception e) {
@@ -3429,7 +3475,7 @@ public class EmployeeQuotationController {
         }
 
         return "redirect:/employee/quotations/view/"
-                + id;
+                + id + (grade != null ? "?grade=" + grade.name() : "");
     }
 
 
@@ -3437,10 +3483,21 @@ public class EmployeeQuotationController {
     // WHATSAPP COMMUNICATION
     // ============================================================
 
+    public Object trackWhatsApp(
+            Long id,
+            Authentication authentication,
+            HttpServletRequest request,
+            RedirectAttributes redirectAttributes
+    ) {
+        return trackWhatsApp(id, null, authentication, request, redirectAttributes);
+    }
+
     @GetMapping("/whatsapp/{id}")
     public Object trackWhatsApp(
 
             @PathVariable Long id,
+
+            @RequestParam(required = false) PricingMode grade,
 
             Authentication authentication,
 
@@ -3467,8 +3524,16 @@ public class EmployeeQuotationController {
                             employee
                     );
 
+            Quotation targetQuotation = quotation;
+            if (grade != null) {
+                Quotation child = quotation.getChildForGrade(grade);
+                if (child != null) {
+                    targetQuotation = child;
+                }
+            }
+
             String baseUrl = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
-            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(quotation, baseUrl);
+            WhatsAppResult result = whatsAppService.sendOrPrepareQuotationPdf(targetQuotation, baseUrl);
 
             if (wantsJson) {
                 return ResponseEntity.ok(result);
@@ -3479,7 +3544,7 @@ public class EmployeeQuotationController {
                         "successMessage",
                         result.getMessage()
                 );
-                return "redirect:/employee/quotations/view/" + id;
+                return "redirect:/employee/quotations/view/" + id + (grade != null ? "?grade=" + grade.name() : "");
             }
 
             return "redirect:" + result.getWhatsappUrl();

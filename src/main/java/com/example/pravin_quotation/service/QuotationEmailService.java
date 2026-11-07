@@ -73,21 +73,38 @@ public class QuotationEmailService {
             String quotationNumber =
                     quotation.getQuotationNumber();
 
+            String gradeTitle = "";
+            if (quotation.getPricingMode() != null) {
+                switch (quotation.getPricingMode()) {
+                    case PREMIUM: gradeTitle = " (Premium Grade)"; break;
+                    case MIDDLE: gradeTitle = " (Middle Grade)"; break;
+                    case ECONOMY: gradeTitle = " (Economy Grade)"; break;
+                    default: gradeTitle = " (" + quotation.getPricingMode().name() + " Grade)"; break;
+                }
+            }
+
             helper.setTo(customerEmail);
 
             helper.setSubject(
                     "Quotation " +
                             quotationNumber +
+                            gradeTitle +
                             " - Pravin KITCHENS & INTERIORS"
             );
+
+            String gradeLine = quotation.getPricingMode() != null
+                    ? "Grade: " + quotation.getPricingMode().name() + " Grade\n"
+                    : "";
 
             String emailBody =
                     "Dear " + customerName + ",\n\n" +
 
                             "Please find attached your quotation " +
                             quotationNumber +
+                            gradeTitle +
                             " from Pravin KITCHENS & INTERIORS.\n\n" +
 
+                            gradeLine +
                             "Quotation Amount: ₹" +
                             quotation.getGrandTotal() +
                             "\n\n" +
@@ -102,9 +119,11 @@ public class QuotationEmailService {
 
             helper.setText(emailBody);
 
+            String gradeSuffix = quotation.getPricingMode() != null ? "-" + quotation.getPricingMode().name() : "";
             helper.addAttachment(
                     "quotation-" +
                             quotationNumber +
+                            gradeSuffix +
                             ".pdf",
                     new ByteArrayResource(pdf)
             );
@@ -116,13 +135,22 @@ public class QuotationEmailService {
                     QuotationCommunication.CommunicationType.EMAIL,
                     customerEmail,
                     QuotationCommunication.CommunicationStatus.SENT,
-                    "Quotation PDF emailed successfully."
+                    "Quotation PDF" + gradeTitle + " emailed successfully."
             );
 
             if (quotation.getStatus() == QuotationStatus.PENDING
                     || quotation.getStatus() == QuotationStatus.WORKING) {
                 quotation.setStatus(QuotationStatus.SENT);
                 quotationRepository.save(quotation);
+            }
+
+            if (quotation.getParent() != null) {
+                Quotation parent = quotation.getParent();
+                if (parent.getStatus() == QuotationStatus.PENDING
+                        || parent.getStatus() == QuotationStatus.WORKING) {
+                    parent.setStatus(QuotationStatus.SENT);
+                    quotationRepository.save(parent);
+                }
             }
 
         } catch (Exception e) {

@@ -82,7 +82,7 @@ public class QuotationViewDetailsPageTest {
         assertFalse(template.contains("quotation.customerRequirements"), "Template must not contain quotation.customerRequirements expression");
 
         // Other sections preserved
-        assertTrue(template.contains("Communication History"), "Communication History section must be preserved");
+        assertFalse(template.contains("Communication History"), "Communication History section must be removed");
 
         // Quotation status remains visible outside removed sections
         assertTrue(template.contains("quotation.status"), "Quotation status must be visible in badge and panels");
@@ -116,8 +116,8 @@ public class QuotationViewDetailsPageTest {
         assertFalse(template.contains("id=\"chargesForm\""), "Template must not contain chargesForm element");
         assertFalse(template.contains("initQuotationFinancialSummary"), "Template must not contain inline financial summary recalculation script");
 
-        // Communication history and quotation details must be preserved
-        assertTrue(template.contains("Communication History"), "Communication History must be preserved");
+        // Communication history removed and customer details preserved
+        assertFalse(template.contains("Communication History"), "Communication History must be removed");
         assertTrue(template.contains("quotation.customer"), "Customer details must be preserved");
     }
 
@@ -235,8 +235,8 @@ public class QuotationViewDetailsPageTest {
         assertTrue(empTemplate.contains("Customer Information"), "Must contain Customer Information");
         assertTrue(empTemplate.contains("Project Information"), "Must contain Project Information");
         assertTrue(empTemplate.contains("QUOTATION BREAKDOWN"), "Must contain QUOTATION BREAKDOWN");
-        assertTrue(empTemplate.contains("Communication History"), "Must contain Communication History");
-        assertTrue(empTemplate.contains("class=\"bottom-actions\""), "Must contain bottom-actions");
+        assertFalse(empTemplate.contains("Communication History"), "Must not contain Communication History");
+        assertFalse(empTemplate.contains("class=\"bottom-actions\""), "Must not contain bottom-actions");
 
         // Obsolete Add Item, Add Room, and Financial Summary editing forms must be absent
         assertFalse(empTemplate.contains("+ Add Room<") || empTemplate.contains("+ Add Room\n"), "Must not contain obsolete + Add Room button");
@@ -246,7 +246,7 @@ public class QuotationViewDetailsPageTest {
     }
 
     @Test
-    @DisplayName("Verify upper Download PDF button and all Preview buttons are removed from admin/quotation-view.html, leaving only the lower Download PDF button")
+    @DisplayName("Verify bottom actions panel and preview buttons are removed from admin/quotation-view.html, with PDF download available in grade cards")
     public void testDuplicateDownloadPdfAndPreviewButtonsRemovedFromQuotationView() throws Exception {
         String template = loadResource("templates/admin/quotation-view.html");
 
@@ -261,24 +261,16 @@ public class QuotationViewDetailsPageTest {
         assertFalse(pageHeader.contains("quotation-preview"), "Upper page-header must NOT link to quotation-preview");
         assertFalse(pageHeader.contains("header-actions"), "header-actions container should be removed from page-header");
 
-        // 2. Bottom actions must NOT contain Preview PDF button
-        int bottomStart = template.indexOf("class=\"bottom-actions\"");
-        int bottomEnd = template.indexOf("</section>", bottomStart);
-        assertTrue(bottomStart != -1 && bottomEnd != -1, "bottom-actions must exist");
-        String bottomActions = template.substring(bottomStart, bottomEnd);
+        // 2. Bottom actions panel must be completely removed
+        assertFalse(template.contains("class=\"bottom-actions\""), "bottom-actions must be completely removed");
+        assertFalse(template.contains("Edit in Builder"), "Edit in Builder bottom button must be removed");
 
-        assertFalse(bottomActions.contains("Preview PDF"), "Bottom actions must NOT contain Preview PDF button");
-        assertFalse(bottomActions.contains("quotation-preview"), "Bottom actions must NOT link to quotation-preview");
-
-        // 3. Lower Download PDF button must be retained in bottom-actions
-        assertTrue(bottomActions.contains("@{/admin/quotations/pdf/{id}(id=${quotation.id})}"),
-                "Bottom actions must retain Download PDF link");
-        assertTrue(bottomActions.contains("Download PDF"),
-                "Bottom actions must retain Download PDF label");
-
-        // 4. Overall template must contain ZERO occurrences of quotation-preview
+        // 3. Overall template must contain ZERO occurrences of quotation-preview
         assertFalse(template.contains("quotation-preview"),
                 "admin/quotation-view.html must contain zero links to quotation-preview");
+
+        // 4. PDF download is available in grade cards
+        assertTrue(template.contains("btn-grade-pdf"), "Grade cards must retain PDF download buttons");
     }
 
     @Test

@@ -15,6 +15,10 @@ import java.util.List;
                 @UniqueConstraint(
                         name = "uk_quotation_number",
                         columnNames = "quotation_number"
+                ),
+                @UniqueConstraint(
+                        name = "uk_quotation_parent_grade",
+                        columnNames = {"parent_id", "pricing_mode"}
                 )
         }
 )
