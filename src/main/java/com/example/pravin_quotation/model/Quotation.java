@@ -89,6 +89,9 @@ public class Quotation {
     @Column(name = "pricing_mode", nullable = false, length = 20)
     private PricingMode pricingMode;
 
+    @Transient
+    private String pricingModeDisplay;
+
     /*
      * Parent quotation for multi-grade quotations.
      * Null for parent quotations and legacy single-grade quotations.
@@ -499,6 +502,23 @@ public class Quotation {
 
     public void setPricingMode(PricingMode pricingMode) {
         this.pricingMode = pricingMode;
+    }
+
+    public String getPricingModeDisplay() {
+        if (pricingModeDisplay != null && !pricingModeDisplay.trim().isEmpty()) {
+            return pricingModeDisplay;
+        }
+        if (pricingMode == PricingMode.PREMIUM) {
+            return "Premium";
+        } else if (pricingMode == PricingMode.ECONOMY) {
+            return "Economy";
+        } else {
+            return "Middle / Standard";
+        }
+    }
+
+    public void setPricingModeDisplay(String pricingModeDisplay) {
+        this.pricingModeDisplay = pricingModeDisplay;
     }
 
     public BigDecimal getSubtotal() {

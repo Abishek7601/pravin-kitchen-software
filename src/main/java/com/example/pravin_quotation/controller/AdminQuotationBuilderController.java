@@ -38,6 +38,7 @@ public class AdminQuotationBuilderController {
     private final QuotationItemSizeRepository quotationItemSizeRepository;
     private final PricingRepository pricingRepository;
     private final com.example.pravin_quotation.service.FileUploadService fileUploadService;
+    private final com.example.pravin_quotation.service.QuotationCalculationService quotationCalculationService;
 
     public AdminQuotationBuilderController(
             BranchRepository branchRepository,
@@ -54,7 +55,8 @@ public class AdminQuotationBuilderController {
             QuotationItemRepository quotationItemRepository,
             QuotationItemSizeRepository quotationItemSizeRepository,
             PricingRepository pricingRepository,
-            com.example.pravin_quotation.service.FileUploadService fileUploadService) {
+            com.example.pravin_quotation.service.FileUploadService fileUploadService,
+            com.example.pravin_quotation.service.QuotationCalculationService quotationCalculationService) {
         this.branchRepository = branchRepository;
         this.customerRepository = customerRepository;
         this.workCategoryRepository = workCategoryRepository;
@@ -70,6 +72,7 @@ public class AdminQuotationBuilderController {
         this.quotationItemSizeRepository = quotationItemSizeRepository;
         this.pricingRepository = pricingRepository;
         this.fileUploadService = fileUploadService;
+        this.quotationCalculationService = quotationCalculationService;
     }
 
     @GetMapping({"/builder", "/builder/{quotationId:[0-9]+}"})
@@ -584,8 +587,12 @@ public class AdminQuotationBuilderController {
                 List<Map<String, Object>> itemList = new ArrayList<>();
                 for (QuotationItem item : items) {
                     Map<String, Object> iMap = new LinkedHashMap<>();
-                    iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
-                    iMap.put("categoryName", item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase() : "");
+                    Long catId = item.getWorkCategory() != null ? item.getWorkCategory().getId()
+                            : (item.getDivision() != null && item.getDivision().getWorkCategory() != null ? item.getDivision().getWorkCategory().getId() : null);
+                    String catName = item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase()
+                            : (item.getDivision() != null && item.getDivision().getWorkCategory() != null && item.getDivision().getWorkCategory().getName() != null ? item.getDivision().getWorkCategory().getName().toUpperCase() : "");
+                    iMap.put("categoryId", catId);
+                    iMap.put("categoryName", catName);
 
                     Long divId = item.getDivision() != null ? item.getDivision().getId()
                             : (item.getMaterial() != null && item.getMaterial().getDivision() != null ? item.getMaterial().getDivision().getId() : null);
@@ -600,6 +607,7 @@ public class AdminQuotationBuilderController {
                     iMap.put("materialName", item.getMaterial() != null && item.getMaterial().getName() != null ? item.getMaterial().getName().toUpperCase() : "");
                     iMap.put("materialOptionId", item.getMaterialOption() != null ? item.getMaterialOption().getId() : null);
                     iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
+                    iMap.put("pricingMode", item.getEffectivePricingMode() != null ? item.getEffectivePricingMode().name() : (q.getPricingMode() != null ? q.getPricingMode().name() : "PREMIUM"));
                     iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                     iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
 
@@ -617,11 +625,17 @@ public class AdminQuotationBuilderController {
                         } else {
                             try {
                                 Long optId = item.getMaterialOption() != null ? item.getMaterialOption().getId() : null;
+                                PricingMode itemGrade = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : pricingGrade;
                                 AdminQuotationBuilderService.ResolvedMaterialRate res =
-                                        builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, pricingGrade);
+                                        builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, itemGrade);
                                 if (!res.available() || res.rate() == null || res.rate().compareTo(BigDecimal.ZERO) <= 0) {
-                                    materialAvailable = false;
-                                    availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                                    if (item.getRate() != null && item.getRate().compareTo(BigDecimal.ZERO) > 0) {
+                                        currentRate = item.getRate();
+                                        materialAvailable = true;
+                                    } else {
+                                        materialAvailable = false;
+                                        availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                                    }
                                 } else {
                                     currentRate = res.rate();
                                     if (item.getRate() != null && currentRate.compareTo(item.getRate()) != 0) {
@@ -680,6 +694,16 @@ public class AdminQuotationBuilderController {
                 roomList.add(rMap);
             }
             data.put("rooms", roomList);
+            if (quotationCalculationService != null && q.getId() != null) {
+                java.util.Map<PricingMode, BigDecimal> gradeSubtotals = quotationCalculationService.calculateGradeSubtotals(q.getId());
+                data.put("gradeSubtotals", gradeSubtotals);
+                data.put("premiumSubtotal", gradeSubtotals.get(PricingMode.PREMIUM));
+                data.put("middleSubtotal", gradeSubtotals.get(PricingMode.MIDDLE));
+                data.put("economySubtotal", gradeSubtotals.get(PricingMode.ECONOMY));
+                data.put("pricingModeDisplay", quotationCalculationService.resolvePricingModeDisplay(q.getId()));
+            } else {
+                data.put("pricingModeDisplay", q.getPricingModeDisplay());
+            }
             return ResponseEntity.ok(data);
     }
 

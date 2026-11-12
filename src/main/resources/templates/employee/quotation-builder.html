@@ -131,6 +131,10 @@
             </label>
           </th:block>
         </div>
+        <div id="usedGradesIndicator" style="margin-left: auto; display: inline-flex; align-items: center; gap: 8px; font-size: 13px;">
+          <span style="color: #64748b; font-weight: 500;">Active in Quote:</span>
+          <span id="activeUsedGradesBadge" style="background: #e2e8f0; color: #0f172a; padding: 3px 10px; border-radius: 9999px; font-weight: 700; border: 1px solid #cbd5e1; font-size: 12px;">Middle / Standard</span>
+        </div>
       </div>
       <div id="pricingMessage" class="inline-message"></div>
     </section>
@@ -592,9 +596,22 @@
 
         <!-- CURRENT CALCULATED SUMMARY -->
         <div class="financial-summary">
-          <!-- SUBTOTAL -->
-          <div class="amount-row">
-            <span>Subtotal</span>
+          <!-- GRADE BREAKDOWN -->
+          <div class="amount-row grade-subtotal-row" id="rowPremiumSubtotal" style="display: flex; justify-content: space-between; font-size: 13px; color: #92400e;">
+            <span>★ Premium Grade Subtotal</span>
+            <strong id="displayPremiumSubtotal">₹ 0.00</strong>
+          </div>
+          <div class="amount-row grade-subtotal-row" id="rowMiddleSubtotal" style="display: flex; justify-content: space-between; font-size: 13px; color: #0369a1;">
+            <span>✦ Middle Grade Subtotal</span>
+            <strong id="displayMiddleSubtotal">₹ 0.00</strong>
+          </div>
+          <div class="amount-row grade-subtotal-row" id="rowEconomySubtotal" style="display: flex; justify-content: space-between; font-size: 13px; color: #15803d;">
+            <span>☘ Economy Grade Subtotal</span>
+            <strong id="displayEconomySubtotal">₹ 0.00</strong>
+          </div>
+          <!-- COMBINED SUBTOTAL -->
+          <div class="amount-row combined-subtotal-row" style="border-top: 1px dashed #cbd5e1; padding-top: 6px;">
+            <span><strong>Combined Subtotal</strong></span>
             <strong id="displaySubtotal">₹ 0.00</strong>
           </div>
 
@@ -997,6 +1014,7 @@
                   itemDescription: i.itemDescription || '',
                   specification: i.specification || '',
                   rate: i.rate != null ? Number(i.rate) : null,
+                  pricingMode: i.pricingMode || state.pricingMode || getFirstConfiguredGrade(),
                   measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
                   coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
                   quantity: i.quantity != null ? Number(i.quantity) : 1,
@@ -1533,6 +1551,7 @@
           materialOptionName: '',
           materialSpecificationId: null,
           materialSpecificationName: '',
+          pricingMode: state.pricingMode || getFirstConfiguredGrade() || 'MIDDLE',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
           formula: (isSqft || isRoll) ? (material.formula || 'L × W') : null,
           unit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
@@ -1939,6 +1958,7 @@
                   imageUrl: isFiles ? (uploadedItemImageUrl || material.imageUrl || null) : null,
                   itemDescription: '',
                   specification: finalSpec,
+                  pricingMode: state.pricingMode || getFirstConfiguredGrade(),
                   sizes: [{
                       length: (isSqft || isRoll) ? L : 0,
                       width: ((isSqft || isRoll) && hasWidth) ? W : 0,
@@ -2255,7 +2275,8 @@
       if (!state.draft.specification && state.draft.materialSpecificationName) {
           state.draft.specification = state.draft.materialSpecificationName;
       }
-      state.draft.sizes=sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
+      state.draft.pricingMode = state.draft.pricingMode || state.pricingMode || getFirstConfiguredGrade();
+      state.draft.sizes = sizes.map(s=>({length:s.length,width:s.width,height:s.height,offerPrice:null}));
       room.items.push(state.draft); state.draft=null; hide('itemBuilder'); $('sizeRows').innerHTML='';
       $('itemDescription').value=''; $('specification').value=''; $('materialId').value=''; $('materialOptionId').innerHTML='<option value="">Select material option</option>';
       $('materialSpecificationId').innerHTML='<option value="">Select specification (optional)</option>';
@@ -2275,6 +2296,9 @@
       const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
       if (roomsWithItems.length === 0) {
           tbody.innerHTML = `<tr><td colspan="${showSqftSize ? 7 : 5}" style="text-align: center; padding: 28px; color: #64748b; font-style: italic;">No items added to quote yet. Choose a room and material above to add sizes.</td></tr>`;
+          state.gradeSubtotals = { PREMIUM: 0, MIDDLE: 0, ECONOMY: 0 };
+          recalculateFinancials(0, state.gradeSubtotals);
+          updateUsedPricingModeDisplay();
           renderPaymentTerms(0, 0);
           return;
       }
@@ -2282,6 +2306,11 @@
       let grandBase = 0;
       let grandOffer = 0;
       let serialNo = 1;
+      let gradeSubtotals = {
+          PREMIUM: 0,
+          MIDDLE: 0,
+          ECONOMY: 0
+      };
       let html = '';
 
       roomsWithItems.forEach((room) => {
@@ -2373,6 +2402,13 @@
 
                       roomBaseTotal += lineBase;
                       roomOfferTotal += (isOfferActive ? lineOffer : lineBase);
+                      const finalItemAmt = (isOfferActive ? lineOffer : lineBase);
+                      const rawItemGrade = (item.pricingMode || state.pricingMode || getFirstConfiguredGrade()).toUpperCase();
+                      const itemGradeNormalized = rawItemGrade.includes('PREMIUM') ? 'PREMIUM' : (rawItemGrade.includes('ECONOMY') ? 'ECONOMY' : 'MIDDLE');
+                      gradeSubtotals[itemGradeNormalized] += finalItemAmt;
+                      const gradeBadgeClass = itemGradeNormalized === 'PREMIUM' ? 'item-grade-premium' : (itemGradeNormalized === 'ECONOMY' ? 'item-grade-economy' : 'item-grade-middle');
+                      const gradeBadgeText = itemGradeNormalized === 'PREMIUM' ? 'Premium' : (itemGradeNormalized === 'ECONOMY' ? 'Economy' : 'Middle');
+                      const gradeBadgeHtml = `<span class="item-grade-badge ${gradeBadgeClass}">${gradeBadgeText}</span>`;
 
                       const baseAmtDisplay = money(lineBase);
                       const offerAmtDisplay = money(isOfferActive ? lineOffer : lineBase);
@@ -2392,7 +2428,7 @@
                         <td class="col-num">${serialNo++}</td>
                         <td class="col-room">${esc(item.divisionName || item.itemName || 'ITEM')}</td>
                         <td class="col-material">
-                          <div class="mat-name">${esc(item.materialName || 'Material')} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
+                          <div class="mat-name">${esc(item.materialName || 'Material')} ${gradeBadgeHtml} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
                           <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
                           ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${(item.coveragePerRoll != null ? item.coveragePerRoll : (item.material && item.material.coveragePerRoll != null ? item.material.coveragePerRoll : '-'))} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
@@ -2447,11 +2483,114 @@
 
       tbody.innerHTML = html;
       state.currentSubtotal = grandOffer;
-      recalculateFinancials(grandOffer);
+      recalculateFinancials(grandOffer, gradeSubtotals);
+      updateUsedPricingModeDisplay();
   }
 
-  function recalculateFinancials(explicitSubtotal) {
-      const subtotal = explicitSubtotal !== undefined ? Number(explicitSubtotal) : (Number(state.currentSubtotal) || 0);
+  function calculateCurrentGradeSubtotals() {
+      const totals = { PREMIUM: 0, MIDDLE: 0, ECONOMY: 0 };
+      if (!state.rooms || !Array.isArray(state.rooms)) return totals;
+      state.rooms.forEach(room => {
+          if (!room.items || !Array.isArray(room.items)) return;
+          room.items.forEach(item => {
+              const rawItemGrade = (item.pricingMode || state.pricingMode || getFirstConfiguredGrade() || 'MIDDLE').toUpperCase();
+              const itemGradeNormalized = rawItemGrade.includes('PREMIUM') ? 'PREMIUM' : (rawItemGrade.includes('ECONOMY') ? 'ECONOMY' : 'MIDDLE');
+              const formula = (item.formula || '(L + W) × H').toUpperCase();
+              const measurementType = (item.measurementType || (item.unit === 'Quantity' ? 'QUANTITY' : (item.unit === 'Files' ? 'FILES' : (item.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
+              const rate = Number(item.rate) || 0;
+              const coveragePerRoll = Number(item.coveragePerRoll) || 50;
+
+              (item.sizes || []).forEach(size => {
+                  let lineBase = 0;
+                  if (measurementType === 'QUANTITY') {
+                      const qty = Number(item.quantity) || 1;
+                      lineBase = qty * rate;
+                  } else if (measurementType === 'FILES') {
+                      lineBase = rate;
+                  } else {
+                      const l = Number(size.length) || 0;
+                      const w = Number(size.width) || 0;
+                      const h = Number(size.height) || 0;
+                      let sqft = 0;
+                      if (formula.includes('(L + W) * H') || formula.includes('(L + W) × H')) {
+                          sqft = ((l + w) * h) / 144;
+                      } else if (formula.includes('L * W * H') || formula.includes('L × W × H')) {
+                          sqft = (l * w * h) / 144;
+                      } else if (formula.includes('L * H') || formula.includes('L × H')) {
+                          sqft = (l * h) / 144;
+                      } else if (formula.includes('L * W') || formula.includes('L × W')) {
+                          sqft = (l * w) / 144;
+                      } else {
+                          sqft = ((l + w) * h) / 144;
+                      }
+                      if (measurementType === 'ROLL') {
+                          const rolls = Math.ceil(sqft / coveragePerRoll) || 1;
+                          lineBase = rolls * rate;
+                      } else {
+                          lineBase = sqft * rate;
+                      }
+                  }
+                  const finalLineAmt = (size.offerPrice != null && Number(size.offerPrice) > 0) ? Number(size.offerPrice) : lineBase;
+                  totals[itemGradeNormalized] += finalLineAmt;
+              });
+          });
+      });
+      return totals;
+  }
+
+  function updateUsedPricingModeDisplay() {
+      const badge = $('activeUsedGradesBadge');
+      if (!badge) return;
+      const used = new Set();
+      if (state.rooms && Array.isArray(state.rooms)) {
+          state.rooms.forEach(r => {
+              if (r.items && Array.isArray(r.items)) {
+                  r.items.forEach(i => {
+                      const g = (i.pricingMode || state.pricingMode || getFirstConfiguredGrade() || 'MIDDLE').toUpperCase();
+                      if (g.includes('PREMIUM')) used.add('PREMIUM');
+                      else if (g.includes('ECONOMY')) used.add('ECONOMY');
+                      else used.add('MIDDLE');
+                  });
+              }
+          });
+      }
+      let text = 'Middle / Standard';
+      if (used.size === 0) {
+          const cur = (state.pricingMode || getFirstConfiguredGrade() || 'MIDDLE').toUpperCase();
+          if (cur.includes('PREMIUM')) text = 'Premium';
+          else if (cur.includes('ECONOMY')) text = 'Economy';
+          else text = 'Middle / Standard';
+      } else {
+          const parts = [];
+          if (used.has('PREMIUM')) parts.push('Premium');
+          if (used.has('MIDDLE')) {
+              if (used.has('PREMIUM') || used.has('ECONOMY')) {
+                  parts.push('Middle');
+              } else {
+                  parts.push('Middle / Standard');
+              }
+          }
+          if (used.has('ECONOMY')) parts.push('Economy');
+          text = parts.join(' + ');
+      }
+      badge.textContent = text;
+  }
+
+  function recalculateFinancials(explicitSubtotal, gradeSubtotals) {
+      let curGrades = gradeSubtotals;
+      if (!curGrades) {
+          curGrades = (state.gradeSubtotals && (state.gradeSubtotals.PREMIUM > 0 || state.gradeSubtotals.MIDDLE > 0 || state.gradeSubtotals.ECONOMY > 0))
+              ? state.gradeSubtotals
+              : calculateCurrentGradeSubtotals();
+      }
+      state.gradeSubtotals = curGrades;
+
+      const premSub = Math.max(0, Number(curGrades.PREMIUM) || 0);
+      const midSub = Math.max(0, Number(curGrades.MIDDLE) || 0);
+      const econSub = Math.max(0, Number(curGrades.ECONOMY) || 0);
+
+      // Combined Subtotal must strictly equal sum of all three grade subtotals
+      const subtotal = explicitSubtotal !== undefined ? Number(explicitSubtotal) : (premSub + midSub + econSub);
       state.currentSubtotal = subtotal;
 
       const acc = Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0));
@@ -2496,6 +2635,9 @@
       }
 
       if ($('displaySubtotal')) $('displaySubtotal').textContent = formatInr(subtotal);
+      if ($('displayPremiumSubtotal')) $('displayPremiumSubtotal').textContent = formatInr(premSub);
+      if ($('displayMiddleSubtotal')) $('displayMiddleSubtotal').textContent = formatInr(midSub);
+      if ($('displayEconomySubtotal')) $('displayEconomySubtotal').textContent = formatInr(econSub);
       if ($('displayAccessories')) $('displayAccessories').textContent = formatInr(acc);
       if ($('displayTravel')) $('displayTravel').textContent = formatInr(travel);
       if ($('displayOther')) $('displayOther').textContent = formatInr(other);
@@ -2609,58 +2751,17 @@
           document.querySelectorAll('.wt-material-btn').forEach(b => b.classList.remove('selected-material-btn'));
       }
 
-      if (!state.rooms.some(r => r.items && r.items.length > 0)) {
-          if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
-          renderQuoteSummary();
-          return;
-      }
-
-      let unavailableCount = 0;
-      const requests = [];
-
-      state.rooms.forEach(room => {
-          (room.items || []).forEach(item => {
-              requests.push((async () => {
-                  try {
-                      const data = await getJson(`${API_BASE}/rate?branchId=${encodeURIComponent(branchVal || '')}&divisionId=${encodeURIComponent(item.divisionId || '')}&materialOptionId=${encodeURIComponent(item.materialOptionId || '')}&materialId=${encodeURIComponent(item.materialId || '')}&pricingMode=${encodeURIComponent(state.pricingMode)}`);
-                      if (data && data.available !== false && data.rate != null && !isNaN(Number(data.rate)) && Number(data.rate) > 0) {
-                          item.rate = Number(data.rate);
-                          item.rateUnavailable = false;
-                          item.rateUnavailableMessage = null;
-                      } else {
-                          item.rate = null;
-                          item.rateUnavailable = true;
-                          const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
-                          item.rateUnavailableMessage = (data && data.message) ? data.message : `No material available in ${gradeLabel} Grade`;
-                          unavailableCount++;
-                      }
-                  } catch (err) {
-                      item.rate = null;
-                      item.rateUnavailable = true;
-                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
-                      item.rateUnavailableMessage = `No material available in ${gradeLabel} Grade`;
-                      unavailableCount++;
-                  }
-              })());
-          });
-      });
-
-      await Promise.all(requests);
-
+      // Dynamic Grade Switching: Existing items in state.rooms preserve their assigned grade and rates!
       const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
-      if (unavailableCount > 0) {
-          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. ${unavailableCount} item(s) are not available in this grade.`;
-          $('pricingMessage').style.color = '#dc2626';
-      } else {
-          $('pricingMessage').textContent = `Pricing updated to ${gradeLabel} grade. Existing sizes and items were kept.`;
+      if ($('pricingMessage')) {
+          $('pricingMessage').textContent = `Switched to ${gradeLabel} Grade. Choose materials below to add ${gradeLabel} Grade items.`;
           $('pricingMessage').style.color = '#15803d';
       }
-
+      if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
       renderRoomPills();
       renderQuoteSummary();
-      if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
-  }
 
+  }
   function saveQuotationBuilderDraft(divisionId, divisionName, categoryId, categoryName) {
       const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
       const draft = {
@@ -2899,8 +3000,7 @@
               return (i.rateUnavailable === true || i.rate == null || isNaN(Number(i.rate)) || Number(i.rate) <= 0);
           }));
           if (hasUnavailableRates) {
-              const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
-              return handleSaveError(`Some materials are not available in ${gradeLabel} Grade. Please resolve or remove those items before saving.`);
+              return handleSaveError('Some materials have no rate configured. Please configure rates or remove those items before saving.');
           }
 
           const otherAmt = Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0));
@@ -2971,7 +3071,8 @@
                       materialSpecificationId: i.materialSpecificationId,
                       itemDescription: i.itemDescription || '',
                       specification: i.specification || '',
-                      rate: i.rate != null ? Number(i.rate) : null,
+                  rate: i.rate != null ? Number(i.rate) : null,
+                  pricingMode: i.pricingMode || state.pricingMode || getFirstConfiguredGrade(),
                       measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
                       coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
                       quantity: i.quantity != null ? Number(i.quantity) : 1,
@@ -3356,48 +3457,17 @@
   }
 
   function updateMultiGradeBanner(quoteNo) {
-      if (!state.parentId && !state.targetGrade) return;
-      const banner = $('multiGradeBanner');
-      if (!banner) return;
-      banner.style.display = 'flex';
-      if ($('mgBannerParentNo')) $('mgBannerParentNo').textContent = quoteNo || (state.parentId ? 'Parent #' + state.parentId : '');
-      const grade = state.pricingMode || state.targetGrade || getFirstConfiguredGrade();
-      if ($('mgBannerActiveGrade')) $('mgBannerActiveGrade').textContent = grade;
-
-      const pId = state.parentId || state.quotationId;
-      const viewBase = '/employee/quotations/view/';
-      const builderBase = '/employee/quotations/builder';
-      if ($('mgViewParent')) $('mgViewParent').href = `${viewBase}${pId}`;
-      if ($('mgSwitchPremium')) $('mgSwitchPremium').href = `${builderBase}?parentId=${pId}&grade=PREMIUM`;
-      if ($('mgSwitchMiddle')) $('mgSwitchMiddle').href = `${builderBase}?parentId=${pId}&grade=MIDDLE`;
-      if ($('mgSwitchEconomy')) $('mgSwitchEconomy').href = `${builderBase}?parentId=${pId}&grade=ECONOMY`;
-
-      // Highlight active switch button
-      const btnPrem = $('mgSwitchPremium');
-      const btnMid = $('mgSwitchMiddle');
-      const btnEcon = $('mgSwitchEconomy');
-      if (btnPrem) btnPrem.style.fontWeight = grade === 'PREMIUM' ? '800' : '600';
-      if (btnMid) btnMid.style.fontWeight = grade === 'MIDDLE' ? '800' : '600';
-      if (btnEcon) btnEcon.style.fontWeight = grade === 'ECONOMY' ? '800' : '600';
-
-      // Lock pricing mode radio to active grade
       const radios = document.querySelectorAll('input[name="pricingMode"]');
       radios.forEach(r => {
-          if (r.value === grade) {
-              r.checked = true;
-              r.disabled = false;
-          } else {
-              r.disabled = true;
-              if (r.parentElement) {
-                  r.parentElement.style.opacity = '0.5';
-                  r.parentElement.style.cursor = 'not-allowed';
-                  r.parentElement.title = 'Switch grade using the top multi-grade links to keep grades isolated.';
-              }
+          r.disabled = false;
+          if (r.parentElement) {
+              r.parentElement.style.opacity = '1';
+              r.parentElement.style.cursor = 'pointer';
+              r.parentElement.removeAttribute('title');
           }
       });
-      if ($('pricingMessage')) {
-          $('pricingMessage').innerHTML = `<span style="color: #0d9488; font-size: 12px; font-weight: 600;">🔒 Locked to ${grade} Grade for this multi-grade quotation. Use tabs above to edit other grades.</span>`;
-      }
+      const banner = $('multiGradeBanner');
+      if (banner) banner.style.display = 'none';
   }
 
   async function loadQuotationData(quotationId) {
@@ -3529,6 +3599,7 @@
                           materialOptionName: i.materialOptionName,
                           materialSpecificationId: i.materialSpecificationId,
                           materialSpecificationName: i.materialSpecificationName,
+                          pricingMode: i.pricingMode || data.pricingMode || getFirstConfiguredGrade(),
                           rate: effectiveRate,
                           rateUnavailable: rateUnavailable,
                           rateUnavailableMessage: availabilityMessage,

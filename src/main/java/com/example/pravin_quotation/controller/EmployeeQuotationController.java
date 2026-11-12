@@ -351,6 +351,9 @@ public class EmployeeQuotationController {
         );
 
         List<Quotation> quotations = quotePage.getContent();
+        if (quotationCalculationService != null && quotations != null && !quotations.isEmpty()) {
+            quotationCalculationService.populatePricingModeDisplays(quotations);
+        }
         long totalRecords = quotePage.getTotalElements();
         int totalPages = quotePage.getTotalPages();
         int currentPage = quotePage.getNumber() + 1;
@@ -1109,8 +1112,12 @@ public class EmployeeQuotationController {
             List<Map<String, Object>> itemList = new ArrayList<>();
             for (QuotationItem item : items) {
                 Map<String, Object> iMap = new LinkedHashMap<>();
-                iMap.put("categoryId", item.getWorkCategory() != null ? item.getWorkCategory().getId() : null);
-                iMap.put("categoryName", item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase() : "");
+                Long catId = item.getWorkCategory() != null ? item.getWorkCategory().getId()
+                        : (item.getDivision() != null && item.getDivision().getWorkCategory() != null ? item.getDivision().getWorkCategory().getId() : null);
+                String catName = item.getWorkCategory() != null && item.getWorkCategory().getName() != null ? item.getWorkCategory().getName().toUpperCase()
+                        : (item.getDivision() != null && item.getDivision().getWorkCategory() != null && item.getDivision().getWorkCategory().getName() != null ? item.getDivision().getWorkCategory().getName().toUpperCase() : "");
+                iMap.put("categoryId", catId);
+                iMap.put("categoryName", catName);
 
                 Long divId = item.getDivision() != null ? item.getDivision().getId()
                         : (item.getMaterial() != null && item.getMaterial().getDivision() != null ? item.getMaterial().getDivision().getId() : null);
@@ -1125,6 +1132,7 @@ public class EmployeeQuotationController {
                 iMap.put("materialName", item.getMaterial() != null && item.getMaterial().getName() != null ? item.getMaterial().getName().toUpperCase() : "");
                 iMap.put("materialOptionId", item.getMaterialOption() != null ? item.getMaterialOption().getId() : null);
                 iMap.put("materialOptionName", item.getMaterialOption() != null && item.getMaterialOption().getName() != null ? item.getMaterialOption().getName().toUpperCase() : "");
+                iMap.put("pricingMode", item.getEffectivePricingMode() != null ? item.getEffectivePricingMode().name() : (q.getPricingMode() != null ? q.getPricingMode().name() : "PREMIUM"));
                 iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                 iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
 
@@ -1142,11 +1150,17 @@ public class EmployeeQuotationController {
                     } else {
                         try {
                             Long optId = item.getMaterialOption() != null ? item.getMaterialOption().getId() : null;
+                            PricingMode itemGrade = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : pricingGrade;
                             AdminQuotationBuilderService.ResolvedMaterialRate res =
-                                    builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, pricingGrade);
+                                    builderService.resolveMaterialAndRate(branchId, divId, m.getId(), optId, itemGrade);
                             if (!res.available() || res.rate() == null || res.rate().compareTo(BigDecimal.ZERO) <= 0) {
-                                materialAvailable = false;
-                                availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                                if (item.getRate() != null && item.getRate().compareTo(BigDecimal.ZERO) > 0) {
+                                    currentRate = item.getRate();
+                                    materialAvailable = true;
+                                } else {
+                                    materialAvailable = false;
+                                    availabilityMessage = res.message() != null ? res.message() : "Rate unavailable for selected branch and grade";
+                                }
                             } else {
                                 currentRate = res.rate();
                                 if (item.getRate() != null && currentRate.compareTo(item.getRate()) != 0) {
@@ -1205,6 +1219,16 @@ public class EmployeeQuotationController {
             roomList.add(rMap);
         }
         data.put("rooms", roomList);
+        if (quotationCalculationService != null && q.getId() != null) {
+            java.util.Map<PricingMode, BigDecimal> gradeSubtotals = quotationCalculationService.calculateGradeSubtotals(q.getId());
+            data.put("gradeSubtotals", gradeSubtotals);
+            data.put("premiumSubtotal", gradeSubtotals.get(PricingMode.PREMIUM));
+            data.put("middleSubtotal", gradeSubtotals.get(PricingMode.MIDDLE));
+            data.put("economySubtotal", gradeSubtotals.get(PricingMode.ECONOMY));
+            data.put("pricingModeDisplay", quotationCalculationService.resolvePricingModeDisplay(q.getId()));
+        } else {
+            data.put("pricingModeDisplay", q.getPricingModeDisplay());
+        }
         return ResponseEntity.ok(data);
     }
 
@@ -2457,6 +2481,19 @@ public class EmployeeQuotationController {
         model.addAttribute("itemsByRoom", roomItems);
         model.addAttribute("sizesByItem", sizesByItem);
 
+        if (quotationCalculationService != null && quotation.getId() != null) {
+            java.util.Map<PricingMode, BigDecimal> gradeSubtotals = quotationCalculationService.calculateGradeSubtotals(quotation.getId());
+            model.addAttribute("gradeSubtotals", gradeSubtotals);
+            model.addAttribute("premiumSubtotal", gradeSubtotals.get(PricingMode.PREMIUM));
+            model.addAttribute("middleSubtotal", gradeSubtotals.get(PricingMode.MIDDLE));
+            model.addAttribute("economySubtotal", gradeSubtotals.get(PricingMode.ECONOMY));
+            String pricingModeDisplay = quotationCalculationService.resolvePricingModeDisplay(quotation.getId());
+            quotation.setPricingModeDisplay(pricingModeDisplay);
+            model.addAttribute("pricingModeDisplay", pricingModeDisplay);
+        } else {
+            model.addAttribute("pricingModeDisplay", quotation.getPricingModeDisplay());
+        }
+
         List<QuotationStatusHistory> statusHistory = quotationStatusHistoryService.getByQuotationId(id);
         model.addAttribute("statusHistory", statusHistory);
         model.addAttribute("communicationHistory", quotationCommunicationService.getByQuotationId(id));
@@ -3414,25 +3451,31 @@ public class EmployeeQuotationController {
     // SEND QUOTATION EMAIL
     // ============================================================
 
-    public String sendQuotationEmail(
+    public Object sendQuotationEmail(
             Long id,
             Authentication authentication,
             RedirectAttributes redirectAttributes
     ) {
-        return sendQuotationEmail(id, null, authentication, redirectAttributes);
+        return sendQuotationEmail(id, null, null, authentication, redirectAttributes);
     }
 
     @PostMapping("/email/{id}")
-    public String sendQuotationEmail(
+    public Object sendQuotationEmail(
 
             @PathVariable Long id,
 
             @RequestParam(required = false) PricingMode grade,
 
+            HttpServletRequest request,
+
             Authentication authentication,
 
             RedirectAttributes redirectAttributes
     ) {
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
         try {
 
@@ -3460,17 +3503,33 @@ public class EmployeeQuotationController {
                             targetQuotation
                     );
 
+            String successMsg = (grade != null ? grade.name() + " Grade " : "") + "Quotation email sent successfully.";
+            if (wantsJson) {
+                return ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", successMsg,
+                        "status", "SENT"
+                ));
+            }
+
             redirectAttributes.addFlashAttribute(
                     "successMessage",
-                    (grade != null ? grade.name() + " Grade " : "") + "Quotation PDF emailed successfully."
+                    successMsg
             );
 
         } catch (Exception e) {
 
+            String errorMsg = "Failed to send quotation email: " + e.getMessage();
+            if (wantsJson) {
+                return ResponseEntity.status(500).body(java.util.Map.of(
+                        "success", false,
+                        "message", errorMsg
+                ));
+            }
+
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Failed to send quotation email: "
-                            + e.getMessage()
+                    errorMsg
             );
         }
 

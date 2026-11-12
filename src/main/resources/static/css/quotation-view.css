@@ -2459,3 +2459,112 @@ animation-iteration-count: 1 !important;
     color: #64748b;
     margin: 0 0 16px 0;
 }
+
+
+/* =========================================================
+   BOTTOM ACTIONS BAR (Single Mixed-Grade Quotation)
+   All 4 buttons aligned in ONE horizontal row
+   ========================================================= */
+.quotation-bottom-actions-bar {
+    margin-top: 24px;
+    margin-bottom: 30px;
+    display: flex !important;
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+    align-items: center !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    background: #ffffff;
+    padding: 18px 24px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+}
+
+.quotation-bottom-actions-bar form {
+    margin: 0 !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+}
+
+.quotation-bottom-actions-bar .btn-grade-edit,
+.quotation-bottom-actions-bar .btn-grade-pdf,
+.quotation-bottom-actions-bar .btn-grade-whatsapp,
+.quotation-bottom-actions-bar .btn-grade-email {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    height: 42px !important;
+    padding: 0 20px !important;
+    font-size: 13.5px !important;
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    white-space: nowrap !important;
+    text-decoration: none !important;
+    cursor: pointer !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
+    grid-column: auto !important;
+}
+
+@media (max-width: 640px) {
+    .quotation-bottom-actions-bar {
+        justify-content: stretch !important;
+    }
+    .quotation-bottom-actions-bar .btn-grade-edit,
+    .quotation-bottom-actions-bar .btn-grade-pdf,
+    .quotation-bottom-actions-bar .btn-grade-whatsapp,
+    .quotation-bottom-actions-bar .btn-grade-email,
+    .quotation-bottom-actions-bar form {
+        flex: 1 1 calc(50% - 6px) !important;
+        width: 100% !important;
+    }
+}
+
+.quotation-bottom-actions-bar .btn-grade-edit {
+    background: #f1f5f9 !important;
+    color: #1e293b !important;
+    border: 1.5px solid #cbd5e1 !important;
+}
+.quotation-bottom-actions-bar .btn-grade-edit:hover {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+.quotation-bottom-actions-bar .btn-grade-pdf {
+    background: #ecfdf5 !important;
+    color: #047857 !important;
+    border: 1.5px solid #a7f3d0 !important;
+}
+.quotation-bottom-actions-bar .btn-grade-pdf:hover {
+    background: #d1fae5 !important;
+    color: #065f46 !important;
+}
+
+.quotation-bottom-actions-bar .btn-grade-whatsapp {
+    background: #f0fdf4 !important;
+    color: #15803d !important;
+    border: 1.5px solid #bbf7d0 !important;
+}
+.quotation-bottom-actions-bar .btn-grade-whatsapp:hover {
+    background: #dcfce7 !important;
+    color: #166534 !important;
+}
+
+.quotation-bottom-actions-bar .btn-grade-email {
+    background: #eff6ff !important;
+    color: #1d4ed8 !important;
+    border: 1.5px solid #bfdbfe !important;
+}
+.quotation-bottom-actions-bar .btn-grade-email:hover {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+}
+
+@keyframes agy-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
