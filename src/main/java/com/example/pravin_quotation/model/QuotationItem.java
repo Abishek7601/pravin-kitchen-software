@@ -94,6 +94,10 @@ public class QuotationItem {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pricing_mode", length = 30)
+    private PricingMode pricingMode;
+
     @Column(nullable = false)
     private Boolean active = true;
 
@@ -408,5 +412,26 @@ public class QuotationItem {
 
     public void setImageUrl(String imageUrl) {
         this.imageUrl = imageUrl;
+    }
+
+    public PricingMode getPricingMode() {
+        return pricingMode;
+    }
+
+    public void setPricingMode(PricingMode pricingMode) {
+        this.pricingMode = pricingMode;
+    }
+
+    public PricingMode getEffectivePricingMode() {
+        if (pricingMode != null) {
+            return pricingMode;
+        }
+        if (material != null && material.getPricingGrade() != null) {
+            return material.getPricingGrade();
+        }
+        if (quotationRoom != null && quotationRoom.getQuotation() != null && quotationRoom.getQuotation().getPricingMode() != null) {
+            return quotationRoom.getQuotation().getPricingMode();
+        }
+        return PricingMode.MIDDLE;
     }
 }

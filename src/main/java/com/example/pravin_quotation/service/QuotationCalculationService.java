@@ -192,6 +192,8 @@ public class QuotationCalculationService {
         quotation.setGrandTotal(
                 money(grandTotal));
 
+        quotation.setPricingModeDisplay(resolvePricingModeDisplay(quotationId));
+
         return quotationRepository.save(quotation);
     }
 
@@ -1055,5 +1057,143 @@ public class QuotationCalculationService {
         quotationRepository.save(quotation);
 
         return calculateQuotation(quotationId);
+    }
+
+    @Transactional(readOnly = true)
+    public java.util.Map<PricingMode, BigDecimal> calculateGradeSubtotals(Long quotationId) {
+        java.util.Map<PricingMode, BigDecimal> map = new java.util.LinkedHashMap<>();
+        map.put(PricingMode.PREMIUM, BigDecimal.ZERO);
+        map.put(PricingMode.MIDDLE, BigDecimal.ZERO);
+        map.put(PricingMode.ECONOMY, BigDecimal.ZERO);
+
+        if (quotationId == null) {
+            return map;
+        }
+
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(quotationId);
+        for (QuotationRoom room : rooms) {
+            List<QuotationItem> items = quotationItemRepository.findByQuotationRoomIdAndActiveTrueOrderByIdAsc(room.getId());
+            for (QuotationItem item : items) {
+                PricingMode mode = item.getEffectivePricingMode();
+                if (mode == null) mode = PricingMode.MIDDLE;
+
+                BigDecimal itemAmt;
+                if (item.getOfferPrice() != null && item.getOfferPrice().compareTo(BigDecimal.ZERO) > 0) {
+                    itemAmt = item.getOfferPrice();
+                } else if (item.getAmount() != null) {
+                    itemAmt = item.getAmount();
+                } else {
+                    itemAmt = BigDecimal.ZERO;
+                }
+
+                map.put(mode, money(map.getOrDefault(mode, BigDecimal.ZERO).add(itemAmt)));
+            }
+        }
+        return map;
+    }
+
+    @Transactional(readOnly = true)
+    public String resolvePricingModeDisplay(Long quotationId) {
+        if (quotationId == null) {
+            return "Middle / Standard";
+        }
+        Quotation quotation = quotationRepository.findById(quotationId).orElse(null);
+        PricingMode fallback = quotation != null ? quotation.getPricingMode() : PricingMode.MIDDLE;
+
+        java.util.Set<PricingMode> usedGrades = new java.util.LinkedHashSet<>();
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationIdAndActiveTrueOrderByIdAsc(quotationId);
+        for (QuotationRoom room : rooms) {
+            List<QuotationItem> items = quotationItemRepository.findByQuotationRoomIdAndActiveTrueOrderByIdAsc(room.getId());
+            for (QuotationItem item : items) {
+                PricingMode mode = item.getEffectivePricingMode();
+                if (mode != null) {
+                    usedGrades.add(mode);
+                }
+            }
+        }
+        return formatPricingModeDisplay(usedGrades, fallback);
+    }
+
+
+    public String formatPricingColumnDisplay(java.util.Set<PricingMode> usedGrades, PricingMode confirmedGrade) {
+        if (usedGrades == null || usedGrades.isEmpty()) {
+            return "Not Prepared";
+        }
+        List<String> parts = new java.util.ArrayList<>();
+        if (usedGrades.contains(PricingMode.PREMIUM)) {
+            parts.add((confirmedGrade == PricingMode.PREMIUM ? "✓ " : "") + "PREMIUM");
+        }
+        if (usedGrades.contains(PricingMode.MIDDLE)) {
+            parts.add((confirmedGrade == PricingMode.MIDDLE ? "✓ " : "") + "MIDDLE");
+        }
+        if (usedGrades.contains(PricingMode.ECONOMY)) {
+            parts.add((confirmedGrade == PricingMode.ECONOMY ? "✓ " : "") + "ECONOMY");
+        }
+        if (parts.isEmpty()) {
+            return "Not Prepared";
+        }
+        return String.join(" + ", parts);
+    }
+
+    @Transactional(readOnly = true)
+    public void populatePricingModeDisplays(List<Quotation> quotations) {
+        if (quotations == null || quotations.isEmpty()) {
+            return;
+        }
+        java.util.Set<Long> quoteIds = quotations.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(Quotation::getId)
+                .filter(java.util.Objects::nonNull)
+                .collect(java.util.stream.Collectors.toSet());
+        if (quoteIds.isEmpty()) {
+            return;
+        }
+
+        List<Object[]> rows = quotationItemRepository.findDistinctUsedGradesForQuotationIds(quoteIds);
+        java.util.Map<Long, java.util.Set<PricingMode>> quoteGradesMap = new java.util.HashMap<>();
+        for (Object[] row : rows) {
+            if (row == null || row.length < 2) continue;
+            Long quoteId = (Long) row[0];
+            PricingMode mode = (row[1] instanceof PricingMode) ? (PricingMode) row[1] : (row[1] != null ? PricingMode.valueOf(row[1].toString()) : null);
+            if (mode == null && row.length > 2) mode = (row[2] instanceof PricingMode) ? (PricingMode) row[2] : (row[2] != null ? PricingMode.valueOf(row[2].toString()) : null);
+            if (mode == null && row.length > 3) mode = (row[3] instanceof PricingMode) ? (PricingMode) row[3] : (row[3] != null ? PricingMode.valueOf(row[3].toString()) : null);
+            if (quoteId != null && mode != null) {
+                quoteGradesMap.computeIfAbsent(quoteId, k -> new java.util.LinkedHashSet<>()).add(mode);
+            }
+        }
+
+        for (Quotation q : quotations) {
+            if (q == null) continue;
+            java.util.Set<PricingMode> used = quoteGradesMap.get(q.getId());
+            PricingMode confirmed = q.getSelectedGrade();
+            q.setPricingModeDisplay(formatPricingColumnDisplay(used, confirmed));
+        }
+    }
+
+ public String formatPricingModeDisplay(java.util.Set<PricingMode> usedGrades, PricingMode fallback) {
+        if (usedGrades == null || usedGrades.isEmpty()) {
+            if (fallback == PricingMode.PREMIUM) return "Premium";
+            if (fallback == PricingMode.ECONOMY) return "Economy";
+            return "Middle / Standard";
+        }
+        boolean hasPremium = usedGrades.contains(PricingMode.PREMIUM);
+        boolean hasMiddle = usedGrades.contains(PricingMode.MIDDLE);
+        boolean hasEconomy = usedGrades.contains(PricingMode.ECONOMY);
+
+        List<String> parts = new java.util.ArrayList<>();
+        if (hasPremium) parts.add("Premium");
+        if (hasMiddle) {
+            if (hasPremium || hasEconomy) {
+                parts.add("Middle");
+            } else {
+                parts.add("Middle / Standard");
+            }
+        }
+        if (hasEconomy) parts.add("Economy");
+
+        if (parts.isEmpty()) {
+            return "Middle / Standard";
+        }
+        return String.join(" + ", parts);
     }
 }

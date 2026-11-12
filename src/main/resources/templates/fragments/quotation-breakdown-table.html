@@ -62,7 +62,7 @@
                         </strong>
                     </td>
                     <td class="cell-material">
-                        <div class="material-name" th:text="${item.material != null ? item.material.name : 'N/A'}">Marine Ply</div>
+                        <div class="material-name" th:text="${(item.material != null ? item.material.name : 'N/A') + (item.effectivePricingMode != null ? ' (' + (item.effectivePricingMode == T(com.example.pravin_quotation.model.PricingMode).PREMIUM ? 'Premium' : (item.effectivePricingMode == T(com.example.pravin_quotation.model.PricingMode).ECONOMY ? 'Economy' : 'Middle')) + ')' : '')}">Marine Ply (Middle)</div>
                         <div class="material-option-text"
                              th:if="${item.materialOption != null and !#strings.isEmpty(item.materialOption.name) and (item.material == null or !#strings.equalsIgnoreCase(#strings.trim(item.materialOption.name), #strings.trim(item.material.name)))}"
                              th:text="${item.materialOption.name}">18mm</div>
@@ -149,7 +149,24 @@
                 </tr>
             </th:block>
         </tbody>
-        <tfoot>
+                <tfoot>
+            <!-- Grade-Wise Subtotals -->
+            <tr class="tfoot-charge-row" th:if="${premiumSubtotal != null && premiumSubtotal > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
+                <td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;" th:text="${'₹ ' + @inr.format(premiumSubtotal)}">₹ 0.00</td>
+            </tr>
+            <tr class="tfoot-charge-row" th:if="${middleSubtotal != null && middleSubtotal > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td>
+                <td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;" th:text="${'₹ ' + @inr.format(middleSubtotal)}">₹ 0.00</td>
+            </tr>
+            <tr class="tfoot-charge-row" th:if="${economySubtotal != null && economySubtotal > 0}">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td>
+                <td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;" th:text="${'₹ ' + @inr.format(economySubtotal)}">₹ 0.00</td>
+            </tr>
+            <tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;">
+                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td>
+                <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.subtotal != null ? quote.subtotal : 0)}">₹ 0.00</td>
+            </tr>
             <!-- Accessories -->
             <tr class="tfoot-charge-row" th:if="${quote.accessoriesAmount != null && quote.accessoriesAmount > 0}">
                 <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Accessories</td>

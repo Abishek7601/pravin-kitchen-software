@@ -39,4 +39,17 @@ public interface QuotationItemRepository extends JpaRepository<QuotationItem, Lo
 
     @Query("SELECT COUNT(qi) FROM QuotationItem qi WHERE qi.quotationRoom.quotation.id = :quotationId AND qi.material.id = :materialId")
     long countByQuotationIdAndMaterialId(@Param("quotationId") Long quotationId, @Param("materialId") Long materialId);
+
+    @Query("SELECT DISTINCT " +
+           "COALESCE(q.parent.id, q.id), " +
+           "qi.pricingMode, " +
+           "m.pricingGrade, " +
+           "q.pricingMode " +
+           "FROM QuotationItem qi " +
+           "JOIN qi.quotationRoom qr " +
+           "JOIN qr.quotation q " +
+           "LEFT JOIN qi.material m " +
+           "WHERE qi.active = true AND qr.active = true " +
+           "AND (q.id IN :quoteIds OR (q.parent IS NOT NULL AND q.parent.id IN :quoteIds))")
+    List<Object[]> findDistinctUsedGradesForQuotationIds(@Param("quoteIds") java.util.Collection<Long> quoteIds);
 }

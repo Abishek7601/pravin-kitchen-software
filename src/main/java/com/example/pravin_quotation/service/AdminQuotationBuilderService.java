@@ -534,120 +534,41 @@ public class AdminQuotationBuilderService {
 
         PricingMode requestedMode = request.pricingMode() != null ? request.pricingMode() : (PricingMode.values().length > 0 ? PricingMode.values()[0] : PricingMode.PREMIUM);
 
-        // Resolve Parent Quotation & Target Quotation
-        Quotation parentQuotation = null;
         Quotation targetQuotation = null;
         boolean isEdit = false;
         java.util.Set<Long> existingMaterialIds = new java.util.HashSet<>();
 
-        // 1. Resolve Parent Quotation
-        if (request.parentId() != null) {
-            parentQuotation = quotationRepository.findById(request.parentId())
-                    .orElseThrow(() -> new IllegalArgumentException("Parent quotation not found."));
-            if (parentQuotation.getParent() != null) {
-                parentQuotation = parentQuotation.getParent();
+        // 1. Resolve existing quotation for single mixed-grade quotation
+        if (request.quotationId() != null) {
+            targetQuotation = quotationRepository.findById(request.quotationId()).orElse(null);
+            if (targetQuotation != null) {
+                isEdit = true;
             }
-        } else if (request.quotationId() != null) {
-            Quotation existing = quotationRepository.findById(request.quotationId()).orElse(null);
-            if (existing != null) {
-                if (existing.getParent() != null) {
-                    parentQuotation = existing.getParent();
-                    if (existing.getPricingMode() == requestedMode) {
-                        targetQuotation = existing;
-                        isEdit = true;
-                    }
-                } else if (existing.isParentQuotation() || quotationRepository.existsByParentId(existing.getId())) {
-                    parentQuotation = existing;
-                } else {
-                    // Standalone quotation without children
-                    if (existing.getPricingMode() == requestedMode) {
-                        targetQuotation = existing;
-                        isEdit = true;
-                    } else {
-                        // Grade differs: convert standalone into parent quotation
-                        parentQuotation = existing;
-                    }
-                }
+        }
+        if (targetQuotation == null && request.parentId() != null) {
+            targetQuotation = quotationRepository.findById(request.parentId()).orElse(null);
+            if (targetQuotation != null) {
+                isEdit = true;
             }
         }
 
-        if (parentQuotation != null && loggedInUser.getRole() == Role.EMPLOYEE && parentQuotation.getBranch() != null && loggedInUser.getBranch() != null
-                && !parentQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
+        if (targetQuotation != null && loggedInUser.getRole() == Role.EMPLOYEE && targetQuotation.getBranch() != null && loggedInUser.getBranch() != null
+                && !targetQuotation.getBranch().getId().equals(loggedInUser.getBranch().getId())) {
             throw new AccessDeniedException("Unauthorized: Cannot modify quotation for another branch.");
         }
 
-        // 2. Resolve Target Child Quotation for the requested grade
-        if (parentQuotation != null && targetQuotation == null) {
-            String parentRawNumber = parentQuotation.getRawQuotationNumber() != null
-                    ? parentQuotation.getRawQuotationNumber()
-                    : parentQuotation.getQuotationNumber();
-            String expectedChildNumber = parentRawNumber + "-" + requestedMode.name();
-
-            // A. Check if request.quotationId() points directly to this grade's child
-            if (request.quotationId() != null) {
-                Quotation requestedQuote = quotationRepository.findById(request.quotationId()).orElse(null);
-                if (requestedQuote != null && !requestedQuote.getId().equals(parentQuotation.getId())) {
-                    if (requestedQuote.getPricingMode() == requestedMode) {
-                        targetQuotation = requestedQuote;
-                    }
-                }
-            }
-
-            // B. Look up by (parent.id, requestedMode)
-            if (targetQuotation == null && parentQuotation.getId() != null) {
-                targetQuotation = quotationRepository.findByParentIdAndPricingMode(parentQuotation.getId(), requestedMode).orElse(null);
-            }
-
-            // C. Look up by expected quotation number
-            if (targetQuotation == null) {
-                targetQuotation = quotationRepository.findByQuotationNumber(expectedChildNumber).orElse(null);
-            }
-
-            // D. Check parent's childQuotations collection if present
-            if (targetQuotation == null && parentQuotation.getChildQuotations() != null) {
-                for (Quotation child : parentQuotation.getChildQuotations()) {
-                    if (child.getPricingMode() == requestedMode
-                            || (child.getRawQuotationNumber() != null && child.getRawQuotationNumber().equals(expectedChildNumber))) {
-                        targetQuotation = child;
-                        break;
-                    }
-                }
-            }
-
-            if (targetQuotation != null) {
-                isEdit = true;
-                targetQuotation.setParent(parentQuotation);
-                targetQuotation.setPricingMode(requestedMode);
-            } else {
-                targetQuotation = new Quotation();
-                targetQuotation.setParent(parentQuotation);
-                targetQuotation.setQuotationNumber(expectedChildNumber);
-                targetQuotation.setPricingMode(requestedMode);
-                isEdit = false;
-            }
+        // 2. Brand new Quotation (single quotation number)
+        if (targetQuotation == null) {
+            targetQuotation = new Quotation();
+            targetQuotation.setQuotationNumber(nextQuotationNumber());
+            targetQuotation.setPricingMode(requestedMode);
+            targetQuotation.setStatus(isAutoSave ? QuotationStatus.PENDING : QuotationStatus.WORKING);
+            targetQuotation.setEmployee(loggedInUser);
+            if (branch != null) targetQuotation.setBranch(branch);
+            isEdit = false;
         }
 
-        // 3. Brand new Quotation (no parent yet)
-        if (targetQuotation == null && parentQuotation == null) {
-            parentQuotation = new Quotation();
-            parentQuotation.setQuotationNumber(nextQuotationNumber());
-            parentQuotation.setPricingMode(requestedMode);
-            parentQuotation.setStatus(isAutoSave ? QuotationStatus.PENDING : QuotationStatus.WORKING);
-            parentQuotation.setEmployee(loggedInUser);
-            if (branch != null) parentQuotation.setBranch(branch);
-
-            String expectedChildNumber = parentQuotation.getQuotationNumber() + "-" + requestedMode.name();
-            targetQuotation = quotationRepository.findByQuotationNumber(expectedChildNumber).orElse(null);
-            if (targetQuotation == null) {
-                targetQuotation = new Quotation();
-                targetQuotation.setParent(parentQuotation);
-                targetQuotation.setQuotationNumber(expectedChildNumber);
-                targetQuotation.setPricingMode(requestedMode);
-                isEdit = false;
-            } else {
-                isEdit = true;
-            }
-        }
+        Quotation parentQuotation = targetQuotation.getParent();
 
         if (isEdit && targetQuotation.getId() != null) {
             if (loggedInUser.getRole() == Role.EMPLOYEE && targetQuotation.getBranch() != null && loggedInUser.getBranch() != null
@@ -662,6 +583,17 @@ public class AdminQuotationBuilderService {
                         if (oi.getMaterial() != null && oi.getMaterial().getId() != null) {
                             existingMaterialIds.add(oi.getMaterial().getId());
                         }
+                        if (quotationItemSizeService != null) {
+                            List<QuotationItemSize> oldSizes = quotationItemSizeService.getActiveSizes(oi.getId());
+                            if (oldSizes != null) {
+                                for (QuotationItemSize os : oldSizes) {
+                                    try {
+                                        quotationItemSizeService.deactivate(os.getId());
+                                    } catch (Exception ignored) {}
+                                }
+                            }
+                        }
+                        quotationItemService.deactivate(oi.getId());
                     }
                 }
                 quotationRoomService.deactivate(oldRoom.getId());
@@ -672,11 +604,11 @@ public class AdminQuotationBuilderService {
         Customer customer = null;
         if (request.customer() != null) {
             try {
-                if (request.customer().id() != null) {
-                    customer = customerRepository.findById(request.customer().id()).orElse(null);
-                } else if (request.customer().name() != null && !request.customer().name().isBlank()
-                        && request.customer().phone() != null && !request.customer().phone().isBlank()) {
+                if (isEdit || (request.customer().name() != null && !request.customer().name().isBlank()
+                        && request.customer().phone() != null && !request.customer().phone().isBlank())) {
                     customer = resolveCustomer(request.customer(), branch, loggedInUser, parentQuotation != null ? parentQuotation : targetQuotation, isEdit);
+                } else if (request.customer().id() != null) {
+                    customer = customerRepository.findById(request.customer().id()).orElse(null);
                 }
             } catch (Exception ex) {
                 if (!isAutoSave) {
@@ -707,6 +639,8 @@ public class AdminQuotationBuilderService {
             if (parentQuotation.getEmployee() == null) parentQuotation.setEmployee(loggedInUser);
             if (parentQuotation.getQuotationDate() == null) parentQuotation.setQuotationDate(effectiveQuotationDate);
             if (parentQuotation.getValidUntil() == null) parentQuotation.setValidUntil(validUntil);
+            parentQuotation.setCustomerRequirements(clean(request.customerRequirements()));
+            parentQuotation.setNotes(clean(request.notes()));
             if (!isAutoSave && (parentQuotation.getStatus() == null || parentQuotation.getStatus() == QuotationStatus.PENDING)) {
                 parentQuotation.setStatus(QuotationStatus.WORKING);
             }
@@ -863,26 +797,41 @@ public class AdminQuotationBuilderService {
 
             for (ItemRequest itemRequest : roomRequest.items()) {
                 if (itemRequest == null) continue;
-                if (itemRequest.workCategoryId() == null || itemRequest.divisionId() == null || itemRequest.materialId() == null) {
+                if (itemRequest.materialId() == null) {
                     if (isAutoSave) continue;
                 }
 
-                WorkCategory category = workCategoryRepository.findById(itemRequest.workCategoryId()).orElse(null);
-                if (category == null) {
+                Material material = itemRequest.materialId() != null ? materialRepository.findById(itemRequest.materialId()).orElse(null) : null;
+                if (material == null) {
                     if (isAutoSave) continue;
-                    throw new IllegalArgumentException("Work category not found.");
+                    throw new IllegalArgumentException("Material not found.");
                 }
 
-                Division division = divisionRepository.findById(itemRequest.divisionId()).orElse(null);
+                Long divId = itemRequest.divisionId();
+                if (divId == null && material.getDivision() != null) {
+                    divId = material.getDivision().getId();
+                }
+                Division division = divId != null ? divisionRepository.findById(divId).orElse(null) : null;
                 if (division == null) {
                     if (isAutoSave) continue;
                     throw new IllegalArgumentException("Division not found.");
                 }
 
-                Material material = materialRepository.findById(itemRequest.materialId()).orElse(null);
-                if (material == null) {
+                Long catId = itemRequest.workCategoryId();
+                if (catId == null && division.getWorkCategory() != null) {
+                    catId = division.getWorkCategory().getId();
+                }
+                WorkCategory category = catId != null ? workCategoryRepository.findById(catId).orElse(null) : null;
+                if (category == null && division.getWorkCategory() != null) {
+                    category = division.getWorkCategory();
+                }
+                if (category == null) {
                     if (isAutoSave) continue;
-                    throw new IllegalArgumentException("Material not found.");
+                    throw new IllegalArgumentException("Work category not found.");
+                }
+
+                if (division.getWorkCategory() != null && !division.getWorkCategory().getId().equals(category.getId())) {
+                    category = division.getWorkCategory();
                 }
 
                 if (!Boolean.TRUE.equals(material.getActive())) {
@@ -967,17 +916,19 @@ public class AdminQuotationBuilderService {
                     effectiveType = MeasurementType.SQFT;
                 }
 
+                PricingMode itemGrade = itemRequest.pricingMode() != null ? itemRequest.pricingMode() : pricingMode;
+
                 ResolvedMaterialRate resolved = resolveMaterialAndRate(
                         branchId,
                         division.getId(),
                         material.getId(),
                         option != null ? option.getId() : null,
-                        pricingMode
+                        itemGrade
                 );
                 boolean isExistingItemInQuotation = isEdit && existingMaterialIds.contains(material.getId());
 
                 if (!resolved.available() || resolved.rate() == null || resolved.rate().compareTo(BigDecimal.ZERO) <= 0) {
-                    if (isExistingItemInQuotation || isAutoSave) {
+                    if (isExistingItemInQuotation || isAutoSave || (itemRequest.rate() != null && itemRequest.rate().compareTo(BigDecimal.ZERO) > 0)) {
                         BigDecimal fallbackRate = (itemRequest.rate() != null && itemRequest.rate().compareTo(BigDecimal.ZERO) > 0)
                                 ? money(itemRequest.rate())
                                 : (material.getRate() != null && material.getRate().compareTo(BigDecimal.ZERO) > 0 ? money(material.getRate()) : BigDecimal.ONE);
@@ -995,7 +946,7 @@ public class AdminQuotationBuilderService {
                                 null
                         );
                     } else {
-                        String gradeLabel = pricingMode == PricingMode.PREMIUM ? "Premium" : (pricingMode == PricingMode.ECONOMY ? "Economy" : "Middle");
+                        String gradeLabel = itemGrade == PricingMode.PREMIUM ? "Premium" : (itemGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
                         throw new IllegalArgumentException(resolved.message() != null ? resolved.message() : ("No material available in " + gradeLabel + " Grade"));
                     }
                 }
@@ -1015,7 +966,7 @@ public class AdminQuotationBuilderService {
                 }
 
                 Pricing itemPricing = (option != null)
-                        ? pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), pricingMode).orElse(null)
+                        ? pricingRepository.findByMaterialOptionIdAndPricingMode(option.getId(), itemGrade).orElse(null)
                         : null;
 
                 String itemFormula = (material.getFormula() != null && !material.getFormula().isBlank())
@@ -1162,7 +1113,8 @@ public class AdminQuotationBuilderService {
                         effectiveType,
                         effectiveQuantity,
                         effectiveImageUrl,
-                        coverage
+                        coverage,
+                        itemGrade
                 );
 
                 if ((effectiveType.isSqft() || effectiveType.isRoll()) && itemRequest.sizes() != null) {
@@ -1272,7 +1224,7 @@ public class AdminQuotationBuilderService {
                 existingCustomer.setPhone(phone);
                 existingCustomer.setEmail(email != null && !email.isBlank() ? email.toLowerCase().trim() : null);
                 existingCustomer.setAddress(address);
-                if (existingCustomer.getBranch() == null) {
+                if (branch != null) {
                     existingCustomer.setBranch(branch);
                 }
                 existingCustomer.setActive(true);
@@ -1811,7 +1763,26 @@ public class AdminQuotationBuilderService {
             BigDecimal quantity,
             String imageUrl,
             BigDecimal rate,
-            BigDecimal coveragePerRoll) {
+            BigDecimal coveragePerRoll,
+            PricingMode pricingMode) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes,
+                MeasurementType measurementType,
+                BigDecimal quantity,
+                String imageUrl,
+                BigDecimal rate,
+                BigDecimal coveragePerRoll) {
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, coveragePerRoll, null);
+        }
 
         public ItemRequest(
                 Long workCategoryId,
@@ -1827,7 +1798,7 @@ public class AdminQuotationBuilderService {
                 BigDecimal quantity,
                 String imageUrl,
                 BigDecimal rate) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, null);
+            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, null, null);
         }
 
         public ItemRequest(

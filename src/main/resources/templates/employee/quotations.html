@@ -117,6 +117,7 @@
             <th>Date</th>
             <th>Customer</th>
             <th>Branch</th>
+            <th>Pricing</th>
             <th>Status</th>
             <th>Total</th>
             <th>Action</th>
@@ -174,6 +175,42 @@
                       th:text="${quotation.branch.name}">Branch</span>
                 <span th:if="${quotation.branch == null || quotation.branch.name == null || quotation.branch.name.isBlank()}"
                       style="color: #64748b; font-style: italic;">Not selected</span>
+            </td>
+
+            <td>
+                <span th:if="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != ''}">
+                    <span class="pricing-badge"
+                          th:if="${quotation.selectedGrade != null}"
+                          style="background: #eaf5f1; color: #13795b; font-weight: 700; border: 1px solid #c2e5d9; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;"
+                          th:text="${quotation.pricingModeDisplay}">
+                        ✓ PREMIUM
+                    </span>
+                    <span class="pricing-badge"
+                          th:unless="${quotation.selectedGrade != null or quotation.pricingModeDisplay == 'Not Prepared'}"
+                          style="background: #f1f5f9; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;"
+                          th:text="${quotation.pricingModeDisplay}">
+                        PREMIUM
+                    </span>
+                    <span class="pricing-badge"
+                          th:if="${quotation.selectedGrade == null and quotation.pricingModeDisplay == 'Not Prepared'}"
+                          style="background: #f8fafc; color: #64748b; font-style: italic; border: 1px dashed #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;"
+                          th:text="${quotation.pricingModeDisplay}">
+                        Not Prepared
+                    </span>
+                </span>
+                <span th:unless="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != ''}">
+                    <span class="pricing-badge"
+                          th:if="${quotation.pricingMode != null}"
+                          style="background: #f1f5f9; color: #334155; font-weight: 700; border: 1px solid #cbd5e1; text-transform: uppercase; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;"
+                          th:text="${quotation.pricingMode}">
+                        PREMIUM
+                    </span>
+                    <span th:unless="${quotation.pricingMode != null}"
+                          class="pricing-badge"
+                          style="background: #f8fafc; color: #64748b; font-style: italic; border: 1px dashed #cbd5e1; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;">
+                        Not Prepared
+                    </span>
+                </span>
             </td>
 
             <td>

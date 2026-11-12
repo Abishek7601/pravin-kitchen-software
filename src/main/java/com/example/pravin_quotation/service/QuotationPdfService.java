@@ -37,10 +37,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Base64;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -386,8 +389,12 @@ public class QuotationPdfService {
         rightCell.setPadding(0);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
+        String qType = resolveQuotationType(quotation);
+
         String titleText = "MARKETING QUOTATION";
-        if (quotation.getPricingMode() != null) {
+        if (qType != null && !qType.isBlank() && !"-".equals(qType)) {
+            titleText = qType.toUpperCase() + " GRADE QUOTATION";
+        } else if (quotation.getPricingMode() != null) {
             switch (quotation.getPricingMode()) {
                 case PREMIUM:
                     titleText = "PREMIUM GRADE QUOTATION";
@@ -417,16 +424,6 @@ public class QuotationPdfService {
         metaTable.setSpacingBefore(4f);
 
         addMetaRow(metaTable, "Quotation No:", safe(quotation.getQuotationNumber()));
-
-        String qType = "-";
-        if (quotation.getPricingMode() != null) {
-            switch (quotation.getPricingMode()) {
-                case PREMIUM: qType = "Premium"; break;
-                case MIDDLE: qType = "Middle / Standard"; break;
-                case ECONOMY: qType = "Economy"; break;
-                default: qType = quotation.getPricingMode().name();
-            }
-        }
         addMetaRow(metaTable, "Quotation Type:", qType);
 
         String dateStr = quotation.getQuotationDate() != null
@@ -536,12 +533,25 @@ public class QuotationPdfService {
                 String rawMatName = item.getMaterial() != null ? safe(item.getMaterial().getName()).trim() : "";
                 String optionName = item.getMaterialOption() != null ? safe(item.getMaterialOption().getName()).trim() : "";
 
-                String materialText = rawMatName;
-                if (!optionName.isBlank() && !optionName.equalsIgnoreCase(rawMatName)) {
-                    materialText = !materialText.isBlank() ? materialText + " - " + optionName : optionName;
+                PricingMode itemGrade = item.getEffectivePricingMode();
+                String gradeSuffix = "";
+                if (itemGrade != null) {
+                    switch (itemGrade) {
+                        case PREMIUM: gradeSuffix = " (Premium)"; break;
+                        case MIDDLE: gradeSuffix = " (Middle)"; break;
+                        case ECONOMY: gradeSuffix = " (Economy)"; break;
+                        default: gradeSuffix = " (" + itemGrade.name() + ")"; break;
+                    }
                 }
-                if (materialText.isBlank()) {
-                    materialText = "-";
+
+                String baseName = !rawMatName.isBlank() ? rawMatName : optionName;
+                String optionSuffix = (!optionName.isBlank() && !optionName.equalsIgnoreCase(rawMatName) && !rawMatName.isBlank())
+                        ? " - " + optionName : "";
+                String materialText = baseName;
+                if (!materialText.isBlank()) {
+                    materialText = materialText + gradeSuffix + optionSuffix;
+                } else {
+                    materialText = !gradeSuffix.isBlank() ? "-" + gradeSuffix : "-";
                 }
 
                 // Specifications (display saved specification without duplicating material name)
@@ -579,7 +589,8 @@ public class QuotationPdfService {
                 }
 
                 // Unit
-                String unitStr = resolveUnit(item, quotation.getPricingMode());
+                PricingMode effectiveMode = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : quotation.getPricingMode();
+                String unitStr = resolveUnit(item, effectiveMode);
 
                 // Amounts
                 BigDecimal rate = item.getRate() != null ? item.getRate() : BigDecimal.ZERO;
@@ -685,9 +696,38 @@ public class QuotationPdfService {
                 || otherCharges.compareTo(BigDecimal.ZERO) > 0
                 || discount.compareTo(BigDecimal.ZERO) > 0;
 
+        // Calculate grade subtotals for PDF breakdown
+        BigDecimal pdfPremSubtotal = BigDecimal.ZERO;
+        BigDecimal pdfMidSubtotal = BigDecimal.ZERO;
+        BigDecimal pdfEconSubtotal = BigDecimal.ZERO;
+        for (QuotationRoom r : rooms) {
+            if (!Boolean.TRUE.equals(r.getActive())) continue;
+            List<QuotationItem> rItems = quotationItemRepository.findByQuotationRoomId(r.getId());
+            for (QuotationItem qi : rItems) {
+                if (!Boolean.TRUE.equals(qi.getActive())) continue;
+                BigDecimal qiAmt = (qi.getOfferPrice() != null && qi.getOfferPrice().compareTo(BigDecimal.ZERO) > 0)
+                        ? qi.getOfferPrice()
+                        : (qi.getAmount() != null ? qi.getAmount() : BigDecimal.ZERO);
+                PricingMode gm = qi.getEffectivePricingMode();
+                if (gm == PricingMode.PREMIUM) pdfPremSubtotal = pdfPremSubtotal.add(qiAmt);
+                else if (gm == PricingMode.ECONOMY) pdfEconSubtotal = pdfEconSubtotal.add(qiAmt);
+                else pdfMidSubtotal = pdfMidSubtotal.add(qiAmt);
+            }
+        }
+
+        if (pdfPremSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+            addSummaryRow(itemTable, "Premium Grade Subtotal", rupees(pdfPremSubtotal), false);
+        }
+        if (pdfMidSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+            addSummaryRow(itemTable, "Middle Grade Subtotal", rupees(pdfMidSubtotal), false);
+        }
+        if (pdfEconSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+            addSummaryRow(itemTable, "Economy Grade Subtotal", rupees(pdfEconSubtotal), false);
+        }
+
         if (hasConfiguredExtraCharges) {
             // Row 1: Subtotal
-            addSummaryRow(itemTable, "Subtotal", rupees(subtotal), false);
+            addSummaryRow(itemTable, "Combined Subtotal", rupees(subtotal), false);
 
             // Row 2: Accessories (if configured)
             if (accessories.compareTo(BigDecimal.ZERO) > 0) {
@@ -1349,6 +1389,59 @@ public class QuotationPdfService {
 
     private BigDecimal zeroIfNull(BigDecimal value) {
         return value == null ? BigDecimal.ZERO : value;
+    }
+
+    public String resolveQuotationType(Quotation quotation) {
+        if (quotation == null || quotation.getId() == null) {
+            return formatSingleGrade(quotation != null ? quotation.getPricingMode() : null);
+        }
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(quotation.getId());
+        Set<PricingMode> usedGrades = new LinkedHashSet<>();
+        if (rooms != null) {
+            for (QuotationRoom room : rooms) {
+                if (room == null || Boolean.FALSE.equals(room.getActive())) {
+                    continue;
+                }
+                List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
+                if (items != null) {
+                    for (QuotationItem item : items) {
+                        if (item != null && Boolean.TRUE.equals(item.getActive())) {
+                            PricingMode mode = item.getEffectivePricingMode();
+                            if (mode != null) {
+                                usedGrades.add(mode);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        if (usedGrades.isEmpty()) {
+            return formatSingleGrade(quotation.getPricingMode());
+        }
+
+        List<String> gradeNames = new ArrayList<>();
+        if (usedGrades.contains(PricingMode.PREMIUM)) {
+            gradeNames.add("Premium");
+        }
+        if (usedGrades.contains(PricingMode.MIDDLE)) {
+            gradeNames.add("Middle");
+        }
+        if (usedGrades.contains(PricingMode.ECONOMY)) {
+            gradeNames.add("Economy");
+        }
+
+        return gradeNames.isEmpty() ? formatSingleGrade(quotation.getPricingMode()) : String.join(" + ", gradeNames);
+    }
+
+    private static String formatSingleGrade(PricingMode mode) {
+        if (mode == null) return "-";
+        switch (mode) {
+            case PREMIUM: return "Premium";
+            case MIDDLE: return "Middle";
+            case ECONOMY: return "Economy";
+            default: return mode.name();
+        }
     }
 
     private String safe(String value) {

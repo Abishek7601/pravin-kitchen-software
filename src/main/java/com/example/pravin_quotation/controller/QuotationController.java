@@ -105,7 +105,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                list
+                withPricingDisplays(list)
         );
 
         model.addAttribute(
@@ -361,6 +361,19 @@ public class QuotationController {
                 sizesByItem
         );
 
+        if (quotationCalculationService != null && quotation.getId() != null) {
+            java.util.Map<PricingMode, BigDecimal> gradeSubtotals = quotationCalculationService.calculateGradeSubtotals(quotation.getId());
+            model.addAttribute("gradeSubtotals", gradeSubtotals);
+            model.addAttribute("premiumSubtotal", gradeSubtotals.get(PricingMode.PREMIUM));
+            model.addAttribute("middleSubtotal", gradeSubtotals.get(PricingMode.MIDDLE));
+            model.addAttribute("economySubtotal", gradeSubtotals.get(PricingMode.ECONOMY));
+            String pricingModeDisplay = quotationCalculationService.resolvePricingModeDisplay(quotation.getId());
+            quotation.setPricingModeDisplay(pricingModeDisplay);
+            model.addAttribute("pricingModeDisplay", pricingModeDisplay);
+        } else {
+            model.addAttribute("pricingModeDisplay", quotation.getPricingModeDisplay());
+        }
+
         // -----------------------------------------------------
         // STATUS HISTORY
         // -----------------------------------------------------
@@ -547,22 +560,31 @@ public class QuotationController {
     // SEND EMAIL
     // =========================================================
 
-    public String sendQuotationEmail(Long id, RedirectAttributes redirectAttributes) {
-        return sendQuotationEmail(id, null, redirectAttributes);
+    public Object sendQuotationEmail(Long id, RedirectAttributes redirectAttributes) {
+        return sendQuotationEmail(id, null, null, redirectAttributes);
+    }
+
+    private List<Quotation> withPricingDisplays(List<Quotation> list) {
+        if (quotationCalculationService != null && list != null && !list.isEmpty()) {
+            quotationCalculationService.populatePricingModeDisplays(list);
+        }
+        return list;
     }
 
     @PostMapping("/email/{id}")
-    public String sendQuotationEmail(
+    public Object sendQuotationEmail(
             @PathVariable Long id,
             @RequestParam(required = false) PricingMode grade,
+            HttpServletRequest request,
             RedirectAttributes redirectAttributes
     ) {
+        String accept = request != null ? request.getHeader("Accept") : null;
+        String requestedWith = request != null ? request.getHeader("X-Requested-With") : null;
+        boolean wantsJson = (accept != null && accept.contains("application/json"))
+                || "XMLHttpRequest".equalsIgnoreCase(requestedWith);
 
         try {
-
-            Quotation quotation =
-                    quotationService.getById(id);
-
+            Quotation quotation = quotationService.getById(id);
             Quotation targetQuotation = quotation;
             if (grade != null) {
                 Quotation child = quotation.getChildForGrade(grade);
@@ -571,23 +593,27 @@ public class QuotationController {
                 }
             }
 
-            quotationEmailService.sendQuotationEmail(
-                    targetQuotation
-            );
+            quotationEmailService.sendQuotationEmail(targetQuotation);
 
+            String successMsg = (grade != null ? grade.name() + " Grade " : "") + "Quotation email sent successfully.";
+            if (wantsJson) {
+                return ResponseEntity.ok(java.util.Map.of(
+                        "success", true,
+                        "message", successMsg,
+                        "status", "SENT"
+                ));
+            }
 
-            redirectAttributes.addFlashAttribute(
-                    "successMessage",
-                    (grade != null ? grade.name() + " Grade " : "") + "Quotation email sent successfully."
-            );
-
+            redirectAttributes.addFlashAttribute("successMessage", successMsg);
         } catch (Exception e) {
-
-            redirectAttributes.addFlashAttribute(
-                    "errorMessage",
-                    "Failed to send quotation email: "
-                            + e.getMessage()
-            );
+            String errorMsg = "Failed to send quotation email: " + e.getMessage();
+            if (wantsJson) {
+                return ResponseEntity.status(500).body(java.util.Map.of(
+                        "success", false,
+                        "message", errorMsg
+                ));
+            }
+            redirectAttributes.addFlashAttribute("errorMessage", errorMsg);
         }
 
         return "redirect:/admin/quotations/view/" + id + (grade != null ? "?grade=" + grade.name() : "");
@@ -717,7 +743,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getByStatus(status)
+                withPricingDisplays(quotationService.getByStatus(status))
         );
 
         model.addAttribute(
@@ -750,7 +776,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getLast60DaysQuotations()
+                withPricingDisplays(quotationService.getLast60DaysQuotations())
         );
 
         model.addAttribute(
@@ -784,9 +810,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getByCustomerId(
-                        customerId
-                )
+                withPricingDisplays(quotationService.getByCustomerId(customerId))
         );
 
         model.addAttribute(
@@ -815,9 +839,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getByEmployeeId(
-                        employeeId
-                )
+                withPricingDisplays(quotationService.getByEmployeeId(employeeId))
         );
 
         model.addAttribute(
@@ -846,9 +868,7 @@ public class QuotationController {
 
         model.addAttribute(
                 "quotationList",
-                quotationService.getByBranchId(
-                        branchId
-                )
+                withPricingDisplays(quotationService.getByBranchId(branchId))
         );
 
         model.addAttribute(
