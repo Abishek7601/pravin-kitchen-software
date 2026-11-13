@@ -1,10 +1,13 @@
 package com.example.pravin_quotation.security;
 
+import com.example.pravin_quotation.model.User;
+import com.example.pravin_quotation.repository.UserRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,9 +19,25 @@ import java.io.IOException;
 public class EmployeeOtpFilter extends OncePerRequestFilter {
 
     private final EmployeeSessionService employeeSessionService;
+    private final EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService;
+    private final UserRepository userRepository;
+    private final ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry;
 
     public EmployeeOtpFilter(EmployeeSessionService employeeSessionService) {
+        this(employeeSessionService, null, null, null);
+    }
+
+    @Autowired
+    public EmployeeOtpFilter(
+            EmployeeSessionService employeeSessionService,
+            EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService,
+            UserRepository userRepository,
+            ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry
+    ) {
         this.employeeSessionService = employeeSessionService;
+        this.employeeDailyOtpVerificationService = employeeDailyOtpVerificationService;
+        this.userRepository = userRepository;
+        this.activeEmployeeSessionRegistry = activeEmployeeSessionRegistry;
     }
 
     @Override
@@ -79,7 +98,7 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                                 || (accept != null && accept.contains("application/json"))) {
                             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                             response.setContentType("application/json");
-                            response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.\"}");
+                            response.getWriter().write("{\"error\":\"SESSION_EXPIRED\",\"message\":\"Your session has expired at 8:00 PM IST. Please log in again.\"}");
                             return;
                         }
 
@@ -97,6 +116,20 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
 
                     boolean otpVerified = session != null
                             && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"));
+
+                    if (!otpVerified && employeeDailyOtpVerificationService != null && userRepository != null) {
+                        String email = authentication.getName();
+                        User employee = userRepository.findByEmail(email).orElse(null);
+                        if (employee != null && employeeDailyOtpVerificationService.isDailyOtpVerified(employee.getId())) {
+                            if (session != null) {
+                                session.setAttribute("OTP_VERIFIED", true);
+                                if (activeEmployeeSessionRegistry != null) {
+                                    activeEmployeeSessionRegistry.registerEmployeeSession(session, employee.getId());
+                                }
+                            }
+                            otpVerified = true;
+                        }
+                    }
 
                     if (!otpVerified) {
                         if (!otpPage && !otpSend && !otpVerify && !sessionStatus) {

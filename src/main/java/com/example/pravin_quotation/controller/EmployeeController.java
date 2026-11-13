@@ -226,13 +226,13 @@ public class EmployeeController {
          * 3. Working Quotations
          */
         long sentCount =
-                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.SENT);
+                quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(id, QuotationStatus.SENT);
 
         long pendingCount =
-                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.PENDING);
+                quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(id, QuotationStatus.PENDING);
 
         long workingCount =
-                quotationRepository.countByEmployeeIdAndStatus(id, QuotationStatus.WORKING);
+                quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(id, QuotationStatus.WORKING);
 
         /*
          * Filter quotations if status is selected

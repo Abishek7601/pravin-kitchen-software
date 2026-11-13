@@ -24,7 +24,7 @@ public class EmployeeSessionService {
 
     public static final ZoneId ZONE_IST = ZoneId.of("Asia/Kolkata");
     public static final LocalTime CUTOFF_TIME_IST = LocalTime.of(20, 0, 0); // 8:00 PM IST
-    public static final LocalTime MORNING_START_TIME_IST = LocalTime.of(6, 0, 0); // 6:00 AM IST
+    public static final LocalTime MORNING_START_TIME_IST = LocalTime.of(9, 0, 0); // 9:00 AM IST
 
     public static final String ATTR_EXPIRY_INSTANT = "EMPLOYEE_EXPIRY_INSTANT";
     public static final String ATTR_EXPIRY_EPOCH_MS = "EMPLOYEE_EXPIRY_EPOCH_MS";

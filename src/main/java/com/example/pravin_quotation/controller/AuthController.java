@@ -3,6 +3,8 @@ package com.example.pravin_quotation.controller;
 import com.example.pravin_quotation.model.Role;
 import com.example.pravin_quotation.model.User;
 import com.example.pravin_quotation.repository.UserRepository;
+import com.example.pravin_quotation.security.ActiveEmployeeSessionRegistry;
+import com.example.pravin_quotation.security.EmployeeDailyOtpVerificationService;
 import com.example.pravin_quotation.security.EmployeeSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -20,22 +22,28 @@ public class AuthController {
 
     private final EmployeeSessionService employeeSessionService;
     private final UserRepository userRepository;
+    private final EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService;
+    private final ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry;
 
     public AuthController(EmployeeSessionService employeeSessionService) {
-        this(employeeSessionService, null);
+        this(employeeSessionService, null, null, null);
     }
 
     @Autowired
     public AuthController(
             EmployeeSessionService employeeSessionService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService,
+            ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry
     ) {
         this.employeeSessionService = employeeSessionService;
         this.userRepository = userRepository;
+        this.employeeDailyOtpVerificationService = employeeDailyOtpVerificationService;
+        this.activeEmployeeSessionRegistry = activeEmployeeSessionRegistry;
     }
 
     @GetMapping("/login")
-    public String login(){
+    public String login() {
         return "auth/login";
     }
 
@@ -55,7 +63,19 @@ public class AuthController {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             boolean active = Boolean.TRUE.equals(user.getActive());
-            boolean requiresOtp = active && (user.getRole() == Role.EMPLOYEE || user.getRole() == Role.SUPER_ADMIN);
+            boolean requiresOtp;
+            if (!active) {
+                requiresOtp = false;
+            } else if (user.getRole() == Role.SUPER_ADMIN) {
+                requiresOtp = true;
+            } else if (user.getRole() == Role.EMPLOYEE) {
+                boolean verifiedToday = employeeDailyOtpVerificationService != null
+                        && employeeDailyOtpVerificationService.isDailyOtpVerified(user.getId());
+                requiresOtp = !verifiedToday;
+            } else {
+                requiresOtp = false;
+            }
+
             return Map.of(
                     "exists", true,
                     "role", user.getRole().name(),
@@ -67,6 +87,9 @@ public class AuthController {
 
     @GetMapping("/logout")
     public String logout(HttpServletRequest request, HttpServletResponse response) {
+        if (activeEmployeeSessionRegistry != null && request.getSession(false) != null) {
+            activeEmployeeSessionRegistry.unregisterEmployeeSession(request.getSession(false));
+        }
         employeeSessionService.invalidateEmployeeSession(request, response);
         return "redirect:/login?logout";
     }

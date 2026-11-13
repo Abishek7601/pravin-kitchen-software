@@ -36,7 +36,7 @@
 
        <div th:if="${param.expired}"
             class="message error">
-         Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.
+         Your session has expired at 8:00 PM IST. Please log in again.
        </div>
 
        <div th:if="${param.resetSuccess}"
@@ -227,7 +227,7 @@
           } else if (finalUrl.includes('/login?expired') || finalUrl.includes('expired')) {
             form.dataset.submitting = 'false';
             setLoadingState(false);
-            showErrorMessage('Your session has ended at 8:00 PM IST. Please log in again with Super Admin OTP.');
+            showErrorMessage('Your session has expired at 8:00 PM IST. Please log in again.');
           } else if (finalUrl.includes('/employee/otp')) {
             window.location.href = finalUrl;
           } else if (finalUrl.includes('/admin/otp')) {

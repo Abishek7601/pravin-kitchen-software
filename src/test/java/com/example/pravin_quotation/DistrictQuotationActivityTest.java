@@ -46,6 +46,12 @@ public class DistrictQuotationActivityTest {
     @Autowired
     private QuotationRoomRepository quotationRoomRepository;
 
+    @Autowired
+    private org.springframework.context.ApplicationContext applicationContext;
+
+    @Autowired
+    private com.example.pravin_quotation.util.IndianCurrencyFormatter inr;
+
     @Test
     void testDistrictWiseQuotationCountsAndFiltering() {
         long ts = System.currentTimeMillis();
@@ -275,10 +281,19 @@ public class DistrictQuotationActivityTest {
 
     private WebContext createWebContext() {
         MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setAttribute(org.springframework.web.servlet.DispatcherServlet.WEB_APPLICATION_CONTEXT_ATTRIBUTE, applicationContext);
+        request.setAttribute(org.springframework.web.context.WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, applicationContext);
+        org.springframework.web.context.request.RequestContextHolder.setRequestAttributes(new org.springframework.web.context.request.ServletRequestAttributes(request));
         MockHttpServletResponse response = new MockHttpServletResponse();
         JakartaServletWebApplication app = JakartaServletWebApplication.buildApplication(request.getServletContext());
         IWebExchange exchange = app.buildExchange(request, response);
-        return new WebContext(exchange);
+        WebContext ctx = new WebContext(exchange);
+        ctx.setVariable("inr", inr);
+        ctx.setVariable(
+                org.thymeleaf.spring6.expression.ThymeleafEvaluationContext.THYMELEAF_EVALUATION_CONTEXT_CONTEXT_VARIABLE_NAME,
+                new org.thymeleaf.spring6.expression.ThymeleafEvaluationContext(applicationContext, null)
+        );
+        return ctx;
     }
 
     private Quotation createQuotation(String qNum, Branch branch, Customer cust, User emp, QuotationStatus status) {

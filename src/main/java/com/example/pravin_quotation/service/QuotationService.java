@@ -44,6 +44,13 @@ public class QuotationService {
     private final QuotationWorkflowRepository quotationWorkflowRepository;
     private final QuotationCommunicationRepository quotationCommunicationRepository;
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
+    public void setEntityManager(jakarta.persistence.EntityManager entityManager) {
+        this.entityManager = entityManager;
+    }
+
     public QuotationService(
             QuotationRepository quotationRepository,
             CustomerRepository customerRepository,
@@ -973,56 +980,211 @@ public class QuotationService {
     }
 
     // ---------------------------------------------------------
-    // Delete quotation
+    // Delete quotation (Admin)
     // ---------------------------------------------------------
 
     @Transactional
     public void delete(Long id) {
+        delete(id, null);
+    }
 
-        Quotation quotation = getById(id);
+    // ---------------------------------------------------------
+    // Delete quotation with permission verification
+    // ---------------------------------------------------------
 
-        // 1. Delete all rooms, items, and sizes belonging to this quotation
-        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(id);
-        if (rooms != null) {
-            for (QuotationRoom room : rooms) {
-                List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
-                if (items != null) {
-                    for (QuotationItem item : items) {
-                        List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdOrderByDisplayOrderAsc(item.getId());
-                        if (sizes != null && !sizes.isEmpty()) {
-                            quotationItemSizeRepository.deleteAll(sizes);
+    @Transactional
+    public void delete(Long id, Long employeeId) {
+
+        if (id == null) {
+            throw new IllegalArgumentException("Quotation ID is required.");
+        }
+
+        Quotation quotation = quotationRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Quotation not found with id: " + id));
+
+        // Enforce employee ownership permissions in the backend
+        if (employeeId != null) {
+            if (quotation.getEmployee() == null
+                    || quotation.getEmployee().getId() == null
+                    || !quotation.getEmployee().getId().equals(employeeId)) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "You are not authorized to delete this quotation."
+                );
+            }
+        }
+
+        // Identify all quotation IDs that belong to this quotation hierarchy
+        List<Long> targetQuotationIds = new java.util.ArrayList<>();
+        targetQuotationIds.add(quotation.getId());
+
+        List<Quotation> childQuotations = new java.util.ArrayList<>();
+        if (quotation.getParent() == null) {
+            // Parent quotation: find all child grade quotations
+            List<Quotation> children = quotationRepository.findByParentIdOrderByIdAsc(quotation.getId());
+            if (children != null && !children.isEmpty()) {
+                childQuotations.addAll(children);
+                for (Quotation child : children) {
+                    if (child.getId() != null && !targetQuotationIds.contains(child.getId())) {
+                        targetQuotationIds.add(child.getId());
+                    }
+                }
+            }
+        } else {
+            // Child quotation being deleted independently: unlink from parent
+            Quotation parent = quotation.getParent();
+            if (parent != null && parent.getChildQuotations() != null) {
+                parent.getChildQuotations().remove(quotation);
+            }
+            quotation.setParent(null);
+            quotationRepository.save(quotation);
+        }
+
+        // 1. Delete all QuotationItemSize records for items belonging to these quotations
+        for (Long qId : targetQuotationIds) {
+            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
+            if (rooms != null) {
+                for (QuotationRoom room : rooms) {
+                    List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
+                    if (items != null) {
+                        for (QuotationItem item : items) {
+                            List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdOrderByDisplayOrderAsc(item.getId());
+                            if (sizes != null && !sizes.isEmpty()) {
+                                quotationItemSizeRepository.deleteAll(sizes);
+                            }
                         }
                     }
-                    if (!items.isEmpty()) {
+                }
+            }
+        }
+
+        // 2. Delete all QuotationItem records
+        for (Long qId : targetQuotationIds) {
+            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
+            if (rooms != null) {
+                for (QuotationRoom room : rooms) {
+                    List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
+                    if (items != null && !items.isEmpty()) {
                         quotationItemRepository.deleteAll(items);
                     }
                 }
             }
-            if (!rooms.isEmpty()) {
+        }
+
+        // 3. Delete all QuotationRoom records
+        for (Long qId : targetQuotationIds) {
+            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
+            if (rooms != null && !rooms.isEmpty()) {
                 quotationRoomRepository.deleteAll(rooms);
             }
         }
 
-        // 2. Delete communication records referencing this quotation
-        List<QuotationCommunication> communications = quotationCommunicationRepository.findByQuotationIdOrderBySentAtDesc(id);
-        if (communications != null && !communications.isEmpty()) {
-            quotationCommunicationRepository.deleteAll(communications);
+        // 4. Delete communication records for ALL target quotation IDs
+        for (Long qId : targetQuotationIds) {
+            List<QuotationCommunication> communications = quotationCommunicationRepository.findByQuotationIdOrderBySentAtDesc(qId);
+            if (communications != null && !communications.isEmpty()) {
+                quotationCommunicationRepository.deleteAll(communications);
+            }
         }
 
-        // 3. Delete status history records referencing this quotation
-        List<QuotationStatusHistory> history = quotationStatusHistoryRepository.findByQuotationIdOrderByIdDesc(id);
-        if (history != null && !history.isEmpty()) {
-            quotationStatusHistoryRepository.deleteAll(history);
+        // 5. Delete status history records for ALL target quotation IDs
+        for (Long qId : targetQuotationIds) {
+            List<QuotationStatusHistory> history = quotationStatusHistoryRepository.findByQuotationIdOrderByIdDesc(qId);
+            if (history != null && !history.isEmpty()) {
+                quotationStatusHistoryRepository.deleteAll(history);
+            }
         }
 
-        // 4. Delete workflow tracking records referencing this quotation
-        List<QuotationWorkflow> workflows = quotationWorkflowRepository.findByQuotationIdOrderByCreatedAtDesc(id);
-        if (workflows != null && !workflows.isEmpty()) {
-            quotationWorkflowRepository.deleteAll(workflows);
+        // 6. Delete workflow records for ALL target quotation IDs
+        for (Long qId : targetQuotationIds) {
+            List<QuotationWorkflow> workflows = quotationWorkflowRepository.findByQuotationIdOrderByCreatedAtDesc(qId);
+            if (workflows != null && !workflows.isEmpty()) {
+                quotationWorkflowRepository.deleteAll(workflows);
+            }
         }
 
-        // 5. Delete quotation record (master records customer, employee, branch, division are preserved)
+        // 7. Flush repository deletes before executing native cleanups
+        try {
+            quotationRoomRepository.flush();
+            quotationCommunicationRepository.flush();
+            quotationStatusHistoryRepository.flush();
+            quotationWorkflowRepository.flush();
+        } catch (Exception ignored) {}
+
+        // 8. Execute native SQL deletes in exact foreign-key order
+        // This handles unmapped legacy tables (quotation_grade_options & quotation_grade_confirmation_history)
+        // and guarantees foreign key constraints are cleanly satisfied in the database engine
+        if (entityManager != null && !targetQuotationIds.isEmpty()) {
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_item_sizes WHERE quotation_item_id IN (" +
+                    "  SELECT id FROM quotation_items WHERE quotation_room_id IN (" +
+                    "    SELECT id FROM quotation_rooms WHERE quotation_id IN (:ids)" +
+                    "  )" +
+                    ")"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_items WHERE quotation_room_id IN (" +
+                    "  SELECT id FROM quotation_rooms WHERE quotation_id IN (:ids)" +
+                    ")"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_rooms WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_grade_options WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_grade_confirmation_history WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_communications WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_status_history WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.createNativeQuery(
+                    "DELETE FROM quotation_workflow WHERE quotation_id IN (:ids)"
+                ).setParameter("ids", targetQuotationIds).executeUpdate();
+            } catch (Exception ignored) {}
+
+            try {
+                entityManager.flush();
+            } catch (Exception ignored) {}
+        }
+
+        // 9. Delete child quotations if this is a parent quotation
+        if (!childQuotations.isEmpty()) {
+            for (Quotation child : childQuotations) {
+                child.setParent(null);
+                quotationRepository.delete(child);
+            }
+            quotationRepository.flush();
+        }
+
+        // 10. Delete the parent quotation record
         quotationRepository.delete(quotation);
+        quotationRepository.flush();
     }
 
     // ---------------------------------------------------------

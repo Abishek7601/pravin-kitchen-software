@@ -360,10 +360,10 @@ public class EmployeeQuotationController {
         long pageStart = totalRecords == 0 ? 0 : ((long) quotePage.getNumber() * 10 + 1);
         long pageEnd = Math.min((long) (quotePage.getNumber() + 1) * 10, totalRecords);
 
-        long totalCount = quotationRepository.countByEmployeeId(employee.getId());
-        long pendingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.PENDING);
-        long workingCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.WORKING);
-        long sentCount = quotationRepository.countByEmployeeIdAndStatus(employee.getId(), QuotationStatus.SENT);
+        long totalCount = quotationRepository.countByParentIsNullAndEmployeeId(employee.getId());
+        long pendingCount = quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(employee.getId(), QuotationStatus.PENDING);
+        long workingCount = quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(employee.getId(), QuotationStatus.WORKING);
+        long sentCount = quotationRepository.countByParentIsNullAndEmployeeIdAndStatus(employee.getId(), QuotationStatus.SENT);
 
         model.addAttribute("employee", employee);
         model.addAttribute("quotations", quotations);
@@ -3432,14 +3432,12 @@ public class EmployeeQuotationController {
                 quotationPdfService
                         .generateQuotationPdf(targetQuotation.getId());
 
-        String gradeSuffix = targetQuotation.getPricingMode() != null ? "-" + targetQuotation.getPricingMode().name() : "";
-        String filename = targetQuotation.getQuotationNumber() + gradeSuffix + ".pdf";
+        String filename = com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildPdfFilename(targetQuotation);
 
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=" + filename
-                )
+                .headers(headers -> headers.setContentDisposition(
+                        com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildAttachmentContentDisposition(filename)
+                ))
                 .contentType(
                         MediaType.APPLICATION_PDF
                 )
@@ -3745,7 +3743,8 @@ public class EmployeeQuotationController {
             );
 
             quotationService.delete(
-                    id
+                    id,
+                    employee.getId()
             );
 
             redirectAttributes.addFlashAttribute(
@@ -3754,6 +3753,8 @@ public class EmployeeQuotationController {
             );
 
         } catch (Exception e) {
+            log.error("Employee {} failed to delete quotation ID {}: {}",
+                    authentication != null ? authentication.getName() : "unknown", id, e.getMessage(), e);
 
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
