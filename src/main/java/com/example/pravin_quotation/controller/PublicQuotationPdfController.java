@@ -57,10 +57,12 @@ public class PublicQuotationPdfController {
 
         byte[] pdf = quotationPdfService.generateQuotationPdf(quotation.getId());
 
-        String filename = "quotation-" + quotation.getQuotationNumber() + ".pdf";
+        String filename = com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildPdfFilename(quotation);
 
         return ResponseEntity.ok()
-                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .headers(headers -> headers.setContentDisposition(
+                        com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildInlineContentDisposition(filename)
+                ))
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }

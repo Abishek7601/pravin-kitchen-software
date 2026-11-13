@@ -74,14 +74,12 @@ public class QuotationPdfController {
                 "Quotation PDF generated/downloaded successfully."
         );
 
-        String gradeSuffix = targetQuotation.getPricingMode() != null ? "-" + targetQuotation.getPricingMode().name() : "";
-        String filename = targetQuotation.getQuotationNumber() + gradeSuffix + ".pdf";
+        String filename = com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildPdfFilename(targetQuotation);
 
         return ResponseEntity.ok()
-                .header(
-                        HttpHeaders.CONTENT_DISPOSITION,
-                        "attachment; filename=" + filename
-                )
+                .headers(headers -> headers.setContentDisposition(
+                        com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildAttachmentContentDisposition(filename)
+                ))
                 .contentType(MediaType.APPLICATION_PDF)
                 .body(pdf);
     }

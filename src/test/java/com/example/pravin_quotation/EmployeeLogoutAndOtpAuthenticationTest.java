@@ -232,8 +232,8 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
     }
 
     @Test
-    @DisplayName("Verification 5: Employee login after manual logout requires a fresh OTP")
-    void test5_EmployeeLoginAfterManualLogoutRequiresFreshOtp() throws Exception {
+    @DisplayName("Verification 5: Employee login after manual logout on same day does not require OTP")
+    void test5_EmployeeLoginAfterManualLogoutSkipsOtpOnSameDay() throws Exception {
         LocalDate today = LocalDate.now(ZONE_IST);
         ZonedDateTime time13Pm = today.atTime(13, 0, 0).atZone(ZONE_IST);
         employeeSessionService.setClock(Clock.fixed(time13Pm.toInstant(), ZONE_IST));
@@ -244,6 +244,7 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
                         .param("username", testEmployee.getEmail())
                         .param("password", "emp123"))
                 .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/employee/otp"))
                 .andReturn();
 
         MockHttpSession session1 = (MockHttpSession) login1.getRequest().getSession(false);
@@ -268,23 +269,20 @@ public class EmployeeLogoutAndOtpAuthenticationTest {
 
         assertTrue(session1.isInvalid());
 
-        // 3. New login attempt requires fresh OTP verification
+        // 3. Subsequent login on the same day skips OTP and goes directly to dashboard
         MvcResult login2 = mockMvc.perform(post("/login")
                         .with(csrf())
                         .param("username", testEmployee.getEmail())
                         .param("password", "emp123"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/employee/otp"))
+                .andExpect(redirectedUrl("/employee/dashboard"))
                 .andReturn();
 
         MockHttpSession session2 = (MockHttpSession) login2.getRequest().getSession(false);
         assertNotNull(session2);
         assertNotEquals(session1.getId(), session2.getId(), "Must be a new session");
-        assertEquals(Boolean.FALSE, session2.getAttribute("OTP_VERIFIED"),
-                "Re-login after logout must require fresh OTP verification");
-
-        // Old OTP (111222) is not active in the new session
-        assertNull(session2.getAttribute("OTP_CODE"));
+        assertEquals(Boolean.TRUE, session2.getAttribute("OTP_VERIFIED"),
+                "Re-login on the same day must reuse daily verification and skip OTP");
     }
 
     @Test

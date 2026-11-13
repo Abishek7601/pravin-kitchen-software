@@ -26,13 +26,24 @@ public class OtpController {
     private final OtpService otpService;
     private final OtpEmailService otpEmailService;
     private final com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService;
+    private final com.example.pravin_quotation.security.EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService;
+    private final com.example.pravin_quotation.security.ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry;
 
     public OtpController(
             UserRepository userRepository,
             OtpService otpService,
             OtpEmailService otpEmailService
     ) {
-        this(userRepository, otpService, otpEmailService, new com.example.pravin_quotation.security.EmployeeSessionService());
+        this(userRepository, otpService, otpEmailService, new com.example.pravin_quotation.security.EmployeeSessionService(), null, null);
+    }
+
+    public OtpController(
+            UserRepository userRepository,
+            OtpService otpService,
+            OtpEmailService otpEmailService,
+            com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService
+    ) {
+        this(userRepository, otpService, otpEmailService, employeeSessionService, null, null);
     }
 
     @org.springframework.beans.factory.annotation.Autowired
@@ -40,12 +51,16 @@ public class OtpController {
             UserRepository userRepository,
             OtpService otpService,
             OtpEmailService otpEmailService,
-            com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService
+            com.example.pravin_quotation.security.EmployeeSessionService employeeSessionService,
+            com.example.pravin_quotation.security.EmployeeDailyOtpVerificationService employeeDailyOtpVerificationService,
+            com.example.pravin_quotation.security.ActiveEmployeeSessionRegistry activeEmployeeSessionRegistry
     ) {
         this.userRepository = userRepository;
         this.otpService = otpService;
         this.otpEmailService = otpEmailService;
         this.employeeSessionService = employeeSessionService;
+        this.employeeDailyOtpVerificationService = employeeDailyOtpVerificationService;
+        this.activeEmployeeSessionRegistry = activeEmployeeSessionRegistry;
     }
 
     // =========================================================
@@ -97,8 +112,12 @@ public class OtpController {
         // Already verified
         if (Boolean.TRUE.equals(
                 session.getAttribute("OTP_VERIFIED")
-        )) {
+        ) || (employeeDailyOtpVerificationService != null && employeeDailyOtpVerificationService.isDailyOtpVerified(employee.getId()))) {
 
+            session.setAttribute("OTP_VERIFIED", true);
+            if (activeEmployeeSessionRegistry != null) {
+                activeEmployeeSessionRegistry.registerEmployeeSession(session, employee.getId());
+            }
             return "redirect:/employee/dashboard";
         }
 
@@ -394,6 +413,19 @@ public class OtpController {
 
         // Initialize employee session with deadline (8:00 PM IST today for daytime, or next morning for after-hours)
         employeeSessionService.initializeEmployeeSession(session);
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && authentication.isAuthenticated()) {
+            User employee = userRepository.findByEmail(authentication.getName()).orElse(null);
+            if (employee != null) {
+                if (employeeDailyOtpVerificationService != null) {
+                    employeeDailyOtpVerificationService.recordSuccessfulVerification(employee);
+                }
+                if (activeEmployeeSessionRegistry != null) {
+                    activeEmployeeSessionRegistry.registerEmployeeSession(session, employee.getId());
+                }
+            }
+        }
 
         session.removeAttribute(
                 "OTP_CODE"

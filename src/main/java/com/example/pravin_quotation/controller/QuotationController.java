@@ -697,6 +697,8 @@ public class QuotationController {
     // DELETE QUOTATION
     // =========================================================
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(QuotationController.class);
+
     @PostMapping("/delete/{id}")
     public String deleteQuotation(
             @PathVariable Long id,
@@ -716,10 +718,11 @@ public class QuotationController {
             );
 
         } catch (Exception e) {
+            log.error("Failed to delete quotation ID {}: {}", id, e.getMessage(), e);
 
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    e.getMessage()
+                    "Unable to delete quotation: " + e.getMessage()
             );
         }
 
