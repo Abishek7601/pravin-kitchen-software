@@ -5,9 +5,11 @@ import com.example.pravin_quotation.security.EmployeeOtpFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 
 @Configuration
 public class SecurityConfig {
@@ -71,6 +73,15 @@ public class SecurityConfig {
 
                         .anyRequest()
                         .authenticated()
+                )
+
+                .sessionManagement(session -> session
+                        .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
+                        .sessionFixation(org.springframework.security.config.annotation.web.configurers.SessionManagementConfigurer.SessionFixationConfigurer::migrateSession)
+                )
+
+                .securityContext(securityContext -> securityContext
+                        .securityContextRepository(new HttpSessionSecurityContextRepository())
                 )
 
                 .formLogin(form -> form

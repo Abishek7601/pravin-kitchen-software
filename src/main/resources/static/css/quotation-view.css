@@ -2486,12 +2486,15 @@ animation-iteration-count: 1 !important;
     padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
+    width: auto !important;
+    flex: 0 0 auto !important;
 }
 
 .quotation-bottom-actions-bar .btn-grade-edit,
 .quotation-bottom-actions-bar .btn-grade-pdf,
 .quotation-bottom-actions-bar .btn-grade-whatsapp,
-.quotation-bottom-actions-bar .btn-grade-email {
+.quotation-bottom-actions-bar .btn-grade-email,
+.quotation-bottom-actions-bar form .btn-grade-email {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2506,8 +2509,15 @@ animation-iteration-count: 1 !important;
     text-decoration: none !important;
     cursor: pointer !important;
     width: auto !important;
+    max-width: none !important;
     flex: 0 0 auto !important;
     grid-column: auto !important;
+}
+
+@media (min-width: 641px) {
+    .quotation-bottom-actions-bar {
+        flex-wrap: nowrap !important;
+    }
 }
 
 @media (max-width: 640px) {

@@ -720,9 +720,14 @@ public class QuotationController {
         } catch (Exception e) {
             log.error("Failed to delete quotation ID {}: {}", id, e.getMessage(), e);
 
+            String errorMsg = e.getMessage();
+            if (errorMsg == null || errorMsg.isBlank() || errorMsg.contains("could not execute statement") || errorMsg.contains("foreign key constraint fails")) {
+                errorMsg = "An error occurred while deleting the quotation. Please try again.";
+            }
+
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Unable to delete quotation: " + e.getMessage()
+                    "Unable to delete quotation: " + errorMsg
             );
         }
 

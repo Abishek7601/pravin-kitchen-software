@@ -8,7 +8,12 @@ import com.example.pravin_quotation.security.EmployeeDailyOtpVerificationService
 import com.example.pravin_quotation.security.EmployeeSessionService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.AuthorityUtils;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -16,6 +21,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Controller
 public class AuthController {
@@ -43,7 +49,27 @@ public class AuthController {
     }
 
     @GetMapping("/login")
-    public String login() {
+    public String login(HttpServletRequest request) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null && auth.isAuthenticated() && !(auth instanceof AnonymousAuthenticationToken)) {
+            Set<String> roles = AuthorityUtils.authorityListToSet(auth.getAuthorities());
+            HttpSession session = request.getSession(false);
+
+            if (roles.contains("ROLE_SUPER_ADMIN")) {
+                if (session != null && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"))) {
+                    return "redirect:/admin/dashboard";
+                }
+                return "redirect:/admin/otp";
+            } else if (roles.contains("ROLE_EMPLOYEE")) {
+                if (employeeSessionService != null && employeeSessionService.isSessionExpired(session)) {
+                    return "auth/login";
+                }
+                if (session != null && Boolean.TRUE.equals(session.getAttribute("OTP_VERIFIED"))) {
+                    return "redirect:/employee/dashboard";
+                }
+                return "redirect:/employee/otp";
+            }
+        }
         return "auth/login";
     }
 

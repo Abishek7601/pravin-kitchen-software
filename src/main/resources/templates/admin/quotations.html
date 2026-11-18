@@ -387,7 +387,7 @@
 
                     <td>
 
-                        <span th:if="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != ''}">
+                        <span th:if="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != '' and quotation.pricingModeDisplay != 'Multi-Grade'}">
                             <span class="pricing-badge"
                                   th:if="${quotation.selectedGrade != null}"
                                   style="background: #eaf5f1; color: #13795b; font-weight: 700; border: 1px solid #c2e5d9;"

@@ -498,7 +498,38 @@
     <!-- QUOTE SUMMARY (Screenshot 2) -->
     <section class="quote-summary-section" id="quoteSummarySection">
       <div class="quote-summary-header">
-        <div class="quote-summary-title"><span>Quote</span> <span>Summary</span></div>
+        <div class="quote-summary-title-wrapper">
+          <div class="quote-summary-title"><span>Quote</span> <span>Summary</span></div>
+          <div class="summary-grade-switch-container" id="summaryGradeSwitchContainer">
+            <span class="summary-grade-label">Quote Grade:</span>
+            <div class="pricing-segmented-control summary-segmented-control" id="summaryPricingModes">
+              <th:block th:if="${pricingModes != null}">
+                <label th:each="mode, iterStat : ${pricingModes}"
+                       th:class="'segmented-pill ' + ${#strings.toLowerCase(mode.name())}"
+                       th:title="'Recalculate quote items for ' + ${mode.name() == 'PREMIUM' ? 'Premium' : (mode.name() == 'MIDDLE' ? 'Middle / Standard' : (mode.name() == 'ECONOMY' ? 'Economy' : mode.name()))} + ' Grade'">
+                  <input type="radio" name="summaryPricingMode" 
+                         th:value="${mode.name()}"
+                         th:checked="${(targetGrade != null and targetGrade != '' and targetGrade == mode.name()) or ((targetGrade == null or targetGrade == '') and iterStat.first)}">
+                  <span th:text="${mode.name() == 'PREMIUM' ? 'Premium' : (mode.name() == 'MIDDLE' ? 'Middle / Standard' : (mode.name() == 'ECONOMY' ? 'Economy' : mode.name()))}">Premium</span>
+                </label>
+              </th:block>
+              <th:block th:if="${pricingModes == null}">
+                <label class="segmented-pill premium" title="Recalculate quote items for Premium Grade">
+                  <input type="radio" name="summaryPricingMode" value="PREMIUM" checked>
+                  <span>Premium</span>
+                </label>
+                <label class="segmented-pill middle" title="Recalculate quote items for Middle / Standard Grade">
+                  <input type="radio" name="summaryPricingMode" value="MIDDLE">
+                  <span>Middle / Standard</span>
+                </label>
+                <label class="segmented-pill economy" title="Recalculate quote items for Economy Grade">
+                  <input type="radio" name="summaryPricingMode" value="ECONOMY">
+                  <span>Economy</span>
+                </label>
+              </th:block>
+            </div>
+          </div>
+        </div>
         <div class="summary-toggle-pill">
           <span class="toggle-label">SHOW SQ.FT &amp; SIZE</span>
           <label class="switch">
@@ -507,6 +538,7 @@
           </label>
         </div>
       </div>
+      <div id="summaryPricingMessage" class="inline-message" style="display: none; margin: 6px 0 10px 0; font-size: 13px; font-weight: 500;"></div>
       <div class="quote-summary-table-container">
         <table class="quote-summary-table" id="quoteSummaryTable">
           <thead>
@@ -926,152 +958,193 @@
           return;
       }
 
-      const name = $('customerName') ? $('customerName').value.trim() : '';
-      const phone = $('customerPhone') ? $('customerPhone').value.trim() : '';
-      const branchIdVal = $('branchId') ? $('branchId').value : '';
-      const hasRooms = state.rooms && state.rooms.some(r => r.items && r.items.length > 0);
-
-      // Skip saving if the form is completely untouched and empty
-      if (!state.quotationId && !name && !phone && !branchIdVal && !hasRooms) {
-          return;
-      }
-
       isAutoSaving = true;
       setAutoSaveStatus('saving', 'Saving...');
 
-      const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
-      const pricingModeVal = pricingModeEl ? pricingModeEl.value : (state.pricingMode || getFirstConfiguredGrade());
-
-      const activeCatBtn = document.querySelector('.category-choice.selected-category');
-      const activeCatId = activeCatBtn ? Number(activeCatBtn.dataset.id) : null;
-      const activeDivId = typeof activeDivisionId !== 'undefined' ? activeDivisionId : null;
-      const curFloor = $('floor') ? $('floor').value : 'Ground Floor';
-      const curRoom = $('roomNumber') ? $('roomNumber').value : 'Room 1';
-
-      const email = $('customerEmail') ? $('customerEmail').value.trim() : '';
-      const address = $('customerAddress') ? $('customerAddress').value.trim() : '';
-      const branchId = branchIdVal ? Number(branchIdVal) : null;
-      const qdVal = $('quotationDate') ? $('quotationDate').value : '';
-      const vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
-      const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
-
-      const payload = {
-          quotationId: state.quotationId,
-          parentId: state.parentId || null,
-          customer: {
-              id: state.selectedCustomerId || null,
-              name: name,
-              phone: phone,
-              email: email,
-              address: address
-          },
-          branchId: branchId,
-          quotationDate: qdVal,
-          validUntil: vuVal,
-          pricingMode: pricingModeVal,
-          customerRequirements: state.customerRequirements || '',
-          notes: notesVal,
-          accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
-          travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
-          otherCharges: Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0)),
-          otherChargesDescription: $('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '',
-          discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
-          gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
-          offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
-          showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
-          lastActiveFloor: curFloor,
-          lastActiveRoom: curRoom,
-          lastActiveCategoryId: activeCatId,
-          lastActiveDivisionId: activeDivId,
-          lastActiveStep: 2,
-          builderState: JSON.stringify({
-              activeCategoryId: activeCatId,
-              activeDivisionId: activeDivId,
-              floor: curFloor,
-              room: curRoom
-          }),
-          rooms: (state.rooms || []).filter(r => r.items && r.items.length > 0).map(r => ({
-              floor: r.floor,
-              room: r.room,
-              workDescription: r.workDescription || '',
-              items: (r.items || []).map(i => ({
-                  workCategoryId: i.categoryId,
-                  divisionId: i.divisionId,
-                  itemId: i.itemId,
-                  materialId: i.materialId,
-                  materialOptionId: i.materialOptionId,
-                  materialSpecificationId: i.materialSpecificationId,
-                  itemDescription: i.itemDescription || '',
-                  specification: i.specification || '',
-                  rate: i.rate != null ? Number(i.rate) : null,
-                  pricingMode: i.pricingMode || state.pricingMode || getFirstConfiguredGrade(),
-                  measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
-                  coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
-                  quantity: i.quantity != null ? Number(i.quantity) : 1,
-                  imageUrl: i.imageUrl || null,
-                  sizes: (i.sizes || []).map(s => ({
-                      length: s.length,
-                      width: s.width,
-                      height: s.height,
-                      offerPrice: s.offerPrice
-                  }))
-              }))
-          }))
-      };
-
       try {
-          const response = await fetch(`${API_BASE}/auto-save`, {
-              method: 'POST',
-              headers: {
-                  'Content-Type': 'application/json',
-                  'Accept': 'application/json',
-                  'X-CSRF-TOKEN': csrfToken
-              },
-              body: JSON.stringify(payload)
-          });
-          if (!response.ok) {
-              throw new Error('Auto-save response status ' + response.status);
-          }
-          const resData = await response.json();
-          if (resData && resData.quotationId) {
-              state.quotationId = Number(resData.quotationId);
-              if (resData.parentId) {
-                  state.parentId = Number(resData.parentId);
+          while (true) {
+              pendingAutoSave = false;
+
+              const name = $('customerName') ? $('customerName').value.trim() : '';
+              const phone = $('customerPhone') ? $('customerPhone').value.trim() : '';
+              const branchIdVal = $('branchId') ? $('branchId').value : '';
+              const hasRooms = state.rooms && state.rooms.some(r => r.items && r.items.length > 0);
+
+              // Skip saving if the form is completely untouched and empty
+              if (!state.quotationId && !name && !phone && !branchIdVal && !hasRooms) {
+                  break;
               }
-              if (resData.quotationNumber && $('quoteNumberPreview')) {
-                  $('quoteNumberPreview').textContent = resData.quotationNumber;
+
+              const pricingModeEl = document.querySelector('input[name="pricingMode"]:checked');
+              const pricingModeVal = pricingModeEl ? pricingModeEl.value : (state.pricingMode || getFirstConfiguredGrade());
+
+              const activeCatBtn = document.querySelector('.category-choice.selected-category');
+              const activeCatId = activeCatBtn ? Number(activeCatBtn.dataset.id) : null;
+              const activeDivId = typeof activeDivisionId !== 'undefined' ? activeDivisionId : null;
+              const curFloor = $('floor') ? $('floor').value : 'Ground Floor';
+              const curRoom = $('roomNumber') ? $('roomNumber').value : 'Room 1';
+
+              const email = $('customerEmail') ? $('customerEmail').value.trim() : '';
+              const address = $('customerAddress') ? $('customerAddress').value.trim() : '';
+              const branchId = branchIdVal ? Number(branchIdVal) : null;
+              const qdVal = $('quotationDate') ? $('quotationDate').value : '';
+              const vuVal = $('validUntilDate') ? $('validUntilDate').value : '';
+              const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
+
+              const payload = {
+                  quotationId: state.quotationId,
+                  parentId: state.parentId || null,
+                  customer: {
+                      id: state.selectedCustomerId || null,
+                      name: name,
+                      phone: phone,
+                      email: email,
+                      address: address
+                  },
+                  branchId: branchId,
+                  quotationDate: qdVal,
+                  validUntil: vuVal,
+                  pricingMode: pricingModeVal,
+                  customerRequirements: state.customerRequirements || '',
+                  notes: notesVal,
+                  accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
+                  travelCharge: Math.max(0, parseAmount($('travelCharge') ? $('travelCharge').value : 0)),
+                  otherCharges: Math.max(0, parseAmount($('otherCharges') ? $('otherCharges').value : 0)),
+                  otherChargesDescription: $('otherChargesDescription') ? $('otherChargesDescription').value.trim() : '',
+                  discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
+                  gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
+                  offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
+                  showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
+                  lastActiveFloor: curFloor,
+                  lastActiveRoom: curRoom,
+                  lastActiveCategoryId: activeCatId,
+                  lastActiveDivisionId: activeDivId,
+                  lastActiveStep: 2,
+                  builderState: JSON.stringify({
+                      activeCategoryId: activeCatId,
+                      activeDivisionId: activeDivId,
+                      floor: curFloor,
+                      room: curRoom
+                  }),
+                  rooms: (state.rooms || []).filter(r => r.items && r.items.length > 0).map(r => ({
+                      floor: r.floor,
+                      room: r.room,
+                      workDescription: r.workDescription || '',
+                      items: (r.items || []).map((i, idx) => ({
+                          workCategoryId: i.categoryId,
+                          divisionId: i.divisionId,
+                          itemId: i.itemId,
+                          materialId: i.materialId,
+                          materialName: i.materialName,
+                          materialOptionId: i.materialOptionId,
+                          materialSpecificationId: i.materialSpecificationId,
+                          itemDescription: i.itemDescription || '',
+                          specification: i.specification || '',
+                          rate: i.rate != null ? Number(i.rate) : null,
+                          pricingMode: i.pricingMode || state.pricingMode || getFirstConfiguredGrade(),
+                          originalMaterialId: (i.originalMaterialId !== undefined && i.originalMaterialId !== null) ? i.originalMaterialId : i.materialId,
+                          originalPricingMode: (i.originalPricingMode !== undefined && i.originalPricingMode !== null) ? i.originalPricingMode : (i.pricingMode || state.pricingMode),
+                          originalMaterialName: (i.originalMaterialName !== undefined && i.originalMaterialName !== null && i.originalMaterialName !== '') ? i.originalMaterialName : i.materialName,
+                          originalSpecification: (i.originalSpecification !== undefined && i.originalSpecification !== null) ? i.originalSpecification : (i.specification || ''),
+                          originalPosition: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : idx,
+                          measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
+                          coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
+                          quantity: i.quantity != null ? Number(i.quantity) : 1,
+                          imageUrl: i.imageUrl || null,
+                          sizes: (i.sizes || []).map(s => ({
+                              length: s.length,
+                              width: s.width,
+                              height: s.height,
+                              offerPrice: s.offerPrice
+                          }))
+                      }))
+                  }))
+              };
+
+              const response = await fetch(`${API_BASE}/auto-save`, {
+                  method: 'POST',
+                  headers: {
+                      'Content-Type': 'application/json',
+                      'Accept': 'application/json',
+                      'X-CSRF-TOKEN': csrfToken
+                  },
+                  body: JSON.stringify(payload)
+              });
+              if (!response.ok) {
+                  throw new Error('Auto-save response status ' + response.status);
               }
-              try {
-                  const url = new URL(window.location.href);
-                  if (url.searchParams.get('quotationId') !== String(resData.quotationId)) {
-                      url.searchParams.set('quotationId', resData.quotationId);
+              const resData = await response.json();
+              if (resData && resData.quotationId) {
+                  state.quotationId = Number(resData.quotationId);
+                  if (resData.parentId) {
+                      state.parentId = Number(resData.parentId);
                   }
-                  if (resData.parentId && url.searchParams.get('parentId') !== String(resData.parentId)) {
-                      url.searchParams.set('parentId', resData.parentId);
+                  if (resData.quotationNumber && $('quoteNumberPreview')) {
+                      $('quoteNumberPreview').textContent = resData.quotationNumber;
                   }
-                  window.history.replaceState({ quotationId: resData.quotationId, parentId: resData.parentId }, '', url.toString());
-              } catch (e) {
-                  console.warn("Could not replaceState URL", e);
+                  try {
+                      const url = new URL(window.location.href);
+                      if (url.searchParams.get('quotationId') !== String(resData.quotationId)) {
+                          url.searchParams.set('quotationId', resData.quotationId);
+                      }
+                      if (resData.parentId && url.searchParams.get('parentId') !== String(resData.parentId)) {
+                          url.searchParams.set('parentId', resData.parentId);
+                      }
+                      window.history.replaceState({ quotationId: resData.quotationId, parentId: resData.parentId }, '', url.toString());
+                  } catch (e) {
+                      console.warn("Could not replaceState URL", e);
+                  }
+                  if (typeof updateMultiGradeBanner === 'function') {
+                      updateMultiGradeBanner(resData.quotationNumber);
+                  }
               }
-              if (typeof updateMultiGradeBanner === 'function') {
-                  updateMultiGradeBanner(resData.quotationNumber);
+
+              if (!pendingAutoSave) {
+                  setAutoSaveStatus('saved', 'All changes saved');
+                  break;
               }
           }
-          setAutoSaveStatus('saved', 'All changes saved');
       } catch (err) {
           console.error("Auto-save failed:", err);
           setAutoSaveStatus('error', 'Unable to save (Retry)');
       } finally {
           isAutoSaving = false;
           if (pendingAutoSave) {
-              pendingAutoSave = false;
-              setTimeout(() => triggerAutoSave(true), 200);
+              setTimeout(() => performAutoSave(), 50);
           }
       }
   }
 
-  window.addEventListener('beforeunload', function(e) {
+  async function flushPendingAutoSave() {
+      if (autoSaveTimer) {
+          clearTimeout(autoSaveTimer);
+          autoSaveTimer = null;
+          pendingAutoSave = true;
+      }
       if (isAutoSaving || pendingAutoSave) {
+          await performAutoSave();
+      }
+  }
+
+  document.addEventListener('click', async function(e) {
+      const link = e.target.closest('a[href]');
+      if (!link) return;
+      const href = link.getAttribute('href');
+      if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+      if (link.target === '_blank') return;
+
+      if (isAutoSaving || pendingAutoSave || autoSaveTimer) {
+          e.preventDefault();
+          setAutoSaveStatus('saving', 'Saving changes before leaving...');
+          try {
+              await flushPendingAutoSave();
+          } catch (_) {}
+          window.location.href = link.href;
+      }
+  }, true);
+
+  window.addEventListener('beforeunload', function(e) {
+      if (isAutoSaving || pendingAutoSave || autoSaveTimer) {
           e.preventDefault();
           e.returnValue = 'Quotation changes are being saved. Are you sure you want to exit?';
           return e.returnValue;
@@ -1430,12 +1503,95 @@
 
   let materialsRequestSeq = 0;
 
-  async function loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName) {
+  function normalizeMaterialName(name) {
+      if (!name) return '';
+      return name.toLowerCase()
+          .replace(/\b(premium|middle|standard|economy)\b/gi, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+  }
+
+  function readActiveWorkTypeMeasurements(divisionId) {
+      const divId = divisionId || (state.draft ? state.draft.divisionId : activeDivisionId);
+      if (!divId) {
+          if (state.draft && state.draft.sizes && state.draft.sizes.length > 0) {
+              const s = state.draft.sizes[0];
+              return {
+                  length: s.length,
+                  width: s.width,
+                  height: s.height,
+                  quantity: state.draft.quantity || 1,
+                  specification: state.draft.specification || ''
+              };
+          }
+          return null;
+      }
+      const lenInput = $(`dimLen-${divId}`);
+      const widInput = $(`dimWid-${divId}`);
+      const hgtInput = $(`dimHgt-${divId}`);
+      const qtyInput = $(`dimQty-${divId}`);
+      const specTextarea = $(`specTextarea-${divId}`);
+      const specContent = $(`specContent-${divId}`);
+
+      const len = lenInput ? parseFloat(lenInput.value) : null;
+      const wid = widInput ? parseFloat(widInput.value) : null;
+      const hgt = hgtInput ? parseFloat(hgtInput.value) : null;
+      const qty = qtyInput ? parseFloat(qtyInput.value) : null;
+      const spec = (specTextarea && !specTextarea.classList.contains('hidden'))
+          ? specTextarea.value.trim()
+          : (specContent ? specContent.textContent.trim() : '');
+
+      let meas = {
+          materialName: state.draft ? state.draft.materialName : '',
+          length: (!isNaN(len) && len > 0) ? len : ((state.draft && state.draft.sizes && state.draft.sizes[0]) ? state.draft.sizes[0].length : null),
+          width: (!isNaN(wid) && wid > 0) ? wid : ((state.draft && state.draft.sizes && state.draft.sizes[0]) ? state.draft.sizes[0].width : null),
+          height: (!isNaN(hgt) && hgt > 0) ? hgt : ((state.draft && state.draft.sizes && state.draft.sizes[0]) ? state.draft.sizes[0].height : null),
+          quantity: (!isNaN(qty) && qty > 0) ? qty : (state.draft ? state.draft.quantity : 1),
+          specification: spec && spec !== '-' ? spec : (state.draft ? state.draft.specification : '')
+      };
+
+      if ((!meas.length || !meas.quantity) && state.rooms) {
+          for (const r of state.rooms) {
+              if (r.items) {
+                  const foundItem = r.items.slice().reverse().find(i => i.divisionId === divId);
+                  if (foundItem) {
+                      const s = (foundItem.sizes && foundItem.sizes[0]) || {};
+                      if (!meas.materialName && foundItem.materialName) meas.materialName = foundItem.materialName;
+                      if (!meas.length && s.length) meas.length = s.length;
+                      if (!meas.width && s.width) meas.width = s.width;
+                      if (!meas.height && s.height) meas.height = s.height;
+                      if (!meas.quantity && foundItem.quantity) meas.quantity = foundItem.quantity;
+                      if (!meas.specification && foundItem.specification) meas.specification = foundItem.specification;
+                      if (!state.draft) {
+                          state.draft = {
+                              categoryId: foundItem.categoryId,
+                              categoryName: foundItem.categoryName,
+                              divisionId: foundItem.divisionId,
+                              divisionName: foundItem.divisionName,
+                              materialName: foundItem.materialName,
+                              unit: foundItem.unit,
+                              measurementType: foundItem.measurementType
+                          };
+                      }
+                      break;
+                  }
+              }
+          }
+      }
+      return meas;
+  }
+
+  async function loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName, preservedMeasurements) {
       const listEl = $(`wt-mat-list-${divisionId}`);
       if (!listEl) return;
 
       const currentReqSeq = ++materialsRequestSeq;
       const branchVal = $('branchId') ? $('branchId').value : '';
+
+      if (!preservedMeasurements) {
+          preservedMeasurements = readActiveWorkTypeMeasurements(divisionId);
+      }
+      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
 
       if (!branchVal) {
           listEl.innerHTML = '<div style="font-size: 13px; color: #dc2626; padding: 8px 0; font-weight: 500;">Please select a branch first to retrieve material rates.</div>';
@@ -1463,37 +1619,42 @@
           const materials = (rawMaterials || []).filter(m => m && m.active !== false && m.available === true && m.rate != null && !isNaN(Number(m.rate)) && Number(m.rate) > 0);
 
           if (!materials || materials.length === 0) {
-              listEl.innerHTML = `<div style="font-size: 13px; color: #64748b; font-style: italic; padding: 8px 0; font-weight: 500;">No active materials available in this grade</div>`;
-              if (state.draft && state.draft.divisionId === divisionId) {
-                  state.draft = null;
-                  const sizePanel = $(`wt-size-panel-${divisionId}`);
-                  if (sizePanel) {
-                      sizePanel.innerHTML = '';
-                      sizePanel.classList.add('hidden');
-                  }
+              listEl.innerHTML = `<div style="font-size: 13px; color: #dc2626; font-style: italic; padding: 8px 0; font-weight: 500;">No active materials available in ${gradeLabel} Grade</div>`;
+              const sizePanel = $(`wt-size-panel-${divisionId}`);
+              if (sizePanel) {
+                  sizePanel.innerHTML = `
+                    <div style="padding: 14px 18px; margin: 12px 0; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; font-weight: 600; text-align: center; font-size: 13px;">
+                      No equivalent material available in ${gradeLabel} Grade. Please select a replacement material above.
+                    </div>
+                  `;
+                  sizePanel.classList.remove('hidden');
               }
               return;
           }
 
-          // If draft material in this division is no longer available in the new grade, clear draft and size panel
-          if (state.draft && state.draft.divisionId === divisionId) {
-              const matchingMat = materials.find(m => m.id === state.draft.materialId);
-              if (!matchingMat) {
-                  state.draft = null;
-                  const sizePanel = $(`wt-size-panel-${divisionId}`);
-                  if (sizePanel) {
-                      sizePanel.innerHTML = '';
-                      sizePanel.classList.add('hidden');
-                  }
-              } else {
-                  state.draft.rate = Number(matchingMat.rate);
-                  state.draft.imageUrl = matchingMat.imageUrl || state.draft.imageUrl;
-                  if (matchingMat.formula) state.draft.formula = matchingMat.formula;
-                  const rateInput = $(`wt-rate-input-${divisionId}`);
-                  if (rateInput) {
-                      rateInput.value = Number(matchingMat.rate).toFixed(2);
+          // Check for reliable counterpart material in the newly loaded materials
+          let counterpartMat = null;
+          const searchMatName = (state.draft && state.draft.materialName) || (preservedMeasurements && preservedMeasurements.materialName);
+          if (searchMatName) {
+              if (state.draft && state.draft.materialId) {
+                  counterpartMat = materials.find(m => m.id === state.draft.materialId);
+              }
+              if (!counterpartMat) {
+                  counterpartMat = materials.find(m => m.name && m.name.toLowerCase() === searchMatName.toLowerCase());
+              }
+              if (!counterpartMat) {
+                  const normTarget = normalizeMaterialName(searchMatName);
+                  if (normTarget) {
+                      counterpartMat = materials.find(m => normalizeMaterialName(m.name) === normTarget);
                   }
               }
+          }
+
+          // If material names differ across grades (e.g. Marine Ply vs MDF Board vs Commercial Plywood),
+          // match by measurement type or select the configured target-grade material for this work type
+          if (!counterpartMat && materials && materials.length > 0) {
+              const prevType = (preservedMeasurements && preservedMeasurements.measurementType) || (state.draft && state.draft.measurementType) || 'SQFT';
+              counterpartMat = materials.find(m => (m.measurementType || (m.unit === 'Quantity' ? 'QUANTITY' : (m.unit === 'Files' ? 'FILES' : (m.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase() === prevType.toUpperCase()) || materials[0];
           }
 
           // Populate select id="materialId" for compatibility
@@ -1506,23 +1667,48 @@
           }
 
           listEl.innerHTML = materials.map(m => {
-              const isSelected = state.draft && state.draft.divisionId === divisionId && state.draft.materialId === m.id;
+              const isSelected = counterpartMat ? (counterpartMat.id === m.id) : (state.draft && state.draft.divisionId === divisionId && state.draft.materialId === m.id);
               return `<button type="button" class="wt-material-btn ${isSelected ? 'selected-material-btn' : ''}" id="mat-btn-${divisionId}-${m.id}" data-mat-id="${m.id}">${esc(m.name)}</button>`;
           }).join('');
 
-          materials.forEach(m => {
+          materials.forEach((m, mIdx) => {
+              if (m.position === undefined || m.position === null) {
+                  m.position = mIdx;
+              }
               const btn = $(`mat-btn-${divisionId}-${m.id}`);
               if (btn) {
-                  btn.addEventListener('click', () => selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, m));
+                  btn.addEventListener('click', () => {
+                      const curMeas = readActiveWorkTypeMeasurements(divisionId) || preservedMeasurements;
+                      selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, m, curMeas);
+                  });
               }
           });
+
+          if (counterpartMat) {
+              const cpIdx = materials.indexOf(counterpartMat);
+              if (counterpartMat.position === undefined || counterpartMat.position === null) {
+                  counterpartMat.position = cpIdx >= 0 ? cpIdx : 0;
+              }
+              await selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, counterpartMat, preservedMeasurements);
+          } else if (state.draft && state.draft.divisionId === divisionId) {
+              // No counterpart found in this grade
+              const sizePanel = $(`wt-size-panel-${divisionId}`);
+              if (sizePanel) {
+                  sizePanel.innerHTML = `
+                    <div style="padding: 14px 18px; margin: 12px 0; background: #fee2e2; border: 1px solid #fecaca; border-radius: 8px; color: #b91c1c; font-weight: 600; text-align: center; font-size: 13px;">
+                      No equivalent material available in ${gradeLabel} Grade. Please select a replacement material above.
+                    </div>
+                  `;
+                  sizePanel.classList.remove('hidden');
+              }
+          }
       } catch (e) {
           if (currentReqSeq !== materialsRequestSeq) return;
           listEl.innerHTML = `<div style="font-size: 12px; color: #dc2626; padding: 6px 0;">Failed to load materials</div>`;
       }
   }
 
-  async function selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, material) {
+  async function selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, material, initialMeasurements) {
       document.querySelectorAll('.wt-material-btn').forEach(b => b.classList.remove('selected-material-btn'));
       const activeBtn = $(`mat-btn-${divisionId}-${material.id}`);
       if (activeBtn) activeBtn.classList.add('selected-material-btn');
@@ -1533,6 +1719,22 @@
       const isQuantity = mType === 'QUANTITY';
       const isFiles = mType === 'FILES' || (material.unit && material.unit.toLowerCase() === 'files');
 
+      const lenVal = (initialMeasurements && initialMeasurements.length != null && !isNaN(Number(initialMeasurements.length)) && Number(initialMeasurements.length) > 0) ? Number(initialMeasurements.length) : 0;
+      const widVal = (initialMeasurements && initialMeasurements.width != null && !isNaN(Number(initialMeasurements.width)) && Number(initialMeasurements.width) > 0) ? Number(initialMeasurements.width) : 0;
+      const hgtVal = (initialMeasurements && initialMeasurements.height != null && !isNaN(Number(initialMeasurements.height)) && Number(initialMeasurements.height) > 0) ? Number(initialMeasurements.height) : 0;
+      const qtyVal = (initialMeasurements && initialMeasurements.quantity != null && !isNaN(Number(initialMeasurements.quantity)) && Number(initialMeasurements.quantity) > 0) ? Number(initialMeasurements.quantity) : 1;
+      const isSameMaterial = initialMeasurements && initialMeasurements.materialId === material.id;
+      const specText = (!isSameMaterial || !initialMeasurements.specification)
+              ? ((material.specification && material.specification.trim()) ? material.specification.trim() : (material.description ? material.description.trim() : ''))
+              : initialMeasurements.specification.trim();
+      const specDisplay = specText || '-';
+
+      const itemPos = (material.position !== undefined && material.position !== null)
+          ? material.position
+          : (initialMeasurements && initialMeasurements.originalPosition !== undefined && initialMeasurements.originalPosition !== null
+              ? initialMeasurements.originalPosition
+              : null);
+
       state.draft = {
           categoryId,
           categoryName,
@@ -1542,10 +1744,12 @@
           itemName: divisionName,
           materialId: material.id,
           materialName: material.name,
-          materialOptionId: null,
+          materialOptionId: material.materialOptionId || null,
           materialOptionName: '',
-          materialSpecificationId: null,
-          materialSpecificationName: '',
+          materialSpecificationId: material.materialSpecificationId || null,
+          materialSpecificationName: specText,
+          specification: specText,
+          originalPosition: itemPos,
           pricingMode: state.pricingMode || getFirstConfiguredGrade() || 'MIDDLE',
           rate: (material.rate != null && material.rate !== '' && !isNaN(Number(material.rate))) ? Number(material.rate) : null,
           formula: (isSqft || isRoll) ? (material.formula || 'L × W') : null,
@@ -1553,10 +1757,10 @@
           measurementUnit: material.unit || (isRoll ? 'Roll' : (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
           measurementType: mType,
           coveragePerRoll: (material.coveragePerRoll != null && Number(material.coveragePerRoll) > 0) ? Number(material.coveragePerRoll) : null,
-          quantity: 1,
-          imageUrl: material.imageUrl || null,
+          quantity: qtyVal,
+          imageUrl: (initialMeasurements && initialMeasurements.imageUrl) ? initialMeasurements.imageUrl : (material.imageUrl || null),
           pricingUnit: '₹ / ' + (material.unit || (isQuantity ? 'Quantity' : (isFiles ? 'Files' : 'Sq.ft'))),
-          sizes: []
+          sizes: (isSqft || isRoll) ? [{ length: lenVal, width: widVal, height: hgtVal, offerPrice: null, offerDiscountPercent: 0, offerActive: false }] : []
       };
 
       const sizePanel = $(`wt-size-panel-${divisionId}`);
@@ -1566,9 +1770,6 @@
       document.querySelectorAll('.wt-size-panel').forEach(p => {
           if (p !== sizePanel) p.classList.add('hidden');
       });
-
-      const specText = (material.specification || '').trim();
-      const specDisplay = specText || '-';
 
       const isAvailable = (material.available !== false && material.rate != null && material.rate !== '' && !isNaN(Number(material.rate)) && Number(material.rate) > 0);
       const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
@@ -1650,23 +1851,23 @@
           ${hasLength ? `
           <div class="dim-input-group">
             <label for="dimLen-${divisionId}">LENGTH (IN)</label>
-            <input type="number" min="0" step="0.1" class="dim-input" id="dimLen-${divisionId}" value="0">
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimLen-${divisionId}" value="${lenVal}">
           </div>` : ''}
           ${hasWidth ? `
           <div class="dim-input-group">
             <label for="dimWid-${divisionId}">WIDTH</label>
-            <input type="number" min="0" step="0.1" class="dim-input" id="dimWid-${divisionId}" value="0">
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimWid-${divisionId}" value="${widVal}">
           </div>` : ''}
           ${hasHeight ? `
           <div class="dim-input-group">
             <label for="dimHgt-${divisionId}">HEIGHT (IN)</label>
-            <input type="number" min="0" step="0.1" class="dim-input" id="dimHgt-${divisionId}" value="0">
+            <input type="number" min="0" step="0.1" class="dim-input" id="dimHgt-${divisionId}" value="${hgtVal}">
           </div>` : ''}
         </div>` : `
         <div class="size-details-inputs-row" style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;">
           <div class="dim-input-group" style="max-width: 140px;">
             <label for="dimQty-${divisionId}">QUANTITY</label>
-            <input type="number" min="1" step="1" class="dim-input" id="dimQty-${divisionId}" value="1">
+            <input type="number" min="1" step="1" class="dim-input" id="dimQty-${divisionId}" value="${qtyVal}">
           </div>
           ${isFiles ? `
           <div class="dim-input-group" style="max-width: 160px;">
@@ -1777,6 +1978,7 @@
       if (hgtInput) hgtInput.addEventListener('input', updateLiveCalc);
       if (qtyInput) qtyInput.addEventListener('input', updateLiveCalc);
       if (rateInput) rateInput.addEventListener('input', updateLiveCalc);
+      updateLiveCalc();
 
       // File upload handling for Files material
       if (isFiles) {
@@ -1954,6 +2156,13 @@
                   itemDescription: '',
                   specification: finalSpec,
                   pricingMode: state.pricingMode || getFirstConfiguredGrade(),
+                  originalMaterialId: material.id,
+                  originalPricingMode: state.pricingMode || getFirstConfiguredGrade(),
+                  originalMaterialName: material.name,
+                  originalSpecification: finalSpec,
+                  originalPosition: (material.position !== undefined && material.position !== null)
+                      ? material.position
+                      : (state.draft && state.draft.originalPosition !== undefined && state.draft.originalPosition !== null ? state.draft.originalPosition : 0),
                   sizes: [{
                       length: (isSqft || isRoll) ? L : 0,
                       width: ((isSqft || isRoll) && hasWidth) ? W : 0,
@@ -2640,19 +2849,25 @@
                           ? `<div style="margin-top: 4px;"><img src="${esc(item.imageUrl)}" alt="Attached item image" style="max-width: 50px; max-height: 50px; border-radius: 4px; object-fit: cover; border: 1px solid #cbd5e1; cursor: pointer;" onclick="window.open('${esc(item.imageUrl)}', '_blank')" title="Click to view image" /></div>`
                           : '';
 
-                      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
+                      const currentItemGrade = item.pricingMode || state.summaryGrade || state.pricingMode || 'PREMIUM';
+                      const gradeLabel = currentItemGrade === 'PREMIUM' ? 'Premium' : (currentItemGrade === 'ECONOMY' ? 'Economy' : 'Middle');
                       const unavailableMsg = item.rateUnavailableMessage || `No material available in ${gradeLabel} Grade`;
                       const unavailableBadge = isRateMissing
                           ? `<div style="margin-top: 4px;"><span style="display: inline-block; font-size: 11px; background: #fee2e2; color: #b91c1c; padding: 2px 6px; border-radius: 4px; font-weight: 600;">${esc(unavailableMsg)}</span></div>`
                           : '';
+
+                      const displayName = isRateMissing
+                          ? `<span style="color: #b91c1c; font-style: italic;">Material Unavailable (${gradeLabel} Grade)</span>`
+                          : esc(item.materialName || 'Material');
+                      const displaySpec = isRateMissing ? '' : esc(item.specification || item.materialSpecificationName || '');
 
                       html += `
                       <tr class="summary-item-row">
                         <td class="col-num">${serialNo++}</td>
                         <td class="col-room">${esc(item.divisionName || item.itemName || 'ITEM')}</td>
                         <td class="col-material">
-                          <div class="mat-name">${esc(item.materialName || 'Material')} ${gradeBadgeHtml} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
-                          <div class="mat-spec">${esc(item.specification || item.materialSpecificationName || '')}</div>
+                          <div class="mat-name">${displayName} ${isRateMissing ? '' : gradeBadgeHtml} ${isQuantity ? '<span style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">QTY</span>' : (isFiles ? '<span style="font-size: 10px; background: #fef3c7; color: #92400e; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">FILE</span>' : (isRoll ? '<span style="font-size: 10px; background: #faf5ff; color: #6b21a8; padding: 2px 5px; border-radius: 4px; margin-left: 4px;">ROLL</span>' : ''))}</div>
+                          ${displaySpec ? `<div class="mat-spec">${displaySpec}</div>` : ''}
                           ${isRoll ? `<div style="font-size: 11px; color: #6b21a8; font-weight: 600; margin-top: 2px;">🧻 ${item.quantity || 1} Roll(s) (Coverage: ${(item.coveragePerRoll != null ? item.coveragePerRoll : (item.material && item.material.coveragePerRoll != null ? item.material.coveragePerRoll : '-'))} Sq.ft/Roll @ ₹ ${formatIndianNumber(item.rate || 0, 2)}/Roll)</div>` : ''}
                           ${unavailableBadge}
                           ${imgHtml}
@@ -2706,6 +2921,9 @@
 
       tbody.innerHTML = html;
       state.currentSubtotal = grandOffer;
+      if (!state.gradeRooms) state.gradeRooms = {};
+      const activeQuoteGrade = state.summaryGrade || state.pricingMode || getFirstConfiguredGrade();
+      state.gradeRooms[activeQuoteGrade] = JSON.parse(JSON.stringify(state.rooms || []));
       recalculateFinancials(grandOffer, gradeSubtotals);
       updateUsedPricingModeDisplay();
   }
@@ -2797,6 +3015,7 @@
           text = parts.join(' + ');
       }
       badge.textContent = text;
+      updateSummaryGradeDisplay();
   }
 
   function recalculateFinancials(explicitSubtotal, gradeSubtotals) {
@@ -2953,41 +3172,247 @@
       if ($('splitFinalVal')) $('splitFinalVal').textContent = '₹ ' + formatIndianNumber(finalVal, 2);
   }
 
-  async function recalculateAll() {
-      const modeRadio = document.querySelector('input[name="pricingMode"]:checked');
-      if (!modeRadio) return;
-      state.pricingMode = modeRadio.value;
-      const branchVal = $('branchId') ? $('branchId').value : '';
+  // ============================================================
+  // GRADE CONTROL 1: TOP PRICING MODE (For Selecting New Materials)
+  // ============================================================
 
+  function handleTopPricingModeChange(newGrade) {
+      if (!newGrade) return;
+
+      state.pricingMode = newGrade;
+      const gradeRadio = document.querySelector(`input[name="pricingMode"][value="${newGrade}"]`);
+      if (gradeRadio && !gradeRadio.checked) gradeRadio.checked = true;
+
+      const gradeLabel = newGrade === 'PREMIUM' ? 'Premium' : (newGrade === 'ECONOMY' ? 'Economy' : 'Middle / Standard');
+      if ($('pricingMessage')) {
+          $('pricingMessage').textContent = `Pricing Mode set to ${gradeLabel} for adding new materials. Existing Quote Summary items are preserved.`;
+          $('pricingMessage').style.color = '#024541';
+          $('pricingMessage').style.display = 'block';
+      }
+
+      // If a work type/division is currently open or selected, reload materials in newGrade
       if (activeDivisionId) {
           const activeCard = $(`wt-card-${activeDivisionId}`);
           const divName = activeCard?.dataset?.name || '';
           const catBtn = document.querySelector('.category-choice.selected-category');
           const catId = catBtn ? Number(catBtn.dataset.id) : null;
           const catName = catBtn ? catBtn.dataset.name : '';
-          await loadMaterialsForWorkType(activeDivisionId, divName, catId, catName);
+          const activeMeasurements = readActiveWorkTypeMeasurements(activeDivisionId);
+          loadMaterialsForWorkType(activeDivisionId, divName, catId, catName, activeMeasurements);
       } else if (state.draft && state.draft.divisionId) {
-          await loadMaterialsForWorkType(state.draft.divisionId, state.draft.divisionName || '', state.draft.categoryId, state.draft.categoryName || '');
+          state.draft.pricingMode = newGrade;
+          loadMaterialsForWorkType(state.draft.divisionId, state.draft.divisionName || '', state.draft.categoryId, state.draft.categoryName || '');
       }
 
-      if (!state.draft) {
-          document.querySelectorAll('.wt-size-panel').forEach(p => {
-              p.innerHTML = '';
-              p.classList.add('hidden');
+      triggerAutoSave(false);
+  }
+
+  // Backward compatibility alias for any existing code
+  async function handleGradeSwitch(newGrade, forceRefresh = false) {
+      handleTopPricingModeChange(newGrade);
+  }
+
+  // ============================================================
+  // GRADE CONTROL 2: QUOTE SUMMARY GRADE SWITCH (Recalculate Existing Items)
+  // ============================================================
+
+  let summaryGradeSwitchSeq = 0;
+
+  function updateSummaryGradeDisplay(forcedGrade) {
+      let target = forcedGrade;
+      if (!target && state.rooms && state.rooms.length > 0) {
+          const gradesInQuote = new Set();
+          state.rooms.forEach(r => {
+              (r.items || []).forEach(i => {
+                  if (i.pricingMode) gradesInQuote.add(i.pricingMode.toUpperCase());
+              });
           });
-          document.querySelectorAll('.wt-material-btn').forEach(b => b.classList.remove('selected-material-btn'));
+          if (gradesInQuote.size === 1) {
+              target = Array.from(gradesInQuote)[0];
+          } else if (gradesInQuote.size > 1) {
+              target = state.summaryGrade || Array.from(gradesInQuote)[0];
+          }
+      }
+      if (!target) {
+          target = state.summaryGrade || state.pricingMode || getFirstConfiguredGrade();
+      }
+      state.summaryGrade = target;
+      const radios = document.querySelectorAll('input[name="summaryPricingMode"]');
+      radios.forEach(radio => {
+          radio.checked = (radio.value === target);
+      });
+  }
+
+  async function handleSummaryGradeSwitch(newGrade) {
+      if (!newGrade) return;
+
+      state.summaryGrade = newGrade;
+      const summaryRadio = document.querySelector(`input[name="summaryPricingMode"][value="${newGrade}"]`);
+      if (summaryRadio && !summaryRadio.checked) summaryRadio.checked = true;
+
+      const gradeLabel = newGrade === 'PREMIUM' ? 'Premium' : (newGrade === 'ECONOMY' ? 'Economy' : 'Middle');
+      const msgEl = $('summaryPricingMessage');
+
+      if (!state.rooms || state.rooms.length === 0 || !state.rooms.some(r => r.items && r.items.length > 0)) {
+          if (msgEl) {
+              msgEl.textContent = `Quote Summary is empty. Choose a material above to add items in ${gradeLabel} Grade.`;
+              msgEl.style.color = '#64748b';
+              msgEl.style.display = 'block';
+          }
+          return;
       }
 
-      // Dynamic Grade Switching: Existing items in state.rooms preserve their assigned grade and rates!
-      const gradeLabel = state.pricingMode === 'PREMIUM' ? 'Premium' : (state.pricingMode === 'ECONOMY' ? 'Economy' : 'Middle');
-      if ($('pricingMessage')) {
-          $('pricingMessage').textContent = `Switched to ${gradeLabel} Grade. Choose materials below to add ${gradeLabel} Grade items.`;
-          $('pricingMessage').style.color = '#15803d';
+      const switchSeq = ++summaryGradeSwitchSeq;
+      let branchVal = $('branchId') ? $('branchId').value : '';
+      if (!branchVal && $('branchId')?.dataset?.employeeBranch) {
+          branchVal = $('branchId').dataset.employeeBranch;
       }
-      if (state.draft) { await refreshDraftRate(); renderMaterialDetails(); }
-      renderRoomPills();
-      renderQuoteSummary();
 
+      if (msgEl) {
+          msgEl.textContent = `Recalculating Quote Summary items for ${gradeLabel} Grade...`;
+          msgEl.style.color = '#024541';
+          msgEl.style.display = 'block';
+      }
+
+      try {
+          const resp = await fetch(`${API_BASE}/switch-grade`, {
+              method: 'POST',
+              headers: {
+                  'Content-Type': 'application/json',
+                  'Accept': 'application/json',
+                  'X-CSRF-TOKEN': csrfToken
+              },
+              body: JSON.stringify({
+                  targetGrade: newGrade,
+                  branchId: branchVal ? Number(branchVal) : null,
+                  rooms: state.rooms.map(r => ({
+                      floor: r.floor,
+                      room: r.room,
+                      workDescription: r.workDescription || '',
+                      items: (r.items || []).map((i, iIdx) => ({
+                          workCategoryId: i.categoryId,
+                          divisionId: i.divisionId,
+                          itemId: i.itemId,
+                          materialId: i.materialId,
+                          materialName: i.materialName,
+                          materialOptionId: i.materialOptionId,
+                          materialSpecificationId: i.materialSpecificationId,
+                          itemDescription: i.itemDescription,
+                          specification: i.specification,
+                          originalMaterialId: i.originalMaterialId || i.materialId,
+                          originalPricingMode: i.originalPricingMode || i.pricingMode,
+                          originalMaterialName: i.originalMaterialName || i.materialName,
+                          originalSpecification: i.originalSpecification || i.specification,
+                          originalPosition: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : null,
+                          position: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : null,
+                          quantity: i.quantity,
+                          measurementType: i.measurementType,
+                          coveragePerRoll: i.coveragePerRoll,
+                          imageUrl: i.imageUrl,
+                          pricingMode: i.pricingMode,
+                          sizes: (i.sizes || []).map(s => ({
+                              length: s.length,
+                              width: s.width,
+                              height: s.height,
+                              offerPrice: s.offerPrice
+                          }))
+                      }))
+                  }))
+              })
+          });
+
+          if (switchSeq === summaryGradeSwitchSeq) {
+              if (resp.ok) {
+                  const data = await resp.json();
+                  if (data && data.rooms) {
+                      state.rooms = data.rooms.map(r => ({
+                          key: r.key || `${r.floor || 'Ground Floor'}||${r.room || '1'}`,
+                          floor: r.floor || 'Ground Floor',
+                          room: r.room || '1',
+                          workDescription: r.workDescription || '',
+                          items: (r.items || []).map((i, idx) => ({
+                              categoryId: i.workCategoryId || i.categoryId,
+                              categoryName: i.categoryName,
+                              divisionId: i.divisionId,
+                              divisionName: i.divisionName,
+                              itemId: i.itemId,
+                              itemName: i.divisionName || i.itemName,
+                              materialId: i.materialId,
+                              materialName: i.materialName,
+                              materialOptionId: i.materialOptionId,
+                              materialOptionName: '',
+                              materialSpecificationId: i.materialSpecificationId,
+                              materialSpecificationName: i.specification,
+                              specification: i.specification,
+                              itemDescription: i.itemDescription,
+                              pricingMode: newGrade,
+                              rate: (i.rate != null && !isNaN(Number(i.rate))) ? Number(i.rate) : null,
+                              rateUnavailable: i.rateUnavailable === true,
+                              rateUnavailableMessage: i.unavailableMessage || i.rateUnavailableMessage,
+                              formula: i.formula || '(L + W) × H',
+                              unit: i.unit || 'Sq.ft',
+                              measurementType: i.measurementType || 'SQFT',
+                              coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
+                              quantity: i.quantity != null ? Number(i.quantity) : 1,
+                              calculatedSqft: i.calculatedSqft != null ? Number(i.calculatedSqft) : 0,
+                              imageUrl: i.imageUrl || null,
+                              originalMaterialId: (i.originalMaterialId !== undefined && i.originalMaterialId !== null) ? i.originalMaterialId : i.materialId,
+                              originalPricingMode: (i.originalPricingMode !== undefined && i.originalPricingMode !== null) ? i.originalPricingMode : newGrade,
+                              originalMaterialName: (i.originalMaterialName !== undefined && i.originalMaterialName !== null && i.originalMaterialName !== '') ? i.originalMaterialName : i.materialName,
+                              originalSpecification: (i.originalSpecification !== undefined && i.originalSpecification !== null) ? i.originalSpecification : i.specification,
+                              originalPosition: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : idx,
+                              sizes: (i.sizes || []).map(s => ({
+                                  length: s.length != null ? Number(s.length) : 0,
+                                  width: s.width != null ? Number(s.width) : 0,
+                                  height: s.height != null ? Number(s.height) : 0,
+                                  offerPrice: s.offerPrice != null ? Number(s.offerPrice) : null,
+                                  offerDiscountPercent: 0,
+                                  offerActive: false
+                              }))
+                          }))
+                      }));
+                      renderRoomPills();
+                      renderQuoteSummary();
+                      recalculateFinancials();
+                      updateUsedPricingModeDisplay();
+                      updateSummaryGradeDisplay(newGrade);
+
+                      if (msgEl) {
+                          if (data.notices && data.notices.length > 0) {
+                              msgEl.textContent = `Switched Quote Summary to ${gradeLabel} Grade. ${data.notices.join(' | ')}`;
+                              msgEl.style.color = '#b45309';
+                              msgEl.style.display = 'block';
+                          } else {
+                              msgEl.textContent = `Quote Summary switched to ${gradeLabel} Grade. Room measurements, materials and rates recalculated.`;
+                              msgEl.style.color = '#15803d';
+                              msgEl.style.display = 'block';
+                          }
+                      }
+                      triggerAutoSave(true);
+                  }
+              } else {
+                  if (msgEl) {
+                      msgEl.textContent = `Failed to recalculate items for ${gradeLabel} Grade.`;
+                      msgEl.style.color = '#dc2626';
+                      msgEl.style.display = 'block';
+                  }
+              }
+          }
+      } catch (e) {
+          console.error('Failed to switch Quote Summary grade items:', e);
+          if (switchSeq === summaryGradeSwitchSeq && msgEl) {
+              msgEl.textContent = `Error connecting to server while recalculating for ${gradeLabel} Grade.`;
+              msgEl.style.color = '#dc2626';
+              msgEl.style.display = 'block';
+          }
+      }
+  }
+
+  async function recalculateAll() {
+      const modeRadio = document.querySelector('input[name="summaryPricingMode"]:checked')
+          || document.querySelector('input[name="pricingMode"]:checked');
+      if (!modeRadio) return;
+      await handleSummaryGradeSwitch(modeRadio.value);
   }
   async function saveQuotation(redirectOnSuccess = true) {
       console.log('saveQuotation() invoked', { isSaving: state.isSaving, isAutoSaving, pricingMode: state.pricingMode });
@@ -3097,6 +3522,15 @@
           const currentPricingMode = pricingModeEl ? pricingModeEl.value : (state.pricingMode || getFirstConfiguredGrade());
           state.pricingMode = currentPricingMode;
 
+          let effectiveQuoteGrade = state.summaryGrade || state.pricingMode || getFirstConfiguredGrade();
+          if (state.rooms && state.rooms.length > 0) {
+              const itemGrades = new Set();
+              state.rooms.forEach(r => (r.items || []).forEach(i => { if (i.pricingMode) itemGrades.add(i.pricingMode); }));
+              if (itemGrades.size === 1) {
+                  effectiveQuoteGrade = Array.from(itemGrades)[0];
+              }
+          }
+
           const notesVal = $('quoteNotes') ? $('quoteNotes').value.trim() : (state.notes || '');
 
           const payload = {
@@ -3112,7 +3546,7 @@
               branchId,
               quotationDate: qdVal,
               validUntil: vuVal,
-              pricingMode: state.pricingMode,
+              pricingMode: effectiveQuoteGrade,
               customerRequirements: state.customerRequirements || '',
               notes: notesVal,
               accessoriesAmount: Math.max(0, parseAmount($('accessoriesAmount') ? $('accessoriesAmount').value : 0)),
@@ -3127,17 +3561,23 @@
                   floor: r.floor,
                   room: r.room,
                   workDescription: r.workDescription || '',
-                  items: r.items.map(i => ({
+                  items: r.items.map((i, idx) => ({
                       workCategoryId: i.categoryId,
                       divisionId: i.divisionId,
                       itemId: i.itemId,
                       materialId: i.materialId,
+                      materialName: i.materialName,
                       materialOptionId: i.materialOptionId,
                       materialSpecificationId: i.materialSpecificationId,
                       itemDescription: i.itemDescription || '',
                       specification: i.specification || '',
                       rate: i.rate != null ? Number(i.rate) : null,
                       pricingMode: i.pricingMode || state.pricingMode || getFirstConfiguredGrade(),
+                      originalMaterialId: (i.originalMaterialId !== undefined && i.originalMaterialId !== null) ? i.originalMaterialId : i.materialId,
+                      originalPricingMode: (i.originalPricingMode !== undefined && i.originalPricingMode !== null) ? i.originalPricingMode : (i.pricingMode || state.pricingMode),
+                      originalMaterialName: (i.originalMaterialName !== undefined && i.originalMaterialName !== null && i.originalMaterialName !== '') ? i.originalMaterialName : i.materialName,
+                      originalSpecification: (i.originalSpecification !== undefined && i.originalSpecification !== null) ? i.originalSpecification : (i.specification || ''),
+                      originalPosition: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : idx,
                       measurementType: i.measurementType || (i.unit === 'Quantity' ? 'QUANTITY' : (i.unit === 'Files' ? 'FILES' : (i.unit === 'Roll' ? 'ROLL' : 'SQFT'))),
                       coveragePerRoll: i.coveragePerRoll != null ? Number(i.coveragePerRoll) : null,
                       quantity: i.quantity != null ? Number(i.quantity) : 1,
@@ -3369,8 +3809,10 @@
       });
   }
   document.querySelectorAll('input[name="pricingMode"]').forEach(r => r.addEventListener('change', () => {
-      recalculateAll();
-      triggerAutoSave(true);
+      handleTopPricingModeChange(r.value);
+  }));
+  document.querySelectorAll('input[name="summaryPricingMode"]').forEach(r => r.addEventListener('change', () => {
+      handleSummaryGradeSwitch(r.value);
   }));
   $('branchId').addEventListener('change', () => {
       if (activeDivisionId) {
@@ -3380,13 +3822,10 @@
           const catId = catBtn ? Number(catBtn.dataset.id) : null;
           const catName = catBtn ? catBtn.dataset.name : '';
           loadMaterialsForWorkType(activeDivisionId, divName, catId, catName);
-      } else if (state.draft && state.draft.divisionId) {
-          selectDivision(state.draft.divisionId, state.draft.divisionName, state.draft.categoryId, state.draft.categoryName);
-      } else if (state.draft) {
-          refreshDraftRate();
       }
-      recalculateAll();
-      triggerAutoSave(true);
+      if (state.rooms && state.rooms.some(r => r.items && r.items.length > 0)) {
+          handleSummaryGradeSwitch(state.summaryGrade || state.pricingMode || 'PREMIUM');
+      }
   });
   $('floor').addEventListener('change', () => {
       if (state.rooms.length) ensureRoom();
@@ -3636,7 +4075,7 @@
                   floor: r.floor,
                   room: r.room,
                   workDescription: r.workDescription || '',
-                  items: (r.items || []).map(i => {
+                  items: (r.items || []).map((i, iIdx) => {
                       let effectiveRate = Number(i.rate || 0);
                       let rateUnavailable = false;
                       let availabilityMessage = null;
@@ -3662,6 +4101,11 @@
                           materialSpecificationId: i.materialSpecificationId,
                           materialSpecificationName: i.materialSpecificationName,
                           pricingMode: i.pricingMode || data.pricingMode || getFirstConfiguredGrade(),
+                          originalMaterialId: i.originalMaterialId || i.materialId,
+                          originalPricingMode: i.originalPricingMode || i.pricingMode || data.pricingMode || getFirstConfiguredGrade(),
+                          originalMaterialName: i.originalMaterialName || i.materialName,
+                          originalSpecification: i.originalSpecification || i.specification || '',
+                          originalPosition: (i.originalPosition !== undefined && i.originalPosition !== null) ? i.originalPosition : (i.position !== undefined && i.position !== null ? i.position : null),
                           rate: effectiveRate,
                           rateUnavailable: rateUnavailable,
                           rateUnavailableMessage: availabilityMessage,

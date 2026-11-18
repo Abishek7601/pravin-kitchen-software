@@ -49,7 +49,12 @@ public interface QuotationItemRepository extends JpaRepository<QuotationItem, Lo
            "JOIN qi.quotationRoom qr " +
            "JOIN qr.quotation q " +
            "LEFT JOIN qi.material m " +
-           "WHERE qi.active = true AND qr.active = true " +
+           "WHERE (qi.active IS NULL OR qi.active = true) AND (qr.active IS NULL OR qr.active = true) " +
            "AND (q.id IN :quoteIds OR (q.parent IS NOT NULL AND q.parent.id IN :quoteIds))")
     List<Object[]> findDistinctUsedGradesForQuotationIds(@Param("quoteIds") java.util.Collection<Long> quoteIds);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @Query("DELETE FROM QuotationItem i WHERE i.quotationRoom.id IN (SELECT r.id FROM QuotationRoom r WHERE r.quotation.id IN :ids)")
+    void deleteByQuotationIds(@Param("ids") java.util.Collection<Long> ids);
 }

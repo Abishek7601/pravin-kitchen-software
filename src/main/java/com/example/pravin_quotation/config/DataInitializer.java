@@ -18,7 +18,7 @@ public class DataInitializer {
 
         return args -> {
 
-            String adminEmail = "pravinkitchensquotation@gmail.com";
+            String adminEmail = "klassyabishek@gmail.com";
             String adminPassword = "Admin@123";
 
             if (!userRepository.existsByEmail(adminEmail) && !userRepository.existsByRole(Role.SUPER_ADMIN)) {
@@ -114,6 +114,47 @@ public class DataInitializer {
                 jdbcTemplate.execute("ALTER TABLE quotations ADD CONSTRAINT uk_quotation_parent_grade UNIQUE (parent_id, pricing_mode)");
             } catch (Exception ignored) {
             }
+
+            // Ensure child tables referencing quotations have ON DELETE CASCADE for foreign keys
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_communications", "quotation_id", "quotations", "id", "fk_quotation_comm_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_status_history", "quotation_id", "quotations", "id", "fk_quotation_status_hist_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_workflow", "quotation_id", "quotations", "id", "fk_quotation_workflow_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_rooms", "quotation_id", "quotations", "id", "fk_quotation_rooms_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_items", "quotation_room_id", "quotation_rooms", "id", "fk_quotation_items_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotation_item_sizes", "quotation_item_id", "quotation_items", "id", "fk_quotation_item_sizes_cascade");
+            ensureCascadeForeignKey(jdbcTemplate, "quotations", "parent_id", "quotations", "id", "fk_quotation_parent_cascade");
         };
+    }
+
+    private void ensureCascadeForeignKey(
+            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+            String childTable,
+            String childColumn,
+            String parentTable,
+            String parentColumn,
+            String preferredConstraintName
+    ) {
+        try {
+            java.util.List<String> existingFks = jdbcTemplate.query(
+                    "SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ? " +
+                    "AND REFERENCED_TABLE_NAME = ? AND REFERENCED_COLUMN_NAME = ?",
+                    (rs, rowNum) -> rs.getString("CONSTRAINT_NAME"),
+                    childTable, childColumn, parentTable, parentColumn
+            );
+            if (existingFks != null) {
+                for (String fk : existingFks) {
+                    try {
+                        jdbcTemplate.execute("ALTER TABLE " + childTable + " DROP FOREIGN KEY " + fk);
+                    } catch (Exception ignored) {}
+                }
+            }
+            try {
+                jdbcTemplate.execute(
+                        "ALTER TABLE " + childTable + " ADD CONSTRAINT " + preferredConstraintName +
+                        " FOREIGN KEY (" + childColumn + ") REFERENCES " + parentTable + "(" + parentColumn + ") ON DELETE CASCADE"
+                );
+            } catch (Exception ignored) {}
+        } catch (Exception ignored) {}
     }
 }

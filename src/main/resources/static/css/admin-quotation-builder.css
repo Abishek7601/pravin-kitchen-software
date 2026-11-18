@@ -2543,6 +2543,52 @@ button:disabled,
     justify-content: space-between;
     align-items: center;
     padding: 0 2px;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.quote-summary-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.summary-grade-switch-container {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.summary-grade-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: #475569;
+}
+
+.summary-segmented-control {
+    display: inline-flex;
+    align-items: center;
+    background: #e2e8f0;
+    border-radius: 20px;
+    padding: 2px;
+    gap: 2px;
+}
+
+.summary-segmented-control .segmented-pill {
+    padding: 4px 12px;
+    border-radius: 14px;
+    font-size: 12px;
+}
+
+.summary-segmented-control .segmented-pill:has(input:checked) {
+    background: #024541 !important;
+    color: #ffffff !important;
+}
+
+.summary-segmented-control .segmented-pill:has(input:checked) span,
+.summary-segmented-control .segmented-pill:has(input:checked) b {
+    color: #ffffff !important;
 }
 
 .quote-summary-title {
