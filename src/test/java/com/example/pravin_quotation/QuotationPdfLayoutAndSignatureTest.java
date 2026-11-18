@@ -194,6 +194,9 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertTrue(page2Text.contains("Quote Summary"), "Page 2 must contain 'Quote Summary'");
         assertTrue(page2Text.contains("WORK"), "Page 2 must contain table header WORK");
         assertTrue(page2Text.contains("CATEGORY"), "Page 2 must contain table header CATEGORY");
+        assertTrue(page2Text.contains("TYPE"), "Page 2 must contain table header TYPE for WORK TYPE");
+        assertTrue(page2Text.contains("ROOM"), "Page 2 must contain table header ROOM");
+        assertTrue(page2Text.contains("FLOOR"), "Page 2 must contain table header FLOOR");
         assertTrue(page2Text.contains("MATERIAL"), "Page 2 must contain table header MATERIAL");
         assertTrue(page2Text.contains("MODULAR"), "Page 2 must contain category");
         assertTrue(page2Text.contains("ENGINEERING WOOD"), "Page 2 must contain material name");
@@ -669,5 +672,104 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertTrue(page2Text.contains("10,290.00"), "Amount 10,290.00 must be on a single line");
 
         reader.close();
+    }
+
+    @Test
+    @DisplayName("PDF Quote Summary table displays WORK TYPE column with actual saved Work Type")
+    void testWorkTypeColumnDisplayedInQuoteSummaryTable() throws Exception {
+        Branch branch = branchStore.get(1L);
+
+        Customer customer = new Customer();
+        customer.setName("Abishek S R");
+        customer.setAddress("Arumanai");
+        customer.setBranch(branch);
+
+        Quotation quotation = new Quotation();
+        quotation.setId(109L);
+        quotation.setQuotationNumber("QT-00059");
+        quotation.setQuotationDate(LocalDate.of(2026, 11, 18));
+        quotation.setValidUntil(LocalDate.of(2027, 11, 18));
+        quotation.setCustomer(customer);
+        quotation.setBranch(branch);
+        quotation.setPricingMode(PricingMode.PREMIUM);
+        quotation.setShowSqftSize(true);
+        quotation.setSubtotal(new BigDecimal("28760.00"));
+        quotation.setTotalAmount(new BigDecimal("28760.00"));
+        quotation.setOfferAmount(BigDecimal.ZERO);
+        quotation.setGrandTotal(new BigDecimal("28760.00"));
+        quotationStore.put(109L, quotation);
+
+        WorkCategory category = new WorkCategory();
+        category.setName("FOYER");
+
+        Division baseCabinet = new Division();
+        baseCabinet.setName("BASE CABINET");
+        baseCabinet.setWorkCategory(category);
+
+        QuotationRoom room = new QuotationRoom();
+        room.setId(209L);
+        room.setQuotation(quotation);
+        room.setRoom("1");
+        room.setFloor("GROUND FLOOR");
+        room.setActive(true);
+        roomStoreByQuotation.put(109L, List.of(room));
+
+        Material mat = new Material();
+        mat.setName("MARINE PLY LAMINATION BOX TYPE");
+        mat.setMeasurementType(MeasurementType.SQFT);
+        mat.setDivision(baseCabinet);
+
+        QuotationItem item = new QuotationItem();
+        item.setId(309L);
+        item.setQuotationRoom(room);
+        item.setWorkCategory(category);
+        item.setDivision(baseCabinet);
+        item.setMaterial(mat);
+        item.setSpecification("Marine Ply 710 Grade, 16mm Thickness");
+        item.setLengthValue(new BigDecimal("45.00"));
+        item.setWidthValue(new BigDecimal("45.00"));
+        item.setHeightValue(new BigDecimal("23.00"));
+        item.setCalculatedSqft(new BigDecimal("14.38"));
+        item.setMeasurementType(MeasurementType.SQFT);
+        item.setRate(new BigDecimal("2000.00"));
+        item.setAmount(new BigDecimal("28760.00"));
+        item.setOfferPrice(new BigDecimal("28760.00"));
+        item.setActive(true);
+        itemStoreByRoom.put(209L, List.of(item));
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(109L);
+        assertNotNull(pdfBytes);
+
+        PdfReader reader = new PdfReader(pdfBytes);
+        PdfTextExtractor extractor = new PdfTextExtractor(reader);
+        String page2Text = extractor.getTextFromPage(2);
+        reader.close();
+
+        assertNotNull(page2Text);
+        String normalized = page2Text.replaceAll("\\s+", " ");
+
+        // 1. Headers: WORK CATEGORY, WORK TYPE, ROOM, FLOOR, MATERIAL, SIZE, SQ.FT, UNIT, TOTAL AMOUNT
+        assertTrue(normalized.contains("WORK CATEGORY"), "Table must contain WORK CATEGORY header");
+        assertTrue(normalized.contains("WORK TYPE"), "Table must contain WORK TYPE header");
+        assertTrue(normalized.contains("ROOM"), "Table must contain ROOM header");
+        assertTrue(normalized.contains("FLOOR"), "Table must contain FLOOR header");
+        assertTrue(normalized.contains("MATERIAL"), "Table must contain MATERIAL header");
+        assertTrue(normalized.contains("SIZE"), "Table must contain SIZE header");
+        assertTrue(normalized.contains("SQ.FT"), "Table must contain SQ.FT header");
+        assertTrue(normalized.contains("UNIT"), "Table must contain UNIT header");
+        assertTrue(normalized.contains("TOTAL AMOUNT"), "Table must contain TOTAL AMOUNT header");
+
+        // Header order check: WORK CATEGORY before WORK TYPE, WORK TYPE before ROOM
+        int catIdx = normalized.indexOf("WORK CATEGORY");
+        int typeIdx = normalized.indexOf("WORK TYPE");
+        int roomIdx = normalized.indexOf("ROOM");
+        assertTrue(catIdx >= 0 && typeIdx > catIdx, "WORK TYPE header must come after WORK CATEGORY");
+        assertTrue(roomIdx > typeIdx, "ROOM header must come after WORK TYPE");
+
+        // 2. Data row values: Category FOYER, Work Type BASE CABINET
+        assertTrue(normalized.contains("FOYER"), "Row must contain category FOYER");
+        assertTrue(normalized.contains("BASE CABINET"), "Row must contain work type BASE CABINET");
+        assertTrue(normalized.contains("MARINE PLY LAMINATION BOX TYPE"), "Row must contain material name");
+        assertTrue(normalized.contains("28,760.00"), "Row must contain total amount");
     }
 }

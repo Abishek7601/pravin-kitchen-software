@@ -547,23 +547,24 @@ public class QuotationPdfService {
         document.add(summaryTitle);
 
         // ========================================================
-        // 3. QUOTE SUMMARY TABLE (7 or 9 COLUMNS BASED ON TOGGLE)
+        // 3. QUOTE SUMMARY TABLE (8 or 10 COLUMNS BASED ON TOGGLE)
         // ========================================================
         boolean showSqft = quotation.getShowSqftSize() == null || quotation.getShowSqftSize();
-        int numColumns = showSqft ? 9 : 7;
+        int numColumns = showSqft ? 10 : 8;
         PdfPTable itemTable = new PdfPTable(numColumns);
         itemTable.setWidthPercentage(100);
         itemTable.setHeaderRows(1);
         if (showSqft) {
-            itemTable.setWidths(new float[]{3.0f, 12.0f, 8.0f, 11.0f, 23.5f, 11.0f, 8.0f, 7.0f, 16.5f});
+            itemTable.setWidths(new float[]{2.6f, 12.2f, 9.2f, 5.2f, 9.8f, 22.0f, 9.5f, 6.0f, 6.0f, 17.5f});
         } else {
-            itemTable.setWidths(new float[]{3.5f, 15.0f, 8.5f, 12.0f, 37.0f, 7.5f, 16.5f});
+            itemTable.setWidths(new float[]{3.0f, 13.0f, 12.0f, 6.0f, 10.0f, 32.0f, 6.0f, 18.0f});
         }
-        itemTable.setSpacingAfter(6f);
+        itemTable.setSpacingAfter(4f);
 
         // --- TABLE HEADERS ---
         addHeaderCell(itemTable, "#", Element.ALIGN_CENTER, true);
         addHeaderCell(itemTable, "WORK CATEGORY", Element.ALIGN_LEFT, false);
+        addHeaderCell(itemTable, "WORK TYPE", Element.ALIGN_LEFT, false);
         addHeaderCell(itemTable, "ROOM", Element.ALIGN_CENTER, true);
         addHeaderCell(itemTable, "FLOOR", Element.ALIGN_CENTER, true);
         addHeaderCell(itemTable, "MATERIAL", Element.ALIGN_LEFT, false);
@@ -593,6 +594,12 @@ public class QuotationPdfService {
                             activeItemCount++;
 
                             String workCat = safe(itemDto.categoryName());
+                            String workType = safe(itemDto.workTypeName());
+                            if (workType.isBlank() || workType.equals("-")) {
+                                workType = "-";
+                            } else {
+                                workType = workType.toUpperCase();
+                            }
                             String roomName = safe(roomDto.room()).toUpperCase();
                             String floorName = safe(roomDto.floor()).toUpperCase();
                             if (floorName.isBlank()) floorName = "-";
@@ -617,6 +624,7 @@ public class QuotationPdfService {
 
                             addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
                             addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
+                            addBodyCell(itemTable, workType, Element.ALIGN_LEFT, isAltRow, false);
                             addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
                             addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
                             addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(spec), itemDto.imageUrl(), isAltRow);
@@ -654,6 +662,9 @@ public class QuotationPdfService {
 
                     // Work Category
                     String workCat = item.getWorkCategory() != null ? safe(item.getWorkCategory().getName()).toUpperCase() : "-";
+
+                    // Work Type
+                    String workType = QuotationViewGradeService.resolveWorkTypeName(item, workCat).toUpperCase();
 
                     // Room
                     String roomName = safe(room.getRoom()).toUpperCase();
@@ -764,6 +775,7 @@ public class QuotationPdfService {
                     // Add Row Cells (item-level offer price reflected in total amount)
                     addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
                     addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
+                    addBodyCell(itemTable, workType, Element.ALIGN_LEFT, isAltRow, false);
                     addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
                     addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
                     addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
@@ -934,8 +946,8 @@ public class QuotationPdfService {
         // 4. AMOUNT IN WORDS (Matching exact quotation Grand Total)
         // ========================================================
         Paragraph wordsPar = new Paragraph();
-        wordsPar.setSpacingBefore(4f);
-        wordsPar.setSpacingAfter(5f);
+        wordsPar.setSpacingBefore(2f);
+        wordsPar.setSpacingAfter(3f);
         wordsPar.add(new Chunk("AMOUNT IN WORDS - ", new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_NAVY)));
         String wordsText = numberToWordsService.convertRupees(grandTotal).toUpperCase();
         wordsPar.add(new Chunk(wordsText, new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_TEXT_DARK)));
@@ -946,8 +958,8 @@ public class QuotationPdfService {
         // ========================================================
         PdfPTable termsTable = new PdfPTable(1);
         termsTable.setWidthPercentage(100);
-        termsTable.setSpacingBefore(4f);
-        termsTable.setSpacingAfter(14f);
+        termsTable.setSpacingBefore(3f);
+        termsTable.setSpacingAfter(6f);
 
         PdfPCell termsCell = new PdfPCell();
         termsCell.setBackgroundColor(COLOR_LIGHT_BG);
@@ -1196,8 +1208,8 @@ public class QuotationPdfService {
         }
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(4.0f);
-        cell.setPaddingBottom(4.0f);
+        cell.setPaddingTop(3.0f);
+        cell.setPaddingBottom(3.0f);
         cell.setPaddingLeft(2.0f);
         cell.setPaddingRight(2.0f);
         cell.setBorderColor(COLOR_BORDER);
@@ -1219,10 +1231,10 @@ public class QuotationPdfService {
         PdfPCell cell = new PdfPCell();
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(4.5f);
-        cell.setPaddingBottom(4.5f);
-        cell.setPaddingLeft(3.0f);
-        cell.setPaddingRight(3.0f);
+        cell.setPaddingTop(3.0f);
+        cell.setPaddingBottom(3.0f);
+        cell.setPaddingLeft(2.5f);
+        cell.setPaddingRight(2.5f);
         cell.setBorderColor(COLOR_BORDER);
         cell.setBorderWidth(0.5f);
         if (isAltRow) {
@@ -1242,7 +1254,7 @@ public class QuotationPdfService {
         Paragraph namePar = null;
         if (showName) {
             namePar = new Paragraph(safeName.toUpperCase(), mainFont);
-            namePar.setLeading(13.0f);
+            namePar.setLeading(12.0f);
             namePar.setAlignment(Element.ALIGN_LEFT);
         }
 

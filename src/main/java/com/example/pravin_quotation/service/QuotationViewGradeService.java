@@ -162,9 +162,7 @@ public class QuotationViewGradeService {
                 for (QuotationItem item : items) {
                     String sno = roomIndex + "." + itemIndex++;
                     String catName = item.getWorkCategory() != null ? item.getWorkCategory().getName().toUpperCase() : "-";
-                    String workTypeName = item.getItem() != null ? item.getItem().getName()
-                            : (item.getItemDescription() != null ? item.getItemDescription()
-                            : (item.getDivision() != null ? item.getDivision().getName() : "Work Item"));
+                    String workTypeName = resolveWorkTypeName(item, catName);
 
                     String matName = item.getMaterial() != null ? item.getMaterial().getName() : "-";
                     String matOptionName = (item.getMaterialOption() != null
@@ -254,9 +252,7 @@ public class QuotationViewGradeService {
 
                     Long divId = item.getDivision() != null ? item.getDivision().getId()
                             : (item.getMaterial() != null && item.getMaterial().getDivision() != null ? item.getMaterial().getDivision().getId() : null);
-                    String workTypeName = item.getItem() != null ? item.getItem().getName()
-                            : (item.getItemDescription() != null ? item.getItemDescription()
-                            : (item.getDivision() != null ? item.getDivision().getName() : "Work Item"));
+                    String workTypeName = resolveWorkTypeName(item, catName);
 
                     int posInDivision = 0;
                     if (divId != null) {
@@ -536,6 +532,73 @@ public class QuotationViewGradeService {
         totalSqft = totalSqft.setScale(2, RoundingMode.HALF_UP);
         totalAmount = totalAmount.setScale(2, RoundingMode.HALF_UP);
         return new BigDecimal[]{totalSqft, totalAmount};
+    }
+
+    /**
+     * Resolves the canonical Work Type (Division) name for a quotation item.
+     * Prevents repeating the Work Category name when a specific Work Type is present.
+     */
+    public static String resolveWorkTypeName(QuotationItem item, String categoryName) {
+        if (item == null) return "-";
+        String candidate = null;
+
+        // 1. item.division (the canonical Work Type entity in this system)
+        if (item.getDivision() != null && item.getDivision().getName() != null && !item.getDivision().getName().isBlank()) {
+            candidate = item.getDivision().getName().trim();
+        }
+
+        // 2. item.item.division
+        if ((candidate == null || (categoryName != null && candidate.equalsIgnoreCase(categoryName)))
+                && item.getItem() != null && item.getItem().getDivision() != null && item.getItem().getDivision().getName() != null
+                && !item.getItem().getDivision().getName().isBlank()) {
+            candidate = item.getItem().getDivision().getName().trim();
+        }
+
+        // 3. item.material.division
+        if ((candidate == null || (categoryName != null && candidate.equalsIgnoreCase(categoryName)))
+                && item.getMaterial() != null && item.getMaterial().getDivision() != null && item.getMaterial().getDivision().getName() != null
+                && !item.getMaterial().getDivision().getName().isBlank()) {
+            candidate = item.getMaterial().getDivision().getName().trim();
+        }
+
+        // 4. item.material.divisions
+        if ((candidate == null || (categoryName != null && candidate.equalsIgnoreCase(categoryName)))
+                && item.getMaterial() != null && item.getMaterial().getDivisions() != null) {
+            for (Division div : item.getMaterial().getDivisions()) {
+                if (div != null && div.getName() != null && !div.getName().isBlank()) {
+                    if (categoryName == null || !div.getName().equalsIgnoreCase(categoryName)) {
+                        candidate = div.getName().trim();
+                        break;
+                    } else if (candidate == null) {
+                        candidate = div.getName().trim();
+                    }
+                }
+            }
+        }
+
+        // 5. item.item.name
+        if ((candidate == null || (categoryName != null && candidate.equalsIgnoreCase(categoryName)))
+                && item.getItem() != null && item.getItem().getName() != null && !item.getItem().getName().isBlank()) {
+            String iname = item.getItem().getName().trim();
+            if (categoryName == null || !iname.equalsIgnoreCase(categoryName)) {
+                candidate = iname;
+            } else if (candidate == null) {
+                candidate = iname;
+            }
+        }
+
+        // 6. item.itemDescription
+        if ((candidate == null || (categoryName != null && candidate.equalsIgnoreCase(categoryName)))
+                && item.getItemDescription() != null && !item.getItemDescription().isBlank()) {
+            String idesc = item.getItemDescription().trim();
+            if (categoryName == null || !idesc.equalsIgnoreCase(categoryName)) {
+                candidate = idesc;
+            } else if (candidate == null) {
+                candidate = idesc;
+            }
+        }
+
+        return (candidate != null && !candidate.isBlank()) ? candidate : "-";
     }
 
     private String buildDimensionsString(QuotationItem item) {
