@@ -640,8 +640,11 @@ public class EmployeeQuotationController {
             list = Collections.emptyList();
         }
         final PricingMode targetGrade = grade;
-        List<Map<String, Object>> result = list.stream().map(m -> {
+        List<Map<String, Object>> result = new ArrayList<>();
+        int posIndex = 0;
+        for (Material m : list) {
             Map<String, Object> map = new LinkedHashMap<>();
+            map.put("position", posIndex++);
             map.put("id", m.getId());
             map.put("name", m.getName() != null ? m.getName().toUpperCase() : "");
             map.put("description", m.getDescription());
@@ -670,6 +673,13 @@ public class EmployeeQuotationController {
                     ? "Material is inactive"
                     : ((res != null && res.message() != null) ? res.message() : ("No material available in " + gradeLabel + " Grade"));
 
+            String effectiveSpec = (res != null && res.specification() != null && !res.specification().isBlank())
+                    ? res.specification()
+                    : (m.getSpecification() != null && !m.getSpecification().isBlank() ? m.getSpecification().trim() : (m.getDescription() != null ? m.getDescription().trim() : ""));
+            Long effectiveSpecId = res != null ? res.materialSpecificationId() : null;
+
+            map.put("specification", effectiveSpec);
+            map.put("materialSpecificationId", effectiveSpecId);
             map.put("available", isAvailable);
             map.put("rate", resolvedRate);
             map.put("unavailableMessage", isAvailable ? null : unavailableMsg);
@@ -679,8 +689,8 @@ public class EmployeeQuotationController {
             map.put("measurementType", (res != null && res.measurementType() != null) ? res.measurementType().name() : (m.getMeasurementType() != null ? m.getMeasurementType().name() : "SQFT"));
             map.put("coveragePerRoll", m.getCoveragePerRoll());
             map.put("imageUrl", isAvailable ? m.getImageUrl() : null);
-            return map;
-        }).toList();
+            result.add(map);
+        }
 
         if (Boolean.TRUE.equals(onlyAvailable)) {
             result = result.stream()
@@ -799,6 +809,8 @@ public class EmployeeQuotationController {
             resp.put("materialId", res.materialId());
             resp.put("materialOptionId", res.materialOptionId());
             resp.put("materialName", res.materialName());
+            resp.put("specification", res.specification());
+            resp.put("materialSpecificationId", res.materialSpecificationId());
             resp.put("formula", res.formula());
             resp.put("unit", res.unit());
             resp.put("measurementUnit", res.unit());
@@ -812,6 +824,39 @@ public class EmployeeQuotationController {
                     "success", false,
                     "available", false,
                     "message", e.getMessage() != null ? e.getMessage() : "Failed to resolve rate for this branch and grade."
+            ));
+        }
+    }
+
+    @PostMapping({"/builder/switch-grade", "/switch-grade", "/builder/builder/switch-grade"})
+    @ResponseBody
+    public ResponseEntity<?> switchGrade(
+            @RequestBody AdminQuotationBuilderService.SwitchGradeRequest request,
+            Authentication authentication) {
+        try {
+            Long branchId = request.branchId();
+            if (branchId == null && authentication != null) {
+                try {
+                    User employee = getLoggedInEmployee(authentication);
+                    if (employee != null && employee.getBranch() != null) {
+                        branchId = employee.getBranch().getId();
+                    }
+                } catch (Exception ignored) {}
+            }
+            AdminQuotationBuilderService.SwitchGradeResponse resp =
+                    builderService.switchGrade(
+                            branchId,
+                            request.targetGrade(),
+                            request.rooms(),
+                            request.activeDivisionId(),
+                            request.activeFloor(),
+                            request.activeRoom()
+                    );
+            return ResponseEntity.ok(resp);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(mapData(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to switch grade."
             ));
         }
     }
@@ -1102,14 +1147,40 @@ public class EmployeeQuotationController {
         List<QuotationRoom> rooms = (isPrepared && q.getId() != null)
                 ? quotationRoomService.getActiveByQuotationId(q.getId())
                 : Collections.emptyList();
-        List<Map<String, Object>> roomList = new ArrayList<>();
+        if (rooms.isEmpty() && requested != null && requested.getId() != null && !requested.getId().equals(q.getId())) {
+            List<QuotationRoom> reqRooms = quotationRoomService.getActiveByQuotationId(requested.getId());
+            if (!reqRooms.isEmpty()) {
+                rooms = reqRooms;
+                q = requested;
+            }
+        }
+        if (rooms.isEmpty() && parent != null && parent.getId() != null && !parent.getId().equals(q.getId())) {
+            List<QuotationRoom> parentRooms = quotationRoomService.getActiveByQuotationId(parent.getId());
+            if (!parentRooms.isEmpty()) {
+                rooms = parentRooms;
+                q = parent;
+            }
+        }
+
+        Map<String, Map<String, Object>> consolidatedRooms = new LinkedHashMap<>();
         for (QuotationRoom room : rooms) {
-            Map<String, Object> rMap = new LinkedHashMap<>();
-            rMap.put("floor", room.getFloor());
-            rMap.put("room", room.getRoom());
-            rMap.put("workDescription", room.getWorkDescription());
+            String floor = room.getFloor() != null ? room.getFloor().trim() : "Ground Floor";
+            String roomName = room.getRoom() != null ? room.getRoom().trim() : "Room 1";
+            String rKey = floor.toUpperCase() + "||" + roomName.toUpperCase();
+
+            Map<String, Object> rMap = consolidatedRooms.computeIfAbsent(rKey, k -> {
+                Map<String, Object> m = new LinkedHashMap<>();
+                m.put("floor", floor);
+                m.put("room", roomName);
+                m.put("workDescription", room.getWorkDescription());
+                m.put("items", new ArrayList<Map<String, Object>>());
+                return m;
+            });
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> itemList = (List<Map<String, Object>>) rMap.get("items");
+
             List<QuotationItem> items = quotationItemService.getActiveByQuotationRoomId(room.getId());
-            List<Map<String, Object>> itemList = new ArrayList<>();
             for (QuotationItem item : items) {
                 Map<String, Object> iMap = new LinkedHashMap<>();
                 Long catId = item.getWorkCategory() != null ? item.getWorkCategory().getId()
@@ -1135,6 +1206,22 @@ public class EmployeeQuotationController {
                 iMap.put("pricingMode", item.getEffectivePricingMode() != null ? item.getEffectivePricingMode().name() : (q.getPricingMode() != null ? q.getPricingMode().name() : "PREMIUM"));
                 iMap.put("materialSpecificationId", item.getMaterialSpecification() != null ? item.getMaterialSpecification().getId() : null);
                 iMap.put("materialSpecificationName", item.getMaterialSpecification() != null && item.getMaterialSpecification().getName() != null ? item.getMaterialSpecification().getName().toUpperCase() : "");
+                iMap.put("originalMaterialId", item.getMaterial() != null ? item.getMaterial().getId() : null);
+                iMap.put("originalPricingMode", item.getEffectivePricingMode() != null ? item.getEffectivePricingMode().name() : (q.getPricingMode() != null ? q.getPricingMode().name() : "PREMIUM"));
+                iMap.put("originalMaterialName", item.getMaterial() != null && item.getMaterial().getName() != null ? item.getMaterial().getName().toUpperCase() : "");
+                iMap.put("originalSpecification", item.getSpecification() != null ? item.getSpecification() : "");
+                Integer itemPos = null;
+                if (item.getMaterial() != null && divId != null) {
+                    PricingMode originGrade = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : q.getPricingMode();
+                    List<Material> divMats = builderService.getActiveMaterialsForDivisionAndGrade(divId, originGrade, branchId);
+                    for (int mIdx = 0; mIdx < divMats.size(); mIdx++) {
+                        if (item.getMaterial().getId().equals(divMats.get(mIdx).getId())) {
+                            itemPos = mIdx;
+                            break;
+                        }
+                    }
+                }
+                iMap.put("originalPosition", itemPos);
 
                 // Validate rate & availability against current Pricing Mode and Branch
                 boolean rateChanged = false;
@@ -1215,9 +1302,8 @@ public class EmployeeQuotationController {
                 iMap.put("sizes", sizeList);
                 itemList.add(iMap);
             }
-            rMap.put("items", itemList);
-            roomList.add(rMap);
         }
+        List<Map<String, Object>> roomList = new ArrayList<>(consolidatedRooms.values());
         data.put("rooms", roomList);
         if (quotationCalculationService != null && q.getId() != null) {
             java.util.Map<PricingMode, BigDecimal> gradeSubtotals = quotationCalculationService.calculateGradeSubtotals(q.getId());
@@ -3756,10 +3842,14 @@ public class EmployeeQuotationController {
             log.error("Employee {} failed to delete quotation ID {}: {}",
                     authentication != null ? authentication.getName() : "unknown", id, e.getMessage(), e);
 
+            String errorMsg = e.getMessage();
+            if (errorMsg == null || errorMsg.isBlank() || errorMsg.contains("could not execute statement") || errorMsg.contains("foreign key constraint fails")) {
+                errorMsg = "An error occurred while deleting the quotation. Please try again.";
+            }
+
             redirectAttributes.addFlashAttribute(
                     "errorMessage",
-                    "Unable to delete quotation: "
-                            + e.getMessage()
+                    "Unable to delete quotation: " + errorMsg
             );
         }
 

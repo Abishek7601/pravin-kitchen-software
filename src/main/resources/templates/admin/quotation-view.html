@@ -1009,26 +1009,31 @@
     </section>
 
     <!-- BOTTOM ACTION BUTTONS (Quotation Actions) -->
-    <div class="quotation-bottom-actions-bar">
+    <div class="quotation-bottom-actions-bar" style="display: flex !important; flex-direction: row !important; align-items: center !important; justify-content: flex-end !important; gap: 12px !important; flex-wrap: wrap;">
         <a th:href="@{/admin/quotations/builder(quotationId=${quotation.id})}"
            class="btn-grade-edit"
+           style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
            title="Edit in Quotation Builder">✏ Edit Quote</a>
         <a th:href="@{/admin/quotations/pdf/{id}(id=${quotation.id})}"
            target="_blank"
            class="btn-grade-pdf"
+           style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
            title="Download Quotation PDF">↓ Download PDF</a>
         <button type="button"
                 class="btn-grade-whatsapp"
+                style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
                 th:data-id="${quotation.id}"
                 th:data-number="${quotation.quotationNumber}"
                 th:data-name="${quotation.customer != null ? quotation.customer.name : ''}"
                 onclick="openWhatsApp(this)"
                 title="Share Quotation via WhatsApp">💬 Share WhatsApp</button>
         <form th:action="@{/admin/quotations/email/{id}(id=${quotation.id})}"
-              method="post" onsubmit="return handleAsyncEmailSubmit(event, this);">
+              method="post" onsubmit="return handleAsyncEmailSubmit(event, this);"
+              style="margin: 0 !important; padding: 0 !important; display: inline-flex !important; align-items: center !important; width: auto !important; flex: 0 0 auto !important;">
             <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}"/>
             <button type="submit"
                     class="btn-grade-email"
+                    style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
                     title="Email PDF to Customer">✉ Send Email</button>
         </form>
     </div>

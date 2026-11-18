@@ -178,7 +178,7 @@
             </td>
 
             <td>
-                <span th:if="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != ''}">
+                <span th:if="${quotation.pricingModeDisplay != null and quotation.pricingModeDisplay != '' and quotation.pricingModeDisplay != 'Multi-Grade'}">
                     <span class="pricing-badge"
                           th:if="${quotation.selectedGrade != null}"
                           style="background: #eaf5f1; color: #13795b; font-weight: 700; border: 1px solid #c2e5d9; padding: 4px 10px; border-radius: 6px; font-size: 11.5px; display: inline-block; white-space: nowrap;"
@@ -243,7 +243,7 @@
                           th:text="'(' + ${quotation.selectedGrade} + ')'"></span>
                     <span th:unless="${quotation.selectedGrade != null}"
                           style="display: block; font-size: 11px; color: #64748b; font-weight: 500;">
-                        (Multi-Grade)
+                        Not Confirmed
                     </span>
                 </span>
                 <span th:unless="${quotation.isMultiGrade()}">
@@ -673,6 +673,7 @@
 <script th:src="@{/js/employee-session.js}"></script>
 </body>
 </html>
+
 
 
 

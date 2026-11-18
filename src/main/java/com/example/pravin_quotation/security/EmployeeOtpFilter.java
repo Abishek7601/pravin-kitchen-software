@@ -51,7 +51,8 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                 SecurityContextHolder.getContext().getAuthentication();
 
         if (authentication != null
-                && authentication.isAuthenticated()) {
+                && authentication.isAuthenticated()
+                && !(authentication instanceof org.springframework.security.authentication.AnonymousAuthenticationToken)) {
 
             boolean isEmployee = authentication.getAuthorities()
                     .stream()
@@ -84,7 +85,7 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
 
                 if (!staticResource && !loginPage && !forgotPasswordPage) {
 
-                    HttpSession session = request.getSession(false);
+                    HttpSession session = request.getSession(true);
 
                     // =========================================================
                     // 1. HARD DEADLINE: 8:00 PM IST AUTO-LOGOUT ENFORCEMENT
@@ -149,7 +150,7 @@ public class EmployeeOtpFilter extends OncePerRequestFilter {
                 // =========================================================
                 if (!staticResource && !loginPage) {
 
-                    HttpSession session = request.getSession(false);
+                    HttpSession session = request.getSession(true);
 
                     boolean adminOtpPage = requestUri.equals("/admin/otp");
                     boolean adminOtpSend = requestUri.equals("/admin/otp/send");

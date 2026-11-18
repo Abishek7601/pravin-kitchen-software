@@ -18,7 +18,7 @@ public class EmployeeDailyOtpVerificationService {
 
     private static final Logger log = LoggerFactory.getLogger(EmployeeDailyOtpVerificationService.class);
 
-    public static final LocalTime WINDOW_START_TIME_IST = LocalTime.of(9, 0, 0);  // 9:00 AM IST
+    public static final LocalTime WINDOW_START_TIME_IST = LocalTime.of(0, 0, 0);  // 00:00:00 IST (start of day)
     public static final LocalTime WINDOW_END_TIME_IST = LocalTime.of(20, 0, 0);    // 8:00 PM IST
 
     private final EmployeeDailyOtpVerificationRepository repository;

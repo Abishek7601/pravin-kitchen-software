@@ -1,5 +1,7 @@
 package com.example.pravin_quotation.service;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
 import com.example.pravin_quotation.util.TitleCaseUtils;
@@ -10,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.util.List;
+import java.util.*;
 
 @Service
 public class AdminQuotationBuilderService {
@@ -109,15 +111,84 @@ public class AdminQuotationBuilderService {
             String imageUrl,
             BigDecimal coveragePerRoll,
             boolean available,
-            String message
+            String message,
+            String specification,
+            Long materialSpecificationId
     ) {
+        public ResolvedMaterialRate(
+                Long materialId,
+                Long materialOptionId,
+                String materialName,
+                BigDecimal rate,
+                String formula,
+                String unit,
+                MeasurementType measurementType,
+                String imageUrl,
+                BigDecimal coveragePerRoll,
+                boolean available,
+                String message
+        ) {
+            this(materialId, materialOptionId, materialName, rate, formula, unit, measurementType, imageUrl, coveragePerRoll, available, message, null, null);
+        }
+
         public static ResolvedMaterialRate unavailable(String message) {
-            return new ResolvedMaterialRate(null, null, null, null, null, null, null, null, null, false, message);
+            return new ResolvedMaterialRate(null, null, null, null, null, null, null, null, null, false, message, null, null);
         }
 
         public static ResolvedMaterialRate unavailable(Long materialId, String materialName, String message) {
-            return new ResolvedMaterialRate(materialId, null, materialName, null, null, null, null, null, null, false, message);
+            return new ResolvedMaterialRate(materialId, null, materialName, null, null, null, null, null, null, false, message, null, null);
         }
+    }
+
+    public List<Material> getActiveMaterialsForDivisionAndGrade(Long divisionId, PricingMode targetGrade, Long branchId) {
+        if (divisionId == null || targetGrade == null || materialRepository == null) {
+            return Collections.emptyList();
+        }
+        List<Material> result = new ArrayList<>();
+        List<Material> gradeMats = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
+        if (gradeMats != null) {
+            for (Material m : gradeMats) {
+                if (m != null && Boolean.TRUE.equals(m.getActive()) && !result.contains(m)) {
+                    result.add(m);
+                }
+            }
+        }
+        List<Material> allInDiv = materialRepository.findActiveByDivisionId(divisionId);
+        if (allInDiv != null) {
+            for (Material m : allInDiv) {
+                if (m != null && Boolean.TRUE.equals(m.getActive()) && !result.contains(m)) {
+                    if (m.getPricingGrade() == targetGrade) {
+                        result.add(m);
+                    } else if (m.getPricingGrade() == null && hasPositiveRateForGrade(branchId, m, targetGrade)) {
+                        result.add(m);
+                    }
+                }
+            }
+        }
+        if (result.isEmpty()) {
+            List<Material> fallback = materialRepository.findAllByDivisionIdAndPricingGrade(divisionId, targetGrade);
+            if (fallback != null) {
+                for (Material m : fallback) {
+                    if (m != null && Boolean.TRUE.equals(m.getActive()) && !result.contains(m)) {
+                        result.add(m);
+                    }
+                }
+            }
+        }
+        // Explicit sort by displayOrder ASC, id ASC to guarantee deterministic position order
+        result.sort(Comparator.comparing((Material m) -> m.getDisplayOrder() != null ? m.getDisplayOrder() : 0)
+                .thenComparing((Material m) -> m.getId() != null ? m.getId() : 0L));
+        return result;
+    }
+
+    public Material findMaterialByPosition(List<Material> materials, Integer position) {
+        if (materials == null || materials.isEmpty() || position == null || position < 0) {
+            return null;
+        }
+        if (position < materials.size()) {
+            return materials.get(position);
+        }
+        return null; // Position does not exist in target grade! Never fallback or reuse!
     }
 
     @Transactional(readOnly = true)
@@ -127,6 +198,17 @@ public class AdminQuotationBuilderService {
             Long materialId,
             Long materialOptionId,
             PricingMode targetGrade) {
+        return resolveMaterialAndRate(branchId, divisionId, materialId, materialOptionId, targetGrade, null);
+    }
+
+    @Transactional(readOnly = true)
+    public ResolvedMaterialRate resolveMaterialAndRate(
+            Long branchId,
+            Long divisionId,
+            Long materialId,
+            Long materialOptionId,
+            PricingMode targetGrade,
+            Integer position) {
 
         if (targetGrade == null) {
             return ResolvedMaterialRate.unavailable("Pricing grade is required.");
@@ -146,14 +228,6 @@ public class AdminQuotationBuilderService {
             materialId = mat.getId();
         }
 
-        if (mat == null) {
-            return ResolvedMaterialRate.unavailable("Selected material not found.");
-        }
-
-        if (!Boolean.TRUE.equals(mat.getActive())) {
-            return ResolvedMaterialRate.unavailable(mat.getId(), mat.getName(), "Material '" + mat.getName() + "' is inactive.");
-        }
-
         if (divisionId == null && mat != null) {
             if (mat.getDivision() != null) {
                 divisionId = mat.getDivision().getId();
@@ -164,146 +238,136 @@ public class AdminQuotationBuilderService {
             }
         }
 
-        Branch branch = null;
-        if (branchId != null) {
-            branch = branchRepository.findById(branchId).orElse(null);
+        String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
+        String divName = "";
+        if (divisionId != null && divisionRepository != null) {
+            divName = divisionRepository.findById(divisionId).map(Division::getName).orElse("");
+        }
+
+        List<Material> targetCandidates = getActiveMaterialsForDivisionAndGrade(divisionId, targetGrade, branchId);
+
+        // If position is not explicitly provided, determine position from source material in its source grade
+        if (position == null && mat != null && divisionId != null) {
+            PricingMode sourceGrade = mat.getPricingGrade() != null ? mat.getPricingGrade() : PricingMode.PREMIUM;
+            List<Material> sourceMats = getActiveMaterialsForDivisionAndGrade(divisionId, sourceGrade, branchId);
+            for (int i = 0; i < sourceMats.size(); i++) {
+                if (mat.getId().equals(sourceMats.get(i).getId())) {
+                    position = i;
+                    break;
+                }
+            }
+        }
+
+        Material effectiveMat = null;
+        if (position != null && position >= 0) {
+            effectiveMat = findMaterialByPosition(targetCandidates, position);
+        } else if (mat != null && mat.getPricingGrade() == targetGrade) {
+            effectiveMat = mat;
+        }
+
+        if (effectiveMat == null) {
+            String posHint = (position != null) ? " (Position " + (position + 1) + ")" : "";
+            String msg = "No material available in " + gradeLabel + " Grade" + (!divName.isBlank() ? (" for " + divName) : "") + posHint + ".";
+            return ResolvedMaterialRate.unavailable(null, "Material Unavailable (" + gradeLabel + " Grade)", msg);
+        }
+
+        if (!Boolean.TRUE.equals(effectiveMat.getActive())) {
+            return ResolvedMaterialRate.unavailable(effectiveMat.getId(), effectiveMat.getName(), "Material '" + effectiveMat.getName() + "' is inactive.");
+        }
+
+        MaterialOption effectiveOpt = null;
+        List<MaterialOption> cpOpts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(effectiveMat.getId());
+        if (cpOpts.isEmpty()) {
+            cpOpts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(effectiveMat.getId());
+        }
+        if (!cpOpts.isEmpty()) {
+            if (opt != null && opt.getName() != null) {
+                effectiveOpt = cpOpts.stream()
+                        .filter(o -> o.getName() != null && o.getName().trim().equalsIgnoreCase(opt.getName().trim()))
+                        .findFirst()
+                        .orElse(cpOpts.get(0));
+            } else {
+                effectiveOpt = cpOpts.get(0);
+            }
         }
 
         BigDecimal matchedRate = null;
-
-        // 1. Direct option match if materialOption is provided
-        if (opt != null) {
-            Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(opt.getId(), targetGrade).orElse(null);
+        if (effectiveOpt != null) {
+            Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(effectiveOpt.getId(), targetGrade).orElse(null);
             if (p != null && Boolean.TRUE.equals(p.getActive())) {
-                BigDecimal r = resolveRateFromPricing(branchId, p);
-                if (r != null && r.compareTo(BigDecimal.ZERO) > 0) {
-                    matchedRate = r;
-                }
+                matchedRate = resolveRateFromPricing(branchId, p);
             }
         }
-
-        // 2. Direct material match across all options belonging to this material
-        if (matchedRate == null && mat != null) {
-            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(mat.getId());
-            if (opts.isEmpty()) {
-                opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
-            }
-            for (MaterialOption o : opts) {
-                Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(o.getId(), targetGrade).orElse(null);
-                if (p != null && Boolean.TRUE.equals(p.getActive())) {
-                    BigDecimal r = resolveRateFromPricing(branchId, p);
-                    if (r != null && r.compareTo(BigDecimal.ZERO) > 0) {
-                        matchedRate = r;
-                        break;
-                    }
-                }
-            }
-        }
-
-        // 3. Direct rate on mat itself if mat's pricingGrade matches targetGrade
-        if (matchedRate == null && mat != null && mat.getPricingGrade() == targetGrade && mat.getRate() != null && mat.getRate().compareTo(BigDecimal.ZERO) > 0) {
-            matchedRate = money(mat.getRate());
-        }
-
-        Material counterpart = null;
-        // 4. Exact counterpart match in the same division (Work Type) for targetGrade
-        if (matchedRate == null && divisionId != null && mat != null) {
-            List<Material> candidates = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
-            if (candidates.isEmpty()) {
-                candidates = materialRepository.findAllByDivisionIdAndPricingGrade(divisionId, targetGrade);
-            }
-            if (candidates.isEmpty()) {
-                List<Material> allInDiv = materialRepository.findActiveByDivisionId(divisionId);
-                candidates = allInDiv.stream()
-                        .filter(m -> m.getPricingGrade() == targetGrade || (m.getPricingGrade() == null && hasPositiveRateForGrade(m, targetGrade)))
-                        .toList();
-            }
-            candidates = candidates.stream().filter(m -> Boolean.TRUE.equals(m.getActive())).toList();
-
-            counterpart = findExactCounterpart(mat, candidates);
-            if (counterpart != null) {
-                List<MaterialOption> cpOpts = materialOptionRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(counterpart.getId());
-                if (cpOpts.isEmpty()) {
-                    cpOpts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(counterpart.getId());
-                }
-                MaterialOption bestCpOpt = null;
-                if (!cpOpts.isEmpty()) {
-                    if (opt != null && opt.getName() != null) {
-                        bestCpOpt = cpOpts.stream()
-                                .filter(o -> o.getName() != null && o.getName().trim().equalsIgnoreCase(opt.getName().trim()))
-                                .findFirst()
-                                .orElse(cpOpts.get(0));
-                    } else {
-                        bestCpOpt = cpOpts.get(0);
-                    }
-                }
-
-                if (bestCpOpt != null) {
-                    Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(bestCpOpt.getId(), targetGrade).orElse(null);
-                    if (p != null && Boolean.TRUE.equals(p.getActive())) {
-                        BigDecimal r = resolveRateFromPricing(branchId, p);
-                        if (r != null && r.compareTo(BigDecimal.ZERO) > 0) {
-                            matchedRate = r;
-                        }
-                    }
-                }
-
-                if (matchedRate == null && counterpart.getRate() != null && counterpart.getRate().compareTo(BigDecimal.ZERO) > 0) {
-                    matchedRate = money(counterpart.getRate());
-                }
-            }
-        }
-
-        // 5. Fallback check on mat's options even if mat had a different pricingGrade tag
-        if (matchedRate == null && mat != null) {
-            List<MaterialOption> opts = materialOptionRepository.findByMaterialIdOrderByDisplayOrderAsc(mat.getId());
-            for (MaterialOption o : opts) {
-                Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(o.getId(), targetGrade).orElse(null);
-                if (p != null && Boolean.TRUE.equals(p.getActive())) {
-                    BigDecimal r = resolveRateFromPricing(branchId, p);
-                    if (r != null && r.compareTo(BigDecimal.ZERO) > 0) {
-                        matchedRate = r;
-                        break;
-                    }
-                }
-            }
-        }
-
-        String matName = mat != null ? mat.getName() : "selected material";
         if (matchedRate == null) {
-            String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
-            return ResolvedMaterialRate.unavailable(
-                    mat != null ? mat.getId() : null,
-                    matName,
-                    "No material available in " + gradeLabel + " Grade"
-            );
+            for (MaterialOption o : cpOpts) {
+                Pricing p = pricingRepository.findByMaterialOptionIdAndPricingMode(o.getId(), targetGrade).orElse(null);
+                if (p != null && Boolean.TRUE.equals(p.getActive())) {
+                    matchedRate = resolveRateFromPricing(branchId, p);
+                    if (matchedRate != null) {
+                        effectiveOpt = o;
+                        break;
+                    }
+                }
+            }
+        }
+        if (matchedRate == null && effectiveMat.getRate() != null && effectiveMat.getRate().compareTo(BigDecimal.ZERO) > 0) {
+            matchedRate = money(effectiveMat.getRate());
         }
 
-        // ALWAYS preserve the original material entity and ID! Only rate is updated for the target grade.
-        Material effectiveMat = mat;
-        MaterialOption effectiveOpt = opt;
+        if (matchedRate == null) {
+            String msg = "No branch rate configured for " + effectiveMat.getName() + " in " + gradeLabel + " Grade. Please configure a rate.";
+            return ResolvedMaterialRate.unavailable(effectiveMat.getId(), effectiveMat.getName(), msg);
+        }
 
-        String formula = (effectiveMat != null && effectiveMat.getFormula() != null && !effectiveMat.getFormula().isBlank() && !"(L + W) × H".equals(effectiveMat.getFormula()))
+        String effectiveMatName = effectiveMat.getName();
+        String formula = (effectiveMat.getFormula() != null && !effectiveMat.getFormula().isBlank() && !"(L + W) × H".equals(effectiveMat.getFormula()))
                 ? effectiveMat.getFormula()
                 : ((effectiveOpt != null && effectiveOpt.getFormula() != null && !effectiveOpt.getFormula().isBlank())
                         ? effectiveOpt.getFormula()
                         : "(L + W) × H");
 
         MeasurementType measurementType = resolveEffectiveMeasurementType(effectiveMat);
-        String unit = (effectiveMat != null && effectiveMat.getUnit() != null && !effectiveMat.getUnit().isBlank())
+        String unit = (effectiveMat.getUnit() != null && !effectiveMat.getUnit().isBlank())
                 ? effectiveMat.getUnit()
                 : (measurementType == MeasurementType.ROLL ? "Roll" : (measurementType == MeasurementType.QUANTITY ? "Quantity" : (measurementType == MeasurementType.FILES ? "Files" : "Sq.ft")));
 
-        BigDecimal coverage = (effectiveMat != null && effectiveMat.getCoveragePerRoll() != null)
-                ? effectiveMat.getCoveragePerRoll()
-                : (counterpart != null ? counterpart.getCoveragePerRoll() : null);
+        BigDecimal coverage = effectiveMat.getCoveragePerRoll();
+        String imageUrl = effectiveMat.getImageUrl();
 
-        String imageUrl = effectiveMat != null ? effectiveMat.getImageUrl() : null;
+        String effectiveSpec = null;
+        Long effectiveSpecId = null;
+
+        if (effectiveOpt != null && materialSpecificationRepository != null) {
+            List<MaterialSpecification> optSpecs = materialSpecificationRepository.findByMaterialOptionIdAndActiveTrueOrderByDisplayOrderAsc(effectiveOpt.getId());
+            if (optSpecs != null && !optSpecs.isEmpty()) {
+                MaterialSpecification s = optSpecs.get(0);
+                effectiveSpec = s.getName() != null && !s.getName().isBlank() ? s.getName().trim() : s.getDescription();
+                effectiveSpecId = s.getId();
+            }
+        }
+        if ((effectiveSpec == null || effectiveSpec.isBlank()) && materialSpecificationRepository != null) {
+            List<MaterialSpecification> matSpecs = materialSpecificationRepository.findByMaterialIdAndActiveTrueOrderByDisplayOrderAsc(effectiveMat.getId());
+            if (matSpecs != null && !matSpecs.isEmpty()) {
+                MaterialSpecification s = matSpecs.get(0);
+                effectiveSpec = s.getName() != null && !s.getName().isBlank() ? s.getName().trim() : s.getDescription();
+                effectiveSpecId = s.getId();
+            }
+        }
+        if ((effectiveSpec == null || effectiveSpec.isBlank()) && effectiveMat.getSpecification() != null && !effectiveMat.getSpecification().isBlank()) {
+            effectiveSpec = effectiveMat.getSpecification().trim();
+        }
+        if ((effectiveSpec == null || effectiveSpec.isBlank()) && effectiveOpt != null && effectiveOpt.getDescription() != null && !effectiveOpt.getDescription().isBlank()) {
+            effectiveSpec = effectiveOpt.getDescription().trim();
+        }
+        if ((effectiveSpec == null || effectiveSpec.isBlank()) && effectiveMat.getDescription() != null && !effectiveMat.getDescription().isBlank()) {
+            effectiveSpec = effectiveMat.getDescription().trim();
+        }
+        if (effectiveSpec == null) effectiveSpec = "";
 
         return new ResolvedMaterialRate(
-                effectiveMat != null ? effectiveMat.getId() : null,
+                effectiveMat.getId(),
                 effectiveOpt != null ? effectiveOpt.getId() : null,
-                matName,
+                effectiveMatName,
                 matchedRate,
                 formula,
                 unit,
@@ -311,7 +375,9 @@ public class AdminQuotationBuilderService {
                 imageUrl,
                 coverage,
                 true,
-                null
+                null,
+                effectiveSpec,
+                effectiveSpecId
         );
     }
 
@@ -365,6 +431,19 @@ public class AdminQuotationBuilderService {
         return null;
     }
 
+    public String extractSubtypeToken(String name) {
+        if (name == null) return null;
+        String lower = name.toLowerCase();
+        if (lower.contains("partition")) return "partition";
+        if (lower.contains("box")) return "box";
+        if (lower.contains("carcass")) return "carcass";
+        if (lower.contains("drawer")) return "drawer";
+        if (lower.contains("fluted") || lower.contains("louver")) return "fluted";
+        if (lower.contains("cove")) return "cove";
+        if (lower.contains("cornice")) return "cornice";
+        return null;
+    }
+
     private Material findExactCounterpart(Material source, List<Material> candidates) {
         if (source == null || candidates == null || candidates.isEmpty()) {
             return null;
@@ -395,13 +474,57 @@ public class AdminQuotationBuilderService {
             }
         }
 
+        // 3. Shared item match (if both materials belong to the same parent Item)
+        if (source.getItem() != null && source.getItem().getId() != null) {
+            for (Material c : candidates) {
+                if (resolveEffectiveMeasurementType(c) == sourceType
+                        && c.getItem() != null && source.getItem().getId().equals(c.getItem().getId())) {
+                    return c;
+                }
+            }
+        }
+
+        // 4. Subtype / structural keyword match (e.g. "box type" / "box" vs "partition type" / "partition")
+        String sourceSubtype = extractSubtypeToken(sourceName);
+        if (sourceSubtype != null) {
+            for (Material c : candidates) {
+                if (resolveEffectiveMeasurementType(c) == sourceType && c.getName() != null) {
+                    String candidateSubtype = extractSubtypeToken(c.getName());
+                    if (sourceSubtype.equals(candidateSubtype)) {
+                        return c;
+                    }
+                }
+            }
+            // If source has a distinct subtype (like "partition"), but NO candidate shares it,
+            // strictly DO NOT match! It has no counterpart in this target grade.
+            return null;
+        }
+
+        // 5. If division has only 1 active material in sourceGrade AND only 1 candidate in targetGrade,
+        // and neither has a conflicting subtype token:
+        if (candidates.size() == 1) {
+            Material singleCandidate = candidates.get(0);
+            String candidateSubtype = extractSubtypeToken(singleCandidate.getName());
+            if (candidateSubtype == null && resolveEffectiveMeasurementType(singleCandidate) == sourceType) {
+                Long divId = (source.getDivision() != null) ? source.getDivision().getId() : null;
+                if (divId != null && source.getPricingGrade() != null) {
+                    List<Material> sourceDivMats = materialRepository.findActiveByDivisionIdAndPricingGrade(divId, source.getPricingGrade());
+                    if (sourceDivMats != null && sourceDivMats.size() == 1) {
+                        return singleCandidate;
+                    }
+                } else {
+                    return singleCandidate;
+                }
+            }
+        }
+
         return null;
     }
 
     private String normalizeMaterialName(String name) {
         if (name == null) return "";
         return name.toLowerCase()
-                .replaceAll("\\b(premium|middle|economy)\\b", "")
+                .replaceAll("\\b(premium|middle|economy|standard)\\b", "")
                 .replace("laminmation", "lamination")
                 .replace("laminates", "lamination")
                 .replace("laminate", "lamination")
@@ -797,11 +920,17 @@ public class AdminQuotationBuilderService {
 
             for (ItemRequest itemRequest : roomRequest.items()) {
                 if (itemRequest == null) continue;
-                if (itemRequest.materialId() == null) {
-                    if (isAutoSave) continue;
-                }
 
                 Material material = itemRequest.materialId() != null ? materialRepository.findById(itemRequest.materialId()).orElse(null) : null;
+                if (material == null && itemRequest.originalMaterialId() != null) {
+                    material = materialRepository.findById(itemRequest.originalMaterialId()).orElse(null);
+                }
+                if (material == null && itemRequest.divisionId() != null) {
+                    List<Material> divMats = materialRepository.findActiveByDivisionId(itemRequest.divisionId());
+                    if (divMats != null && !divMats.isEmpty()) {
+                        material = divMats.get(0);
+                    }
+                }
                 if (material == null) {
                     if (isAutoSave) continue;
                     throw new IllegalArgumentException("Material not found.");
@@ -1208,7 +1337,11 @@ public class AdminQuotationBuilderService {
                 // Check duplicate phone across other customers
                 java.util.Optional<Customer> existingByPhone = customerRepository.findByPhone(phone);
                 if (existingByPhone.isPresent() && !existingByPhone.get().getId().equals(existingCustomer.getId())) {
-                    throw new IllegalArgumentException("Phone number already exists: A customer with phone number " + phone + " is already registered.");
+                    if (request.id() == null) {
+                        existingCustomer = existingByPhone.get();
+                    } else {
+                        throw new IllegalArgumentException("Phone number already exists: A customer with phone number " + phone + " is already registered.");
+                    }
                 }
 
                 // Check duplicate email across other customers if provided
@@ -1216,7 +1349,11 @@ public class AdminQuotationBuilderService {
                     String lowerEmail = email.toLowerCase().trim();
                     java.util.Optional<Customer> existingByEmail = customerRepository.findByEmail(lowerEmail);
                     if (existingByEmail.isPresent() && !existingByEmail.get().getId().equals(existingCustomer.getId())) {
-                        throw new IllegalArgumentException("Email address already exists: A customer with email " + lowerEmail + " is already registered.");
+                        if (request.id() == null) {
+                            existingCustomer = existingByEmail.get();
+                        } else {
+                            throw new IllegalArgumentException("Email address already exists: A customer with email " + lowerEmail + " is already registered.");
+                        }
                     }
                 }
 
@@ -1742,6 +1879,7 @@ public class AdminQuotationBuilderService {
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record RoomRequest(
             String floor,
             String room,
@@ -1749,11 +1887,14 @@ public class AdminQuotationBuilderService {
             List<ItemRequest> items) {
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record ItemRequest(
+            @JsonAlias({"categoryId", "workCategoryId"})
             Long workCategoryId,
             Long divisionId,
             Long itemId,
             Long materialId,
+            String materialName,
             Long materialOptionId,
             Long materialSpecificationId,
             String itemDescription,
@@ -1764,7 +1905,56 @@ public class AdminQuotationBuilderService {
             String imageUrl,
             BigDecimal rate,
             BigDecimal coveragePerRoll,
-            PricingMode pricingMode) {
+            PricingMode pricingMode,
+            Long originalMaterialId,
+            PricingMode originalPricingMode,
+            String originalMaterialName,
+            String originalSpecification,
+            @JsonAlias({"position", "materialPosition", "itemPosition"})
+            Integer originalPosition) {
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                String materialName,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes,
+                MeasurementType measurementType,
+                BigDecimal quantity,
+                String imageUrl,
+                BigDecimal rate,
+                BigDecimal coveragePerRoll,
+                PricingMode pricingMode,
+                Long originalMaterialId,
+                PricingMode originalPricingMode,
+                String originalMaterialName,
+                String originalSpecification) {
+            this(workCategoryId, divisionId, itemId, materialId, materialName, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, coveragePerRoll, pricingMode, originalMaterialId, originalPricingMode, originalMaterialName, originalSpecification, null);
+        }
+
+        public ItemRequest(
+                Long workCategoryId,
+                Long divisionId,
+                Long itemId,
+                Long materialId,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String itemDescription,
+                String specification,
+                List<SizeRequest> sizes,
+                MeasurementType measurementType,
+                BigDecimal quantity,
+                String imageUrl,
+                BigDecimal rate,
+                BigDecimal coveragePerRoll,
+                PricingMode pricingMode) {
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, coveragePerRoll, pricingMode, null, null, null, null, null);
+        }
 
         public ItemRequest(
                 Long workCategoryId,
@@ -1781,7 +1971,7 @@ public class AdminQuotationBuilderService {
                 String imageUrl,
                 BigDecimal rate,
                 BigDecimal coveragePerRoll) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, coveragePerRoll, null);
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, coveragePerRoll, null, null, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1798,7 +1988,7 @@ public class AdminQuotationBuilderService {
                 BigDecimal quantity,
                 String imageUrl,
                 BigDecimal rate) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, rate, null, null, null, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1814,7 +2004,7 @@ public class AdminQuotationBuilderService {
                 MeasurementType measurementType,
                 BigDecimal quantity,
                 String imageUrl) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, measurementType, quantity, imageUrl, null, null, null, null, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1827,7 +2017,7 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, materialSpecificationId, itemDescription, specification, sizes, null, null, null, null, null, null, null, null, null, null, null);
         }
 
         public ItemRequest(
@@ -1839,14 +2029,406 @@ public class AdminQuotationBuilderService {
                 String itemDescription,
                 String specification,
                 List<SizeRequest> sizes) {
-            this(workCategoryId, divisionId, itemId, materialId, materialOptionId, null, itemDescription, specification, sizes, null, null, null, null, null);
+            this(workCategoryId, divisionId, itemId, materialId, null, materialOptionId, null, itemDescription, specification, sizes, null, null, null, null, null, null, null, null, null, null, null);
         }
     }
 
+    @JsonIgnoreProperties(ignoreUnknown = true)
     public record SizeRequest(
             BigDecimal length,
             BigDecimal width,
             BigDecimal height,
             BigDecimal offerPrice) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SwitchGradeRequest(
+            Long branchId,
+            PricingMode targetGrade,
+            List<RoomRequest> rooms,
+            Long activeDivisionId,
+            String activeFloor,
+            String activeRoom) {
+
+        public SwitchGradeRequest(Long branchId, PricingMode targetGrade, List<RoomRequest> rooms) {
+            this(branchId, targetGrade, rooms, null, null, null);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SwitchGradeItemResponse(
+            Long workCategoryId,
+            String categoryName,
+            Long divisionId,
+            String divisionName,
+            Long itemId,
+            Long materialId,
+            String materialName,
+            Long materialOptionId,
+            Long materialSpecificationId,
+            String specification,
+            String itemDescription,
+            String formula,
+            String unit,
+            String measurementType,
+            BigDecimal coveragePerRoll,
+            String imageUrl,
+            BigDecimal rate,
+            PricingMode pricingMode,
+            boolean rateUnavailable,
+            String unavailableMessage,
+            BigDecimal quantity,
+            BigDecimal calculatedSqft,
+            BigDecimal lineAmount,
+            List<SizeRequest> sizes,
+            Long originalMaterialId,
+            PricingMode originalPricingMode,
+            String originalMaterialName,
+            String originalSpecification,
+            Integer originalPosition) {
+
+        public SwitchGradeItemResponse(
+                Long workCategoryId,
+                String categoryName,
+                Long divisionId,
+                String divisionName,
+                Long itemId,
+                Long materialId,
+                String materialName,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String specification,
+                String itemDescription,
+                String formula,
+                String unit,
+                String measurementType,
+                BigDecimal coveragePerRoll,
+                String imageUrl,
+                BigDecimal rate,
+                PricingMode pricingMode,
+                boolean rateUnavailable,
+                String unavailableMessage,
+                BigDecimal quantity,
+                BigDecimal calculatedSqft,
+                BigDecimal lineAmount,
+                List<SizeRequest> sizes,
+                Long originalMaterialId,
+                PricingMode originalPricingMode,
+                String originalMaterialName,
+                String originalSpecification) {
+            this(workCategoryId, categoryName, divisionId, divisionName, itemId, materialId, materialName, materialOptionId, materialSpecificationId, specification, itemDescription, formula, unit, measurementType, coveragePerRoll, imageUrl, rate, pricingMode, rateUnavailable, unavailableMessage, quantity, calculatedSqft, lineAmount, sizes, originalMaterialId, originalPricingMode, originalMaterialName, originalSpecification, null);
+        }
+
+        public SwitchGradeItemResponse(
+                Long workCategoryId,
+                String categoryName,
+                Long divisionId,
+                String divisionName,
+                Long itemId,
+                Long materialId,
+                String materialName,
+                Long materialOptionId,
+                Long materialSpecificationId,
+                String specification,
+                String itemDescription,
+                String formula,
+                String unit,
+                String measurementType,
+                BigDecimal coveragePerRoll,
+                String imageUrl,
+                BigDecimal rate,
+                PricingMode pricingMode,
+                boolean rateUnavailable,
+                String unavailableMessage,
+                BigDecimal quantity,
+                BigDecimal calculatedSqft,
+                BigDecimal lineAmount,
+                List<SizeRequest> sizes) {
+            this(workCategoryId, categoryName, divisionId, divisionName, itemId, materialId, materialName, materialOptionId, materialSpecificationId, specification, itemDescription, formula, unit, measurementType, coveragePerRoll, imageUrl, rate, pricingMode, rateUnavailable, unavailableMessage, quantity, calculatedSqft, lineAmount, sizes, null, null, null, null, null);
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SwitchGradeRoomResponse(
+            String key,
+            String floor,
+            String room,
+            String workDescription,
+            List<SwitchGradeItemResponse> items) {
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SwitchGradeResponse(
+            boolean success,
+            PricingMode targetGrade,
+            List<SwitchGradeRoomResponse> rooms,
+            Map<String, BigDecimal> gradeSubtotals,
+            BigDecimal grandTotal,
+            List<String> notices) {
+    }
+
+    public SwitchGradeResponse switchGrade(SwitchGradeRequest request) {
+        if (request == null) return switchGrade(null, PricingMode.PREMIUM, Collections.emptyList());
+        return switchGrade(request.branchId(), request.targetGrade(), request.rooms(),
+                request.activeDivisionId(), request.activeFloor(), request.activeRoom());
+    }
+
+    public SwitchGradeResponse switchGrade(Long branchId, PricingMode targetGrade, List<RoomRequest> rooms) {
+        return switchGrade(branchId, targetGrade, rooms, null, null, null);
+    }
+
+    public SwitchGradeResponse switchGrade(Long branchId, PricingMode targetGrade, List<RoomRequest> rooms,
+                                           Long activeDivisionId, String activeFloor, String activeRoom) {
+        if (targetGrade == null) {
+            targetGrade = PricingMode.PREMIUM;
+        }
+        if (rooms == null) {
+            rooms = Collections.emptyList();
+        }
+
+        Set<PricingMode> existingGrades = new HashSet<>();
+        for (RoomRequest r : rooms) {
+            if (r != null && r.items() != null) {
+                for (ItemRequest it : r.items()) {
+                    if (it != null && it.pricingMode() != null) {
+                        existingGrades.add(it.pricingMode());
+                    }
+                }
+            }
+        }
+        boolean isMultiGradeQuote = existingGrades.size() > 1;
+
+        List<SwitchGradeRoomResponse> updatedRooms = new ArrayList<>();
+        Map<String, BigDecimal> gradeSubtotals = new LinkedHashMap<>();
+        gradeSubtotals.put("PREMIUM", BigDecimal.ZERO);
+        gradeSubtotals.put("MIDDLE", BigDecimal.ZERO);
+        gradeSubtotals.put("ECONOMY", BigDecimal.ZERO);
+        BigDecimal grandTotal = BigDecimal.ZERO;
+        List<String> notices = new ArrayList<>();
+
+        Map<Long, Integer> divisionItemCounter = new HashMap<>();
+
+        for (RoomRequest room : rooms) {
+            if (room == null) continue;
+            List<SwitchGradeItemResponse> updatedItems = new ArrayList<>();
+            divisionItemCounter.clear();
+
+            boolean isSameRoom = (activeFloor == null || activeFloor.equalsIgnoreCase(room.floor()))
+                    && (activeRoom == null || activeRoom.equalsIgnoreCase(room.room()));
+
+            if (room.items() != null) {
+                for (ItemRequest item : room.items()) {
+                    if (item == null) continue;
+
+                    boolean isSameDivision = (activeDivisionId != null && activeDivisionId.equals(item.divisionId()));
+
+                    boolean shouldConvert = true;
+                    PricingMode itemTargetGrade = targetGrade;
+
+                    Long divId = item.divisionId();
+                    if (divId == null && item.materialId() != null && materialRepository != null) {
+                        divId = materialRepository.findById(item.materialId())
+                                .map(m -> m.getDivision() != null ? m.getDivision().getId() : null)
+                                .orElse(null);
+                    }
+
+                    int posInDivision = 0;
+                    if (divId != null) {
+                        posInDivision = divisionItemCounter.getOrDefault(divId, 0);
+                        divisionItemCounter.put(divId, posInDivision + 1);
+                    }
+
+                    Long lookupMatId = (item.originalMaterialId() != null) ? item.originalMaterialId() : item.materialId();
+                    PricingMode originGrade = (item.originalPricingMode() != null) ? item.originalPricingMode() : item.pricingMode();
+                    if (originGrade == null) {
+                        originGrade = PricingMode.PREMIUM;
+                    }
+
+                    String origMatName = item.originalMaterialName();
+                    if ((origMatName == null || origMatName.isBlank()) && lookupMatId != null && materialRepository != null) {
+                        origMatName = materialRepository.findById(lookupMatId).map(Material::getName).orElse(item.materialName());
+                    }
+                    if (origMatName == null || origMatName.isBlank()) {
+                        origMatName = item.materialName();
+                    }
+                    String origSpec = item.originalSpecification() != null ? item.originalSpecification() : item.specification();
+
+                    // Determine the item's original 0-based position in its Work Type (Division)
+                    Integer position = item.originalPosition();
+                    if (position == null && divId != null && originGrade != null && lookupMatId != null) {
+                        List<Material> originMats = getActiveMaterialsForDivisionAndGrade(divId, originGrade, branchId);
+                        if (originMats != null) {
+                            for (int mIdx = 0; mIdx < originMats.size(); mIdx++) {
+                                if (lookupMatId.equals(originMats.get(mIdx).getId())) {
+                                    position = mIdx;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    if (position == null) {
+                        position = posInDivision;
+                    }
+
+                    ResolvedMaterialRate res = resolveMaterialAndRate(
+                            branchId,
+                            divId,
+                            lookupMatId,
+                            item.materialOptionId(),
+                            targetGrade,
+                            position
+                    );
+
+                    boolean available = (res != null && res.available() && res.rate() != null && res.rate().compareTo(BigDecimal.ZERO) > 0);
+                    Long matId = available ? res.materialId() : null;
+                    Long optId = available ? res.materialOptionId() : null;
+                    String gradeLabel = targetGrade == PricingMode.PREMIUM ? "Premium" : (targetGrade == PricingMode.ECONOMY ? "Economy" : "Middle");
+                    String matName = available
+                            ? res.materialName()
+                            : ("Material Unavailable (" + gradeLabel + " Grade)");
+                    String spec = (available && res.specification() != null) ? res.specification() : "";
+                    Long specId = available ? res.materialSpecificationId() : null;
+                    BigDecimal rate = available ? res.rate() : null;
+                    String formula = (available && res.formula() != null && !res.formula().isBlank())
+                            ? res.formula()
+                            : "(L + W) × H";
+                    MeasurementType mType = (available && res.measurementType() != null)
+                            ? res.measurementType()
+                            : (item.measurementType() != null ? item.measurementType() : MeasurementType.SQFT);
+                    BigDecimal coverage = available ? res.coveragePerRoll() : item.coveragePerRoll();
+                    String imageUrl = available ? res.imageUrl() : (item.imageUrl() != null ? item.imageUrl() : null);
+                    BigDecimal quantity = item.quantity() != null ? item.quantity() : BigDecimal.ONE;
+                    String unit = available ? res.unit() : (mType.isRoll() ? "Roll" : (mType == MeasurementType.QUANTITY ? "Quantity" : (mType == MeasurementType.FILES ? "Files" : "Sq.ft")));
+
+                    String catName = "";
+                    if (item.workCategoryId() != null && workCategoryRepository != null) {
+                        catName = workCategoryRepository.findById(item.workCategoryId()).map(WorkCategory::getName).orElse("");
+                    }
+                    String divName = "";
+                    if (item.divisionId() != null && divisionRepository != null) {
+                        Division d = divisionRepository.findById(item.divisionId()).orElse(null);
+                        if (d != null) {
+                            divName = d.getName() != null ? d.getName() : "";
+                            if ((catName == null || catName.isBlank()) && d.getWorkCategory() != null) {
+                                catName = d.getWorkCategory().getName() != null ? d.getWorkCategory().getName() : "";
+                            }
+                        }
+                    }
+
+                    List<SizeRequest> newSizes = new ArrayList<>();
+                    BigDecimal itemSqft = BigDecimal.ZERO;
+                    BigDecimal lineAmount = BigDecimal.ZERO;
+
+                    if (mType.isSqft()) {
+                        if (item.sizes() != null) {
+                            for (SizeRequest s : item.sizes()) {
+                                if (s == null) continue;
+                                BigDecimal l = s.length() != null ? s.length() : BigDecimal.ZERO;
+                                BigDecimal w = s.width() != null ? s.width() : BigDecimal.ZERO;
+                                BigDecimal h = s.height() != null ? s.height() : BigDecimal.ZERO;
+                                BigDecimal sqft = quotationItemSizeService != null
+                                        ? quotationItemSizeService.calculateSqft(formula, l, w, h, "in")
+                                        : BigDecimal.ZERO;
+                                BigDecimal rowOffer = (rate != null) ? money(sqft.multiply(rate)) : BigDecimal.ZERO;
+                                itemSqft = itemSqft.add(sqft);
+                                lineAmount = lineAmount.add(rowOffer);
+                                newSizes.add(new SizeRequest(l, w, h, rowOffer));
+                            }
+                        }
+                    } else if (mType.isRoll()) {
+                        BigDecimal totalWallArea = BigDecimal.ZERO;
+                        if (item.sizes() != null) {
+                            for (SizeRequest s : item.sizes()) {
+                                if (s == null) continue;
+                                BigDecimal l = s.length() != null ? s.length() : BigDecimal.ZERO;
+                                BigDecimal w = s.width() != null ? s.width() : BigDecimal.ZERO;
+                                BigDecimal h = s.height() != null ? s.height() : BigDecimal.ZERO;
+                                BigDecimal sqft = quotationItemSizeService != null
+                                        ? quotationItemSizeService.calculateSqft(formula, l, w, h, "in")
+                                        : BigDecimal.ZERO;
+                                totalWallArea = totalWallArea.add(sqft);
+                                newSizes.add(new SizeRequest(l, w, h, BigDecimal.ZERO));
+                            }
+                        }
+                        BigDecimal effCoverage = (coverage != null && coverage.compareTo(BigDecimal.ZERO) > 0)
+                                ? coverage : new BigDecimal("50.00");
+                        long rollCount = 0;
+                        if (totalWallArea.compareTo(BigDecimal.ZERO) > 0) {
+                            rollCount = (long) Math.ceil(totalWallArea.doubleValue() / effCoverage.doubleValue());
+                        }
+                        quantity = BigDecimal.valueOf(Math.max(1, rollCount));
+                        itemSqft = totalWallArea;
+                        lineAmount = (rate != null) ? money(quantity.multiply(rate)) : BigDecimal.ZERO;
+                    } else {
+                        // QUANTITY or FILES
+                        quantity = (item.quantity() != null && item.quantity().compareTo(BigDecimal.ZERO) > 0)
+                                ? item.quantity() : BigDecimal.ONE;
+                        lineAmount = (rate != null) ? money(quantity.multiply(rate)) : BigDecimal.ZERO;
+                    }
+
+                    String unavailMsg = null;
+                    if (shouldConvert && !available) {
+                        unavailMsg = (res != null && res.message() != null)
+                                ? res.message()
+                                : "Rate unavailable for " + targetGrade + " Grade.";
+                        notices.add(unavailMsg);
+                    }
+
+                    String gradeKey = itemTargetGrade.name();
+                    gradeSubtotals.put(gradeKey, gradeSubtotals.getOrDefault(gradeKey, BigDecimal.ZERO).add(lineAmount));
+                    grandTotal = grandTotal.add(lineAmount);
+
+                    updatedItems.add(new SwitchGradeItemResponse(
+                            item.workCategoryId(),
+                            catName,
+                            item.divisionId(),
+                            divName,
+                            item.itemId(),
+                            matId,
+                            matName,
+                            optId,
+                            specId,
+                            spec,
+                            item.itemDescription(),
+                            formula,
+                            unit,
+                            mType.name(),
+                            coverage,
+                            imageUrl,
+                            rate,
+                            itemTargetGrade,
+                            !available,
+                            unavailMsg,
+                            quantity,
+                            itemSqft,
+                            lineAmount,
+                            newSizes,
+                            lookupMatId,
+                            originGrade,
+                            origMatName,
+                            origSpec,
+                            position
+                    ));
+                }
+            }
+
+            String roomKey = (room.floor() != null ? room.floor() : "Ground Floor") + "||" + (room.room() != null ? room.room() : "1");
+            updatedRooms.add(new SwitchGradeRoomResponse(
+                    roomKey,
+                    room.floor(),
+                    room.room(),
+                    room.workDescription(),
+                    updatedItems
+            ));
+        }
+
+        return new SwitchGradeResponse(
+                true,
+                targetGrade,
+                updatedRooms,
+                gradeSubtotals,
+                grandTotal,
+                notices
+        );
     }
 }

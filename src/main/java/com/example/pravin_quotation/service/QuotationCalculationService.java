@@ -1154,9 +1154,16 @@ public class QuotationCalculationService {
         for (Object[] row : rows) {
             if (row == null || row.length < 2) continue;
             Long quoteId = (Long) row[0];
-            PricingMode mode = (row[1] instanceof PricingMode) ? (PricingMode) row[1] : (row[1] != null ? PricingMode.valueOf(row[1].toString()) : null);
-            if (mode == null && row.length > 2) mode = (row[2] instanceof PricingMode) ? (PricingMode) row[2] : (row[2] != null ? PricingMode.valueOf(row[2].toString()) : null);
-            if (mode == null && row.length > 3) mode = (row[3] instanceof PricingMode) ? (PricingMode) row[3] : (row[3] != null ? PricingMode.valueOf(row[3].toString()) : null);
+            PricingMode mode = null;
+            if (row.length > 2 && row[2] != null) {
+                mode = (row[2] instanceof PricingMode) ? (PricingMode) row[2] : PricingMode.valueOf(row[2].toString());
+            }
+            if (mode == null && row.length > 1 && row[1] != null) {
+                mode = (row[1] instanceof PricingMode) ? (PricingMode) row[1] : PricingMode.valueOf(row[1].toString());
+            }
+            if (mode == null && row.length > 3 && row[3] != null) {
+                mode = (row[3] instanceof PricingMode) ? (PricingMode) row[3] : PricingMode.valueOf(row[3].toString());
+            }
             if (quoteId != null && mode != null) {
                 quoteGradesMap.computeIfAbsent(quoteId, k -> new java.util.LinkedHashSet<>()).add(mode);
             }
@@ -1166,7 +1173,14 @@ public class QuotationCalculationService {
             if (q == null) continue;
             java.util.Set<PricingMode> used = quoteGradesMap.get(q.getId());
             PricingMode confirmed = q.getSelectedGrade();
-            q.setPricingModeDisplay(formatPricingColumnDisplay(used, confirmed));
+            if ((used == null || used.isEmpty()) && confirmed != null) {
+                used = java.util.Set.of(confirmed);
+            }
+            String display = formatPricingColumnDisplay(used, confirmed);
+            if ("Not Prepared".equals(display) && q.getPricingMode() != null) {
+                display = q.getPricingMode().name();
+            }
+            q.setPricingModeDisplay(display);
         }
     }
 

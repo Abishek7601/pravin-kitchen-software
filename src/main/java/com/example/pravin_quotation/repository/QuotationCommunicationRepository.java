@@ -15,4 +15,9 @@ public interface QuotationCommunicationRepository
     List<QuotationCommunication> findByStatus(
             QuotationCommunication.CommunicationStatus status
     );
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.transaction.annotation.Transactional
+    @org.springframework.data.jpa.repository.Query("DELETE FROM QuotationCommunication c WHERE c.quotation.id IN :ids")
+    void deleteByQuotationIds(@org.springframework.data.repository.query.Param("ids") java.util.Collection<Long> ids);
 }

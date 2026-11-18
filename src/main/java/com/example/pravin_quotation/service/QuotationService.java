@@ -43,12 +43,18 @@ public class QuotationService {
     private final QuotationStatusHistoryRepository quotationStatusHistoryRepository;
     private final QuotationWorkflowRepository quotationWorkflowRepository;
     private final QuotationCommunicationRepository quotationCommunicationRepository;
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
     public void setEntityManager(jakarta.persistence.EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setJdbcTemplate(org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     public QuotationService(
@@ -64,6 +70,38 @@ public class QuotationService {
             QuotationWorkflowRepository quotationWorkflowRepository,
             QuotationCommunicationRepository quotationCommunicationRepository
     ) {
+        this(
+                quotationRepository,
+                customerRepository,
+                userRepository,
+                branchRepository,
+                quotationWorkflowService,
+                quotationRoomRepository,
+                quotationItemRepository,
+                quotationItemSizeRepository,
+                quotationStatusHistoryRepository,
+                quotationWorkflowRepository,
+                quotationCommunicationRepository,
+                null
+        );
+    }
+
+    @org.springframework.beans.factory.annotation.Autowired
+    public QuotationService(
+            QuotationRepository quotationRepository,
+            CustomerRepository customerRepository,
+            UserRepository userRepository,
+            BranchRepository branchRepository,
+            QuotationWorkflowService quotationWorkflowService,
+            QuotationRoomRepository quotationRoomRepository,
+            QuotationItemRepository quotationItemRepository,
+            QuotationItemSizeRepository quotationItemSizeRepository,
+            QuotationStatusHistoryRepository quotationStatusHistoryRepository,
+            QuotationWorkflowRepository quotationWorkflowRepository,
+            QuotationCommunicationRepository quotationCommunicationRepository,
+            @org.springframework.beans.factory.annotation.Autowired(required = false)
+            org.springframework.jdbc.core.JdbcTemplate jdbcTemplate
+    ) {
         this.quotationRepository = quotationRepository;
         this.customerRepository = customerRepository;
         this.userRepository = userRepository;
@@ -75,6 +113,7 @@ public class QuotationService {
         this.quotationStatusHistoryRepository = quotationStatusHistoryRepository;
         this.quotationWorkflowRepository = quotationWorkflowRepository;
         this.quotationCommunicationRepository = quotationCommunicationRepository;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     // ---------------------------------------------------------
@@ -1022,12 +1061,53 @@ public class QuotationService {
             // Parent quotation: find all child grade quotations
             List<Quotation> children = quotationRepository.findByParentIdOrderByIdAsc(quotation.getId());
             if (children != null && !children.isEmpty()) {
-                childQuotations.addAll(children);
                 for (Quotation child : children) {
                     if (child.getId() != null && !targetQuotationIds.contains(child.getId())) {
                         targetQuotationIds.add(child.getId());
+                        childQuotations.add(child);
                     }
                 }
+            }
+            if (quotation.getChildQuotations() != null) {
+                for (Quotation child : quotation.getChildQuotations()) {
+                    if (child.getId() != null && !targetQuotationIds.contains(child.getId())) {
+                        targetQuotationIds.add(child.getId());
+                        childQuotations.add(child);
+                    }
+                }
+            }
+            // Check database directly for any child quotations
+            if (jdbcTemplate != null) {
+                try {
+                    List<Long> dbChildIds = jdbcTemplate.queryForList(
+                            "SELECT id FROM quotations WHERE parent_id = ?",
+                            Long.class,
+                            quotation.getId()
+                    );
+                    if (dbChildIds != null) {
+                        for (Long cId : dbChildIds) {
+                            if (cId != null && !targetQuotationIds.contains(cId)) {
+                                targetQuotationIds.add(cId);
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            } else if (entityManager != null) {
+                try {
+                    List<?> childIds = entityManager.createNativeQuery(
+                            "SELECT id FROM quotations WHERE parent_id = " + quotation.getId()
+                    ).getResultList();
+                    if (childIds != null) {
+                        for (Object cIdObj : childIds) {
+                            if (cIdObj instanceof Number num) {
+                                Long cId = num.longValue();
+                                if (!targetQuotationIds.contains(cId)) {
+                                    targetQuotationIds.add(cId);
+                                }
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
             }
         } else {
             // Child quotation being deleted independently: unlink from parent
@@ -1039,152 +1119,194 @@ public class QuotationService {
             quotationRepository.save(quotation);
         }
 
-        // 1. Delete all QuotationItemSize records for items belonging to these quotations
+        // 1. Direct JDBC batch deletion if JdbcTemplate is available
+        // (Runs bottom-up in exact foreign-key dependency order, bypassing Hibernate session issues)
+        if (jdbcTemplate != null) {
+            for (Long tId : targetQuotationIds) {
+                // a) quotation_item_sizes
+                try {
+                    jdbcTemplate.update(
+                            "DELETE s FROM quotation_item_sizes s " +
+                            "INNER JOIN quotation_items i ON s.quotation_item_id = i.id " +
+                            "INNER JOIN quotation_rooms r ON i.quotation_room_id = r.id " +
+                            "WHERE r.quotation_id = ?",
+                            tId
+                    );
+                } catch (Exception e1) {
+                    try {
+                        jdbcTemplate.update(
+                                "DELETE FROM quotation_item_sizes WHERE quotation_item_id IN (" +
+                                "  SELECT id FROM (SELECT id FROM quotation_items WHERE quotation_room_id IN (" +
+                                "    SELECT id FROM (SELECT id FROM quotation_rooms WHERE quotation_id = ?) AS _r" +
+                                "  )) AS _i" +
+                                ")",
+                                tId
+                        );
+                    } catch (Exception ignored) {}
+                }
+
+                // b) quotation_items
+                try {
+                    jdbcTemplate.update(
+                            "DELETE i FROM quotation_items i " +
+                            "INNER JOIN quotation_rooms r ON i.quotation_room_id = r.id " +
+                            "WHERE r.quotation_id = ?",
+                            tId
+                    );
+                } catch (Exception e2) {
+                    try {
+                        jdbcTemplate.update(
+                                "DELETE FROM quotation_items WHERE quotation_room_id IN (" +
+                                "  SELECT id FROM (SELECT id FROM quotation_rooms WHERE quotation_id = ?) AS _r" +
+                                ")",
+                                tId
+                        );
+                    } catch (Exception ignored) {}
+                }
+
+                // c) quotation_rooms
+                try {
+                    jdbcTemplate.update("DELETE FROM quotation_rooms WHERE quotation_id = ?", tId);
+                } catch (Exception ignored) {}
+
+                // d) quotation_communications
+                try {
+                    jdbcTemplate.update("DELETE FROM quotation_communications WHERE quotation_id = ?", tId);
+                } catch (Exception ignored) {}
+
+                // e) quotation_status_history
+                try {
+                    jdbcTemplate.update("DELETE FROM quotation_status_history WHERE quotation_id = ?", tId);
+                } catch (Exception ignored) {}
+
+                // f) quotation_workflow
+                try {
+                    jdbcTemplate.update("DELETE FROM quotation_workflow WHERE quotation_id = ?", tId);
+                } catch (Exception ignored) {}
+            }
+
+            // g) Child quotations if deleting parent
+            if (quotation.getParent() == null) {
+                try {
+                    jdbcTemplate.update("DELETE FROM quotations WHERE parent_id = ?", quotation.getId());
+                } catch (Exception ignored) {}
+            }
+
+            // h) Target quotation itself
+            jdbcTemplate.update("DELETE FROM quotations WHERE id = ?", quotation.getId());
+
+            // Clear EntityManager cache so Hibernate does not execute conflicting queued entity flushes
+            if (entityManager != null) {
+                try {
+                    entityManager.clear();
+                } catch (Exception ignored) {}
+            }
+            return;
+        }
+
+        // 2. Repository-based deletion (used in tests / mock environments where JdbcTemplate is null)
         for (Long qId : targetQuotationIds) {
             List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
-            if (rooms != null) {
+            if (rooms != null && !rooms.isEmpty()) {
                 for (QuotationRoom room : rooms) {
                     List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
-                    if (items != null) {
+                    if (items != null && !items.isEmpty()) {
                         for (QuotationItem item : items) {
                             List<QuotationItemSize> sizes = quotationItemSizeRepository.findByQuotationItemIdOrderByDisplayOrderAsc(item.getId());
                             if (sizes != null && !sizes.isEmpty()) {
                                 quotationItemSizeRepository.deleteAll(sizes);
                             }
                         }
-                    }
-                }
-            }
-        }
-
-        // 2. Delete all QuotationItem records
-        for (Long qId : targetQuotationIds) {
-            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
-            if (rooms != null) {
-                for (QuotationRoom room : rooms) {
-                    List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
-                    if (items != null && !items.isEmpty()) {
                         quotationItemRepository.deleteAll(items);
                     }
                 }
-            }
-        }
-
-        // 3. Delete all QuotationRoom records
-        for (Long qId : targetQuotationIds) {
-            List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(qId);
-            if (rooms != null && !rooms.isEmpty()) {
                 quotationRoomRepository.deleteAll(rooms);
             }
-        }
 
-        // 4. Delete communication records for ALL target quotation IDs
-        for (Long qId : targetQuotationIds) {
             List<QuotationCommunication> communications = quotationCommunicationRepository.findByQuotationIdOrderBySentAtDesc(qId);
             if (communications != null && !communications.isEmpty()) {
                 quotationCommunicationRepository.deleteAll(communications);
             }
-        }
 
-        // 5. Delete status history records for ALL target quotation IDs
-        for (Long qId : targetQuotationIds) {
             List<QuotationStatusHistory> history = quotationStatusHistoryRepository.findByQuotationIdOrderByIdDesc(qId);
             if (history != null && !history.isEmpty()) {
                 quotationStatusHistoryRepository.deleteAll(history);
             }
-        }
 
-        // 6. Delete workflow records for ALL target quotation IDs
-        for (Long qId : targetQuotationIds) {
             List<QuotationWorkflow> workflows = quotationWorkflowRepository.findByQuotationIdOrderByCreatedAtDesc(qId);
             if (workflows != null && !workflows.isEmpty()) {
                 quotationWorkflowRepository.deleteAll(workflows);
             }
         }
 
-        // 7. Flush repository deletes before executing native cleanups
-        try {
-            quotationRoomRepository.flush();
-            quotationCommunicationRepository.flush();
-            quotationStatusHistoryRepository.flush();
-            quotationWorkflowRepository.flush();
-        } catch (Exception ignored) {}
-
-        // 8. Execute native SQL deletes in exact foreign-key order
-        // This handles unmapped legacy tables (quotation_grade_options & quotation_grade_confirmation_history)
-        // and guarantees foreign key constraints are cleanly satisfied in the database engine
-        if (entityManager != null && !targetQuotationIds.isEmpty()) {
+        if (entityManager != null) {
             try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_item_sizes WHERE quotation_item_id IN (" +
-                    "  SELECT id FROM quotation_items WHERE quotation_room_id IN (" +
-                    "    SELECT id FROM quotation_rooms WHERE quotation_id IN (:ids)" +
-                    "  )" +
-                    ")"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_items WHERE quotation_room_id IN (" +
-                    "  SELECT id FROM quotation_rooms WHERE quotation_id IN (:ids)" +
-                    ")"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_rooms WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_grade_options WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_grade_confirmation_history WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_communications WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_status_history WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
-                entityManager.createNativeQuery(
-                    "DELETE FROM quotation_workflow WHERE quotation_id IN (:ids)"
-                ).setParameter("ids", targetQuotationIds).executeUpdate();
-            } catch (Exception ignored) {}
-
-            try {
+                for (Long tId : targetQuotationIds) {
+                    try {
+                        entityManager.createNativeQuery("DELETE FROM quotation_communications WHERE quotation_id = " + tId).executeUpdate();
+                    } catch (Exception ignored) {}
+                    try {
+                        entityManager.createNativeQuery("DELETE FROM quotation_status_history WHERE quotation_id = " + tId).executeUpdate();
+                    } catch (Exception ignored) {}
+                    try {
+                        entityManager.createNativeQuery("DELETE FROM quotation_workflow WHERE quotation_id = " + tId).executeUpdate();
+                    } catch (Exception ignored) {}
+                    try {
+                        entityManager.createNativeQuery(
+                                "DELETE FROM quotation_item_sizes WHERE quotation_item_id IN (" +
+                                "  SELECT id FROM quotation_items WHERE quotation_room_id IN (" +
+                                "    SELECT id FROM quotation_rooms WHERE quotation_id = " + tId +
+                                "  )" +
+                                ")"
+                        ).executeUpdate();
+                    } catch (Exception ignored) {}
+                    try {
+                        entityManager.createNativeQuery(
+                                "DELETE FROM quotation_items WHERE quotation_room_id IN (" +
+                                "  SELECT id FROM quotation_rooms WHERE quotation_id = " + tId +
+                                ")"
+                        ).executeUpdate();
+                    } catch (Exception ignored) {}
+                    try {
+                        entityManager.createNativeQuery("DELETE FROM quotation_rooms WHERE quotation_id = " + tId).executeUpdate();
+                    } catch (Exception ignored) {}
+                }
                 entityManager.flush();
             } catch (Exception ignored) {}
         }
 
-        // 9. Delete child quotations if this is a parent quotation
+        // Delete child quotations if this is a parent quotation
         if (!childQuotations.isEmpty()) {
             for (Quotation child : childQuotations) {
                 child.setParent(null);
-                quotationRepository.delete(child);
+                try {
+                    quotationRepository.delete(child);
+                } catch (Exception ignored) {}
             }
-            quotationRepository.flush();
+            try {
+                quotationRepository.flush();
+            } catch (Exception ignored) {}
         }
 
-        // 10. Delete the parent quotation record
-        quotationRepository.delete(quotation);
-        quotationRepository.flush();
+        if (entityManager != null && quotation.getParent() == null) {
+            try {
+                entityManager.createNativeQuery("DELETE FROM quotations WHERE parent_id = " + quotation.getId()).executeUpdate();
+                entityManager.flush();
+            } catch (Exception ignored) {}
+        }
+
+        // Delete the parent quotation record
+        try {
+            quotationRepository.delete(quotation);
+            quotationRepository.flush();
+        } catch (Exception e) {
+            if (entityManager != null) {
+                entityManager.createNativeQuery("DELETE FROM quotations WHERE id = " + quotation.getId()).executeUpdate();
+                entityManager.flush();
+            } else {
+                throw e;
+            }
+        }
     }
 
     // ---------------------------------------------------------

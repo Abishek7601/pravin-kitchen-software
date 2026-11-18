@@ -64,12 +64,12 @@ public class EmployeeSessionService {
     }
 
     /**
-     * Returns true if current time is after 8:00 PM IST (20:00) until morning working hours (06:00).
+     * Returns true if current time in Asia/Kolkata is at or after 8:00 PM IST (20:00:00).
      */
     public boolean isAfterHours() {
         ZonedDateTime now = nowIst();
         LocalTime time = now.toLocalTime();
-        return !time.isBefore(CUTOFF_TIME_IST) || time.isBefore(MORNING_START_TIME_IST);
+        return !time.isBefore(CUTOFF_TIME_IST);
     }
 
     /**
