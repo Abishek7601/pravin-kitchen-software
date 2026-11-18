@@ -109,14 +109,14 @@ public class QuotationPdfService {
                     BaseFont.IDENTITY_H,
                     BaseFont.EMBEDDED
             );
-            rupeeFont = new Font(rupeeBaseFont, 7.5f, Font.NORMAL, COLOR_TEXT_DARK);
-            rupeeBoldFont = new Font(rupeeBaseFont, 8.0f, Font.BOLD, COLOR_TEXT_DARK);
-            rupeeGoldBoldFont = new Font(rupeeBaseFont, 8.2f, Font.BOLD, COLOR_HEADER_TEXT);
+            rupeeFont = new Font(rupeeBaseFont, 10.0f, Font.NORMAL, COLOR_TEXT_DARK);
+            rupeeBoldFont = new Font(rupeeBaseFont, 10.5f, Font.BOLD, COLOR_TEXT_DARK);
+            rupeeGoldBoldFont = new Font(rupeeBaseFont, 11.0f, Font.BOLD, COLOR_HEADER_TEXT);
             hasUnicodeRupee = true;
         } catch (Exception e) {
-            rupeeFont = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK);
-            rupeeBoldFont = new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK);
-            rupeeGoldBoldFont = new Font(Font.HELVETICA, 8.2f, Font.BOLD, COLOR_HEADER_TEXT);
+            rupeeFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK);
+            rupeeBoldFont = new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_TEXT_DARK);
+            rupeeGoldBoldFont = new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_HEADER_TEXT);
             hasUnicodeRupee = false;
         }
     }
@@ -345,7 +345,8 @@ public class QuotationPdfService {
         nameCell.setPaddingLeft(6f);
         nameCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
 
-        Paragraph companyName = new Paragraph("PRAVIN KITCHENS & INTERIORS", new Font(Font.HELVETICA, 12f, Font.BOLD, COLOR_NAVY));
+        Paragraph companyName = new Paragraph("PRAVIN KITCHENS & INTERIORS", new Font(Font.HELVETICA, 17f, Font.BOLD, COLOR_NAVY));
+        companyName.setLeading(20f);
         nameCell.addElement(companyName);
 
         brandTable.addCell(logoCell);
@@ -353,8 +354,9 @@ public class QuotationPdfService {
         leftCell.addElement(brandTable);
 
         Paragraph addressPar = new Paragraph();
-        addressPar.setSpacingBefore(3f);
-        addressPar.setFont(new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_MUTED));
+        addressPar.setSpacingBefore(4f);
+        addressPar.setFont(new Font(Font.HELVETICA, 9.5f, Font.NORMAL, COLOR_TEXT_MUTED));
+        addressPar.setLeading(13.0f);
 
         String branchAddress = (branch != null && branch.getBranchAddress() != null && !branch.getBranchAddress().isBlank())
                 ? branch.getBranchAddress().trim()
@@ -410,7 +412,8 @@ public class QuotationPdfService {
                     break;
             }
         }
-        Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 13f, Font.BOLD, COLOR_NAVY));
+        Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 17f, Font.BOLD, COLOR_NAVY));
+        titlePar.setLeading(20f);
         titlePar.setAlignment(Element.ALIGN_RIGHT);
         titlePar.setSpacingAfter(4f);
         rightCell.addElement(titlePar);
@@ -420,7 +423,7 @@ public class QuotationPdfService {
 
         PdfPTable metaTable = new PdfPTable(2);
         metaTable.setWidthPercentage(100);
-        metaTable.setWidths(new float[]{38f, 62f});
+        metaTable.setWidths(new float[]{40f, 60f});
         metaTable.setSpacingBefore(4f);
 
         addMetaRow(metaTable, "Quotation No:", safe(quotation.getQuotationNumber()));
@@ -463,8 +466,8 @@ public class QuotationPdfService {
         // ========================================================
         // 2. SECTION TITLE: QUOTE SUMMARY
         // ========================================================
-        Paragraph summaryTitle = new Paragraph("Quote Summary", new Font(Font.HELVETICA, 10f, Font.BOLD, COLOR_NAVY));
-        summaryTitle.setSpacingBefore(3f);
+        Paragraph summaryTitle = new Paragraph("Quote Summary", new Font(Font.HELVETICA, 13.5f, Font.BOLD, COLOR_NAVY));
+        summaryTitle.setSpacingBefore(4f);
         summaryTitle.setSpacingAfter(4f);
         document.add(summaryTitle);
 
@@ -477,24 +480,24 @@ public class QuotationPdfService {
         itemTable.setWidthPercentage(100);
         itemTable.setHeaderRows(1);
         if (showSqft) {
-            itemTable.setWidths(new float[]{3.5f, 16.5f, 13.0f, 9.5f, 24.5f, 11.0f, 7.0f, 5.0f, 10.0f});
+            itemTable.setWidths(new float[]{3.0f, 12.0f, 8.0f, 11.0f, 23.5f, 11.0f, 8.0f, 7.0f, 16.5f});
         } else {
-            itemTable.setWidths(new float[]{4.0f, 20.0f, 15.0f, 10.0f, 33.0f, 6.0f, 12.0f});
+            itemTable.setWidths(new float[]{3.5f, 15.0f, 8.5f, 12.0f, 37.0f, 7.5f, 16.5f});
         }
-        itemTable.setSpacingAfter(5f);
+        itemTable.setSpacingAfter(6f);
 
         // --- TABLE HEADERS ---
-        addHeaderCell(itemTable, "#", Element.ALIGN_CENTER);
-        addHeaderCell(itemTable, "WORK CATEGORY", Element.ALIGN_LEFT);
-        addHeaderCell(itemTable, "ROOM", Element.ALIGN_LEFT);
-        addHeaderCell(itemTable, "FLOOR", Element.ALIGN_CENTER);
-        addHeaderCell(itemTable, "MATERIAL", Element.ALIGN_LEFT);
+        addHeaderCell(itemTable, "#", Element.ALIGN_CENTER, true);
+        addHeaderCell(itemTable, "WORK CATEGORY", Element.ALIGN_LEFT, false);
+        addHeaderCell(itemTable, "ROOM", Element.ALIGN_CENTER, true);
+        addHeaderCell(itemTable, "FLOOR", Element.ALIGN_CENTER, true);
+        addHeaderCell(itemTable, "MATERIAL", Element.ALIGN_LEFT, false);
         if (showSqft) {
-            addHeaderCell(itemTable, "SIZE", Element.ALIGN_CENTER);
-            addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_RIGHT);
+            addHeaderCell(itemTable, "SIZE", Element.ALIGN_CENTER, false);
+            addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_CENTER, true);
         }
-        addHeaderCell(itemTable, "UNIT", Element.ALIGN_CENTER);
-        addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT);
+        addHeaderCell(itemTable, "UNIT", Element.ALIGN_CENTER, true);
+        addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT, true);
 
         // --- QUOTATION ROOMS & ITEMS ---
         List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(quotation.getId());
@@ -605,7 +608,7 @@ public class QuotationPdfService {
                     BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
                             : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : null);
                     String covText = cov != null ? cov.stripTrailingZeros().toPlainString() : "-";
-                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + covText + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹ " : "Rs. ") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
+                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + covText + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹\u00A0" : "Rs.\u00A0") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
                     if (specification == null || specification.isBlank()) {
                         specification = rollDetails;
                     } else {
@@ -627,16 +630,16 @@ public class QuotationPdfService {
                 }
 
                 // Add Row Cells (item-level offer price reflected in total amount)
-                addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow);
-                addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow);
-                addBodyCell(itemTable, roomName, Element.ALIGN_LEFT, isAltRow);
-                addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow);
+                addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
+                addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
+                addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
+                addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
                 addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
                 if (showSqft) {
-                    addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow);
-                    addBodyCell(itemTable, sqftStr, Element.ALIGN_RIGHT, isAltRow);
+                    addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
+                    addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
                 }
-                addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow);
+                addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
                 BigDecimal itemAmt = (offerPrice != null && offerPrice.compareTo(BigDecimal.ZERO) > 0) ? offerPrice : amount;
                 addRupeeCell(itemTable, rupees(itemAmt), false, false, isAltRow);
 
@@ -788,11 +791,11 @@ public class QuotationPdfService {
         // 4. AMOUNT IN WORDS (Matching exact quotation Grand Total)
         // ========================================================
         Paragraph wordsPar = new Paragraph();
-        wordsPar.setSpacingBefore(2f);
-        wordsPar.setSpacingAfter(4f);
-        wordsPar.add(new Chunk("AMOUNT IN WORDS - ", new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_NAVY)));
+        wordsPar.setSpacingBefore(4f);
+        wordsPar.setSpacingAfter(5f);
+        wordsPar.add(new Chunk("AMOUNT IN WORDS - ", new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_NAVY)));
         String wordsText = numberToWordsService.convertRupees(grandTotal).toUpperCase();
-        wordsPar.add(new Chunk(wordsText, new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK)));
+        wordsPar.add(new Chunk(wordsText, new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_TEXT_DARK)));
         document.add(wordsPar);
 
         // ========================================================
@@ -807,14 +810,14 @@ public class QuotationPdfService {
         termsCell.setBackgroundColor(COLOR_LIGHT_BG);
         termsCell.setBorderColor(COLOR_BORDER);
         termsCell.setBorderWidth(0.6f);
-        termsCell.setPadding(6f);
+        termsCell.setPadding(7f);
 
-        Paragraph termsHeading = new Paragraph("Payment Terms:", new Font(Font.HELVETICA, 8.5f, Font.BOLD, COLOR_GOLD));
-        termsHeading.setSpacingAfter(3f);
+        Paragraph termsHeading = new Paragraph("Payment Terms:", new Font(Font.HELVETICA, 13.0f, Font.BOLD, COLOR_GOLD));
+        termsHeading.setSpacingAfter(4f);
         termsCell.addElement(termsHeading);
 
-        Font bulletTitleFont = new Font(Font.HELVETICA, 7.5f, Font.BOLD, COLOR_TEXT_DARK);
-        Font bulletTextFont = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK);
+        Font bulletTitleFont = new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_TEXT_DARK);
+        Font bulletTextFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK);
 
         BigDecimal effectiveGrand = grandTotal != null ? grandTotal : BigDecimal.ZERO;
         BigDecimal tokenVal = effectiveGrand.multiply(new BigDecimal("0.10")).setScale(0, RoundingMode.HALF_UP);
@@ -838,44 +841,87 @@ public class QuotationPdfService {
         // 6. CUSTOMER REQUIREMENTS & NOTES
         // ========================================================
         if (quotation.getCustomerRequirements() != null && !quotation.getCustomerRequirements().isBlank()) {
-            Paragraph reqHeading = new Paragraph("Customer Requirements:", new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_NAVY));
-            reqHeading.setSpacingBefore(2f);
+            Paragraph reqHeading = new Paragraph("Customer Requirements:", new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_NAVY));
+            reqHeading.setSpacingBefore(3f);
             document.add(reqHeading);
-            Paragraph reqText = new Paragraph(quotation.getCustomerRequirements(), new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK));
+            Paragraph reqText = new Paragraph(quotation.getCustomerRequirements(), new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK));
             reqText.setSpacingAfter(4f);
             document.add(reqText);
         }
 
         if (quotation.getNotes() != null && !quotation.getNotes().isBlank()) {
-            Paragraph notesHeading = new Paragraph("Notes & Special Instructions:", new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_NAVY));
-            notesHeading.setSpacingBefore(2f);
+            Paragraph notesHeading = new Paragraph("Notes & Special Instructions:", new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_NAVY));
+            notesHeading.setSpacingBefore(3f);
             document.add(notesHeading);
-            Paragraph notesText = new Paragraph(quotation.getNotes(), new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK));
+            Paragraph notesText = new Paragraph(quotation.getNotes(), new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK));
             notesText.setSpacingAfter(4f);
             document.add(notesText);
         }
 
         // ========================================================
-        // 7. SIGNATURES BLOCK
+        // 7. SIGNATURES BLOCK (Positioned dynamically near bottom margin)
         // ========================================================
         PdfPTable sigTable = new PdfPTable(2);
         sigTable.setWidthPercentage(100);
         sigTable.setWidths(new float[]{50f, 50f});
-        sigTable.setSpacingBefore(8f);
 
-        Font sigFont = new Font(Font.HELVETICA, 8.0f, Font.BOLD, COLOR_TEXT_DARK);
+        Font sigFont = new Font(Font.HELVETICA, 11.5f, Font.BOLD, COLOR_TEXT_DARK);
 
-        PdfPCell sig1 = new PdfPCell(new Paragraph("Customer Signature", sigFont));
+        // Customer Signature on the Left
+        Paragraph sig1Par = new Paragraph("Customer Signature", sigFont);
+        sig1Par.setAlignment(Element.ALIGN_LEFT);
+        PdfPCell sig1 = new PdfPCell(sig1Par);
         sig1.setBorder(Rectangle.NO_BORDER);
-        sig1.setHorizontalAlignment(Element.ALIGN_CENTER);
+        sig1.setHorizontalAlignment(Element.ALIGN_LEFT);
+        sig1.setVerticalAlignment(Element.ALIGN_BOTTOM);
+        sig1.setPaddingTop(38f);
+        sig1.setPaddingBottom(2f);
+        sig1.setPaddingLeft(6f);
+        sig1.setPaddingRight(0f);
 
-        PdfPCell sig2 = new PdfPCell(new Paragraph("For Pravin KITCHENS & INTERIORS", sigFont));
+        // For Pravin KITCHENS & INTERIORS on the Right
+        Paragraph sig2Par = new Paragraph("For Pravin KITCHENS & INTERIORS", sigFont);
+        sig2Par.setAlignment(Element.ALIGN_RIGHT);
+        PdfPCell sig2 = new PdfPCell(sig2Par);
         sig2.setBorder(Rectangle.NO_BORDER);
-        sig2.setHorizontalAlignment(Element.ALIGN_CENTER);
+        sig2.setHorizontalAlignment(Element.ALIGN_RIGHT);
+        sig2.setVerticalAlignment(Element.ALIGN_BOTTOM);
+        sig2.setPaddingTop(38f);
+        sig2.setPaddingBottom(2f);
+        sig2.setPaddingLeft(0f);
+        sig2.setPaddingRight(6f);
 
         sigTable.addCell(sig1);
         sigTable.addCell(sig2);
-        document.add(sigTable);
+
+        // Dynamic vertical positioning:
+        // Measure current vertical position after Payment Terms (and Notes/Requirements if any)
+        float currentY = writer.getVerticalPosition(false);
+        sigTable.setTotalWidth(document.right() - document.left());
+        sigTable.calculateHeights(true);
+        float sigHeight = sigTable.getTotalHeight();
+        if (sigHeight <= 0) {
+            sigHeight = 55f;
+        }
+
+        // Target: place the bottom of the signature table just above the footer & bottom margin
+        // document.bottom() is 20f, footer "Page 2 of 7" is at y = 15f.
+        float targetBottomY = document.bottom() + 15f; // 35f
+        float targetTopY = targetBottomY + sigHeight;   // ~90f
+
+        PdfContentByte directCb = writer.getDirectContent();
+
+        if (currentY >= targetTopY + 10f) {
+            // Fits cleanly on current page at bottom
+            sigTable.writeSelectedRows(0, -1, document.left(), targetTopY, directCb);
+        } else if (currentY >= targetBottomY + 5f) {
+            // Squeeze right below current content if vertical space is tight
+            sigTable.writeSelectedRows(0, -1, document.left(), currentY - 5f, directCb);
+        } else {
+            // Insufficient vertical space on page without clipping, move to new page
+            document.newPage();
+            sigTable.writeSelectedRows(0, -1, document.left(), targetTopY, writer.getDirectContent());
+        }
 
         // Add Page 2 Footer
         PdfContentByte cb = writer.getDirectContent();
@@ -957,17 +1003,17 @@ public class QuotationPdfService {
     // ============================================================
 
     private void addMetaRow(PdfPTable table, String label, String value) {
-        Font labelFont = new Font(Font.HELVETICA, 7.5f, Font.BOLD, COLOR_TEXT_DARK);
-        Font valueFont = new Font(Font.HELVETICA, 7.5f, Font.NORMAL, COLOR_TEXT_DARK);
+        Font labelFont = new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_TEXT_DARK);
+        Font valueFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK);
 
         PdfPCell lCell = new PdfPCell(new Phrase(label, labelFont));
         lCell.setBorder(Rectangle.NO_BORDER);
-        lCell.setPadding(1.2f);
+        lCell.setPadding(1.5f);
         lCell.setHorizontalAlignment(Element.ALIGN_LEFT);
 
         PdfPCell vCell = new PdfPCell(new Phrase(safe(value), valueFont));
         vCell.setBorder(Rectangle.NO_BORDER);
-        vCell.setPadding(1.2f);
+        vCell.setPadding(1.5f);
         vCell.setHorizontalAlignment(Element.ALIGN_LEFT);
 
         table.addCell(lCell);
@@ -975,28 +1021,42 @@ public class QuotationPdfService {
     }
 
     private void addHeaderCell(PdfPTable table, String text, int alignment) {
-        Font headerFont = new Font(Font.HELVETICA, 7.0f, Font.BOLD, COLOR_HEADER_TEXT);
+        addHeaderCell(table, text, alignment, false);
+    }
+
+    private void addHeaderCell(PdfPTable table, String text, int alignment, boolean noWrap) {
+        Font headerFont = new Font(Font.HELVETICA, 10.0f, Font.BOLD, COLOR_HEADER_TEXT);
         PdfPCell cell = new PdfPCell(new Phrase(safe(text), headerFont));
+        if (noWrap) {
+            cell.setNoWrap(true);
+        }
         cell.setBackgroundColor(COLOR_HEADER_BG);
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(4.5f);
-        cell.setPaddingBottom(4.5f);
-        cell.setPaddingLeft(2.5f);
-        cell.setPaddingRight(2.5f);
+        cell.setPaddingTop(5.0f);
+        cell.setPaddingBottom(5.0f);
+        cell.setPaddingLeft(2.0f);
+        cell.setPaddingRight(2.0f);
         cell.setBorderColor(COLOR_HEADER_BG);
         table.addCell(cell);
     }
 
     private void addBodyCell(PdfPTable table, String text, int alignment, boolean isAltRow) {
-        Font bodyFont = new Font(Font.HELVETICA, 6.8f, Font.NORMAL, COLOR_TEXT_DARK);
+        addBodyCell(table, text, alignment, isAltRow, false);
+    }
+
+    private void addBodyCell(PdfPTable table, String text, int alignment, boolean isAltRow, boolean noWrap) {
+        Font bodyFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_DARK);
         PdfPCell cell = new PdfPCell(new Phrase(safe(text), bodyFont));
+        if (noWrap) {
+            cell.setNoWrap(true);
+        }
         cell.setHorizontalAlignment(alignment);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(3.5f);
-        cell.setPaddingBottom(3.5f);
-        cell.setPaddingLeft(2.5f);
-        cell.setPaddingRight(2.5f);
+        cell.setPaddingTop(4.0f);
+        cell.setPaddingBottom(4.0f);
+        cell.setPaddingLeft(2.0f);
+        cell.setPaddingRight(2.0f);
         cell.setBorderColor(COLOR_BORDER);
         cell.setBorderWidth(0.5f);
         if (isAltRow) {
@@ -1010,14 +1070,14 @@ public class QuotationPdfService {
     }
 
     private void addMaterialCell(PdfPTable table, String materialName, String specification, String imageUrl, boolean isAltRow) {
-        Font mainFont = new Font(Font.HELVETICA, 6.8f, Font.BOLD, COLOR_NAVY);
-        Font specFont = new Font(Font.HELVETICA, 6.0f, Font.NORMAL, COLOR_TEXT_MUTED);
+        Font mainFont = new Font(Font.HELVETICA, 10.5f, Font.BOLD, COLOR_NAVY);
+        Font specFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_MUTED);
 
         PdfPCell cell = new PdfPCell();
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(3.5f);
-        cell.setPaddingBottom(3.5f);
+        cell.setPaddingTop(4.5f);
+        cell.setPaddingBottom(4.5f);
         cell.setPaddingLeft(3.0f);
         cell.setPaddingRight(3.0f);
         cell.setBorderColor(COLOR_BORDER);
@@ -1039,7 +1099,7 @@ public class QuotationPdfService {
         Paragraph namePar = null;
         if (showName) {
             namePar = new Paragraph(safeName.toUpperCase(), mainFont);
-            namePar.setLeading(8.5f);
+            namePar.setLeading(13.0f);
             namePar.setAlignment(Element.ALIGN_LEFT);
         }
 
@@ -1047,7 +1107,7 @@ public class QuotationPdfService {
         Paragraph specPar = null;
         if (hasSpec) {
             specPar = new Paragraph(formatSpecificationForPdf(safe(specification)), specFont);
-            specPar.setLeading(7.6f);
+            specPar.setLeading(12.5f);
             specPar.setAlignment(Element.ALIGN_LEFT);
         }
 
@@ -1072,7 +1132,7 @@ public class QuotationPdfService {
         } else if (namePar == null && specPar == null) {
             // Fallback if no name, no spec, and no image
             Paragraph fallback = new Paragraph(safeName.toUpperCase(), mainFont);
-            fallback.setLeading(8.5f);
+            fallback.setLeading(13.0f);
             fallback.setAlignment(Element.ALIGN_LEFT);
             cell.addElement(fallback);
         }
@@ -1202,12 +1262,13 @@ public class QuotationPdfService {
         }
 
         PdfPCell cell = new PdfPCell(new Phrase(safe(text), font));
+        cell.setNoWrap(true);
         cell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        cell.setPaddingTop(3.5f);
-        cell.setPaddingBottom(3.5f);
-        cell.setPaddingLeft(2.5f);
-        cell.setPaddingRight(2.5f);
+        cell.setPaddingTop(4.0f);
+        cell.setPaddingBottom(4.0f);
+        cell.setPaddingLeft(2.0f);
+        cell.setPaddingRight(4.0f);
         cell.setBorderColor(COLOR_BORDER);
         cell.setBorderWidth(0.5f);
         if (isAltRow) {
@@ -1220,9 +1281,10 @@ public class QuotationPdfService {
         int colCount = table.getNumberOfColumns();
         for (int i = 0; i < colCount; i++) {
             PdfPCell cell = new PdfPCell(new Phrase(" ", rupeeFont));
+            cell.setNoWrap(true);
             cell.setBorderColor(COLOR_BORDER);
             cell.setBorderWidth(0.5f);
-            cell.setPadding(3.5f);
+            cell.setPadding(4.0f);
             if (isAltRow) {
                 cell.setBackgroundColor(COLOR_ROW_ALT);
             }
@@ -1231,7 +1293,7 @@ public class QuotationPdfService {
     }
 
     private void addSummaryRow(PdfPTable table, String label, String amountText, boolean isBold) {
-        Font labelFont = new Font(Font.HELVETICA, 7.8f, Font.BOLD, COLOR_TEXT_DARK);
+        Font labelFont = new Font(Font.HELVETICA, 10.0f, Font.BOLD, COLOR_TEXT_DARK);
         Font valFont = isBold ? rupeeBoldFont : rupeeFont;
 
         int labelColspan = Math.max(1, table.getNumberOfColumns() - 1);
@@ -1239,8 +1301,8 @@ public class QuotationPdfService {
         labelCell.setColspan(labelColspan);
         labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         labelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        labelCell.setPaddingTop(4.5f);
-        labelCell.setPaddingBottom(4.5f);
+        labelCell.setPaddingTop(5.0f);
+        labelCell.setPaddingBottom(5.0f);
         labelCell.setPaddingRight(6f);
         labelCell.setBorderColor(COLOR_BORDER);
         labelCell.setBorderWidth(0.5f);
@@ -1248,12 +1310,14 @@ public class QuotationPdfService {
         table.addCell(labelCell);
 
         PdfPCell valCell = new PdfPCell(new Phrase(amountText, valFont));
+        valCell.setNoWrap(true);
         valCell.setColspan(1);
         valCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         valCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        valCell.setPaddingTop(4.5f);
-        valCell.setPaddingBottom(4.5f);
-        valCell.setPaddingRight(4f);
+        valCell.setPaddingTop(5.0f);
+        valCell.setPaddingBottom(5.0f);
+        valCell.setPaddingLeft(2.0f);
+        valCell.setPaddingRight(4.0f);
         valCell.setBorderColor(COLOR_BORDER);
         valCell.setBorderWidth(0.5f);
         valCell.setBackgroundColor(COLOR_LIGHT_BG);
@@ -1261,15 +1325,15 @@ public class QuotationPdfService {
     }
 
     private void addGrandTotalRow(PdfPTable table, String label, BigDecimal grandTotal) {
-        Font labelFont = new Font(Font.HELVETICA, 8.5f, Font.BOLD, COLOR_HEADER_TEXT);
+        Font labelFont = new Font(Font.HELVETICA, 11.0f, Font.BOLD, COLOR_HEADER_TEXT);
 
         int labelColspan = Math.max(1, table.getNumberOfColumns() - 1);
         PdfPCell labelCell = new PdfPCell(new Phrase(label, labelFont));
         labelCell.setColspan(labelColspan);
         labelCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         labelCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        labelCell.setPaddingTop(5f);
-        labelCell.setPaddingBottom(5f);
+        labelCell.setPaddingTop(5.5f);
+        labelCell.setPaddingBottom(5.5f);
         labelCell.setPaddingRight(6f);
         labelCell.setBackgroundColor(COLOR_HEADER_BG);
         labelCell.setBorderColor(COLOR_HEADER_BG);
@@ -1278,12 +1342,14 @@ public class QuotationPdfService {
         // GRAND TOTAL VALUE (Colspan 1)
         String amtText = rupees(grandTotal);
         PdfPCell totalCell = new PdfPCell(new Phrase(amtText, rupeeGoldBoldFont));
+        totalCell.setNoWrap(true);
         totalCell.setColspan(1);
         totalCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
         totalCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-        totalCell.setPaddingTop(5f);
-        totalCell.setPaddingBottom(5f);
-        totalCell.setPaddingRight(4f);
+        totalCell.setPaddingTop(5.5f);
+        totalCell.setPaddingBottom(5.5f);
+        totalCell.setPaddingLeft(2.0f);
+        totalCell.setPaddingRight(4.0f);
         totalCell.setBackgroundColor(COLOR_HEADER_BG);
         totalCell.setBorderColor(COLOR_HEADER_BG);
         table.addCell(totalCell);
@@ -1291,7 +1357,7 @@ public class QuotationPdfService {
 
     private Paragraph buildBullet(String prefix, String text, Font prefixFont, Font textFont) {
         Paragraph p = new Paragraph();
-        p.setLeading(9.5f);
+        p.setLeading(13.5f);
         p.add(new Chunk(prefix, prefixFont));
         p.add(new Chunk(text, textFont));
         return p;
@@ -1377,7 +1443,7 @@ public class QuotationPdfService {
             amount = BigDecimal.ZERO;
         }
         String formatted = com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(amount);
-        return (hasUnicodeRupee ? "₹ " : "Rs. ") + formatted;
+        return (hasUnicodeRupee ? "₹\u00A0" : "Rs.\u00A0") + formatted;
     }
 
     private String format(BigDecimal value) {
