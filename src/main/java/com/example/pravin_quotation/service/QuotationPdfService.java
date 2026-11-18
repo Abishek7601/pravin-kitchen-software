@@ -59,6 +59,7 @@ public class QuotationPdfService {
     private final BranchRepository branchRepository;
     private final PricingRepository pricingRepository;
     private final QuotationCalculationService quotationCalculationService;
+    private QuotationViewGradeService quotationViewGradeService;
 
     /*
      * Design Colors matching the Reference Document (1.pdf)
@@ -93,7 +94,8 @@ public class QuotationPdfService {
             NumberToWordsService numberToWordsService,
             BranchRepository branchRepository,
             PricingRepository pricingRepository,
-            QuotationCalculationService quotationCalculationService
+            @org.springframework.beans.factory.annotation.Autowired(required = false) QuotationCalculationService quotationCalculationService,
+            @org.springframework.beans.factory.annotation.Autowired(required = false) QuotationViewGradeService quotationViewGradeService
     ) {
         this.quotationRepository = quotationRepository;
         this.quotationRoomRepository = quotationRoomRepository;
@@ -102,6 +104,7 @@ public class QuotationPdfService {
         this.branchRepository = branchRepository;
         this.pricingRepository = pricingRepository;
         this.quotationCalculationService = quotationCalculationService;
+        this.quotationViewGradeService = quotationViewGradeService;
 
         try {
             BaseFont rupeeBaseFont = BaseFont.createFont(
@@ -127,10 +130,27 @@ public class QuotationPdfService {
             QuotationItemRepository quotationItemRepository,
             NumberToWordsService numberToWordsService,
             BranchRepository branchRepository,
+            PricingRepository pricingRepository,
+            QuotationCalculationService quotationCalculationService
+    ) {
+        this(quotationRepository, quotationRoomRepository, quotationItemRepository,
+             numberToWordsService, branchRepository, pricingRepository, quotationCalculationService, null);
+    }
+
+    public QuotationPdfService(
+            QuotationRepository quotationRepository,
+            QuotationRoomRepository quotationRoomRepository,
+            QuotationItemRepository quotationItemRepository,
+            NumberToWordsService numberToWordsService,
+            BranchRepository branchRepository,
             PricingRepository pricingRepository
     ) {
         this(quotationRepository, quotationRoomRepository, quotationItemRepository,
-             numberToWordsService, branchRepository, pricingRepository, null);
+             numberToWordsService, branchRepository, pricingRepository, null, null);
+    }
+
+    public void setQuotationViewGradeService(QuotationViewGradeService quotationViewGradeService) {
+        this.quotationViewGradeService = quotationViewGradeService;
     }
 
     // ============================================================
@@ -138,6 +158,10 @@ public class QuotationPdfService {
     // ============================================================
 
     public byte[] generateQuotationPdf(Long quotationId) {
+        return generateQuotationPdf(quotationId, null);
+    }
+
+    public byte[] generateQuotationPdf(Long quotationId, PricingMode targetGrade) {
         try {
             Quotation quotation;
             if (quotationCalculationService != null) {
@@ -147,8 +171,40 @@ public class QuotationPdfService {
                         .orElseThrow(() -> new RuntimeException("Quotation not found with ID: " + quotationId));
             }
 
+            // Determine effective grade
+            PricingMode effectiveGrade = targetGrade;
+            if (effectiveGrade == null) {
+                if (quotation.getSelectedGrade() != null) {
+                    effectiveGrade = quotation.getSelectedGrade();
+                } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+                    effectiveGrade = quotation.getParent().getSelectedGrade();
+                } else if (quotation.getPricingMode() != null) {
+                    effectiveGrade = quotation.getPricingMode();
+                } else {
+                    effectiveGrade = PricingMode.PREMIUM;
+                }
+            }
+
+            // Check if there is a child quotation for this grade
+            Quotation parent = quotation.getParent() != null ? quotation.getParent() : quotation;
+            Quotation childQuote = parent.getChildForGrade(effectiveGrade);
+            if (childQuote != null && childQuote.getId() != null) {
+                if (quotationCalculationService != null) {
+                    try {
+                        quotation = quotationCalculationService.calculateQuotation(childQuote.getId());
+                    } catch (Exception e) {
+                        quotation = childQuote;
+                    }
+                } else {
+                    quotation = childQuote;
+                }
+            }
+
             // Fetch branch dynamically from Branch Management data
             Branch branch = quotation.getBranch();
+            if (branch == null && parent.getBranch() != null) {
+                branch = parent.getBranch();
+            }
             if (branch != null && branch.getId() != null) {
                 branch = branchRepository.findById(branch.getId()).orElse(branch);
             }
@@ -186,7 +242,7 @@ public class QuotationPdfService {
             // ----------------------------------------------------
             // PAGE 2: DYNAMIC MARKETING QUOTATION
             // ----------------------------------------------------
-            renderDynamicMarketingQuotationPage(document, writer, quotation, branch);
+            renderDynamicMarketingQuotationPage(document, writer, quotation, branch, effectiveGrade);
             document.newPage();
 
             // ----------------------------------------------------
@@ -307,6 +363,16 @@ public class QuotationPdfService {
             Quotation quotation,
             Branch branch
     ) throws Exception {
+        renderDynamicMarketingQuotationPage(document, writer, quotation, branch, null);
+    }
+
+    private void renderDynamicMarketingQuotationPage(
+            Document document,
+            PdfWriter writer,
+            Quotation quotation,
+            Branch branch,
+            PricingMode effectiveGrade
+    ) throws Exception {
 
         // ========================================================
         // 1. TOP HEADER TABLE (BRAND & ADDRESS ON LEFT, QUOTE INFO ON RIGHT)
@@ -391,26 +457,35 @@ public class QuotationPdfService {
         rightCell.setPadding(0);
         rightCell.setHorizontalAlignment(Element.ALIGN_RIGHT);
 
-        String qType = resolveQuotationType(quotation);
-
-        String titleText = "MARKETING QUOTATION";
-        if (qType != null && !qType.isBlank() && !"-".equals(qType)) {
-            titleText = qType.toUpperCase() + " GRADE QUOTATION";
-        } else if (quotation.getPricingMode() != null) {
-            switch (quotation.getPricingMode()) {
-                case PREMIUM:
-                    titleText = "PREMIUM GRADE QUOTATION";
-                    break;
-                case MIDDLE:
-                    titleText = "MIDDLE GRADE QUOTATION";
-                    break;
-                case ECONOMY:
-                    titleText = "ECONOMY GRADE QUOTATION";
-                    break;
-                default:
-                    titleText = quotation.getPricingMode().name() + " GRADE QUOTATION";
-                    break;
+        PricingMode gradeForPage = effectiveGrade;
+        if (gradeForPage == null) {
+            if (quotation.getSelectedGrade() != null) {
+                gradeForPage = quotation.getSelectedGrade();
+            } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+                gradeForPage = quotation.getParent().getSelectedGrade();
+            } else if (quotation.getPricingMode() != null) {
+                gradeForPage = quotation.getPricingMode();
+            } else {
+                gradeForPage = PricingMode.PREMIUM;
             }
+        }
+
+        String qType = formatSingleGrade(gradeForPage);
+
+        String titleText;
+        switch (gradeForPage) {
+            case PREMIUM:
+                titleText = "PREMIUM GRADE QUOTATION";
+                break;
+            case MIDDLE:
+                titleText = "MIDDLE GRADE QUOTATION";
+                break;
+            case ECONOMY:
+                titleText = "ECONOMY GRADE QUOTATION";
+                break;
+            default:
+                titleText = gradeForPage.name() + " GRADE QUOTATION";
+                break;
         }
         Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 17f, Font.BOLD, COLOR_NAVY));
         titlePar.setLeading(20f);
@@ -500,150 +575,208 @@ public class QuotationPdfService {
         addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT, true);
 
         // --- QUOTATION ROOMS & ITEMS ---
-        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(quotation.getId());
         int serialNumber = 1;
         int activeItemCount = 0;
         boolean isAltRow = false;
-
         BigDecimal itemsTotalAmount = BigDecimal.ZERO;
 
-        for (QuotationRoom room : rooms) {
-            if (!Boolean.TRUE.equals(room.getActive())) {
-                continue;
+        boolean usedGradeService = false;
+        QuotationViewGradeService.GradeViewResponse gradeData = null;
+        if (quotationViewGradeService != null) {
+            try {
+                gradeData = quotationViewGradeService.getGradeViewData(quotation.getId(), gradeForPage);
+                if (gradeData != null && gradeData.success() && gradeData.rooms() != null && !gradeData.rooms().isEmpty()) {
+                    usedGradeService = true;
+                    for (QuotationViewGradeService.GradeViewRoomDto roomDto : gradeData.rooms()) {
+                        if (roomDto.items() == null) continue;
+                        for (QuotationViewGradeService.GradeViewItemDto itemDto : roomDto.items()) {
+                            activeItemCount++;
+
+                            String workCat = safe(itemDto.categoryName());
+                            String roomName = safe(roomDto.room()).toUpperCase();
+                            String floorName = safe(roomDto.floor()).toUpperCase();
+                            if (floorName.isBlank()) floorName = "-";
+
+                            String materialText = safe(itemDto.materialName());
+                            if (itemDto.materialOptionName() != null && !itemDto.materialOptionName().isBlank()
+                                    && !itemDto.materialOptionName().equalsIgnoreCase(materialText)) {
+                                materialText += " - " + itemDto.materialOptionName();
+                            }
+
+                            String spec = safe(itemDto.specification());
+                            String sizeStr = safe(itemDto.dimensions());
+                            String sqftStr = safe(itemDto.sqft());
+                            String unitStr = safe(itemDto.unit());
+                            String amtStr = safe(itemDto.amount()).replace("₹", "").replace(",", "").trim();
+                            BigDecimal itemAmt = BigDecimal.ZERO;
+                            try {
+                                if (!amtStr.isBlank()) itemAmt = new BigDecimal(amtStr);
+                            } catch (Exception ignored) {}
+
+                            itemsTotalAmount = itemsTotalAmount.add(itemAmt);
+
+                            addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
+                            addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
+                            addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
+                            addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
+                            addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(spec), itemDto.imageUrl(), isAltRow);
+                            if (showSqft) {
+                                addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
+                                addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
+                            }
+                            addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
+                            addRupeeCell(itemTable, rupees(itemAmt), false, false, isAltRow);
+
+                            isAltRow = !isAltRow;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("Error getting grade view data for PDF: {}", e.getMessage());
+                usedGradeService = false;
             }
+        }
 
-            List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
-
-            for (QuotationItem item : items) {
-                if (!Boolean.TRUE.equals(item.getActive())) {
+        List<QuotationRoom> rooms = quotationRoomRepository.findByQuotationId(quotation.getId());
+        if (!usedGradeService) {
+            for (QuotationRoom room : rooms) {
+                if (!Boolean.TRUE.equals(room.getActive())) {
                     continue;
                 }
-                activeItemCount++;
 
-                // Work Category
-                String workCat = item.getWorkCategory() != null ? safe(item.getWorkCategory().getName()).toUpperCase() : "-";
+                List<QuotationItem> items = quotationItemRepository.findByQuotationRoomId(room.getId());
 
-                // Room
-                String roomName = safe(room.getRoom()).toUpperCase();
-
-                // Floor
-                String floorName = safe(room.getFloor()).toUpperCase();
-                if (floorName.isBlank()) {
-                    floorName = "-";
-                }
-
-                // Material & Option (deduplicate so material name is only displayed once)
-                String rawMatName = item.getMaterial() != null ? safe(item.getMaterial().getName()).trim() : "";
-                String optionName = item.getMaterialOption() != null ? safe(item.getMaterialOption().getName()).trim() : "";
-
-                PricingMode itemGrade = item.getEffectivePricingMode();
-                String gradeSuffix = "";
-                if (itemGrade != null) {
-                    switch (itemGrade) {
-                        case PREMIUM: gradeSuffix = " (Premium)"; break;
-                        case MIDDLE: gradeSuffix = " (Middle)"; break;
-                        case ECONOMY: gradeSuffix = " (Economy)"; break;
-                        default: gradeSuffix = " (" + itemGrade.name() + ")"; break;
+                for (QuotationItem item : items) {
+                    if (!Boolean.TRUE.equals(item.getActive())) {
+                        continue;
                     }
-                }
+                    activeItemCount++;
 
-                String baseName = !rawMatName.isBlank() ? rawMatName : optionName;
-                String optionSuffix = (!optionName.isBlank() && !optionName.equalsIgnoreCase(rawMatName) && !rawMatName.isBlank())
-                        ? " - " + optionName : "";
-                String materialText = baseName;
-                if (!materialText.isBlank()) {
-                    materialText = materialText + gradeSuffix + optionSuffix;
-                } else {
-                    materialText = !gradeSuffix.isBlank() ? "-" + gradeSuffix : "-";
-                }
+                    // Work Category
+                    String workCat = item.getWorkCategory() != null ? safe(item.getWorkCategory().getName()).toUpperCase() : "-";
 
-                // Specifications (display saved specification without duplicating material name)
-                String specification = safe(item.getSpecification()).trim();
-                if (specification.isBlank() && item.getMaterialSpecification() != null) {
-                    specification = safe(item.getMaterialSpecification().getName()).trim();
-                }
-                if (!rawMatName.isBlank() && specification.toUpperCase().startsWith(rawMatName.toUpperCase())) {
-                    specification = specification.substring(rawMatName.length()).trim();
-                    if (specification.startsWith("-") || specification.startsWith(":")) {
-                        specification = specification.substring(1).trim();
+                    // Room
+                    String roomName = safe(room.getRoom()).toUpperCase();
+
+                    // Floor
+                    String floorName = safe(room.getFloor()).toUpperCase();
+                    if (floorName.isBlank()) {
+                        floorName = "-";
                     }
-                }
 
-                // Sq.Ft
-                BigDecimal sqft = item.getCalculatedSqft() != null ? item.getCalculatedSqft() : BigDecimal.ZERO;
+                    // Material & Option (deduplicate so material name is only displayed once)
+                    String rawMatName = item.getMaterial() != null ? safe(item.getMaterial().getName()).trim() : "";
+                    String optionName = item.getMaterialOption() != null ? safe(item.getMaterialOption().getName()).trim() : "";
 
-                // Size & Sq.Ft
-                boolean isRoll = item.getMeasurementType() == MeasurementType.ROLL || (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.ROLL);
-                boolean isSqft = !isRoll && (item.getMeasurementType() == null || item.getMeasurementType().isSqft());
-                String sizeStr;
-                String sqftStr;
-                if (isRoll) {
-                    sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
-                    sqftStr = format(sqft);
-                } else if (isSqft) {
-                    sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
-                    sqftStr = format(sqft);
-                } else {
-                    BigDecimal qty = (item.getQuantity() != null && item.getQuantity().compareTo(BigDecimal.ZERO) > 0)
-                            ? item.getQuantity()
-                            : BigDecimal.ONE;
-                    sizeStr = "QTY: " + qty.stripTrailingZeros().toPlainString();
-                    sqftStr = "-";
-                }
+                    PricingMode itemGrade = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : gradeForPage;
+                    String gradeSuffix = "";
+                    if (itemGrade != null) {
+                        switch (itemGrade) {
+                            case PREMIUM: gradeSuffix = " (Premium)"; break;
+                            case MIDDLE: gradeSuffix = " (Middle)"; break;
+                            case ECONOMY: gradeSuffix = " (Economy)"; break;
+                            default: gradeSuffix = " (" + itemGrade.name() + ")"; break;
+                        }
+                    }
 
-                // Unit
-                PricingMode effectiveMode = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : quotation.getPricingMode();
-                String unitStr = resolveUnit(item, effectiveMode);
-
-                // Amounts
-                BigDecimal rate = item.getRate() != null ? item.getRate() : BigDecimal.ZERO;
-                BigDecimal amount = item.getAmount() != null
-                        ? item.getAmount()
-                        : (isRoll
-                                ? rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)
-                                : (isSqft ? rate.multiply(sqft) : rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)));
-
-                if (isRoll) {
-                    BigDecimal rolls = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE;
-                    BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
-                            : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : null);
-                    String covText = cov != null ? cov.stripTrailingZeros().toPlainString() : "-";
-                    String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + covText + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹\u00A0" : "Rs.\u00A0") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
-                    if (specification == null || specification.isBlank()) {
-                        specification = rollDetails;
+                    String baseName = !rawMatName.isBlank() ? rawMatName : optionName;
+                    String optionSuffix = (!optionName.isBlank() && !optionName.equalsIgnoreCase(rawMatName) && !rawMatName.isBlank())
+                            ? " - " + optionName : "";
+                    String materialText = baseName;
+                    if (!materialText.isBlank()) {
+                        materialText = materialText + gradeSuffix + optionSuffix;
                     } else {
-                        specification = specification + "\n" + rollDetails;
+                        materialText = !gradeSuffix.isBlank() ? "-" + gradeSuffix : "-";
                     }
-                }
-                BigDecimal offerPrice = item.getOfferPrice();
-                if (offerPrice == null || offerPrice.compareTo(BigDecimal.ZERO) <= 0) {
-                    offerPrice = amount;
-                }
 
-                // Sum items' Total Amount (using discounted Offer Price) before applying quotation-level Offer Percentage
-                itemsTotalAmount = itemsTotalAmount.add(offerPrice);
+                    // Specifications (display saved specification without duplicating material name)
+                    String specification = safe(item.getSpecification()).trim();
+                    if (specification.isBlank() && item.getMaterialSpecification() != null) {
+                        specification = safe(item.getMaterialSpecification().getName()).trim();
+                    }
+                    if (!rawMatName.isBlank() && specification.toUpperCase().startsWith(rawMatName.toUpperCase())) {
+                        specification = specification.substring(rawMatName.length()).trim();
+                        if (specification.startsWith("-") || specification.startsWith(":")) {
+                            specification = specification.substring(1).trim();
+                        }
+                    }
 
-                // Image URL (check item first, then fallback to material)
-                String itemImageUrl = item.getImageUrl();
-                if ((itemImageUrl == null || itemImageUrl.isBlank()) && item.getMaterial() != null) {
-                    itemImageUrl = item.getMaterial().getImageUrl();
+                    // Sq.Ft
+                    BigDecimal sqft = item.getCalculatedSqft() != null ? item.getCalculatedSqft() : BigDecimal.ZERO;
+
+                    // Size & Sq.Ft
+                    boolean isRoll = item.getMeasurementType() == MeasurementType.ROLL || (item.getMaterial() != null && item.getMaterial().getMeasurementType() == MeasurementType.ROLL);
+                    boolean isSqft = !isRoll && (item.getMeasurementType() == null || item.getMeasurementType().isSqft());
+                    String sizeStr;
+                    String sqftStr;
+                    if (isRoll) {
+                        sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+                        sqftStr = format(sqft);
+                    } else if (isSqft) {
+                        sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+                        sqftStr = format(sqft);
+                    } else {
+                        BigDecimal qty = (item.getQuantity() != null && item.getQuantity().compareTo(BigDecimal.ZERO) > 0)
+                                ? item.getQuantity()
+                                : BigDecimal.ONE;
+                        sizeStr = "QTY: " + qty.stripTrailingZeros().toPlainString();
+                        sqftStr = "-";
+                    }
+
+                    // Unit
+                    PricingMode effectiveMode = item.getEffectivePricingMode() != null ? item.getEffectivePricingMode() : gradeForPage;
+                    String unitStr = resolveUnit(item, effectiveMode);
+
+                    // Amounts
+                    BigDecimal rate = item.getRate() != null ? item.getRate() : BigDecimal.ZERO;
+                    BigDecimal amount = item.getAmount() != null
+                            ? item.getAmount()
+                            : (isRoll
+                                    ? rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)
+                                    : (isSqft ? rate.multiply(sqft) : rate.multiply(item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE)));
+
+                    if (isRoll) {
+                        BigDecimal rolls = item.getQuantity() != null ? item.getQuantity() : BigDecimal.ONE;
+                        BigDecimal cov = item.getCoveragePerRoll() != null ? item.getCoveragePerRoll()
+                                : (item.getMaterial() != null && item.getMaterial().getCoveragePerRoll() != null ? item.getMaterial().getCoveragePerRoll() : null);
+                        String covText = cov != null ? cov.stripTrailingZeros().toPlainString() : "-";
+                        String rollDetails = rolls.stripTrailingZeros().toPlainString() + " Roll(s) (Coverage: " + covText + " Sq.ft/Roll @ " + (hasUnicodeRupee ? "₹\u00A0" : "Rs.\u00A0") + com.example.pravin_quotation.util.IndianCurrencyFormatter.formatBigDecimal(rate) + "/Roll)";
+                        if (specification == null || specification.isBlank()) {
+                            specification = rollDetails;
+                        } else {
+                            specification = specification + "\n" + rollDetails;
+                        }
+                    }
+                    BigDecimal offerPrice = item.getOfferPrice();
+                    if (offerPrice == null || offerPrice.compareTo(BigDecimal.ZERO) <= 0) {
+                        offerPrice = amount;
+                    }
+
+                    // Sum items' Total Amount (using discounted Offer Price) before applying quotation-level Offer Percentage
+                    itemsTotalAmount = itemsTotalAmount.add(offerPrice);
+
+                    // Image URL (check item first, then fallback to material)
+                    String itemImageUrl = item.getImageUrl();
+                    if ((itemImageUrl == null || itemImageUrl.isBlank()) && item.getMaterial() != null) {
+                        itemImageUrl = item.getMaterial().getImageUrl();
+                    }
+
+                    // Add Row Cells (item-level offer price reflected in total amount)
+                    addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
+                    addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
+                    addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
+                    addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
+                    addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
+                    if (showSqft) {
+                        addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
+                        addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
+                    }
+                    addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
+                    BigDecimal itemAmt = (offerPrice != null && offerPrice.compareTo(BigDecimal.ZERO) > 0) ? offerPrice : amount;
+                    addRupeeCell(itemTable, rupees(itemAmt), false, false, isAltRow);
+
+                    isAltRow = !isAltRow;
                 }
-
-                // Add Row Cells (item-level offer price reflected in total amount)
-                addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
-                addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
-                addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
-                addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
-                addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
-                if (showSqft) {
-                    addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
-                    addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
-                }
-                addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
-                BigDecimal itemAmt = (offerPrice != null && offerPrice.compareTo(BigDecimal.ZERO) > 0) ? offerPrice : amount;
-                addRupeeCell(itemTable, rupees(itemAmt), false, false, isAltRow);
-
-                isAltRow = !isAltRow;
             }
         }
 
@@ -656,9 +789,10 @@ public class QuotationPdfService {
         }
 
         // --- PDF FINANCIAL VALUES (SINGLE SOURCE OF TRUTH) ---
-        BigDecimal subtotal = quotation.getSubtotal() != null && quotation.getSubtotal().compareTo(BigDecimal.ZERO) > 0
-                ? quotation.getSubtotal()
-                : itemsTotalAmount;
+        BigDecimal subtotal = itemsTotalAmount;
+        if (subtotal.compareTo(BigDecimal.ZERO) <= 0 && quotation.getSubtotal() != null && quotation.getSubtotal().compareTo(BigDecimal.ZERO) > 0) {
+            subtotal = quotation.getSubtotal();
+        }
 
         BigDecimal accessories = zeroIfNull(quotation.getAccessoriesAmount());
         BigDecimal travel = zeroIfNull(quotation.getTravelCharge());
@@ -667,10 +801,12 @@ public class QuotationPdfService {
         BigDecimal gstAmount = zeroIfNull(quotation.getGstAmount());
         BigDecimal totalAmount = quotation.getTotalAmount();
         BigDecimal offerAmount = zeroIfNull(quotation.getOfferAmount());
-        BigDecimal grandTotal = quotation.getGrandTotal();
+        BigDecimal grandTotal = (usedGradeService && gradeData != null && gradeData.grandTotalRaw() != null)
+                ? gradeData.grandTotalRaw()
+                : quotation.getGrandTotal();
 
         // Fallback calculation using the exact business rules if fields were not pre-calculated
-        if (grandTotal == null) {
+        if (grandTotal == null || (usedGradeService && gradeData != null && gradeData.grandTotalRaw() != null)) {
             BigDecimal amountBeforeDiscount = subtotal.add(accessories).add(travel).add(otherCharges);
             BigDecimal amountAfterDiscount = amountBeforeDiscount.subtract(discount);
             if (amountAfterDiscount.compareTo(BigDecimal.ZERO) < 0) amountAfterDiscount = BigDecimal.ZERO;
@@ -684,11 +820,13 @@ public class QuotationPdfService {
             if (amountAfterOffer.compareTo(BigDecimal.ZERO) < 0) amountAfterOffer = BigDecimal.ZERO;
 
             BigDecimal gstPct = zeroIfNull(quotation.getGstPercentage());
-            if (gstAmount.compareTo(BigDecimal.ZERO) == 0 && gstPct.compareTo(BigDecimal.ZERO) > 0) {
+            if (gstPct.compareTo(BigDecimal.ZERO) > 0) {
                 gstAmount = amountAfterOffer.multiply(gstPct).divide(new BigDecimal("100"), 2, RoundingMode.HALF_UP);
             }
             totalAmount = amountAfterDiscount;
-            grandTotal = amountAfterOffer.add(gstAmount);
+            if (grandTotal == null) {
+                grandTotal = amountAfterOffer.add(gstAmount);
+            }
         } else if (totalAmount == null) {
             totalAmount = grandTotal.subtract(gstAmount).add(offerAmount);
         }
@@ -699,33 +837,38 @@ public class QuotationPdfService {
                 || otherCharges.compareTo(BigDecimal.ZERO) > 0
                 || discount.compareTo(BigDecimal.ZERO) > 0;
 
-        // Calculate grade subtotals for PDF breakdown
-        BigDecimal pdfPremSubtotal = BigDecimal.ZERO;
-        BigDecimal pdfMidSubtotal = BigDecimal.ZERO;
-        BigDecimal pdfEconSubtotal = BigDecimal.ZERO;
-        for (QuotationRoom r : rooms) {
-            if (!Boolean.TRUE.equals(r.getActive())) continue;
-            List<QuotationItem> rItems = quotationItemRepository.findByQuotationRoomId(r.getId());
-            for (QuotationItem qi : rItems) {
-                if (!Boolean.TRUE.equals(qi.getActive())) continue;
-                BigDecimal qiAmt = (qi.getOfferPrice() != null && qi.getOfferPrice().compareTo(BigDecimal.ZERO) > 0)
-                        ? qi.getOfferPrice()
-                        : (qi.getAmount() != null ? qi.getAmount() : BigDecimal.ZERO);
-                PricingMode gm = qi.getEffectivePricingMode();
-                if (gm == PricingMode.PREMIUM) pdfPremSubtotal = pdfPremSubtotal.add(qiAmt);
-                else if (gm == PricingMode.ECONOMY) pdfEconSubtotal = pdfEconSubtotal.add(qiAmt);
-                else pdfMidSubtotal = pdfMidSubtotal.add(qiAmt);
+        if (usedGradeService) {
+            String gradeLabel = (gradeForPage == PricingMode.MIDDLE) ? "Middle Grade Subtotal" : (formatSingleGrade(gradeForPage) + " Grade Subtotal");
+            addSummaryRow(itemTable, gradeLabel, rupees(subtotal), false);
+        } else {
+            // Calculate grade subtotals for PDF breakdown
+            BigDecimal pdfPremSubtotal = BigDecimal.ZERO;
+            BigDecimal pdfMidSubtotal = BigDecimal.ZERO;
+            BigDecimal pdfEconSubtotal = BigDecimal.ZERO;
+            for (QuotationRoom r : rooms) {
+                if (!Boolean.TRUE.equals(r.getActive())) continue;
+                List<QuotationItem> rItems = quotationItemRepository.findByQuotationRoomId(r.getId());
+                for (QuotationItem qi : rItems) {
+                    if (!Boolean.TRUE.equals(qi.getActive())) continue;
+                    BigDecimal qiAmt = (qi.getOfferPrice() != null && qi.getOfferPrice().compareTo(BigDecimal.ZERO) > 0)
+                            ? qi.getOfferPrice()
+                            : (qi.getAmount() != null ? qi.getAmount() : BigDecimal.ZERO);
+                    PricingMode gm = qi.getEffectivePricingMode();
+                    if (gm == PricingMode.PREMIUM) pdfPremSubtotal = pdfPremSubtotal.add(qiAmt);
+                    else if (gm == PricingMode.ECONOMY) pdfEconSubtotal = pdfEconSubtotal.add(qiAmt);
+                    else pdfMidSubtotal = pdfMidSubtotal.add(qiAmt);
+                }
             }
-        }
 
-        if (pdfPremSubtotal.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Premium Grade Subtotal", rupees(pdfPremSubtotal), false);
-        }
-        if (pdfMidSubtotal.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Middle Grade Subtotal", rupees(pdfMidSubtotal), false);
-        }
-        if (pdfEconSubtotal.compareTo(BigDecimal.ZERO) > 0) {
-            addSummaryRow(itemTable, "Economy Grade Subtotal", rupees(pdfEconSubtotal), false);
+            if (pdfPremSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Premium Grade Subtotal", rupees(pdfPremSubtotal), false);
+            }
+            if (pdfMidSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Middle Grade Subtotal", rupees(pdfMidSubtotal), false);
+            }
+            if (pdfEconSubtotal.compareTo(BigDecimal.ZERO) > 0) {
+                addSummaryRow(itemTable, "Economy Grade Subtotal", rupees(pdfEconSubtotal), false);
+            }
         }
 
         if (hasConfiguredExtraCharges) {
@@ -1491,7 +1634,7 @@ public class QuotationPdfService {
             gradeNames.add("Premium");
         }
         if (usedGrades.contains(PricingMode.MIDDLE)) {
-            gradeNames.add("Middle");
+            gradeNames.add("Middle / Standard");
         }
         if (usedGrades.contains(PricingMode.ECONOMY)) {
             gradeNames.add("Economy");
@@ -1504,7 +1647,7 @@ public class QuotationPdfService {
         if (mode == null) return "-";
         switch (mode) {
             case PREMIUM: return "Premium";
-            case MIDDLE: return "Middle";
+            case MIDDLE: return "Middle / Standard";
             case ECONOMY: return "Economy";
             default: return mode.name();
         }

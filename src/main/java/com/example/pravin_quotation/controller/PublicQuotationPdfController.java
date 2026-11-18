@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.controller;
 
+import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.service.QuotationPdfService;
 import com.example.pravin_quotation.service.QuotationService;
@@ -39,7 +40,8 @@ public class PublicQuotationPdfController {
     @GetMapping("/pdf/{id}")
     public ResponseEntity<byte[]> getPublicQuotationPdf(
             @PathVariable Long id,
-            @RequestParam(required = false) String token
+            @RequestParam(required = false) String token,
+            @RequestParam(required = false) PricingMode grade
     ) {
         // Enforce token validation if required or if a token parameter was supplied
         if (temporaryMediaTokenService.isTokenRequired() || (token != null && !token.isBlank())) {
@@ -55,7 +57,26 @@ public class PublicQuotationPdfController {
             return ResponseEntity.notFound().build();
         }
 
-        byte[] pdf = quotationPdfService.generateQuotationPdf(quotation.getId());
+        PricingMode targetGrade = grade;
+        if (targetGrade == null) {
+            if (quotation.getSelectedGrade() != null) {
+                targetGrade = quotation.getSelectedGrade();
+            } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+                targetGrade = quotation.getParent().getSelectedGrade();
+            } else if (quotation.getPricingMode() != null) {
+                targetGrade = quotation.getPricingMode();
+            }
+        }
+
+        Quotation targetQuotation = quotation;
+        if (targetGrade != null) {
+            Quotation child = quotation.getChildForGrade(targetGrade);
+            if (child != null) {
+                targetQuotation = child;
+            }
+        }
+
+        byte[] pdf = quotationPdfService.generateQuotationPdf(targetQuotation.getId(), targetGrade);
 
         String filename = com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildPdfFilename(quotation);
 
@@ -67,7 +88,11 @@ public class PublicQuotationPdfController {
                 .body(pdf);
     }
 
+    public ResponseEntity<byte[]> getPublicQuotationPdf(Long id, String token) {
+        return getPublicQuotationPdf(id, token, null);
+    }
+
     public ResponseEntity<byte[]> getPublicQuotationPdf(Long id) {
-        return getPublicQuotationPdf(id, null);
+        return getPublicQuotationPdf(id, null, null);
     }
 }

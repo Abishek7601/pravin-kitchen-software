@@ -404,16 +404,46 @@
     <!-- SINGLE MIXED-GRADE QUOTATION FINANCIAL SUMMARY -->
     <section class="detail-card quotation-summary-card" th:if="${!quotation.isMultiGrade()}">
         <div style="margin-bottom: 20px;">
-            <span class="field-label" style="text-transform: uppercase; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Quoted Project Value</span>
-            <div style="font-size: 2rem; font-weight: 800; color: #024541; line-height: 1.2;" th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal : 0)}">
-                ₹ 0.00
-            </div>
-            <div style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
-                <span th:if="${premiumSubtotal != null && premiumSubtotal > 0}" class="grade-badge grade-badge-premium" th:text="${'★ Premium: ₹ ' + @inr.format(premiumSubtotal)}">★ Premium: ₹ 0</span>
-                <span th:if="${middleSubtotal != null && middleSubtotal > 0}" class="grade-badge grade-badge-middle" th:text="${'✦ Middle: ₹ ' + @inr.format(middleSubtotal)}">✦ Middle: ₹ 0</span>
-                <span th:if="${economySubtotal != null && economySubtotal > 0}" class="grade-badge grade-badge-economy" th:text="${'☘ Economy: ₹ ' + @inr.format(economySubtotal)}">☘ Economy: ₹ 0</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 16px;">
+                <div>
+                    <span class="field-label" style="text-transform: uppercase; font-size: 11px; font-weight: 700; color: #64748b; letter-spacing: 0.5px;">Quoted Project Value</span>
+                    <div id="quotedProjectValueVal" style="font-size: 2rem; font-weight: 800; color: #024541; line-height: 1.2;" th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal : 0)}">
+                        ₹ 0.00
+                    </div>
+                    <div id="quotedProjectValueBadge" style="display: flex; gap: 10px; margin-top: 8px; flex-wrap: wrap;">
+                        <span th:if="${premiumSubtotal != null && premiumSubtotal > 0}" class="grade-badge grade-badge-premium" th:text="${'★ Premium: ₹ ' + @inr.format(premiumSubtotal)}">★ Premium: ₹ 0</span>
+                        <span th:if="${middleSubtotal != null && middleSubtotal > 0}" class="grade-badge grade-badge-middle" th:text="${'✦ Middle: ₹ ' + @inr.format(middleSubtotal)}">✦ Middle: ₹ 0</span>
+                        <span th:if="${economySubtotal != null && economySubtotal > 0}" class="grade-badge grade-badge-economy" th:text="${'☘ Economy: ₹ ' + @inr.format(economySubtotal)}">☘ Economy: ₹ 0</span>
+                    </div>
+                </div>
+
+                <!-- GRADE SWITCHER -->
+                <div class="summary-grade-switch-container" id="viewGradeSwitcherContainer"
+                     th:data-quotation-id="${quotation.id}"
+                     th:data-fetch-base-url="@{/admin/quotations/view-grade-data/}"
+                     th:data-show-sqft="${quotation.showSqftSize == null || quotation.showSqftSize}"
+                     th:data-active-grade="${activeGradeTab}"
+                     th:data-pricing-mode="${quotation.pricingMode != null ? quotation.pricingMode.name() : ''}">
+                    <span class="summary-grade-label">Quote Grade:</span>
+                    <div class="summary-segmented-control" role="radiogroup" aria-label="Select Quote Grade">
+                        <label class="segmented-pill">
+                            <input type="radio" name="viewGradeSwitch" value="PREMIUM" th:checked="${activeGradeTab == 'PREMIUM'}" onchange="switchViewGrade('PREMIUM')">
+                            <span>Premium</span>
+                        </label>
+                        <label class="segmented-pill">
+                            <input type="radio" name="viewGradeSwitch" value="MIDDLE" th:checked="${activeGradeTab == 'MIDDLE'}" onchange="switchViewGrade('MIDDLE')">
+                            <span>Middle / Standard</span>
+                        </label>
+                        <label class="segmented-pill">
+                            <input type="radio" name="viewGradeSwitch" value="ECONOMY" th:checked="${activeGradeTab == 'ECONOMY'}" onchange="switchViewGrade('ECONOMY')">
+                            <span>Economy</span>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
+
+        <div id="viewGradeNotice" style="display: none; margin: 12px 0 16px 0; padding: 10px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;"></div>
 
         <!-- PAYMENT TERMS SCHEDULE -->
         <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px; margin-top: 14px;">
@@ -421,25 +451,25 @@
             <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">10% TOKEN</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
+                    <div id="paymentTermToken" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
                          th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal * 0.10 : 0)}">₹ 0.00</div>
                     <div style="font-size: 10px; color: #94a3b8;">Commencement of 3D design</div>
                 </div>
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">50% ADVANCE</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
+                    <div id="paymentTermAdvance" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
                          th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal * 0.50 : 0)}">₹ 0.00</div>
                     <div style="font-size: 10px; color: #94a3b8;">Drawing sent for production</div>
                 </div>
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">35% PART PAYMENT</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
+                    <div id="paymentTermPart" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
                          th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal * 0.35 : 0)}">₹ 0.00</div>
                     <div style="font-size: 10px; color: #94a3b8;">After frame work completion</div>
                 </div>
                 <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px 14px;">
                     <div style="font-size: 11px; color: #64748b; font-weight: 600;">5% FINAL PAYMENT</div>
-                    <div style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
+                    <div id="paymentTermFinal" style="font-size: 1.05rem; font-weight: 700; color: #0f172a; margin-top: 2px;"
                          th:text="${'₹ ' + @inr.format(quotation.grandTotal != null ? quotation.grandTotal * 0.05 : 0)}">₹ 0.00</div>
                     <div style="font-size: 10px; color: #94a3b8;">Final day of work completion on site</div>
                 </div>
@@ -718,6 +748,7 @@
 
 
             <div class="work-count"
+                 id="workCountBadge"
                  th:if="${!quotation.isMultiGrade()}"
                  th:text="${quotationRooms != null
                  ? #lists.size(quotationRooms)
@@ -727,6 +758,30 @@
 
             </div>
 
+        </div>
+
+        <!-- MULTI-GRADE GRADE SWITCHER -->
+        <div class="summary-grade-switch-container" style="margin-bottom: 14px;" th:if="${quotation.isMultiGrade()}"
+             id="viewGradeSwitcherContainerMulti"
+             th:data-quotation-id="${quotation.id}"
+             th:data-fetch-base-url="@{/admin/quotations/view-grade-data/}"
+             th:data-show-sqft="${quotation.showSqftSize == null || quotation.showSqftSize}"
+             th:data-active-grade="${activeGradeTab}">
+            <span class="summary-grade-label">Quote Grade:</span>
+            <div class="summary-segmented-control" role="radiogroup" aria-label="Select Quote Grade">
+                <label class="segmented-pill">
+                    <input type="radio" name="viewGradeSwitchMulti" value="PREMIUM" th:checked="${activeGradeTab == 'PREMIUM'}" onchange="switchGradeBreakdown('PREMIUM'); switchViewGrade('PREMIUM');">
+                    <span>Premium</span>
+                </label>
+                <label class="segmented-pill">
+                    <input type="radio" name="viewGradeSwitchMulti" value="MIDDLE" th:checked="${activeGradeTab == 'MIDDLE'}" onchange="switchGradeBreakdown('MIDDLE'); switchViewGrade('MIDDLE');">
+                    <span>Middle / Standard</span>
+                </label>
+                <label class="segmented-pill">
+                    <input type="radio" name="viewGradeSwitchMulti" value="ECONOMY" th:checked="${activeGradeTab == 'ECONOMY'}" onchange="switchGradeBreakdown('ECONOMY'); switchViewGrade('ECONOMY');">
+                    <span>Economy</span>
+                </label>
+            </div>
         </div>
 
         <!-- MULTI-GRADE BREAKDOWN TABS -->
@@ -816,7 +871,7 @@
                             <th class="col-amount text-right">Amount</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="breakdownTableBody">
                         <th:block th:each="room, roomStat : ${quotationRooms}">
                             <!-- Room Grouping Banner -->
                             <tr class="room-group-row">
@@ -943,7 +998,7 @@
                             </tr>
                         </th:block>
                     </tbody>
-                    <tfoot>
+                    <tfoot id="breakdownTableFoot">
                         <!-- Grade-Wise Subtotals -->
                         <tr class="tfoot-charge-row" th:if="${premiumSubtotal != null && premiumSubtotal > 0}">
                             <td th:colspan="${(quotation.showSqftSize == null || quotation.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
@@ -1017,10 +1072,12 @@
         <a th:href="@{/admin/quotations/pdf/{id}(id=${quotation.id})}"
            target="_blank"
            class="btn-grade-pdf"
+           id="btnDownloadPdf"
            style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
            title="Download Quotation PDF">↓ Download PDF</a>
         <button type="button"
                 class="btn-grade-whatsapp"
+                id="btnShareWhatsApp"
                 style="display: inline-flex !important; align-items: center !important; justify-content: center !important; height: 42px !important; padding: 0 20px !important; width: auto !important; flex: 0 0 auto !important;"
                 th:data-id="${quotation.id}"
                 th:data-number="${quotation.quotationNumber}"
@@ -1152,7 +1209,7 @@
     </div>
 </div>
 
-<script>
+<script th:inline="javascript">
 
     let currentPdfFile = null;
 
@@ -1404,9 +1461,279 @@
         if (btn) btn.classList.add('active');
     }
 
+    var viewGradeSeq = 0;
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    function switchViewGrade(grade) {
+        document.querySelectorAll('input[name="viewGradeSwitch"][value="' + grade + '"], input[name="viewGradeSwitchMulti"][value="' + grade + '"]').forEach(function(r) {
+            r.checked = true;
+        });
+
+        viewGradeSeq++;
+        var currentSeq = viewGradeSeq;
+        var container = document.getElementById('viewGradeSwitcherContainer') || document.getElementById('viewGradeSwitcherContainerMulti') || document.querySelector('.summary-grade-switch-container');
+        var quotationId = (container && container.dataset && container.dataset.quotationId) ? container.dataset.quotationId : (/*[[${quotation.id}]]*/ 0);
+        var fetchBaseUrl = (container && container.dataset && container.dataset.fetchBaseUrl) ? container.dataset.fetchBaseUrl : (/*[[@{/admin/quotations/view-grade-data/}]]*/ '/admin/quotations/view-grade-data/');
+        var url = fetchBaseUrl + quotationId + '?grade=' + encodeURIComponent(grade);
+
+        var tableBody = document.getElementById('breakdownTableBody');
+        if (tableBody) {
+            tableBody.style.transition = 'opacity 0.15s ease';
+            tableBody.style.opacity = '0.4';
+        }
+
+        fetch(url, {
+            headers: {
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(function(res) {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+        })
+        .then(function(data) {
+            if (currentSeq !== viewGradeSeq) return;
+            if (!data || !data.success) {
+                console.error('Failed to load grade view data:', data ? data.message : 'Unknown error');
+                return;
+            }
+            renderGradeViewData(data);
+        })
+        .catch(function(err) {
+            console.error('Error switching grade in view:', err);
+        })
+        .finally(function() {
+            if (currentSeq === viewGradeSeq && tableBody) {
+                tableBody.style.opacity = '1';
+            }
+        });
+    }
+
+    function renderGradeViewData(data) {
+        var qpvVal = document.getElementById('quotedProjectValueVal');
+        if (qpvVal && data.quotedProjectValue) {
+            qpvVal.textContent = data.quotedProjectValue;
+        }
+
+        var qpvBadge = document.getElementById('quotedProjectValueBadge');
+        if (qpvBadge && data.gradeBadgeText) {
+            qpvBadge.innerHTML = '<span class="grade-badge ' + escapeHtml(data.gradeBadgeClass) + '">' + escapeHtml(data.gradeBadgeText) + '</span>';
+        }
+
+        if (data.paymentTerms) {
+            var elToken = document.getElementById('paymentTermToken');
+            if (elToken) elToken.textContent = data.paymentTerms.token10;
+
+            var elAdv = document.getElementById('paymentTermAdvance');
+            if (elAdv) elAdv.textContent = data.paymentTerms.advance50;
+
+            var elPart = document.getElementById('paymentTermPart');
+            if (elPart) elPart.textContent = data.paymentTerms.part35;
+
+            var elFinal = document.getElementById('paymentTermFinal');
+            if (elFinal) elFinal.textContent = data.paymentTerms.final5;
+        }
+
+        var wcBadge = document.getElementById('workCountBadge');
+        if (wcBadge && data.rooms) {
+            wcBadge.textContent = data.rooms.length + ' Rooms';
+        }
+
+        var pdfBtn = document.getElementById('btnDownloadPdf');
+        if (pdfBtn && data.activeGrade) {
+            var pdfBase = pdfBtn.getAttribute('href').split('?')[0];
+            pdfBtn.setAttribute('href', pdfBase + '?grade=' + encodeURIComponent(data.activeGrade));
+        }
+        var waBtn = document.getElementById('btnShareWhatsApp');
+        if (waBtn && data.activeGrade) {
+            waBtn.setAttribute('data-grade', data.activeGrade);
+        }
+
+        var noticeEl = document.getElementById('viewGradeNotice');
+        if (noticeEl) {
+            var hasUnavailable = false;
+            if (data.rooms) {
+                for (var r = 0; r < data.rooms.length; r++) {
+                    if (data.rooms[r].items) {
+                        for (var it = 0; it < data.rooms[r].items.length; it++) {
+                            if (!data.rooms[r].items[it].materialAvailable) {
+                                hasUnavailable = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (hasUnavailable) break;
+                }
+            }
+
+            noticeEl.style.display = 'block';
+            if (hasUnavailable) {
+                noticeEl.style.background = '#fef2f2';
+                noticeEl.style.color = '#991b1b';
+                noticeEl.style.border = '1px solid #fecaca';
+                noticeEl.innerHTML = 'Switched Quote Summary to <strong>' + escapeHtml(data.activeGradeLabel) + ' Grade</strong>. Note: Some items are not available in this grade.';
+            } else {
+                noticeEl.style.background = '#f0fdf4';
+                noticeEl.style.color = '#166534';
+                noticeEl.style.border = '1px solid #bbf7d0';
+                noticeEl.innerHTML = 'Quote Summary switched to <strong>' + escapeHtml(data.activeGradeLabel) + ' Grade</strong>. Room measurements, materials and rates recalculated.';
+            }
+        }
+
+        var tbody = document.getElementById('breakdownTableBody');
+        var container = document.getElementById('viewGradeSwitcherContainer') || document.getElementById('viewGradeSwitcherContainerMulti') || document.querySelector('.summary-grade-switch-container');
+        var showSqft = (container && container.dataset && container.dataset.showSqft !== undefined) ? (container.dataset.showSqft === 'true') : (/*[[${quotation.showSqftSize == null || quotation.showSqftSize}]]*/ true);
+        var totalCols = showSqft ? 11 : 9;
+        var subtotalCols = showSqft ? 10 : 8;
+
+        if (tbody && data.rooms) {
+            var html = '';
+            for (var i = 0; i < data.rooms.length; i++) {
+                var room = data.rooms[i];
+                var roomNum = i + 1;
+
+                html += '<tr class="room-group-row">';
+                html += '<td colspan="' + totalCols + '">';
+                html += '<div class="room-group-banner">';
+                html += '<div class="room-group-title">';
+                html += '<span class="room-badge">Room #' + roomNum + '</span> ';
+                html += '<span class="room-floor-tag">' + escapeHtml(room.floor) + '</span> ';
+                html += '<span class="room-sep">•</span> ';
+                html += '<strong class="room-name-tag">' + escapeHtml(room.room) + '</strong> ';
+                if (room.workDescription) {
+                    html += '<span class="room-desc-tag">— ' + escapeHtml(room.workDescription) + '</span>';
+                }
+                html += '</div>';
+                html += '<div class="room-group-total">';
+                html += '<span class="room-total-label">Room Subtotal:</span> ';
+                html += '<strong class="room-total-val">' + escapeHtml(room.roomSubtotal) + '</strong>';
+                html += '</div>';
+                html += '</div>';
+                html += '</td>';
+                html += '</tr>';
+
+                if (room.items && room.items.length > 0) {
+                    for (var j = 0; j < room.items.length; j++) {
+                        var item = room.items[j];
+                        html += '<tr class="breakdown-item-row">';
+                        html += '<td class="text-center cell-sno">' + escapeHtml(item.sno) + '</td>';
+                        html += '<td class="cell-floor">' + escapeHtml(item.floor) + '</td>';
+                        html += '<td class="cell-room">' + escapeHtml(item.room) + '</td>';
+                        html += '<td class="cell-category"><span class="badge-category">' + escapeHtml(item.categoryName) + '</span></td>';
+                        html += '<td class="cell-worktype"><strong class="worktype-name">' + escapeHtml(item.workTypeName) + '</strong></td>';
+
+                        html += '<td class="cell-material">';
+                        if (item.materialAvailable) {
+                            html += '<div class="material-name">' + escapeHtml(item.materialName) + '</div>';
+                        } else {
+                            html += '<div class="material-name text-danger" style="color: #dc2626; font-weight: 700;">' + escapeHtml(item.materialName) + '</div>';
+                        }
+                        if (item.materialOptionName) {
+                            html += '<div class="material-option-text">' + escapeHtml(item.materialOptionName) + '</div>';
+                        }
+                        if (item.imageUrl) {
+                            html += '<div style="margin-top: 6px;"><a href="' + escapeHtml(item.imageUrl) + '" target="_blank"><img src="' + escapeHtml(item.imageUrl) + '" alt="Item" style="max-height: 48px; max-width: 80px; border-radius: 4px; border: 1px solid #cbd5e1; object-fit: cover;"></a></div>';
+                        }
+                        html += '</td>';
+
+                        html += '<td class="cell-spec">';
+                        if (item.specification) {
+                            html += '<div class="spec-main">' + escapeHtml(item.specification) + '</div>';
+                        }
+                        if (item.formula) {
+                            var fText = item.formula.toLowerCase().indexOf('formula') >= 0 ? item.formula : ('Formula: ' + item.formula);
+                            html += '<div class="spec-formula"><span>' + escapeHtml(fText) + '</span></div>';
+                        }
+                        if (!item.materialAvailable && item.availabilityMessage) {
+                            html += '<div class="text-danger" style="color: #dc2626; font-size: 11px; margin-top: 4px; font-weight: 500;">' + escapeHtml(item.availabilityMessage) + '</div>';
+                        }
+                        if (!item.specification && !item.formula && item.materialAvailable) {
+                            html += '<span class="spec-empty">-</span>';
+                        }
+                        html += '</td>';
+
+                        if (showSqft) {
+                            var dimHtml = escapeHtml(item.dimensions || '-').replace(/&lt;br&gt;/gi, '<br>');
+                            html += '<td class="cell-dimensions"><span class="size-vals">' + dimHtml + '</span></td>';
+                            html += '<td class="text-right cell-sqft">' + escapeHtml(item.sqft || '-') + '</td>';
+                        }
+
+                        html += '<td class="text-right cell-rate">' + escapeHtml(item.unitRate) + '</td>';
+                        html += '<td class="text-right cell-amount"><span>' + escapeHtml(item.amount) + '</span></td>';
+                        html += '</tr>';
+                    }
+                } else {
+                    html += '<tr class="empty-room-row"><td colspan="' + totalCols + '" class="text-center text-muted">No active work items added to this room.</td></tr>';
+                }
+
+                html += '<tr class="room-subtotal-row">';
+                html += '<td colspan="' + subtotalCols + '" class="text-right room-subtotal-label"><strong>' + escapeHtml(room.floor) + ' — ' + escapeHtml(room.room) + ' Subtotal:</strong></td>';
+                html += '<td class="text-right room-subtotal-val"><strong>' + escapeHtml(room.roomSubtotal) + '</strong></td>';
+                html += '</tr>';
+            }
+            tbody.innerHTML = html;
+        }
+
+        var tfoot = document.getElementById('breakdownTableFoot');
+        if (tfoot && data.financials) {
+            var fin = data.financials;
+            var fHtml = '';
+
+            if (data.activeGrade === 'PREMIUM' && fin.premiumSubtotal) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;">' + escapeHtml(fin.premiumSubtotal) + '</td></tr>';
+            } else if (data.activeGrade === 'MIDDLE' && fin.middleSubtotal) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;">' + escapeHtml(fin.middleSubtotal) + '</td></tr>';
+            } else if (data.activeGrade === 'ECONOMY' && fin.economySubtotal) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;">' + escapeHtml(fin.economySubtotal) + '</td></tr>';
+            }
+
+            fHtml += '<tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.subtotal) + '</td></tr>';
+
+            if (fin.accessoriesAmount) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Accessories</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.accessoriesAmount) + '</td></tr>';
+            }
+            if (fin.travelCharge) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Travel Charges</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.travelCharge) + '</td></tr>';
+            }
+            if (fin.otherCharges) {
+                var oDesc = fin.otherChargesDescription ? ('Other Charges (' + escapeHtml(fin.otherChargesDescription) + ')') : 'Other Charges';
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">' + oDesc + '</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.otherCharges) + '</td></tr>';
+            }
+            if (fin.discountAmount) {
+                fHtml += '<tr class="tfoot-charge-row discount-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Discount</td><td class="text-right tfoot-charge-val">- ' + escapeHtml(fin.discountAmount) + '</td></tr>';
+            }
+            if (fin.offerAmount) {
+                fHtml += '<tr class="tfoot-charge-row offer-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Special Offer (' + escapeHtml(fin.offerPercentage) + '%)</td><td class="text-right tfoot-charge-val">- ' + escapeHtml(fin.offerAmount) + '</td></tr>';
+            }
+            if (fin.gstAmount) {
+                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">GST (' + escapeHtml(fin.gstPercentage) + '%)</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.gstAmount) + '</td></tr>';
+            }
+
+            fHtml += '<tr class="tfoot-grand-total-row"><td colspan="' + subtotalCols + '" class="text-right grand-total-label"><strong>Grand Total</strong></td><td class="text-right grand-total-amount"><strong>' + escapeHtml(fin.grandTotal) + '</strong></td></tr>';
+
+            tfoot.innerHTML = fHtml;
+        }
+    }
+
     document.addEventListener("DOMContentLoaded", function() {
-        var initialGrade = /*[[${activeGradeTab}]]*/ 'MIDDLE';
+        var container = document.getElementById('viewGradeSwitcherContainer') || document.getElementById('viewGradeSwitcherContainerMulti') || document.querySelector('.summary-grade-switch-container');
+        var initialGrade = (container && container.dataset && container.dataset.activeGrade) ? container.dataset.activeGrade : (/*[[${activeGradeTab}]]*/ 'MIDDLE');
         switchGradeBreakdown(initialGrade || 'MIDDLE');
+        if (container && container.dataset && container.dataset.quotationId) {
+            var savedGrade = container.dataset.pricingMode;
+            if (initialGrade && savedGrade && initialGrade !== savedGrade) {
+                switchViewGrade(initialGrade);
+            }
+        }
     });
 
 
