@@ -100,6 +100,12 @@ public class EmployeeQuotationController {
     private final WhatsAppService whatsAppService;
     @org.springframework.beans.factory.annotation.Autowired(required = false)
     private com.example.pravin_quotation.service.FileUploadService fileUploadService;
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    private com.example.pravin_quotation.service.QuotationViewGradeService quotationViewGradeService;
+
+    public void setQuotationViewGradeService(com.example.pravin_quotation.service.QuotationViewGradeService quotationViewGradeService) {
+        this.quotationViewGradeService = quotationViewGradeService;
+    }
 
 
     // ============================================================
@@ -2527,11 +2533,15 @@ public class EmployeeQuotationController {
         model.addAttribute("gradeItemsByRoom", gradeItemsByRoom);
         model.addAttribute("gradeSizesByItem", gradeSizesByItem);
 
-        String activeGradeTab = "MIDDLE";
-        if (grade != null && quotation.getChildForGrade(grade) != null) {
+        String activeGradeTab = "PREMIUM";
+        if (grade != null) {
             activeGradeTab = grade.name();
         } else if (quotation.getSelectedGrade() != null) {
             activeGradeTab = quotation.getSelectedGrade().name();
+        } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+            activeGradeTab = quotation.getParent().getSelectedGrade().name();
+        } else if (quotation.getPricingMode() != null) {
+            activeGradeTab = quotation.getPricingMode().name();
         } else if (premiumGrade != null) {
             activeGradeTab = "PREMIUM";
         } else if (middleGrade != null) {
@@ -2586,6 +2596,36 @@ public class EmployeeQuotationController {
         model.addAttribute("quotationStatuses", QuotationStatus.values());
 
         return "employee/quotation-workspace";
+    }
+
+    // ============================================================
+    // DYNAMIC GRADE SWITCHING IN QUOTATION DETAILS VIEW
+    // ============================================================
+
+    @GetMapping("/view-grade-data/{id}")
+    @ResponseBody
+    public ResponseEntity<?> getGradeViewData(
+            @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade,
+            Authentication authentication
+    ) {
+        try {
+            User employee = getLoggedInEmployee(authentication);
+            Quotation q = quotationService.getById(id);
+            if (q.getParent() != null) q = q.getParent();
+            getQuotationAndCheckOwnership(q.getId(), employee);
+
+            if (quotationViewGradeService == null) {
+                return ResponseEntity.status(500).body(Map.of("success", false, "message", "Grade view service unavailable."));
+            }
+            com.example.pravin_quotation.service.QuotationViewGradeService.GradeViewResponse response = quotationViewGradeService.getGradeViewData(id, grade);
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to load grade data."
+            ));
+        }
     }
 
     // ============================================================
@@ -3499,14 +3539,20 @@ public class EmployeeQuotationController {
                         employee
                 );
 
-        Quotation targetQuotation = quotation;
-        if (grade != null) {
-            Quotation child = quotation.getChildForGrade(grade);
-            if (child != null) {
-                targetQuotation = child;
+        PricingMode targetGrade = grade;
+        if (targetGrade == null) {
+            if (quotation.getSelectedGrade() != null) {
+                targetGrade = quotation.getSelectedGrade();
+            } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+                targetGrade = quotation.getParent().getSelectedGrade();
+            } else if (quotation.getPricingMode() != null) {
+                targetGrade = quotation.getPricingMode();
             }
-        } else if (quotation.getSelectedGrade() != null) {
-            Quotation child = quotation.getChildForGrade(quotation.getSelectedGrade());
+        }
+
+        Quotation targetQuotation = quotation;
+        if (targetGrade != null) {
+            Quotation child = quotation.getChildForGrade(targetGrade);
             if (child != null) {
                 targetQuotation = child;
             }
@@ -3516,7 +3562,7 @@ public class EmployeeQuotationController {
 
         byte[] pdf =
                 quotationPdfService
-                        .generateQuotationPdf(targetQuotation.getId());
+                        .generateQuotationPdf(targetQuotation.getId(), targetGrade);
 
         String filename = com.example.pravin_quotation.util.QuotationPdfFilenameUtils.buildPdfFilename(targetQuotation);
 

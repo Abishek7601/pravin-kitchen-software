@@ -38,6 +38,12 @@ public class QuotationController {
     private final QuotationCommunicationService quotationCommunicationService;
     private final QuotationCalculationService quotationCalculationService;
     private final WhatsAppService whatsAppService;
+    private QuotationViewGradeService quotationViewGradeService;
+
+    @org.springframework.beans.factory.annotation.Autowired(required = false)
+    public void setQuotationViewGradeService(QuotationViewGradeService quotationViewGradeService) {
+        this.quotationViewGradeService = quotationViewGradeService;
+    }
 
 
     public QuotationController(
@@ -286,11 +292,15 @@ public class QuotationController {
         model.addAttribute("gradeItemsByRoom", gradeItemsByRoom);
         model.addAttribute("gradeSizesByItem", gradeSizesByItem);
 
-        String activeGradeTab = "MIDDLE";
-        if (grade != null && quotation.getChildForGrade(grade) != null) {
+        String activeGradeTab = "PREMIUM";
+        if (grade != null) {
             activeGradeTab = grade.name();
         } else if (quotation.getSelectedGrade() != null) {
             activeGradeTab = quotation.getSelectedGrade().name();
+        } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+            activeGradeTab = quotation.getParent().getSelectedGrade().name();
+        } else if (quotation.getPricingMode() != null) {
+            activeGradeTab = quotation.getPricingMode().name();
         } else if (premiumGrade != null) {
             activeGradeTab = "PREMIUM";
         } else if (middleGrade != null) {
@@ -395,6 +405,31 @@ public class QuotationController {
         );
 
         return "admin/quotation-view";
+    }
+
+    // =========================================================
+    // DYNAMIC GRADE SWITCHING IN QUOTATION DETAILS VIEW
+    // =========================================================
+
+    @GetMapping("/view-grade-data/{id}")
+    @ResponseBody
+    public org.springframework.http.ResponseEntity<?> getGradeViewData(
+            @PathVariable Long id,
+            @RequestParam(required = false) PricingMode grade
+    ) {
+        try {
+            if (quotationViewGradeService == null) {
+                return org.springframework.http.ResponseEntity.status(500)
+                        .body(java.util.Map.of("success", false, "message", "Grade view service unavailable."));
+            }
+            QuotationViewGradeService.GradeViewResponse response = quotationViewGradeService.getGradeViewData(id, grade);
+            return org.springframework.http.ResponseEntity.ok(response);
+        } catch (Exception e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(java.util.Map.of(
+                    "success", false,
+                    "message", e.getMessage() != null ? e.getMessage() : "Failed to load grade data."
+            ));
+        }
     }
 
     // =========================================================

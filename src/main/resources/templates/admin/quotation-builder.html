@@ -1517,6 +1517,8 @@
           if (state.draft && state.draft.sizes && state.draft.sizes.length > 0) {
               const s = state.draft.sizes[0];
               return {
+                  materialId: state.draft.materialId,
+                  materialName: state.draft.materialName || '',
                   length: s.length,
                   width: s.width,
                   height: s.height,
@@ -1541,7 +1543,8 @@
           ? specTextarea.value.trim()
           : (specContent ? specContent.textContent.trim() : '');
 
-      let meas = {
+      return {
+          materialId: state.draft ? state.draft.materialId : null,
           materialName: state.draft ? state.draft.materialName : '',
           length: (!isNaN(len) && len > 0) ? len : ((state.draft && state.draft.sizes && state.draft.sizes[0]) ? state.draft.sizes[0].length : null),
           width: (!isNaN(wid) && wid > 0) ? wid : ((state.draft && state.draft.sizes && state.draft.sizes[0]) ? state.draft.sizes[0].width : null),
@@ -1549,36 +1552,6 @@
           quantity: (!isNaN(qty) && qty > 0) ? qty : (state.draft ? state.draft.quantity : 1),
           specification: spec && spec !== '-' ? spec : (state.draft ? state.draft.specification : '')
       };
-
-      if ((!meas.length || !meas.quantity) && state.rooms) {
-          for (const r of state.rooms) {
-              if (r.items) {
-                  const foundItem = r.items.slice().reverse().find(i => i.divisionId === divId);
-                  if (foundItem) {
-                      const s = (foundItem.sizes && foundItem.sizes[0]) || {};
-                      if (!meas.materialName && foundItem.materialName) meas.materialName = foundItem.materialName;
-                      if (!meas.length && s.length) meas.length = s.length;
-                      if (!meas.width && s.width) meas.width = s.width;
-                      if (!meas.height && s.height) meas.height = s.height;
-                      if (!meas.quantity && foundItem.quantity) meas.quantity = foundItem.quantity;
-                      if (!meas.specification && foundItem.specification) meas.specification = foundItem.specification;
-                      if (!state.draft) {
-                          state.draft = {
-                              categoryId: foundItem.categoryId,
-                              categoryName: foundItem.categoryName,
-                              divisionId: foundItem.divisionId,
-                              divisionName: foundItem.divisionName,
-                              materialName: foundItem.materialName,
-                              unit: foundItem.unit,
-                              measurementType: foundItem.measurementType
-                          };
-                      }
-                      break;
-                  }
-              }
-          }
-      }
-      return meas;
   }
 
   async function loadMaterialsForWorkType(divisionId, divisionName, categoryId, categoryName, preservedMeasurements) {
@@ -1678,7 +1651,8 @@
               const btn = $(`mat-btn-${divisionId}-${m.id}`);
               if (btn) {
                   btn.addEventListener('click', () => {
-                      const curMeas = readActiveWorkTypeMeasurements(divisionId) || preservedMeasurements;
+                      const isSame = state.draft && state.draft.materialId === m.id && state.draft.divisionId === divisionId;
+                      const curMeas = isSame ? readActiveWorkTypeMeasurements(divisionId) : null;
                       selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, m, curMeas);
                   });
               }
@@ -1688,6 +1662,9 @@
               const cpIdx = materials.indexOf(counterpartMat);
               if (counterpartMat.position === undefined || counterpartMat.position === null) {
                   counterpartMat.position = cpIdx >= 0 ? cpIdx : 0;
+              }
+              if (preservedMeasurements) {
+                  preservedMeasurements.isGradeSwitch = true;
               }
               await selectWorkTypeMaterial(divisionId, divisionName, categoryId, categoryName, counterpartMat, preservedMeasurements);
           } else if (state.draft && state.draft.divisionId === divisionId) {
@@ -1719,14 +1696,18 @@
       const isQuantity = mType === 'QUANTITY';
       const isFiles = mType === 'FILES' || (material.unit && material.unit.toLowerCase() === 'files');
 
-      const lenVal = (initialMeasurements && initialMeasurements.length != null && !isNaN(Number(initialMeasurements.length)) && Number(initialMeasurements.length) > 0) ? Number(initialMeasurements.length) : 0;
-      const widVal = (initialMeasurements && initialMeasurements.width != null && !isNaN(Number(initialMeasurements.width)) && Number(initialMeasurements.width) > 0) ? Number(initialMeasurements.width) : 0;
-      const hgtVal = (initialMeasurements && initialMeasurements.height != null && !isNaN(Number(initialMeasurements.height)) && Number(initialMeasurements.height) > 0) ? Number(initialMeasurements.height) : 0;
-      const qtyVal = (initialMeasurements && initialMeasurements.quantity != null && !isNaN(Number(initialMeasurements.quantity)) && Number(initialMeasurements.quantity) > 0) ? Number(initialMeasurements.quantity) : 1;
-      const isSameMaterial = initialMeasurements && initialMeasurements.materialId === material.id;
-      const specText = (!isSameMaterial || !initialMeasurements.specification)
-              ? ((material.specification && material.specification.trim()) ? material.specification.trim() : (material.description ? material.description.trim() : ''))
-              : initialMeasurements.specification.trim();
+      const isSameMaterial = Boolean(initialMeasurements && initialMeasurements.materialId === material.id);
+      const isGradeSwitch = Boolean(initialMeasurements && initialMeasurements.isGradeSwitch);
+      const isResumeOrEdit = Boolean(initialMeasurements && initialMeasurements.isResumeOrEdit);
+      const allowInitial = isSameMaterial || isGradeSwitch || isResumeOrEdit;
+
+      const lenVal = (allowInitial && initialMeasurements && initialMeasurements.length != null && !isNaN(Number(initialMeasurements.length)) && Number(initialMeasurements.length) > 0) ? Number(initialMeasurements.length) : 0;
+      const widVal = (allowInitial && initialMeasurements && initialMeasurements.width != null && !isNaN(Number(initialMeasurements.width)) && Number(initialMeasurements.width) > 0) ? Number(initialMeasurements.width) : 0;
+      const hgtVal = (allowInitial && initialMeasurements && initialMeasurements.height != null && !isNaN(Number(initialMeasurements.height)) && Number(initialMeasurements.height) > 0) ? Number(initialMeasurements.height) : 0;
+      const qtyVal = (allowInitial && initialMeasurements && initialMeasurements.quantity != null && !isNaN(Number(initialMeasurements.quantity)) && Number(initialMeasurements.quantity) > 0) ? Number(initialMeasurements.quantity) : 1;
+      const specText = (allowInitial && initialMeasurements && initialMeasurements.specification)
+              ? initialMeasurements.specification.trim()
+              : ((material.specification && material.specification.trim()) ? material.specification.trim() : (material.description ? material.description.trim() : ''));
       const specDisplay = specText || '-';
 
       const itemPos = (material.position !== undefined && material.position !== null)
@@ -3198,6 +3179,9 @@
           const catId = catBtn ? Number(catBtn.dataset.id) : null;
           const catName = catBtn ? catBtn.dataset.name : '';
           const activeMeasurements = readActiveWorkTypeMeasurements(activeDivisionId);
+          if (activeMeasurements) {
+              activeMeasurements.isGradeSwitch = true;
+          }
           loadMaterialsForWorkType(activeDivisionId, divName, catId, catName, activeMeasurements);
       } else if (state.draft && state.draft.divisionId) {
           state.draft.pricingMode = newGrade;

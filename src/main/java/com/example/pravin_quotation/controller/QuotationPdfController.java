@@ -1,5 +1,6 @@
 package com.example.pravin_quotation.controller;
 
+import com.example.pravin_quotation.model.PricingMode;
 import com.example.pravin_quotation.model.Quotation;
 import com.example.pravin_quotation.model.QuotationCommunication;
 import com.example.pravin_quotation.service.QuotationCommunicationService;
@@ -48,14 +49,20 @@ public class QuotationPdfController {
         Quotation quotation =
                 quotationService.getById(id);
 
-        Quotation targetQuotation = quotation;
-        if (grade != null) {
-            Quotation child = quotation.getChildForGrade(grade);
-            if (child != null) {
-                targetQuotation = child;
+        PricingMode targetGrade = grade;
+        if (targetGrade == null) {
+            if (quotation.getSelectedGrade() != null) {
+                targetGrade = quotation.getSelectedGrade();
+            } else if (quotation.getParent() != null && quotation.getParent().getSelectedGrade() != null) {
+                targetGrade = quotation.getParent().getSelectedGrade();
+            } else if (quotation.getPricingMode() != null) {
+                targetGrade = quotation.getPricingMode();
             }
-        } else if (quotation.getSelectedGrade() != null) {
-            Quotation child = quotation.getChildForGrade(quotation.getSelectedGrade());
+        }
+
+        Quotation targetQuotation = quotation;
+        if (targetGrade != null) {
+            Quotation child = quotation.getChildForGrade(targetGrade);
             if (child != null) {
                 targetQuotation = child;
             }
@@ -64,7 +71,7 @@ public class QuotationPdfController {
         }
 
         byte[] pdf =
-                quotationPdfService.generateQuotationPdf(targetQuotation.getId());
+                quotationPdfService.generateQuotationPdf(targetQuotation.getId(), targetGrade);
 
         quotationCommunicationService.record(
                 targetQuotation,
