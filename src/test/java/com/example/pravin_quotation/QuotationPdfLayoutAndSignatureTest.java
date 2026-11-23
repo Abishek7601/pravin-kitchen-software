@@ -174,7 +174,8 @@ public class QuotationPdfLayoutAndSignatureTest {
 
         // 1. Company name & Quotation title
         assertTrue(page2Text.contains("PRAVIN KITCHENS") && page2Text.contains("INTERIORS"), "Must contain company name");
-        assertTrue(page2Text.contains("ECONOMY GRADE") && page2Text.contains("QUOTATION"), "Must contain quotation title");
+        assertFalse(page2Text.contains("ECONOMY GRADE QUOTATION"), "Grade Quotation heading must be removed from header");
+        assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Economy"), "Quotation Type must be Economy");
 
         // 2. Company contact details
         assertTrue(page2Text.contains("Azhagiamandapam"), "Must contain branch address");
@@ -189,14 +190,16 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertTrue(page2Text.contains("Abishek S R"), "Must contain customer name");
         assertTrue(page2Text.contains("Customer Address:"), "Must contain Customer Address label");
         assertTrue(page2Text.contains("Arumanai"), "Must contain customer address");
+        assertTrue(page2Text.contains("Division:"), "Must contain Division label");
+        assertTrue(page2Text.contains("Azhagiamandapam Branch"), "Must contain Division/Branch value");
 
         // 4. Quote Summary heading & table row content
         assertTrue(page2Text.contains("Quote Summary"), "Page 2 must contain 'Quote Summary'");
         assertTrue(page2Text.contains("WORK"), "Page 2 must contain table header WORK");
         assertTrue(page2Text.contains("CATEGORY"), "Page 2 must contain table header CATEGORY");
         assertTrue(page2Text.contains("TYPE"), "Page 2 must contain table header TYPE for WORK TYPE");
-        assertTrue(page2Text.contains("ROOM"), "Page 2 must contain table header ROOM");
-        assertTrue(page2Text.contains("FLOOR"), "Page 2 must contain table header FLOOR");
+        assertFalse(page2Text.contains("ROOM"), "Page 2 must NOT contain table header ROOM");
+        assertFalse(page2Text.contains("FLOOR"), "Page 2 must NOT contain table header FLOOR");
         assertTrue(page2Text.contains("MATERIAL"), "Page 2 must contain table header MATERIAL");
         assertTrue(page2Text.contains("MODULAR"), "Page 2 must contain category");
         assertTrue(page2Text.contains("ENGINEERING WOOD"), "Page 2 must contain material name");
@@ -318,7 +321,8 @@ public class QuotationPdfLayoutAndSignatureTest {
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
 
-        assertTrue(page2Text.contains("PREMIUM GRADE") && page2Text.contains("QUOTATION"));
+        assertFalse(page2Text.contains("PREMIUM GRADE QUOTATION"), "Grade Quotation heading must be removed");
+        assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Premium"));
         assertTrue(page2Text.contains("MARINE PLY"));
         assertTrue(page2Text.contains("Premium Grade Subtotal"));
         assertTrue(page2Text.contains("Customer Signature"));
@@ -433,7 +437,8 @@ public class QuotationPdfLayoutAndSignatureTest {
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
 
-        assertTrue(page2Text.contains("MIDDLE GRADE QUOTATION"));
+        assertFalse(page2Text.contains("MIDDLE GRADE QUOTATION"), "Grade Quotation heading must be removed");
+        assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Middle / Standard"));
         assertTrue(page2Text.contains("Middle Grade Subtotal"));
         assertTrue(page2Text.contains("Customer Signature"));
         assertTrue(page2Text.contains("For Pravin KITCHENS & INTERIORS"));
@@ -651,21 +656,18 @@ public class QuotationPdfLayoutAndSignatureTest {
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
 
-        // 1. Column headers must be intact on a single line
-        assertTrue(page2Text.contains("ROOM"), "Header ROOM must be intact");
-        assertTrue(page2Text.contains("FLOOR"), "Header FLOOR must be intact");
+        // 1. Column headers must be intact on a single line and ROOM/FLOOR removed
+        assertFalse(page2Text.contains("ROOM"), "Header ROOM must NOT be present");
+        assertFalse(page2Text.contains("FLOOR"), "Header FLOOR must NOT be present");
         assertTrue(page2Text.contains("SQ.FT"), "Header SQ.FT must be intact");
         assertTrue(page2Text.contains("UNIT"), "Header UNIT must be intact");
-        assertTrue(page2Text.contains("TOTAL AMOUNT"), "Header TOTAL AMOUNT must be intact");
+        assertTrue(page2Text.contains("PRICE"), "Header PRICE must be intact");
 
         // Headers must not break into multiple lines or split words
-        assertFalse(page2Text.contains("ROO\nM") || page2Text.contains("ROO M"), "Header ROOM must not split into ROO-M");
         assertFalse(page2Text.contains("SQ.F\nT") || page2Text.contains("SQ.F T"), "Header SQ.FT must not split into SQ.F-T");
         assertFalse(page2Text.contains("UNI\nT") || page2Text.contains("UNI T"), "Header UNIT must not split into UNI-T");
 
-        // 2. Row values must be intact and not split awkwardly
-        assertTrue(page2Text.contains("GROUND"), "Floor GROUND must be intact");
-        assertFalse(page2Text.contains("GROUN\nD") || page2Text.contains("GROUN D"), "FLOOR value must not split into GROUN-D");
+        // 2. Unit value must be intact
         assertFalse(page2Text.contains("SQ.\nFT") || page2Text.contains("SQ. FT"), "UNIT value SQ.FT must not split into SQ.-FT");
 
         // 3. Amount must be intact on a single line
@@ -748,28 +750,410 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertNotNull(page2Text);
         String normalized = page2Text.replaceAll("\\s+", " ");
 
-        // 1. Headers: WORK CATEGORY, WORK TYPE, ROOM, FLOOR, MATERIAL, SIZE, SQ.FT, UNIT, TOTAL AMOUNT
+        // 1. Headers: WORK CATEGORY, WORK TYPE, MATERIAL, SIZE, SQ.FT, UNIT, PRICE (ROOM and FLOOR removed)
         assertTrue(normalized.contains("WORK CATEGORY"), "Table must contain WORK CATEGORY header");
         assertTrue(normalized.contains("WORK TYPE"), "Table must contain WORK TYPE header");
-        assertTrue(normalized.contains("ROOM"), "Table must contain ROOM header");
-        assertTrue(normalized.contains("FLOOR"), "Table must contain FLOOR header");
+        assertFalse(normalized.contains("ROOM"), "Table must NOT contain ROOM header");
+        assertFalse(normalized.contains("FLOOR"), "Table must NOT contain FLOOR header");
         assertTrue(normalized.contains("MATERIAL"), "Table must contain MATERIAL header");
         assertTrue(normalized.contains("SIZE"), "Table must contain SIZE header");
         assertTrue(normalized.contains("SQ.FT"), "Table must contain SQ.FT header");
         assertTrue(normalized.contains("UNIT"), "Table must contain UNIT header");
-        assertTrue(normalized.contains("TOTAL AMOUNT"), "Table must contain TOTAL AMOUNT header");
+        assertTrue(normalized.contains("PRICE"), "Table must contain PRICE header");
 
-        // Header order check: WORK CATEGORY before WORK TYPE, WORK TYPE before ROOM
+        // Header order check: WORK CATEGORY before WORK TYPE, WORK TYPE before MATERIAL, UNIT before PRICE
         int catIdx = normalized.indexOf("WORK CATEGORY");
         int typeIdx = normalized.indexOf("WORK TYPE");
-        int roomIdx = normalized.indexOf("ROOM");
+        int matIdx = normalized.indexOf("MATERIAL");
+        int priceIdx = normalized.indexOf("PRICE");
         assertTrue(catIdx >= 0 && typeIdx > catIdx, "WORK TYPE header must come after WORK CATEGORY");
-        assertTrue(roomIdx > typeIdx, "ROOM header must come after WORK TYPE");
+        assertTrue(matIdx > typeIdx, "MATERIAL header must come after WORK TYPE");
+        assertTrue(priceIdx > matIdx, "PRICE header must come after MATERIAL");
 
         // 2. Data row values: Category FOYER, Work Type BASE CABINET
         assertTrue(normalized.contains("FOYER"), "Row must contain category FOYER");
         assertTrue(normalized.contains("BASE CABINET"), "Row must contain work type BASE CABINET");
         assertTrue(normalized.contains("MARINE PLY LAMINATION BOX TYPE"), "Row must contain material name");
         assertTrue(normalized.contains("28,760.00"), "Row must contain total amount");
+    }
+
+    @Test
+    @DisplayName("PDF Quote Summary table displays exact formula-based sizes: L x W, L x H, (L + W) x H")
+    void testFormulaBasedDimensionsInSizeColumn() throws Exception {
+        Branch branch = branchStore.get(1L);
+
+        Customer customer = new Customer();
+        customer.setName("Formula Test Customer");
+        customer.setAddress("Nagercoil");
+        customer.setBranch(branch);
+
+        Quotation quotation = new Quotation();
+        quotation.setId(110L);
+        quotation.setQuotationNumber("QT-00060");
+        quotation.setQuotationDate(LocalDate.of(2026, 11, 18));
+        quotation.setValidUntil(LocalDate.of(2027, 11, 18));
+        quotation.setCustomer(customer);
+        quotation.setBranch(branch);
+        quotation.setPricingMode(PricingMode.PREMIUM);
+        quotation.setShowSqftSize(true);
+        quotation.setSubtotal(new BigDecimal("30000.00"));
+        quotation.setTotalAmount(new BigDecimal("30000.00"));
+        quotation.setOfferAmount(BigDecimal.ZERO);
+        quotation.setGrandTotal(new BigDecimal("30000.00"));
+        quotationStore.put(110L, quotation);
+
+        WorkCategory category = new WorkCategory();
+        category.setName("MODULAR KITCHEN");
+
+        Division baseCabinet = new Division();
+        baseCabinet.setName("BASE CABINET");
+        baseCabinet.setWorkCategory(category);
+
+        QuotationRoom room = new QuotationRoom();
+        room.setId(210L);
+        room.setQuotation(quotation);
+        room.setRoom("1");
+        room.setFloor("GROUND FLOOR");
+        room.setActive(true);
+        roomStoreByQuotation.put(110L, List.of(room));
+
+        // Item 1: (L + W) × H formula
+        Material mat1 = new Material();
+        mat1.setName("MAT 1 L_PLUS_W_X_H");
+        mat1.setMeasurementType(MeasurementType.SQFT);
+        mat1.setFormula("((L+W)*H)/144");
+
+        QuotationItem item1 = new QuotationItem();
+        item1.setId(311L);
+        item1.setQuotationRoom(room);
+        item1.setWorkCategory(category);
+        item1.setDivision(baseCabinet);
+        item1.setMaterial(mat1);
+        item1.setFormula("((L+W)*H)/144");
+        item1.setLengthValue(new BigDecimal("45.00"));
+        item1.setWidthValue(new BigDecimal("45.00"));
+        item1.setHeightValue(new BigDecimal("12.00"));
+        item1.setCalculatedSqft(new BigDecimal("7.50"));
+        item1.setMeasurementType(MeasurementType.SQFT);
+        item1.setRate(new BigDecimal("1000.00"));
+        item1.setAmount(new BigDecimal("10000.00"));
+        item1.setOfferPrice(new BigDecimal("10000.00"));
+        item1.setActive(true);
+
+        // Item 2: L × H formula
+        Material mat2 = new Material();
+        mat2.setName("MAT 2 L_X_H");
+        mat2.setMeasurementType(MeasurementType.SQFT);
+        mat2.setFormula("(L*H)/144");
+
+        QuotationItem item2 = new QuotationItem();
+        item2.setId(312L);
+        item2.setQuotationRoom(room);
+        item2.setWorkCategory(category);
+        item2.setDivision(baseCabinet);
+        item2.setMaterial(mat2);
+        item2.setFormula("(L*H)/144");
+        item2.setLengthValue(new BigDecimal("45.00"));
+        item2.setWidthValue(new BigDecimal("24.00"));
+        item2.setHeightValue(new BigDecimal("12.00"));
+        item2.setCalculatedSqft(new BigDecimal("3.75"));
+        item2.setMeasurementType(MeasurementType.SQFT);
+        item2.setRate(new BigDecimal("1000.00"));
+        item2.setAmount(new BigDecimal("10000.00"));
+        item2.setOfferPrice(new BigDecimal("10000.00"));
+        item2.setActive(true);
+
+        // Item 3: L × W formula
+        Material mat3 = new Material();
+        mat3.setName("MAT 3 L_X_W");
+        mat3.setMeasurementType(MeasurementType.SQFT);
+        mat3.setFormula("(L*W)/144");
+
+        QuotationItem item3 = new QuotationItem();
+        item3.setId(313L);
+        item3.setQuotationRoom(room);
+        item3.setWorkCategory(category);
+        item3.setDivision(baseCabinet);
+        item3.setMaterial(mat3);
+        item3.setFormula("(L*W)/144");
+        item3.setLengthValue(new BigDecimal("45.00"));
+        item3.setWidthValue(new BigDecimal("45.00"));
+        item3.setHeightValue(new BigDecimal("12.00"));
+        item3.setCalculatedSqft(new BigDecimal("14.06"));
+        item3.setMeasurementType(MeasurementType.SQFT);
+        item3.setRate(new BigDecimal("1000.00"));
+        item3.setAmount(new BigDecimal("10000.00"));
+        item3.setOfferPrice(new BigDecimal("10000.00"));
+        item3.setActive(true);
+
+        itemStoreByRoom.put(210L, List.of(item1, item2, item3));
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(110L);
+        assertNotNull(pdfBytes);
+
+        PdfReader reader = new PdfReader(pdfBytes);
+        PdfTextExtractor extractor = new PdfTextExtractor(reader);
+        String page2Text = extractor.getTextFromPage(2);
+        reader.close();
+
+        assertNotNull(page2Text);
+        String normalized = page2Text.replaceAll("\\s+", " ");
+
+        // Verify formula dimensions display with L/W/H labels
+        // (45 + 45) × 12 -> L: 45, W: 45, H: 12
+        assertTrue(normalized.contains("L: 45, W: 45, H: 12"), "Must contain L: 45, W: 45, H: 12 dimension");
+        // 45 × 12 -> L: 45, H: 12
+        assertTrue(normalized.contains("L: 45, H: 12"), "Must contain L: 45, H: 12 dimension");
+        // 45 × 45 -> L: 45, W: 45
+        assertTrue(normalized.contains("L: 45, W: 45"), "Must contain L: 45, W: 45 dimension");
+
+        // Verify Division and Company Header
+        assertTrue(normalized.contains("Division: Azhagiamandapam Branch"), "Must display Division");
+        assertTrue(normalized.contains("PRAVIN KITCHENS & INTERIORS"), "Must display Company Name");
+    }
+
+    @Test
+    @DisplayName("Verify Quote Summary table heading PRICE and dimensions L: 45, W: 67, H: 34 / L: 45, W: 67 / L: 45, H: 34")
+    void testPriceHeadingAndDimensionLabels() throws Exception {
+        Branch branch = branchStore.get(1L);
+
+        Customer customer = new Customer();
+        customer.setName("Price Test Customer");
+        customer.setAddress("Kanyakumari");
+        customer.setBranch(branch);
+
+        Quotation quotation = new Quotation();
+        quotation.setId(111L);
+        quotation.setQuotationNumber("QT-00061");
+        quotation.setQuotationDate(LocalDate.of(2026, 11, 23));
+        quotation.setValidUntil(LocalDate.of(2027, 11, 23));
+        quotation.setCustomer(customer);
+        quotation.setBranch(branch);
+        quotation.setPricingMode(PricingMode.ECONOMY);
+        quotation.setShowSqftSize(true);
+        quotation.setSubtotal(new BigDecimal("12051.90"));
+        quotation.setTotalAmount(new BigDecimal("12051.90"));
+        quotation.setOfferAmount(BigDecimal.ZERO);
+        quotation.setGrandTotal(new BigDecimal("12051.90"));
+        quotationStore.put(111L, quotation);
+
+        WorkCategory category = new WorkCategory();
+        category.setName("MODULAR KITCHEN");
+
+        Division baseCabinet = new Division();
+        baseCabinet.setName("BASE CABINET");
+        baseCabinet.setWorkCategory(category);
+
+        Division wallCabinet = new Division();
+        wallCabinet.setName("WALL CABINET");
+        wallCabinet.setWorkCategory(category);
+
+        QuotationRoom room = new QuotationRoom();
+        room.setId(211L);
+        room.setQuotation(quotation);
+        room.setRoom("1");
+        room.setFloor("GROUND FLOOR");
+        room.setActive(true);
+        roomStoreByQuotation.put(111L, List.of(room));
+
+        // Item 1: (L + W) × H formula: L=45, W=23, H=12 -> L: 45, W: 23, H: 12
+        Material mat1 = new Material();
+        mat1.setName("ENGINEERING WOOD BOX TYPE");
+        mat1.setMeasurementType(MeasurementType.SQFT);
+        mat1.setFormula("((L+W)*H)/144");
+
+        QuotationItem item1 = new QuotationItem();
+        item1.setId(321L);
+        item1.setQuotationRoom(room);
+        item1.setWorkCategory(category);
+        item1.setDivision(baseCabinet);
+        item1.setMaterial(mat1);
+        item1.setFormula("((L+W)*H)/144");
+        item1.setLengthValue(new BigDecimal("45.00"));
+        item1.setWidthValue(new BigDecimal("23.00"));
+        item1.setHeightValue(new BigDecimal("12.00"));
+        item1.setCalculatedSqft(new BigDecimal("5.67"));
+        item1.setMeasurementType(MeasurementType.SQFT);
+        item1.setRate(new BigDecimal("1000.00"));
+        item1.setAmount(new BigDecimal("5670.00"));
+        item1.setOfferPrice(new BigDecimal("5670.00"));
+        item1.setActive(true);
+
+        // Item 2: (L + W) × H formula: L=40, W=23, H=12 -> L: 40, W: 23, H: 12
+        Material mat2 = new Material();
+        mat2.setName("ENGINEERING WOOD DOOR TYPE");
+        mat2.setMeasurementType(MeasurementType.SQFT);
+        mat2.setFormula("((L+W)*H)/144");
+
+        QuotationItem item2 = new QuotationItem();
+        item2.setId(322L);
+        item2.setQuotationRoom(room);
+        item2.setWorkCategory(category);
+        item2.setDivision(baseCabinet);
+        item2.setMaterial(mat2);
+        item2.setFormula("((L+W)*H)/144");
+        item2.setLengthValue(new BigDecimal("40.00"));
+        item2.setWidthValue(new BigDecimal("23.00"));
+        item2.setHeightValue(new BigDecimal("12.00"));
+        item2.setCalculatedSqft(new BigDecimal("5.25"));
+        item2.setMeasurementType(MeasurementType.SQFT);
+        item2.setRate(new BigDecimal("800.00"));
+        item2.setAmount(new BigDecimal("4200.00"));
+        item2.setOfferPrice(new BigDecimal("4200.00"));
+        item2.setActive(true);
+
+        // Item 3: L × W formula: L=67, W=67 -> L: 67, W: 67
+        Material mat3 = new Material();
+        mat3.setName("MDF BOARD");
+        mat3.setMeasurementType(MeasurementType.SQFT);
+        mat3.setFormula("(L*W)/144");
+
+        QuotationItem item3 = new QuotationItem();
+        item3.setId(323L);
+        item3.setQuotationRoom(room);
+        item3.setWorkCategory(category);
+        item3.setDivision(wallCabinet);
+        item3.setMaterial(mat3);
+        item3.setFormula("(L*W)/144");
+        item3.setLengthValue(new BigDecimal("67.00"));
+        item3.setWidthValue(new BigDecimal("67.00"));
+        item3.setHeightValue(new BigDecimal("0.00"));
+        item3.setCalculatedSqft(new BigDecimal("31.17"));
+        item3.setMeasurementType(MeasurementType.SQFT);
+        item3.setRate(new BigDecimal("70.00"));
+        item3.setAmount(new BigDecimal("2181.90"));
+        item3.setOfferPrice(new BigDecimal("2181.90"));
+        item3.setActive(true);
+
+        itemStoreByRoom.put(211L, List.of(item1, item2, item3));
+
+        byte[] pdfBytes = quotationPdfService.generateQuotationPdf(111L);
+        assertNotNull(pdfBytes);
+
+        PdfReader reader = new PdfReader(pdfBytes);
+        PdfTextExtractor extractor = new PdfTextExtractor(reader);
+        String page2Text = extractor.getTextFromPage(2);
+        reader.close();
+
+        assertNotNull(page2Text);
+        String normalized = page2Text.replaceAll("\\s+", " ");
+
+        // 1. Column header PRICE present, and individual materials table has PRICE
+        assertTrue(normalized.contains("PRICE"), "Table header must contain PRICE");
+
+        // 2. Financial summary labels preserved
+        assertTrue(normalized.contains("Economy Grade Subtotal"), "Must preserve Economy Grade Subtotal");
+        assertTrue(normalized.contains("Total Amount"), "Must preserve Total Amount");
+        assertTrue(normalized.contains("Offer Price"), "Must preserve Offer Price");
+        assertTrue(normalized.contains("GRAND TOTAL"), "Must preserve GRAND TOTAL");
+
+        // 3. Dimensions with labels
+        assertTrue(normalized.contains("L: 45, W: 23, H: 12"), "Must contain L: 45, W: 23, H: 12");
+        assertTrue(normalized.contains("L: 40, W: 23, H: 12"), "Must contain L: 40, W: 23, H: 12");
+        assertTrue(normalized.contains("L: 67, W: 67"), "Must contain L: 67, W: 67 without unused H");
+        assertFalse(normalized.contains("H: 0"), "Must NOT show unused dimension H as zero");
+    }
+
+    @Test
+    @DisplayName("Test Quotation PDF independent showSize and showSqft toggle combinations")
+    void testIndependentShowSizeAndShowSqftToggleCombinations() throws Exception {
+        WorkCategory category = new WorkCategory();
+        category.setId(10L);
+        category.setName("MODULAR KITCHEN");
+
+        Division baseCabinet = new Division();
+        baseCabinet.setId(20L);
+        baseCabinet.setName("BASE CABINET");
+
+        Material mat = new Material();
+        mat.setName("ENGINEERING WOOD BOX TYPE");
+        mat.setMeasurementType(MeasurementType.SQFT);
+        mat.setFormula("((L+W)*H)/144");
+
+        Customer customer = new Customer();
+        customer.setId(1L);
+        customer.setName("Test Customer");
+        customer.setAddress("Nagercoil");
+
+        // Helper to run a test for given showSize and showSqft
+        for (int combo = 0; combo < 4; combo++) {
+            boolean showSize = (combo & 1) != 0;
+            boolean showSqft = (combo & 2) != 0;
+            long qId = 800L + combo;
+            long rId = 900L + combo;
+            long iId = 1000L + combo;
+
+            Quotation q = new Quotation();
+            q.setId(qId);
+            q.setQuotationNumber("QT-COMBO-" + combo);
+            q.setCustomer(customer);
+            q.setBranch(branchStore.get(1L));
+            q.setQuotationDate(LocalDate.now());
+            q.setValidUntil(LocalDate.now().plusDays(30));
+            q.setPricingMode(PricingMode.ECONOMY);
+            q.setSubtotal(new BigDecimal("5670.00"));
+            q.setTotalAmount(new BigDecimal("5670.00"));
+            q.setGrandTotal(new BigDecimal("5670.00"));
+            q.setShowSize(showSize);
+            q.setShowSqft(showSqft);
+            quotationStore.put(qId, q);
+
+            QuotationRoom room = new QuotationRoom();
+            room.setId(rId);
+            room.setQuotation(q);
+            room.setRoom("1");
+            room.setFloor("GROUND FLOOR");
+            room.setActive(true);
+            roomStoreByQuotation.put(qId, List.of(room));
+
+            QuotationItem item = new QuotationItem();
+            item.setId(iId);
+            item.setQuotationRoom(room);
+            item.setWorkCategory(category);
+            item.setDivision(baseCabinet);
+            item.setMaterial(mat);
+            item.setFormula("((L+W)*H)/144");
+            item.setLengthValue(new BigDecimal("45.00"));
+            item.setWidthValue(new BigDecimal("23.00"));
+            item.setHeightValue(new BigDecimal("12.00"));
+            item.setCalculatedSqft(new BigDecimal("5.67"));
+            item.setMeasurementType(MeasurementType.SQFT);
+            item.setRate(new BigDecimal("1000.00"));
+            item.setAmount(new BigDecimal("5670.00"));
+            item.setOfferPrice(new BigDecimal("5670.00"));
+            item.setActive(true);
+            itemStoreByRoom.put(rId, List.of(item));
+
+            byte[] pdfBytes = quotationPdfService.generateQuotationPdf(qId);
+            assertNotNull(pdfBytes, "PDF bytes must not be null for combo showSize=" + showSize + ", showSqft=" + showSqft);
+
+            PdfReader reader = new PdfReader(pdfBytes);
+            PdfTextExtractor extractor = new PdfTextExtractor(reader);
+            String page2 = extractor.getTextFromPage(2);
+            reader.close();
+
+            String text = page2.replaceAll("\\s+", " ");
+
+            // Common elements
+            assertTrue(text.contains("PRICE"), "Table must contain PRICE column header");
+            assertTrue(text.contains("GRAND TOTAL"), "Must contain GRAND TOTAL");
+            assertTrue(text.contains("5,670.00"), "Must contain amount 5,670.00");
+
+            if (showSize) {
+                assertTrue(text.contains("SIZE"), "Header must contain SIZE when showSize is true");
+                assertTrue(text.contains("L: 45, W: 23, H: 12"), "Must display dimensions when showSize is true");
+            } else {
+                assertFalse(text.contains("SIZE"), "Header must NOT contain SIZE when showSize is false");
+                assertFalse(text.contains("L: 45, W: 23, H: 12"), "Must NOT display dimensions when showSize is false");
+            }
+
+            if (showSqft) {
+                assertTrue(text.contains("SQ.FTUNIT"), "Header must contain SQ.FT before UNIT when showSqft is true");
+                assertTrue(text.contains("5.67"), "Must display calculated sqft 5.67 when showSqft is true");
+            } else {
+                assertFalse(text.contains("SQ.FTUNIT"), "Header must NOT contain SQ.FT before UNIT when showSqft is false");
+                assertFalse(text.contains("5.67"), "Must NOT display calculated sqft 5.67 when showSqft is false");
+            }
+        }
     }
 }

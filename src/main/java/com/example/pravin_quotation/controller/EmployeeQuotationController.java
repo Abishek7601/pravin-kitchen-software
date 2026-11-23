@@ -917,7 +917,9 @@ public class EmployeeQuotationController {
                     request.lastActiveRoom(),
                     request.lastActiveCategoryId(),
                     request.lastActiveDivisionId(),
-                    request.builderState()
+                    request.builderState(),
+                    request.showSize(),
+                    request.showSqft()
             );
 
             Quotation quotation = builderService.save(effectiveRequest, authentication.getName());
@@ -1008,7 +1010,9 @@ public class EmployeeQuotationController {
                     request.lastActiveRoom(),
                     request.lastActiveCategoryId(),
                     request.lastActiveDivisionId(),
-                    request.builderState()
+                    request.builderState(),
+                    request.showSize(),
+                    request.showSqft()
             );
 
             Quotation quotation = builderService.autoSave(effectiveRequest, authentication.getName());
@@ -1139,6 +1143,8 @@ public class EmployeeQuotationController {
         data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
         data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
         data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+        data.put("showSize", q.getShowSize() != null ? q.getShowSize() : true);
+        data.put("showSqft", q.getShowSqft() != null ? q.getShowSqft() : true);
 
         data.put("lastActiveStep", q.getLastActiveStep());
         data.put("lastActiveFloor", q.getLastActiveFloor());

@@ -166,6 +166,12 @@ public class Quotation {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @Column(name = "show_size")
+    private Boolean showSize = true;
+
+    @Column(name = "show_sqft")
+    private Boolean showSqft = true;
+
     @Column(name = "show_sqft_size")
     private Boolean showSqftSize = true;
 
@@ -675,12 +681,49 @@ public class Quotation {
         this.notes = notes;
     }
 
+    public Boolean getShowSize() {
+        if (showSize != null) {
+            return showSize;
+        }
+        if (showSqftSize != null) {
+            return showSqftSize;
+        }
+        return true;
+    }
+
+    public void setShowSize(Boolean showSize) {
+        this.showSize = showSize;
+    }
+
+    public Boolean getShowSqft() {
+        if (showSqft != null) {
+            return showSqft;
+        }
+        if (showSqftSize != null) {
+            return showSqftSize;
+        }
+        return true;
+    }
+
+    public void setShowSqft(Boolean showSqft) {
+        this.showSqft = showSqft;
+    }
+
     public Boolean getShowSqftSize() {
-        return showSqftSize;
+        if (showSqftSize != null) {
+            return showSqftSize;
+        }
+        return Boolean.TRUE.equals(getShowSize()) && Boolean.TRUE.equals(getShowSqft());
     }
 
     public void setShowSqftSize(Boolean showSqftSize) {
         this.showSqftSize = showSqftSize;
+        if (showSize == null && showSqftSize != null) {
+            this.showSize = showSqftSize;
+        }
+        if (showSqft == null && showSqftSize != null) {
+            this.showSqft = showSqftSize;
+        }
     }
 
     public LocalDate getValidUntil() {

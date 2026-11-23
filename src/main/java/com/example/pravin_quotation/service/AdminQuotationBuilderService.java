@@ -797,10 +797,26 @@ public class AdminQuotationBuilderService {
         if (request.discountAmount() != null) targetQuotation.setDiscountAmount(request.discountAmount());
         if (request.gstPercentage() != null) targetQuotation.setGstPercentage(request.gstPercentage());
         if (request.offerPercentage() != null) targetQuotation.setOfferPercentage(request.offerPercentage());
+        if (request.showSize() != null) {
+            targetQuotation.setShowSize(request.showSize());
+        } else if (request.showSqftSize() != null) {
+            targetQuotation.setShowSize(request.showSqftSize());
+        } else if (targetQuotation.getShowSize() == null) {
+            targetQuotation.setShowSize(true);
+        }
+
+        if (request.showSqft() != null) {
+            targetQuotation.setShowSqft(request.showSqft());
+        } else if (request.showSqftSize() != null) {
+            targetQuotation.setShowSqft(request.showSqftSize());
+        } else if (targetQuotation.getShowSqft() == null) {
+            targetQuotation.setShowSqft(true);
+        }
+
         if (request.showSqftSize() != null) {
             targetQuotation.setShowSqftSize(request.showSqftSize());
-        } else if (targetQuotation.getShowSqftSize() == null) {
-            targetQuotation.setShowSqftSize(true);
+        } else {
+            targetQuotation.setShowSqftSize(Boolean.TRUE.equals(targetQuotation.getShowSize()) && Boolean.TRUE.equals(targetQuotation.getShowSqft()));
         }
 
         targetQuotation.setLastActiveStep(request.lastActiveStep());
@@ -847,6 +863,8 @@ public class AdminQuotationBuilderService {
                 if (request.discountAmount() != null) targetQuotation.setDiscountAmount(request.discountAmount());
                 if (request.gstPercentage() != null) targetQuotation.setGstPercentage(request.gstPercentage());
                 if (request.offerPercentage() != null) targetQuotation.setOfferPercentage(request.offerPercentage());
+                if (request.showSize() != null) targetQuotation.setShowSize(request.showSize());
+                if (request.showSqft() != null) targetQuotation.setShowSqft(request.showSqft());
                 if (request.showSqftSize() != null) targetQuotation.setShowSqftSize(request.showSqftSize());
                 targetQuotation.setLastActiveStep(request.lastActiveStep());
                 targetQuotation.setLastActiveFloor(request.lastActiveFloor());
@@ -1698,7 +1716,41 @@ public class AdminQuotationBuilderService {
             String lastActiveRoom,
             Long lastActiveCategoryId,
             Long lastActiveDivisionId,
-            String builderState) {
+            String builderState,
+            Boolean showSize,
+            Boolean showSqft) {
+
+        public BuilderRequest(
+                Long quotationId,
+                Long parentId,
+                CustomerRequest customer,
+                Long branchId,
+                LocalDate quotationDate,
+                LocalDate validUntil,
+                PricingMode pricingMode,
+                String customerRequirements,
+                String notes,
+                List<RoomRequest> rooms,
+                BigDecimal accessoriesAmount,
+                BigDecimal travelCharge,
+                BigDecimal otherCharges,
+                String otherChargesDescription,
+                BigDecimal discountAmount,
+                BigDecimal gstPercentage,
+                BigDecimal offerPercentage,
+                Boolean showSqftSize,
+                String lastActiveStep,
+                String lastActiveFloor,
+                String lastActiveRoom,
+                Long lastActiveCategoryId,
+                Long lastActiveDivisionId,
+                String builderState) {
+            this(quotationId, parentId, customer, branchId, quotationDate, validUntil, pricingMode, customerRequirements, notes, rooms,
+                    accessoriesAmount, travelCharge, otherCharges, otherChargesDescription,
+                    discountAmount, gstPercentage, offerPercentage, showSqftSize,
+                    lastActiveStep, lastActiveFloor, lastActiveRoom, lastActiveCategoryId, lastActiveDivisionId, builderState,
+                    showSqftSize, showSqftSize);
+        }
 
         public BuilderRequest(
                 Long quotationId,
