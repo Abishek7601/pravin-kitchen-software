@@ -2,6 +2,7 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
+import com.example.pravin_quotation.util.CalculationFormula;
 import com.example.pravin_quotation.util.IndianCurrencyFormatter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -105,8 +106,31 @@ public class QuotationViewGradeService {
             String gradeBadgeText,
             PaymentTermsDto paymentTerms,
             List<GradeViewRoomDto> rooms,
-            GradeViewFinancialsDto financials
-    ) {}
+            GradeViewFinancialsDto financials,
+            Boolean showSize,
+            Boolean showSqft,
+            Boolean showSqftSize
+    ) {
+        public GradeViewResponse(
+                boolean success,
+                String message,
+                Long quotationId,
+                String quotationNumber,
+                String activeGrade,
+                String activeGradeLabel,
+                String quotedProjectValue,
+                BigDecimal grandTotalRaw,
+                String gradeBadgeClass,
+                String gradeBadgeText,
+                PaymentTermsDto paymentTerms,
+                List<GradeViewRoomDto> rooms,
+                GradeViewFinancialsDto financials
+        ) {
+            this(success, message, quotationId, quotationNumber, activeGrade, activeGradeLabel,
+                    quotedProjectValue, grandTotalRaw, gradeBadgeClass, gradeBadgeText,
+                    paymentTerms, rooms, financials, true, true, true);
+        }
+    }
 
     @Transactional(readOnly = true)
     public GradeViewResponse getGradeViewData(Long quotationId, PricingMode targetGrade) {
@@ -174,10 +198,17 @@ public class QuotationViewGradeService {
                             ? item.getSpecification()
                             : (item.getMaterialSpecification() != null ? item.getMaterialSpecification().getName() : "");
 
-                    String formula = item.getFormula() != null && !item.getFormula().isBlank()
-                            ? "Formula: " + item.getFormula() : "";
+                    String rawFormula = item.getFormula() != null && !item.getFormula().isBlank()
+                            ? item.getFormula()
+                            : ((item.getMaterial() != null && item.getMaterial().getFormula() != null && !item.getMaterial().getFormula().isBlank())
+                                    ? item.getMaterial().getFormula()
+                                    : ((item.getMaterialOption() != null && item.getMaterialOption().getFormula() != null)
+                                            ? item.getMaterialOption().getFormula() : "(L + W) × H"));
 
-                    String dims = buildDimensionsString(item);
+                    String formula = rawFormula != null && !rawFormula.isBlank()
+                            ? "Formula: " + rawFormula : "";
+
+                    String dims = buildDimensionsString(item, rawFormula);
                     String sqftStr = (item.getMeasurementType() != null && !item.getMeasurementType().isSqft() && !item.getMeasurementType().isRoll())
                             ? "-" : formatDecimal(item.getCalculatedSqft() != null ? item.getCalculatedSqft() : BigDecimal.ZERO);
 
@@ -360,7 +391,7 @@ public class QuotationViewGradeService {
                         }
                     }
 
-                    String dims = buildDimensionsString(item);
+                    String dims = buildDimensionsString(item, formula);
                     String sqftStr = (!materialAvailable || (!measurementType.isSqft() && !measurementType.isRoll()))
                             ? "-" : formatDecimal(sqft);
                     String rateStr = materialAvailable
@@ -472,7 +503,10 @@ public class QuotationViewGradeService {
                 badgeText,
                 paymentTerms,
                 roomDtos,
-                financials
+                financials,
+                quotation.getShowSize() != null ? quotation.getShowSize() : true,
+                quotation.getShowSqft() != null ? quotation.getShowSqft() : true,
+                quotation.getShowSqftSize() != null ? quotation.getShowSqftSize() : true
         );
     }
 
@@ -601,7 +635,17 @@ public class QuotationViewGradeService {
         return (candidate != null && !candidate.isBlank()) ? candidate : "-";
     }
 
-    private String buildDimensionsString(QuotationItem item) {
+    public String buildDimensionsString(QuotationItem item) {
+        String formula = (item.getFormula() != null && !item.getFormula().isBlank())
+                ? item.getFormula()
+                : ((item.getMaterial() != null && item.getMaterial().getFormula() != null && !item.getMaterial().getFormula().isBlank())
+                        ? item.getMaterial().getFormula()
+                        : ((item.getMaterialOption() != null && item.getMaterialOption().getFormula() != null)
+                                ? item.getMaterialOption().getFormula() : "(L + W) × H"));
+        return buildDimensionsString(item, formula);
+    }
+
+    public String buildDimensionsString(QuotationItem item, String formula) {
         if (item.getMeasurementType() != null && !item.getMeasurementType().isSqft() && !item.getMeasurementType().isRoll()) {
             BigDecimal qty = (item.getQuantity() != null && item.getQuantity().compareTo(BigDecimal.ZERO) > 0)
                     ? item.getQuantity() : BigDecimal.ONE;
@@ -615,7 +659,7 @@ public class QuotationViewGradeService {
             for (QuotationItemSize s : sizes) {
                 if (s.getActive() != null && !s.getActive()) continue;
                 String prefix = sizes.size() > 1 ? ("#" + idx + ": ") : "";
-                lines.add(prefix + formatDecimal(s.getLengthValue()) + " × " + formatDecimal(s.getWidthValue()) + " × " + formatDecimal(s.getHeightValue()) + " in.");
+                lines.add(prefix + formatFormulaDimension(formula, s.getLengthValue(), s.getWidthValue(), s.getHeightValue()));
                 idx++;
             }
             if (!lines.isEmpty()) {
@@ -623,7 +667,31 @@ public class QuotationViewGradeService {
             }
         }
 
-        return formatDecimal(item.getLengthValue()) + " × " + formatDecimal(item.getWidthValue()) + " × " + formatDecimal(item.getHeightValue()) + " in.";
+        return formatFormulaDimension(formula, item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+    }
+
+    public static String formatFormulaDimension(String formula, BigDecimal length, BigDecimal width, BigDecimal height) {
+        String norm = CalculationFormula.normalizeFormula(formula);
+        String l = formatDim(length);
+        String w = formatDim(width);
+        String h = formatDim(height);
+
+        if (CalculationFormula.FORMULA_L_X_H.equals(norm)) {
+            return "L: " + l + ", H: " + h;
+        } else if (CalculationFormula.FORMULA_L_PLUS_W_X_H.equals(norm)) {
+            return "L: " + l + ", W: " + w + ", H: " + h;
+        } else {
+            return "L: " + l + ", W: " + w;
+        }
+    }
+
+    public static String formatDim(BigDecimal val) {
+        if (val == null) return "0";
+        BigDecimal scaled = val.setScale(2, RoundingMode.HALF_UP);
+        if (scaled.stripTrailingZeros().scale() <= 0) {
+            return scaled.setScale(0, RoundingMode.HALF_UP).toPlainString();
+        }
+        return scaled.stripTrailingZeros().toPlainString();
     }
 
     private String resolveItemUnit(QuotationItem item, PricingMode pricingMode) {

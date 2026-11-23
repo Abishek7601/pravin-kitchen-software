@@ -16,8 +16,8 @@
                 <th class="col-worktype">Work Type</th>
                 <th class="col-material">Material</th>
                 <th class="col-spec">Specifications</th>
-                <th class="col-dimensions" th:if="${quote.showSqftSize == null || quote.showSqftSize}">Size / Dimensions</th>
-                <th class="col-sqft text-right" th:if="${quote.showSqftSize == null || quote.showSqftSize}">Sq.Ft.</th>
+                <th class="col-dimensions" id="thColSize" th:if="${quote.showSize == null || quote.showSize}">Size / Dimensions</th>
+                <th class="col-sqft text-right" id="thColSqft" th:if="${quote.showSqft == null || quote.showSqft}">Sq.Ft.</th>
                 <th class="col-rate text-right">Unit Rate</th>
                 <th class="col-amount text-right">Amount</th>
             </tr>
@@ -26,7 +26,7 @@
             <th:block th:each="room, roomStat : ${rooms}">
                 <!-- Room Grouping Banner -->
                 <tr class="room-group-row">
-                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 11 : 9}">
+                    <td th:colspan="${9 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}">
                         <div class="room-group-banner">
                             <div class="room-group-title">
                                 <span class="room-badge" th:text="'Room #' + ${roomStat.count}">Room #1</span>
@@ -89,7 +89,7 @@
                         <span class="spec-empty"
                               th:if="${(item.specification == null || #strings.isEmpty(item.specification)) && item.materialSpecification == null && (item.formula == null || #strings.isEmpty(item.formula)) and (item.measurementType == null or !item.measurementType.name().equals('ROLL'))}">-</span>
                     </td>
-                    <td class="cell-dimensions" th:if="${quote.showSqftSize == null || quote.showSqftSize}">
+                    <td class="cell-dimensions" th:if="${quote.showSize == null || quote.showSize}">
                         <div th:if="${item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')}">
                             <span class="size-vals" style="font-weight: 600; color: #0f766e;" th:text="${'Qty: ' + (item.quantity != null ? item.quantity : 1)}">Qty: 1</span>
                         </div>
@@ -112,7 +112,7 @@
                         </div>
                     </td>
                     <td class="text-right cell-sqft"
-                        th:if="${quote.showSqftSize == null || quote.showSqftSize}"
+                        th:if="${quote.showSqft == null || quote.showSqft}"
                         th:text="${(item.measurementType != null and !item.measurementType.name().equals('SQFT') and !item.measurementType.name().equals('ROLL')) ? '-' : #numbers.formatDecimal(item.calculatedSqft != null ? item.calculatedSqft : 0, 1, 2)}">
                         0.00
                     </td>
@@ -133,14 +133,14 @@
 
                 <!-- If room has no active items -->
                 <tr th:if="${itemsByRoom[room.id] == null || #lists.isEmpty(itemsByRoom[room.id])}" class="empty-room-row">
-                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 11 : 9}" class="text-center text-muted">
+                    <td th:colspan="${9 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-center text-muted">
                         No active work items added to this room.
                     </td>
                 </tr>
 
                 <!-- Room Subtotal Row -->
                 <tr class="room-subtotal-row">
-                    <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right room-subtotal-label">
+                    <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right room-subtotal-label">
                         <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
                     </td>
                     <td class="text-right room-subtotal-val">
@@ -152,55 +152,55 @@
                 <tfoot>
             <!-- Grade-Wise Subtotals -->
             <tr class="tfoot-charge-row" th:if="${premiumSubtotal != null && premiumSubtotal > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
                 <td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;" th:text="${'₹ ' + @inr.format(premiumSubtotal)}">₹ 0.00</td>
             </tr>
             <tr class="tfoot-charge-row" th:if="${middleSubtotal != null && middleSubtotal > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td>
                 <td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;" th:text="${'₹ ' + @inr.format(middleSubtotal)}">₹ 0.00</td>
             </tr>
             <tr class="tfoot-charge-row" th:if="${economySubtotal != null && economySubtotal > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td>
                 <td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;" th:text="${'₹ ' + @inr.format(economySubtotal)}">₹ 0.00</td>
             </tr>
             <tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.subtotal != null ? quote.subtotal : 0)}">₹ 0.00</td>
             </tr>
             <!-- Accessories -->
             <tr class="tfoot-charge-row" th:if="${quote.accessoriesAmount != null && quote.accessoriesAmount > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Accessories</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Accessories</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.accessoriesAmount)}">₹ 0.00</td>
             </tr>
             <!-- Travel Charges -->
             <tr class="tfoot-charge-row" th:if="${quote.travelCharge != null && quote.travelCharge > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Travel Charges</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Travel Charges</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.travelCharge)}">₹ 0.00</td>
             </tr>
             <!-- Other Charges -->
             <tr class="tfoot-charge-row" th:if="${quote.otherCharges != null && quote.otherCharges > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label"
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label"
                     th:text="${(quote.otherChargesDescription != null && !#strings.isEmpty(#strings.trim(quote.otherChargesDescription))) ? 'Other Charges (' + #strings.trim(quote.otherChargesDescription) + ')' : 'Other Charges'}">Other Charges</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.otherCharges)}">₹ 0.00</td>
             </tr>
             <!-- Discount -->
             <tr class="tfoot-charge-row discount-charge-row" th:if="${quote.discountAmount != null && quote.discountAmount > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label">Discount</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Discount</td>
                 <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + @inr.format(quote.discountAmount)}">- ₹ 0.00</td>
             </tr>
             <!-- Special Offer / Discount (Applied BEFORE GST) -->
             <tr class="tfoot-charge-row offer-charge-row" th:if="${quote.offerAmount != null && quote.offerAmount > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quote.offerPercentage != null ? quote.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" th:text="${'Special Offer (' + #numbers.formatDecimal(quote.offerPercentage != null ? quote.offerPercentage : 0, 1, 2) + '%)'}">Special Offer</td>
                 <td class="text-right tfoot-charge-val" th:text="${'- ₹ ' + @inr.format(quote.offerAmount)}">- ₹ 0.00</td>
             </tr>
             <!-- GST (Applied on Taxable Amount After Offer) -->
             <tr class="tfoot-charge-row" th:if="${quote.gstAmount != null && quote.gstAmount > 0}">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quote.gstPercentage != null ? quote.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" th:text="${'GST (' + #numbers.formatDecimal(quote.gstPercentage != null ? quote.gstPercentage : 0, 1, 2) + '%)'}">GST</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.gstAmount)}">₹ 0.00</td>
             </tr>
             <!-- Grand Total -->
             <tr class="tfoot-grand-total-row">
-                <td th:colspan="${(quote.showSqftSize == null || quote.showSqftSize) ? 10 : 8}" class="text-right grand-total-label">
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right grand-total-label">
                     <strong>Grand Total</strong>
                 </td>
                 <td class="text-right grand-total-amount">

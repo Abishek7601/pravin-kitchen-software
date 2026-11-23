@@ -2,6 +2,7 @@ package com.example.pravin_quotation.service;
 
 import com.example.pravin_quotation.model.*;
 import com.example.pravin_quotation.repository.*;
+import com.example.pravin_quotation.util.CalculationFormula;
 
 import com.lowagie.text.Chunk;
 import com.lowagie.text.Document;
@@ -379,50 +380,22 @@ public class QuotationPdfService {
         // ========================================================
         PdfPTable topHeaderTable = new PdfPTable(2);
         topHeaderTable.setWidthPercentage(100);
-        topHeaderTable.setWidths(new float[]{53f, 47f});
+        topHeaderTable.setWidths(new float[]{52f, 48f});
         topHeaderTable.setSpacingAfter(4f);
 
-        // --- LEFT COLUMN: LOGO + BRAND NAME + ADDRESS ---
+        // --- LEFT COLUMN: BRAND NAME + ADDRESS ---
         PdfPCell leftCell = new PdfPCell();
         leftCell.setBorder(Rectangle.NO_BORDER);
         leftCell.setPadding(0);
 
-        PdfPTable brandTable = new PdfPTable(2);
-        brandTable.setWidthPercentage(100);
-        brandTable.setWidths(new float[]{22f, 78f});
-
-        PdfPCell logoCell = new PdfPCell();
-        logoCell.setBorder(Rectangle.NO_BORDER);
-        logoCell.setPadding(0);
-        logoCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-        try {
-            InputStream logoStream = getClass().getResourceAsStream("/static/images/company-logo.png");
-            if (logoStream != null) {
-                byte[] logoBytes = logoStream.readAllBytes();
-                Image logoImg = Image.getInstance(logoBytes);
-                logoImg.scaleToFit(46, 46);
-                logoCell.addElement(logoImg);
-            }
-        } catch (Exception ignored) {}
-
-        PdfPCell nameCell = new PdfPCell();
-        nameCell.setBorder(Rectangle.NO_BORDER);
-        nameCell.setPaddingLeft(6f);
-        nameCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
-
-        Paragraph companyName = new Paragraph("PRAVIN KITCHENS & INTERIORS", new Font(Font.HELVETICA, 17f, Font.BOLD, COLOR_NAVY));
-        companyName.setLeading(20f);
-        nameCell.addElement(companyName);
-
-        brandTable.addCell(logoCell);
-        brandTable.addCell(nameCell);
-        leftCell.addElement(brandTable);
+        Paragraph companyName = new Paragraph("PRAVIN KITCHENS & INTERIORS", new Font(Font.HELVETICA, 18.5f, Font.BOLD, COLOR_NAVY));
+        companyName.setLeading(22f);
+        companyName.setSpacingAfter(4f);
+        leftCell.addElement(companyName);
 
         Paragraph addressPar = new Paragraph();
-        addressPar.setSpacingBefore(4f);
         addressPar.setFont(new Font(Font.HELVETICA, 9.5f, Font.NORMAL, COLOR_TEXT_MUTED));
-        addressPar.setLeading(13.0f);
+        addressPar.setLeading(13.5f);
 
         String branchAddress = (branch != null && branch.getBranchAddress() != null && !branch.getBranchAddress().isBlank())
                 ? branch.getBranchAddress().trim()
@@ -451,7 +424,7 @@ public class QuotationPdfService {
         leftCell.addElement(addressPar);
         topHeaderTable.addCell(leftCell);
 
-        // --- RIGHT COLUMN: TITLE & QUOTATION METADATA ---
+        // --- RIGHT COLUMN: QUOTATION METADATA ---
         PdfPCell rightCell = new PdfPCell();
         rightCell.setBorder(Rectangle.NO_BORDER);
         rightCell.setPadding(0);
@@ -472,34 +445,10 @@ public class QuotationPdfService {
 
         String qType = formatSingleGrade(gradeForPage);
 
-        String titleText;
-        switch (gradeForPage) {
-            case PREMIUM:
-                titleText = "PREMIUM GRADE QUOTATION";
-                break;
-            case MIDDLE:
-                titleText = "MIDDLE GRADE QUOTATION";
-                break;
-            case ECONOMY:
-                titleText = "ECONOMY GRADE QUOTATION";
-                break;
-            default:
-                titleText = gradeForPage.name() + " GRADE QUOTATION";
-                break;
-        }
-        Paragraph titlePar = new Paragraph(titleText, new Font(Font.HELVETICA, 17f, Font.BOLD, COLOR_NAVY));
-        titlePar.setLeading(20f);
-        titlePar.setAlignment(Element.ALIGN_RIGHT);
-        titlePar.setSpacingAfter(4f);
-        rightCell.addElement(titlePar);
-
-        LineSeparator titleLine = new LineSeparator(1.2f, 100, COLOR_GOLD, Element.ALIGN_RIGHT, -1);
-        rightCell.addElement(titleLine);
-
         PdfPTable metaTable = new PdfPTable(2);
         metaTable.setWidthPercentage(100);
         metaTable.setWidths(new float[]{40f, 60f});
-        metaTable.setSpacingBefore(4f);
+        metaTable.setSpacingBefore(0f);
 
         addMetaRow(metaTable, "Quotation No:", safe(quotation.getQuotationNumber()));
         addMetaRow(metaTable, "Quotation Type:", qType);
@@ -529,6 +478,18 @@ public class QuotationPdfService {
         }
         addMetaRow(metaTable, "Customer Address:", custAddr);
 
+        String divisionVal = "—";
+        if (quotation.getBranch() != null && quotation.getBranch().getName() != null && !quotation.getBranch().getName().isBlank()) {
+            divisionVal = quotation.getBranch().getName().trim();
+        } else if (quotation.getCustomer() != null && quotation.getCustomer().getBranch() != null && quotation.getCustomer().getBranch().getName() != null && !quotation.getCustomer().getBranch().getName().isBlank()) {
+            divisionVal = quotation.getCustomer().getBranch().getName().trim();
+        } else if (quotation.getDivision() != null && quotation.getDivision().getName() != null && !quotation.getDivision().getName().isBlank()) {
+            divisionVal = quotation.getDivision().getName().trim();
+        } else if (branch != null && branch.getName() != null && !branch.getName().isBlank()) {
+            divisionVal = branch.getName().trim();
+        }
+        addMetaRow(metaTable, "Division:", divisionVal);
+
         rightCell.addElement(metaTable);
         topHeaderTable.addCell(rightCell);
 
@@ -547,17 +508,26 @@ public class QuotationPdfService {
         document.add(summaryTitle);
 
         // ========================================================
-        // 3. QUOTE SUMMARY TABLE (8 or 10 COLUMNS BASED ON TOGGLE)
+        // 3. QUOTE SUMMARY TABLE (6 to 8 COLUMNS BASED ON TOGGLES)
         // ========================================================
-        boolean showSqft = quotation.getShowSqftSize() == null || quotation.getShowSqftSize();
-        int numColumns = showSqft ? 10 : 8;
+        boolean showSize = quotation.getShowSize() == null || quotation.getShowSize();
+        boolean showSqft = quotation.getShowSqft() == null || quotation.getShowSqft();
+        int numColumns = 6 + (showSize ? 1 : 0) + (showSqft ? 1 : 0);
         PdfPTable itemTable = new PdfPTable(numColumns);
         itemTable.setWidthPercentage(100);
         itemTable.setHeaderRows(1);
-        if (showSqft) {
-            itemTable.setWidths(new float[]{2.6f, 12.2f, 9.2f, 5.2f, 9.8f, 22.0f, 9.5f, 6.0f, 6.0f, 17.5f});
+        if (showSize && showSqft) {
+            // 8 columns: #, WORK CATEGORY, WORK TYPE, MATERIAL, SIZE, SQ.FT, UNIT, PRICE
+            itemTable.setWidths(new float[]{3.0f, 12.5f, 12.5f, 26.5f, 16.0f, 6.5f, 6.0f, 17.0f});
+        } else if (showSize && !showSqft) {
+            // 7 columns: #, WORK CATEGORY, WORK TYPE, MATERIAL, SIZE, UNIT, PRICE
+            itemTable.setWidths(new float[]{3.0f, 14.0f, 13.0f, 29.5f, 16.5f, 6.5f, 17.5f});
+        } else if (!showSize && showSqft) {
+            // 7 columns: #, WORK CATEGORY, WORK TYPE, MATERIAL, SQ.FT, UNIT, PRICE
+            itemTable.setWidths(new float[]{3.5f, 15.0f, 14.0f, 36.5f, 7.0f, 6.5f, 17.5f});
         } else {
-            itemTable.setWidths(new float[]{3.0f, 13.0f, 12.0f, 6.0f, 10.0f, 32.0f, 6.0f, 18.0f});
+            // 6 columns: #, WORK CATEGORY, WORK TYPE, MATERIAL, UNIT, PRICE
+            itemTable.setWidths(new float[]{3.5f, 15.5f, 15.0f, 41.0f, 6.5f, 18.5f});
         }
         itemTable.setSpacingAfter(4f);
 
@@ -565,15 +535,15 @@ public class QuotationPdfService {
         addHeaderCell(itemTable, "#", Element.ALIGN_CENTER, true);
         addHeaderCell(itemTable, "WORK CATEGORY", Element.ALIGN_LEFT, false);
         addHeaderCell(itemTable, "WORK TYPE", Element.ALIGN_LEFT, false);
-        addHeaderCell(itemTable, "ROOM", Element.ALIGN_CENTER, true);
-        addHeaderCell(itemTable, "FLOOR", Element.ALIGN_CENTER, true);
         addHeaderCell(itemTable, "MATERIAL", Element.ALIGN_LEFT, false);
-        if (showSqft) {
+        if (showSize) {
             addHeaderCell(itemTable, "SIZE", Element.ALIGN_CENTER, false);
+        }
+        if (showSqft) {
             addHeaderCell(itemTable, "SQ.FT", Element.ALIGN_CENTER, true);
         }
         addHeaderCell(itemTable, "UNIT", Element.ALIGN_CENTER, true);
-        addHeaderCell(itemTable, "TOTAL AMOUNT", Element.ALIGN_RIGHT, true);
+        addHeaderCell(itemTable, "PRICE", Element.ALIGN_RIGHT, true);
 
         // --- QUOTATION ROOMS & ITEMS ---
         int serialNumber = 1;
@@ -600,9 +570,6 @@ public class QuotationPdfService {
                             } else {
                                 workType = workType.toUpperCase();
                             }
-                            String roomName = safe(roomDto.room()).toUpperCase();
-                            String floorName = safe(roomDto.floor()).toUpperCase();
-                            if (floorName.isBlank()) floorName = "-";
 
                             String materialText = safe(itemDto.materialName());
                             if (itemDto.materialOptionName() != null && !itemDto.materialOptionName().isBlank()
@@ -611,7 +578,7 @@ public class QuotationPdfService {
                             }
 
                             String spec = safe(itemDto.specification());
-                            String sizeStr = safe(itemDto.dimensions());
+                            String sizeStr = safe(itemDto.dimensions()).replace("<br>", "\n").replace("<br/>", "\n");
                             String sqftStr = safe(itemDto.sqft());
                             String unitStr = safe(itemDto.unit());
                             String amtStr = safe(itemDto.amount()).replace("₹", "").replace(",", "").trim();
@@ -625,11 +592,11 @@ public class QuotationPdfService {
                             addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
                             addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
                             addBodyCell(itemTable, workType, Element.ALIGN_LEFT, isAltRow, false);
-                            addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
-                            addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
                             addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(spec), itemDto.imageUrl(), isAltRow);
-                            if (showSqft) {
+                            if (showSize) {
                                 addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
+                            }
+                            if (showSqft) {
                                 addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
                             }
                             addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
@@ -720,11 +687,9 @@ public class QuotationPdfService {
                     boolean isSqft = !isRoll && (item.getMeasurementType() == null || item.getMeasurementType().isSqft());
                     String sizeStr;
                     String sqftStr;
-                    if (isRoll) {
-                        sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
-                        sqftStr = format(sqft);
-                    } else if (isSqft) {
-                        sizeStr = buildSize(item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
+                    if (isRoll || isSqft) {
+                        String itemFormula = resolveItemFormula(item);
+                        sizeStr = QuotationViewGradeService.formatFormulaDimension(itemFormula, item.getLengthValue(), item.getWidthValue(), item.getHeightValue());
                         sqftStr = format(sqft);
                     } else {
                         BigDecimal qty = (item.getQuantity() != null && item.getQuantity().compareTo(BigDecimal.ZERO) > 0)
@@ -776,11 +741,11 @@ public class QuotationPdfService {
                     addBodyCell(itemTable, String.valueOf(serialNumber++), Element.ALIGN_CENTER, isAltRow, true);
                     addBodyCell(itemTable, workCat, Element.ALIGN_LEFT, isAltRow, false);
                     addBodyCell(itemTable, workType, Element.ALIGN_LEFT, isAltRow, false);
-                    addBodyCell(itemTable, roomName, Element.ALIGN_CENTER, isAltRow, true);
-                    addBodyCell(itemTable, floorName, Element.ALIGN_CENTER, isAltRow, false);
                     addMaterialCell(itemTable, materialText.toUpperCase(), formatSpecificationForPdf(specification), itemImageUrl, isAltRow);
-                    if (showSqft) {
+                    if (showSize) {
                         addBodyCell(itemTable, sizeStr, Element.ALIGN_CENTER, isAltRow, false);
+                    }
+                    if (showSqft) {
                         addBodyCell(itemTable, sqftStr, Element.ALIGN_CENTER, isAltRow, true);
                     }
                     addBodyCell(itemTable, unitStr, Element.ALIGN_CENTER, isAltRow, true);
@@ -1516,6 +1481,20 @@ public class QuotationPdfService {
         p.add(new Chunk(prefix, prefixFont));
         p.add(new Chunk(text, textFont));
         return p;
+    }
+
+    private String resolveItemFormula(QuotationItem item) {
+        if (item == null) return CalculationFormula.FORMULA_L_X_W;
+        if (item.getFormula() != null && !item.getFormula().isBlank()) {
+            return item.getFormula();
+        }
+        if (item.getMaterial() != null && item.getMaterial().getFormula() != null && !item.getMaterial().getFormula().isBlank()) {
+            return item.getMaterial().getFormula();
+        }
+        if (item.getMaterialOption() != null && item.getMaterialOption().getFormula() != null && !item.getMaterialOption().getFormula().isBlank()) {
+            return item.getMaterialOption().getFormula();
+        }
+        return CalculationFormula.FORMULA_L_PLUS_W_X_H;
     }
 
     private String resolveUnit(QuotationItem item, PricingMode pricingMode) {

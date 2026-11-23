@@ -540,12 +540,21 @@
             </div>
           </div>
         </div>
-        <div class="summary-toggle-pill">
-          <span class="toggle-label">SHOW SQ.FT &amp; SIZE</span>
-          <label class="switch">
-            <input type="checkbox" id="toggleSqftSize" checked>
-            <span class="slider"></span>
-          </label>
+        <div class="summary-toggles-wrapper" style="display: inline-flex; align-items: center; gap: 8px;">
+          <div class="summary-toggle-pill">
+            <span class="toggle-label">SHOW SIZE</span>
+            <label class="switch">
+              <input type="checkbox" id="toggleShowSize" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div class="summary-toggle-pill">
+            <span class="toggle-label">SHOW SQ.FT</span>
+            <label class="switch">
+              <input type="checkbox" id="toggleShowSqft" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
         </div>
       </div>
       <div id="summaryPricingMessage" class="inline-message" style="display: none; margin: 6px 0 10px 0; font-size: 13px; font-weight: 500;"></div>
@@ -556,8 +565,8 @@
               <th class="col-num">#</th>
               <th class="col-room">ROOM</th>
               <th class="col-material">MATERIAL</th>
-              <th class="col-size col-toggleable">SIZE</th>
-              <th class="col-sqft col-toggleable">SQ.FT</th>
+              <th class="col-size" id="thColSize">SIZE</th>
+              <th class="col-sqft" id="thColSqft">SQ.FT</th>
               <th class="col-amount">AMOUNT &#9650;</th>
               <th class="col-offer">OFFER PRICE</th>
             </tr>
@@ -1024,7 +1033,9 @@
                   discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
                   gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
                   offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
-                  showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
+                  showSqftSize: (typeof showSize !== 'undefined' ? showSize : true) && (typeof showSqft !== 'undefined' ? showSqft : true),
+                  showSize: typeof showSize !== 'undefined' ? showSize : true,
+                  showSqft: typeof showSqft !== 'undefined' ? showSqft : true,
                   lastActiveFloor: curFloor,
                   lastActiveRoom: curRoom,
                   lastActiveCategoryId: activeCatId,
@@ -2477,15 +2488,30 @@
       triggerAutoSave(true);
   }
 
+  let showSize = true;
+  let showSqft = true;
   let showSqftSize = true;
+
+  function updateToggleVisibility() {
+      const thSize = $('thColSize') || document.querySelector('th.col-size');
+      const thSqft = $('thColSqft') || document.querySelector('th.col-sqft');
+      if (thSize) thSize.style.display = showSize ? '' : 'none';
+      if (thSqft) thSqft.style.display = showSqft ? '' : 'none';
+      if ($('toggleShowSize')) $('toggleShowSize').checked = showSize;
+      if ($('toggleShowSqft')) $('toggleShowSqft').checked = showSqft;
+      showSqftSize = showSize && showSqft;
+  }
 
   function renderQuoteSummary() {
       const tbody = $('quoteSummaryBody');
       if (!tbody) return;
 
+      const totalCols = 5 + (showSize ? 1 : 0) + (showSqft ? 1 : 0);
+      const subtotalColspan = totalCols - 2;
+
       const roomsWithItems = state.rooms.filter(r => r.items && r.items.length > 0);
       if (roomsWithItems.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="${showSqftSize ? 7 : 5}" style="text-align: center; padding: 28px; color: #64748b; font-style: italic;">No items added to quote yet. Choose a room and material above to add sizes.</td></tr>`;
+          tbody.innerHTML = `<tr><td colspan="${totalCols}" style="text-align: center; padding: 28px; color: #64748b; font-style: italic;">No items added to quote yet. Choose a room and material above to add sizes.</td></tr>`;
           state.gradeSubtotals = { PREMIUM: 0, MIDDLE: 0, ECONOMY: 0 };
           recalculateFinancials(0, state.gradeSubtotals);
           updateUsedPricingModeDisplay();
@@ -2506,7 +2532,7 @@
       roomsWithItems.forEach((room) => {
           // Room Group Header
           const floorRoomLabel = `${room.floor || 'Ground Floor'} (ROOM ${room.room || '1'})`.toUpperCase();
-          html += `<tr class="group-floor-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-floor-header">&#127963;&#65039; ${esc(floorRoomLabel)}</div></td></tr>`;
+          html += `<tr class="group-floor-row"><td colspan="${totalCols}"><div class="group-floor-header">&#127963;&#65039; ${esc(floorRoomLabel)}</div></td></tr>`;
 
           // Group by category
           const itemsByCategory = {};
@@ -2520,7 +2546,7 @@
           let roomOfferTotal = 0;
 
           Object.keys(itemsByCategory).forEach(catName => {
-              html += `<tr class="group-category-row"><td colspan="${showSqftSize ? 7 : 5}"><div class="group-category-header">&#127970; ${esc(catName.toUpperCase())}</div></td></tr>`;
+              html += `<tr class="group-category-row"><td colspan="${totalCols}"><div class="group-category-header">&#127970; ${esc(catName.toUpperCase())}</div></td></tr>`;
 
               itemsByCategory[catName].forEach(({ item, itemIdx }) => {
                   const mType = (item.measurementType || (item.unit === 'Quantity' ? 'QUANTITY' : (item.unit === 'Files' ? 'FILES' : (item.unit === 'Roll' ? 'ROLL' : 'SQFT')))).toUpperCase();
@@ -2630,8 +2656,8 @@
                           ${unavailableBadge}
                           ${imgHtml}
                         </td>
-                        ${showSqftSize ? `<td class="col-size">${esc(sizeDisp)}</td>` : ''}
-                        ${showSqftSize ? `<td class="col-sqft">${sqftDisplay}</td>` : ''}
+                        ${showSize ? `<td class="col-size">${esc(sizeDisp)}</td>` : ''}
+                        ${showSqft ? `<td class="col-sqft">${sqftDisplay}</td>` : ''}
                         <td class="col-amount">${baseAmtDisplay}</td>
                         <td class="col-offer">
                           <div class="offer-cell-wrapper">
@@ -2660,7 +2686,7 @@
           // Room Subtotal
           html += `
           <tr class="subtotal-row">
-            <td colspan="${showSqftSize ? 5 : 3}" class="subtotal-label">Rooms Subtotal</td>
+            <td colspan="${subtotalColspan}" class="subtotal-label">Rooms Subtotal</td>
             <td class="subtotal-amount">${money(roomBaseTotal)}</td>
             <td class="subtotal-offer">${money(roomOfferTotal)}</td>
           </tr>`;
@@ -2672,7 +2698,7 @@
       // Grand Total
       html += `
       <tr class="grand-total-row">
-        <td colspan="${showSqftSize ? 5 : 3}" class="grand-label">Grand Total (Rooms + Accessories)</td>
+        <td colspan="${subtotalColspan}" class="grand-label">Grand Total (Rooms + Accessories)</td>
         <td class="grand-amount">${money(grandBase)}</td>
         <td class="grand-offer">${money(grandOffer)}</td>
       </tr>`;
@@ -3197,7 +3223,9 @@
           accessoriesAmount: $('accessoriesAmount') ? $('accessoriesAmount').value : '',
           travelCharge: $('travelCharge') ? $('travelCharge').value : '',
           offerPercentage: $('offerPercentage') ? $('offerPercentage').value : '',
-          showSqftSize: typeof showSqftSize !== 'undefined' ? showSqftSize : true,
+          showSqftSize: (typeof showSize !== 'undefined' ? showSize : true) && (typeof showSqft !== 'undefined' ? showSqft : true),
+          showSize: typeof showSize !== 'undefined' ? showSize : true,
+          showSqft: typeof showSqft !== 'undefined' ? showSqft : true,
           rooms: JSON.parse(JSON.stringify(state.rooms || [])),
           activeCategoryId: categoryId || null,
           activeCategoryName: categoryName || null,
@@ -3299,12 +3327,18 @@
       if ($('travelCharge') && draft.travelCharge !== undefined && draft.travelCharge !== null) $('travelCharge').value = formatIndianNumber(draft.travelCharge, 2);
       if ($('offerPercentage') && draft.offerPercentage) $('offerPercentage').value = draft.offerPercentage;
 
-      if (draft.showSqftSize !== undefined) {
-          showSqftSize = draft.showSqftSize;
-          if ($('toggleSqftSize')) $('toggleSqftSize').checked = showSqftSize;
-          const thElements = document.querySelectorAll('th.col-toggleable');
-          thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+      // Restore showSize & showSqft toggles
+      if (draft.showSize !== undefined) {
+          showSize = draft.showSize;
+      } else if (draft.showSqftSize !== undefined) {
+          showSize = draft.showSqftSize;
       }
+      if (draft.showSqft !== undefined) {
+          showSqft = draft.showSqft;
+      } else if (draft.showSqftSize !== undefined) {
+          showSqft = draft.showSqftSize;
+      }
+      if (typeof updateToggleVisibility === 'function') updateToggleVisibility();
 
       if (draft.rooms && Array.isArray(draft.rooms) && draft.rooms.length > 0) {
           state.rooms = draft.rooms;
@@ -3472,7 +3506,9 @@
               discountAmount: Math.max(0, parseAmount($('discountAmount') ? $('discountAmount').value : 0)),
               gstPercentage: Math.max(0, parseFloat($('gstPercentage') ? $('gstPercentage').value : 0) || 0),
               offerPercentage: Math.min(100, Math.max(0, parseFloat($('offerPercentage') ? $('offerPercentage').value : 0) || 0)),
-              showSqftSize: showSqftSize,
+              showSqftSize: showSize && showSqft,
+              showSize: showSize,
+              showSqft: showSqft,
               rooms: state.rooms.filter(r => r.items && r.items.length > 0).map(r => ({
                   floor: r.floor,
                   room: r.room,
@@ -3758,11 +3794,18 @@
   if ($('saveQuoteBtn')) $('saveQuoteBtn').addEventListener('click', () => saveQuotation(true));
   window.saveQuotation = saveQuotation;
   if ($('clearQuoteBtn')) $('clearQuoteBtn').addEventListener('click', clearQuote);
-  if ($('toggleSqftSize')) {
-      $('toggleSqftSize').addEventListener('change', e => {
-          showSqftSize = e.target.checked;
-          const thElements = document.querySelectorAll('th.col-toggleable');
-          thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+  if ($('toggleShowSize')) {
+      $('toggleShowSize').addEventListener('change', e => {
+          showSize = e.target.checked;
+          updateToggleVisibility();
+          renderQuoteSummary();
+          triggerAutoSave(true);
+      });
+  }
+  if ($('toggleShowSqft')) {
+      $('toggleShowSqft').addEventListener('change', e => {
+          showSqft = e.target.checked;
+          updateToggleVisibility();
           renderQuoteSummary();
           triggerAutoSave(true);
       });
@@ -3979,14 +4022,17 @@
           if (data.discountAmount != null && $('discountAmount')) $('discountAmount').value = formatIndianNumber(data.discountAmount, 2);
           if (data.gstPercentage != null && $('gstPercentage')) $('gstPercentage').value = data.gstPercentage;
           if (data.offerPercentage != null && $('offerPercentage')) $('offerPercentage').value = data.offerPercentage;
-          if (data.showSqftSize !== undefined && data.showSqftSize !== null) {
-              showSqftSize = data.showSqftSize;
-              if ($('toggleSqftSize')) {
-                  $('toggleSqftSize').checked = showSqftSize;
-              }
-              const thElements = document.querySelectorAll('th.col-toggleable');
-              thElements.forEach(th => th.style.display = showSqftSize ? '' : 'none');
+          if (data.showSize !== undefined && data.showSize !== null) {
+              showSize = data.showSize;
+          } else if (data.showSqftSize !== undefined && data.showSqftSize !== null) {
+              showSize = data.showSqftSize;
           }
+          if (data.showSqft !== undefined && data.showSqft !== null) {
+              showSqft = data.showSqft;
+          } else if (data.showSqftSize !== undefined && data.showSqftSize !== null) {
+              showSqft = data.showSqftSize;
+          }
+          updateToggleVisibility();
 
           if (data.rooms && data.rooms.length > 0) {
               state.rooms = data.rooms.map(r => ({

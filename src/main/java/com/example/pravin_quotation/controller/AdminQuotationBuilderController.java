@@ -598,6 +598,8 @@ public class AdminQuotationBuilderController {
         data.put("offerAmount", q.getOfferAmount() != null ? q.getOfferAmount() : BigDecimal.ZERO);
         data.put("grandTotal", q.getGrandTotal() != null ? q.getGrandTotal() : BigDecimal.ZERO);
         data.put("showSqftSize", q.getShowSqftSize() != null ? q.getShowSqftSize() : true);
+        data.put("showSize", q.getShowSize() != null ? q.getShowSize() : true);
+        data.put("showSqft", q.getShowSqft() != null ? q.getShowSqft() : true);
 
         data.put("lastActiveStep", q.getLastActiveStep());
         data.put("lastActiveFloor", q.getLastActiveFloor());

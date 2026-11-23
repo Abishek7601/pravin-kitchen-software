@@ -272,9 +272,9 @@
 
                         <th>Specification</th>
 
-                        <th th:if="${quotation.showSqftSize == null || quotation.showSqftSize}">Size</th>
+                        <th th:if="${quotation.showSize == null || quotation.showSize}">Size</th>
 
-                        <th th:if="${quotation.showSqftSize == null || quotation.showSqftSize}">Sq.Ft</th>
+                        <th th:if="${quotation.showSqft == null || quotation.showSqft}">Sq.Ft</th>
 
                         <th>Rate</th>
 
@@ -344,7 +344,7 @@
 
                         </td>
 
-                        <td th:if="${quotation.showSqftSize == null || quotation.showSqftSize}">
+                        <td th:if="${quotation.showSize == null || quotation.showSize}">
 
                             <span th:if="${item.lengthValue != null}"
                                   th:text="${item.lengthValue}">
@@ -378,7 +378,7 @@
 
                         </td>
 
-                        <td th:if="${quotation.showSqftSize == null || quotation.showSqftSize}"
+                        <td th:if="${quotation.showSqft == null || quotation.showSqft}"
                             th:text="${item.calculatedSqft != null
                             ? item.calculatedSqft : 0}">
                             0.61
