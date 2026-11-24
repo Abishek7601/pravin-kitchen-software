@@ -145,7 +145,10 @@ public class AdminQuotationBuilderService {
             return Collections.emptyList();
         }
         List<Material> result = new ArrayList<>();
-        List<Material> gradeMats = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
+        List<Material> gradeMats = null;
+        try {
+            gradeMats = materialRepository.findActiveByDivisionIdAndPricingGrade(divisionId, targetGrade);
+        } catch (Exception ignored) {}
         if (gradeMats != null) {
             for (Material m : gradeMats) {
                 if (m != null && Boolean.TRUE.equals(m.getActive()) && !result.contains(m)) {
@@ -153,7 +156,10 @@ public class AdminQuotationBuilderService {
                 }
             }
         }
-        List<Material> allInDiv = materialRepository.findActiveByDivisionId(divisionId);
+        List<Material> allInDiv = null;
+        try {
+            allInDiv = materialRepository.findActiveByDivisionId(divisionId);
+        } catch (Exception ignored) {}
         if (allInDiv != null) {
             for (Material m : allInDiv) {
                 if (m != null && Boolean.TRUE.equals(m.getActive()) && !result.contains(m)) {
@@ -261,7 +267,7 @@ public class AdminQuotationBuilderService {
         Material effectiveMat = null;
         if (position != null && position >= 0) {
             effectiveMat = findMaterialByPosition(targetCandidates, position);
-        } else if (mat != null && mat.getPricingGrade() == targetGrade) {
+        } else if (mat != null && (mat.getPricingGrade() == targetGrade || (mat.getPricingGrade() == null && targetCandidates.contains(mat)))) {
             effectiveMat = mat;
         }
 
