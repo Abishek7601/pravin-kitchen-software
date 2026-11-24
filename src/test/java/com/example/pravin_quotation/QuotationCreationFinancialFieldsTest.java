@@ -141,6 +141,7 @@ public class QuotationCreationFinancialFieldsTest {
         material = new Material();
         material.setName("Plywood " + ts);
         material.setItem(item);
+        material.setPricingGrade(PricingMode.MIDDLE);
         material.setActive(true);
         material.setDisplayOrder(1);
         material = materialRepository.save(material);

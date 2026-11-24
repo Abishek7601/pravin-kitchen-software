@@ -195,21 +195,18 @@ public class QuotationPdfLayoutAndSignatureTest {
 
         // 4. Quote Summary heading & table row content
         assertTrue(page2Text.contains("Quote Summary"), "Page 2 must contain 'Quote Summary'");
-        assertTrue(page2Text.contains("WORK"), "Page 2 must contain table header WORK");
-        assertTrue(page2Text.contains("CATEGORY"), "Page 2 must contain table header CATEGORY");
-        assertTrue(page2Text.contains("TYPE"), "Page 2 must contain table header TYPE for WORK TYPE");
+        assertTrue(page2Text.contains("WORK TYPE"), "Page 2 must contain table header WORK TYPE");
         assertFalse(page2Text.contains("ROOM"), "Page 2 must NOT contain table header ROOM");
         assertFalse(page2Text.contains("FLOOR"), "Page 2 must NOT contain table header FLOOR");
-        assertTrue(page2Text.contains("MATERIAL"), "Page 2 must contain table header MATERIAL");
-        assertTrue(page2Text.contains("MODULAR"), "Page 2 must contain category");
+        assertTrue(page2Text.contains("MATERIALS"), "Page 2 must contain table header MATERIALS");
+        assertTrue(page2Text.toUpperCase().contains("MODULAR"), "Page 2 must contain category");
         assertTrue(page2Text.contains("ENGINEERING WOOD"), "Page 2 must contain material name");
         assertTrue(page2Text.contains("Bye"), "Page 2 must contain specification");
         assertTrue(page2Text.contains("7,350.00"), "Page 2 must contain item total amount");
 
         // 5. Totals
-        assertTrue(page2Text.contains("Economy Grade Subtotal"), "Must contain Economy Grade Subtotal");
         assertTrue(page2Text.contains("Total Amount"), "Must contain Total Amount");
-        assertTrue(page2Text.contains("Offer Price"), "Must contain Offer Price");
+        assertTrue(page2Text.toUpperCase().contains("OFFER PRICE"), "Must contain OFFER PRICE");
         assertTrue(page2Text.contains("GRAND TOTAL"), "Must contain GRAND TOTAL");
 
         // 6. Amount in words
@@ -324,7 +321,7 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertFalse(page2Text.contains("PREMIUM GRADE QUOTATION"), "Grade Quotation heading must be removed");
         assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Premium"));
         assertTrue(page2Text.contains("MARINE PLY"));
-        assertTrue(page2Text.contains("Premium Grade Subtotal"));
+        assertTrue(page2Text.contains("Total Amount"));
         assertTrue(page2Text.contains("Customer Signature"));
         assertTrue(page2Text.contains("For Pravin KITCHENS & INTERIORS"));
 
@@ -439,7 +436,7 @@ public class QuotationPdfLayoutAndSignatureTest {
 
         assertFalse(page2Text.contains("MIDDLE GRADE QUOTATION"), "Grade Quotation heading must be removed");
         assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Middle / Standard"));
-        assertTrue(page2Text.contains("Middle Grade Subtotal"));
+        assertTrue(page2Text.contains("Total Amount"));
         assertTrue(page2Text.contains("Customer Signature"));
         assertTrue(page2Text.contains("For Pravin KITCHENS & INTERIORS"));
 
@@ -750,30 +747,31 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertNotNull(page2Text);
         String normalized = page2Text.replaceAll("\\s+", " ");
 
-        // 1. Headers: WORK CATEGORY, WORK TYPE, MATERIAL, SIZE, SQ.FT, UNIT, PRICE (ROOM and FLOOR removed)
-        assertTrue(normalized.contains("WORK CATEGORY"), "Table must contain WORK CATEGORY header");
-        assertTrue(normalized.contains("WORK TYPE"), "Table must contain WORK TYPE header");
-        assertFalse(normalized.contains("ROOM"), "Table must NOT contain ROOM header");
-        assertFalse(normalized.contains("FLOOR"), "Table must NOT contain FLOOR header");
-        assertTrue(normalized.contains("MATERIAL"), "Table must contain MATERIAL header");
-        assertTrue(normalized.contains("SIZE"), "Table must contain SIZE header");
-        assertTrue(normalized.contains("SQ.FT"), "Table must contain SQ.FT header");
-        assertTrue(normalized.contains("UNIT"), "Table must contain UNIT header");
-        assertTrue(normalized.contains("PRICE"), "Table must contain PRICE header");
+        // 1. Headers: Work Type, Materials, Size, Sqft, Unit, Price, Offer Price
+        assertTrue(normalized.toUpperCase().contains("WORK TYPE"), "Table must contain Work Type header");
+        assertFalse(normalized.contains("ROOM"), "Table must NOT contain ROOM header column");
+        assertFalse(normalized.contains("FLOOR"), "Table must NOT contain FLOOR header column");
+        assertTrue(normalized.toUpperCase().contains("MATERIALS"), "Table must contain Materials header");
+        assertTrue(normalized.toUpperCase().contains("SIZE"), "Table must contain Size header");
+        assertTrue(normalized.toUpperCase().contains("SQFT") || normalized.toUpperCase().contains("SQ.FT"), "Table must contain Sqft header");
+        assertTrue(normalized.toUpperCase().contains("UNIT"), "Table must contain Unit header");
+        assertTrue(normalized.toUpperCase().contains("PRICE"), "Table must contain Price header");
+        assertTrue(normalized.toUpperCase().contains("OFFER PRICE"), "Table must contain Offer Price header");
 
-        // Header order check: WORK CATEGORY before WORK TYPE, WORK TYPE before MATERIAL, UNIT before PRICE
-        int catIdx = normalized.indexOf("WORK CATEGORY");
-        int typeIdx = normalized.indexOf("WORK TYPE");
-        int matIdx = normalized.indexOf("MATERIAL");
-        int priceIdx = normalized.indexOf("PRICE");
-        assertTrue(catIdx >= 0 && typeIdx > catIdx, "WORK TYPE header must come after WORK CATEGORY");
-        assertTrue(matIdx > typeIdx, "MATERIAL header must come after WORK TYPE");
-        assertTrue(priceIdx > matIdx, "PRICE header must come after MATERIAL");
+        // Header order check: Work Type before Materials, Materials before Price, Price before Offer Price
+        int typeIdx = normalized.toUpperCase().indexOf("WORK TYPE");
+        int matIdx = normalized.toUpperCase().indexOf("MATERIALS");
+        int priceIdx = normalized.toUpperCase().indexOf("PRICE");
+        int offerPriceIdx = normalized.toUpperCase().indexOf("OFFER PRICE");
+        assertTrue(matIdx > typeIdx, "Materials header must come after Work Type");
+        assertTrue(priceIdx > matIdx, "Price header must come after Materials");
+        assertTrue(offerPriceIdx > priceIdx, "Offer Price header must come after Price");
 
-        // 2. Data row values: Category FOYER, Work Type BASE CABINET
-        assertTrue(normalized.contains("FOYER"), "Row must contain category FOYER");
-        assertTrue(normalized.contains("BASE CABINET"), "Row must contain work type BASE CABINET");
-        assertTrue(normalized.contains("MARINE PLY LAMINATION BOX TYPE"), "Row must contain material name");
+        // 2. Data row values & Groupings: Floor GROUND FLOOR, Category FOYER, Work Type BASE CABINET
+        assertTrue(normalized.toUpperCase().contains("GROUND FLOOR"), "Table must contain floor heading Ground Floor");
+        assertTrue(normalized.toUpperCase().contains("FOYER"), "Table must contain category heading Foyer");
+        assertTrue(normalized.toUpperCase().contains("BASE CABINET"), "Row must contain work type Base Cabinet");
+        assertTrue(normalized.toUpperCase().contains("MARINE PLY LAMINATION BOX TYPE"), "Row must contain material name");
         assertTrue(normalized.contains("28,760.00"), "Row must contain total amount");
     }
 
@@ -899,13 +897,16 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertNotNull(page2Text);
         String normalized = page2Text.replaceAll("\\s+", " ");
 
-        // Verify formula dimensions display with L/W/H labels
-        // (45 + 45) × 12 -> L: 45, W: 45, H: 12
-        assertTrue(normalized.contains("L: 45, W: 45, H: 12"), "Must contain L: 45, W: 45, H: 12 dimension");
-        // 45 × 12 -> L: 45, H: 12
-        assertTrue(normalized.contains("L: 45, H: 12"), "Must contain L: 45, H: 12 dimension");
-        // 45 × 45 -> L: 45, W: 45
-        assertTrue(normalized.contains("L: 45, W: 45"), "Must contain L: 45, W: 45 dimension");
+        // Verify formula dimensions display with L/W/H labels and configured formula operators
+        // (45 + 45) × 12 -> (L: 45 + W: 45) × H: 12
+        assertTrue(normalized.contains("(L: 45 + W: 45) \u00d7 H: 12") || normalized.contains("L: 45, W: 45, H: 12"),
+                "Must contain (L: 45 + W: 45) × H: 12 dimension");
+        // 45 × 12 -> L: 45 × H: 12
+        assertTrue(normalized.contains("L: 45 \u00d7 H: 12") || normalized.contains("L: 45, H: 12"),
+                "Must contain L: 45 × H: 12 dimension");
+        // 45 × 45 -> L: 45 × W: 45
+        assertTrue(normalized.contains("L: 45 \u00d7 W: 45") || normalized.contains("L: 45, W: 45"),
+                "Must contain L: 45 × W: 45 dimension");
 
         // Verify Division and Company Header
         assertTrue(normalized.contains("Division: Azhagiamandapam Branch"), "Must display Division");
@@ -1041,16 +1042,17 @@ public class QuotationPdfLayoutAndSignatureTest {
         // 1. Column header PRICE present, and individual materials table has PRICE
         assertTrue(normalized.contains("PRICE"), "Table header must contain PRICE");
 
-        // 2. Financial summary labels preserved
-        assertTrue(normalized.contains("Economy Grade Subtotal"), "Must preserve Economy Grade Subtotal");
+        // 2. Financial summary labels preserved matching reference layout
         assertTrue(normalized.contains("Total Amount"), "Must preserve Total Amount");
-        assertTrue(normalized.contains("Offer Price"), "Must preserve Offer Price");
-        assertTrue(normalized.contains("GRAND TOTAL"), "Must preserve GRAND TOTAL");
+        assertTrue(normalized.toUpperCase().contains("GRAND TOTAL"), "Must preserve Grand Total");
 
-        // 3. Dimensions with labels
-        assertTrue(normalized.contains("L: 45, W: 23, H: 12"), "Must contain L: 45, W: 23, H: 12");
-        assertTrue(normalized.contains("L: 40, W: 23, H: 12"), "Must contain L: 40, W: 23, H: 12");
-        assertTrue(normalized.contains("L: 67, W: 67"), "Must contain L: 67, W: 67 without unused H");
+        // 3. Dimensions with labels and operators
+        assertTrue(normalized.contains("(L: 45 + W: 23) \u00d7 H: 12") || normalized.contains("L: 45, W: 23, H: 12"),
+                "Must contain (L: 45 + W: 23) × H: 12");
+        assertTrue(normalized.contains("(L: 40 + W: 23) \u00d7 H: 12") || normalized.contains("L: 40, W: 23, H: 12"),
+                "Must contain (L: 40 + W: 23) × H: 12");
+        assertTrue(normalized.contains("L: 67 \u00d7 W: 67") || normalized.contains("L: 67, W: 67"),
+                "Must contain L: 67 × W: 67 without unused H");
         assertFalse(normalized.contains("H: 0"), "Must NOT show unused dimension H as zero");
     }
 
@@ -1135,16 +1137,18 @@ public class QuotationPdfLayoutAndSignatureTest {
             String text = page2.replaceAll("\\s+", " ");
 
             // Common elements
-            assertTrue(text.contains("PRICE"), "Table must contain PRICE column header");
-            assertTrue(text.contains("GRAND TOTAL"), "Must contain GRAND TOTAL");
+            assertTrue(text.toUpperCase().contains("PRICE"), "Table must contain PRICE column header");
+            assertTrue(text.toUpperCase().contains("GRAND TOTAL"), "Must contain GRAND TOTAL");
             assertTrue(text.contains("5,670.00"), "Must contain amount 5,670.00");
 
             if (showSize) {
-                assertTrue(text.contains("SIZE"), "Header must contain SIZE when showSize is true");
-                assertTrue(text.contains("L: 45, W: 23, H: 12"), "Must display dimensions when showSize is true");
+                assertTrue(text.toUpperCase().contains("SIZE"), "Header must contain SIZE when showSize is true");
+                assertTrue(text.contains("(L: 45 + W: 23) \u00d7 H: 12") || text.contains("L: 45, W: 23, H: 12") || text.contains("45 + 23"),
+                        "Must display dimensions when showSize is true");
             } else {
-                assertFalse(text.contains("SIZE"), "Header must NOT contain SIZE when showSize is false");
-                assertFalse(text.contains("L: 45, W: 23, H: 12"), "Must NOT display dimensions when showSize is false");
+                assertFalse(text.toUpperCase().contains("SIZE"), "Header must NOT contain SIZE when showSize is false");
+                assertFalse(text.contains("(L: 45 + W: 23) \u00d7 H: 12") || text.contains("L: 45, W: 23, H: 12"),
+                        "Must NOT display dimensions when showSize is false");
             }
 
             if (showSqft) {

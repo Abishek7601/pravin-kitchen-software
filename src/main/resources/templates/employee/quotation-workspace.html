@@ -694,6 +694,7 @@
                                     <th class="col-amount text-right">Amount</th>
                                 </tr>
                             </thead>
+                            <!-- <tbody> -->
                             <tbody id="breakdownTableBody">
                                 <th:block th:each="room, roomStat : ${quotationRooms}">
                                     <!-- Room Grouping Banner -->
@@ -709,7 +710,7 @@
                                                           th:if="${room.workDescription != null && !#strings.isEmpty(room.workDescription)}"
                                                           th:text="${'— ' + room.workDescription}"></span>
                                                 </div>
-                                                <div class="room-group-total">
+                                                <div class="room-group-total" style="display: none;">
                                                     <span class="room-total-label">Room Subtotal:</span>
                                                     <strong class="room-total-val"
                                                             th:text="${'₹ ' + @inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">₹ 0.00</strong>
@@ -774,12 +775,12 @@
                                                                th:if="${#lists.size(sizesByItem[item.id]) > 1}"
                                                                th:text="${'#' + szStat.count + ': '}">#1: </span>
                                                          <span class="size-vals"
-                                                               th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                                               th:text="${@dimFormatter.formatDimension(item, sz.lengthValue, sz.widthValue, sz.heightValue)}">0 × 0 × 0 in.</span>
                                                     </div>
                                                 </div>
                                                 <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
                                                     <span class="size-vals"
-                                                          th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                                          th:text="${@dimFormatter.formatDimension(item, item.lengthValue, item.widthValue, item.heightValue)}">0 × 0 × 0 in.</span>
                                                 </div>
                                             </div>
                                         </td>
@@ -810,8 +811,8 @@
                                         </td>
                                     </tr>
 
-                                    <!-- Room Subtotal Row -->
-                                    <tr class="room-subtotal-row">
+                                    <!-- Room Subtotal Row (hidden per UI requirements) -->
+                                    <tr class="room-subtotal-row" style="display: none;">
                                         <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right room-subtotal-label">
                                             <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
                                         </td>
@@ -821,22 +822,10 @@
                                     </tr>
                                 </th:block>
                             </tbody>
+                            <!-- <tfoot> -->
                             <tfoot id="breakdownTableFoot">
-                                <!-- Grade-Wise Subtotals -->
-                                <tr class="tfoot-charge-row" th:if="${premiumSubtotal != null && premiumSubtotal > 0}">
-                                    <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
-                                    <td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;" th:text="${'₹ ' + @inr.format(premiumSubtotal)}">₹ 0.00</td>
-                                </tr>
-                                <tr class="tfoot-charge-row" th:if="${middleSubtotal != null && middleSubtotal > 0}">
-                                    <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td>
-                                    <td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;" th:text="${'₹ ' + @inr.format(middleSubtotal)}">₹ 0.00</td>
-                                </tr>
-                                <tr class="tfoot-charge-row" th:if="${economySubtotal != null && economySubtotal > 0}">
-                                    <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td>
-                                    <td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;" th:text="${'₹ ' + @inr.format(economySubtotal)}">₹ 0.00</td>
-                                </tr>
                                 <tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;">
-                                    <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td>
+                                    <td th:colspan="${8 + ((quotation.showSize == null || quotation.showSize) ? 1 : 0) + ((quotation.showSqft == null || quotation.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Total Amount</td>
                                     <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quotation.subtotal != null ? quotation.subtotal : 0)}">₹ 0.00</td>
                                 </tr>
                                 <!-- Accessories -->
@@ -1434,10 +1423,6 @@
                     html += '<span class="room-desc-tag">— ' + escapeHtml(room.workDescription) + '</span>';
                 }
                 html += '</div>';
-                html += '<div class="room-group-total">';
-                html += '<span class="room-total-label">Room Subtotal:</span> ';
-                html += '<strong class="room-total-val">' + escapeHtml(room.roomSubtotal) + '</strong>';
-                html += '</div>';
                 html += '</div>';
                 html += '</td>';
                 html += '</tr>';
@@ -1498,7 +1483,7 @@
                     html += '<tr class="empty-room-row"><td colspan="' + totalCols + '" class="text-center text-muted">No active work items added to this room.</td></tr>';
                 }
 
-                html += '<tr class="room-subtotal-row">';
+                html += '<tr class="room-subtotal-row" style="display: none;">';
                 html += '<td colspan="' + subtotalCols + '" class="text-right room-subtotal-label"><strong>' + escapeHtml(room.floor) + ' — ' + escapeHtml(room.room) + ' Subtotal:</strong></td>';
                 html += '<td class="text-right room-subtotal-val"><strong>' + escapeHtml(room.roomSubtotal) + '</strong></td>';
                 html += '</tr>';
@@ -1511,15 +1496,7 @@
             var fin = data.financials;
             var fHtml = '';
 
-            if (data.activeGrade === 'PREMIUM' && fin.premiumSubtotal) {
-                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;">' + escapeHtml(fin.premiumSubtotal) + '</td></tr>';
-            } else if (data.activeGrade === 'MIDDLE' && fin.middleSubtotal) {
-                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;">' + escapeHtml(fin.middleSubtotal) + '</td></tr>';
-            } else if (data.activeGrade === 'ECONOMY' && fin.economySubtotal) {
-                fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td><td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;">' + escapeHtml(fin.economySubtotal) + '</td></tr>';
-            }
-
-            fHtml += '<tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.subtotal) + '</td></tr>';
+            fHtml += '<tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Total Amount</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.subtotal) + '</td></tr>';
 
             if (fin.accessoriesAmount) {
                 fHtml += '<tr class="tfoot-charge-row"><td colspan="' + subtotalCols + '" class="text-right tfoot-charge-label">Accessories</td><td class="text-right tfoot-charge-val">' + escapeHtml(fin.accessoriesAmount) + '</td></tr>';

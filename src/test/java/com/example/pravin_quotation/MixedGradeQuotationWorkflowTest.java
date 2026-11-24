@@ -61,17 +61,19 @@ public class MixedGradeQuotationWorkflowTest {
         return (T) Proxy.newProxyInstance(
                 interfaceClass.getClassLoader(),
                 new Class<?>[]{interfaceClass},
-                (proxy, method, args) -> {
-                    Class<?> returnType = method.getReturnType();
-                    if (returnType.equals(boolean.class)) return false;
-                    if (returnType.equals(int.class)) return 0;
-                    if (returnType.equals(long.class)) return 0L;
-                    if (returnType.equals(double.class)) return 0.0;
-                    if (returnType.equals(Optional.class)) return Optional.empty();
-                    if (returnType.equals(List.class)) return Collections.emptyList();
-                    return null;
-                }
+                (proxy, method, args) -> defaultReturnValue(method)
         );
+    }
+
+    private static Object defaultReturnValue(java.lang.reflect.Method method) {
+        Class<?> returnType = method.getReturnType();
+        if (returnType.equals(boolean.class)) return false;
+        if (returnType.equals(int.class)) return 0;
+        if (returnType.equals(long.class)) return 0L;
+        if (returnType.equals(double.class)) return 0.0;
+        if (returnType.equals(Optional.class)) return Optional.empty();
+        if (List.class.isAssignableFrom(returnType)) return Collections.emptyList();
+        return null;
     }
 
     @BeforeEach
@@ -238,7 +240,7 @@ public class MixedGradeQuotationWorkflowTest {
                 new Class<?>[]{WorkCategoryRepository.class},
                 (proxy, method, args) -> {
                     if ("findById".equals(method.getName())) return Optional.of(kitchenCat);
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 
@@ -247,7 +249,7 @@ public class MixedGradeQuotationWorkflowTest {
                 new Class<?>[]{DivisionRepository.class},
                 (proxy, method, args) -> {
                     if ("findById".equals(method.getName())) return Optional.of(cabinetDiv);
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 
@@ -260,8 +262,9 @@ public class MixedGradeQuotationWorkflowTest {
                         if (Long.valueOf(1L).equals(id)) return Optional.of(premMat);
                         if (Long.valueOf(2L).equals(id)) return Optional.of(midMat);
                         if (Long.valueOf(3L).equals(id)) return Optional.of(econMat);
+                        return Optional.empty();
                     }
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 
@@ -276,7 +279,7 @@ public class MixedGradeQuotationWorkflowTest {
                         it.setDivision(cabinetDiv);
                         return Optional.of(it);
                     }
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 
@@ -293,7 +296,7 @@ public class MixedGradeQuotationWorkflowTest {
                         else mo.setMaterial(econMat);
                         return Optional.of(mo);
                     }
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 
@@ -315,7 +318,7 @@ public class MixedGradeQuotationWorkflowTest {
                         else p.setRate(BigDecimal.valueOf(800.0));
                         return Optional.of(p);
                     }
-                    return Optional.empty();
+                    return defaultReturnValue(method);
                 }
         );
 

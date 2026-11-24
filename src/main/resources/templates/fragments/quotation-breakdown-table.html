@@ -37,7 +37,7 @@
                                       th:if="${room.workDescription != null && !#strings.isEmpty(room.workDescription)}"
                                       th:text="${'— ' + room.workDescription}"></span>
                             </div>
-                            <div class="room-group-total">
+                            <div class="room-group-total" style="display: none;">
                                 <span class="room-total-label">Room Subtotal:</span>
                                 <strong class="room-total-val"
                                         th:text="${'₹ ' + @inr.format(room.offerPrice != null && room.offerPrice > 0 ? room.offerPrice : (room.subtotal != null ? room.subtotal : 0))}">₹ 0.00</strong>
@@ -102,12 +102,12 @@
                                            th:if="${#lists.size(sizesByItem[item.id]) > 1}"
                                            th:text="${'#' + szStat.count + ': '}">#1: </span>
                                      <span class="size-vals"
-                                           th:text="${#numbers.formatDecimal(sz.lengthValue != null ? sz.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.widthValue != null ? sz.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(sz.heightValue != null ? sz.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                           th:text="${@dimFormatter.formatDimension(item, sz.lengthValue, sz.widthValue, sz.heightValue)}">0 × 0 × 0 in.</span>
                                 </div>
                             </div>
                             <div th:if="${sizesByItem[item.id] == null || #lists.isEmpty(sizesByItem[item.id])}">
                                 <span class="size-vals"
-                                      th:text="${#numbers.formatDecimal(item.lengthValue != null ? item.lengthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.widthValue != null ? item.widthValue : 0, 1, 2) + ' × ' + #numbers.formatDecimal(item.heightValue != null ? item.heightValue : 0, 1, 2) + ' in.'}">0 × 0 × 0 in.</span>
+                                      th:text="${@dimFormatter.formatDimension(item, item.lengthValue, item.widthValue, item.heightValue)}">0 × 0 × 0 in.</span>
                             </div>
                         </div>
                     </td>
@@ -138,8 +138,8 @@
                     </td>
                 </tr>
 
-                <!-- Room Subtotal Row -->
-                <tr class="room-subtotal-row">
+                <!-- Room Subtotal Row (hidden per UI requirements) -->
+                <tr class="room-subtotal-row" style="display: none;">
                     <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right room-subtotal-label">
                         <strong th:text="${room.floor + ' — ' + room.room + ' Subtotal:'}">Kitchen Subtotal:</strong>
                     </td>
@@ -149,22 +149,9 @@
                 </tr>
             </th:block>
         </tbody>
-                <tfoot>
-            <!-- Grade-Wise Subtotals -->
-            <tr class="tfoot-charge-row" th:if="${premiumSubtotal != null && premiumSubtotal > 0}">
-                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #92400e;">★ Premium Grade Subtotal</td>
-                <td class="text-right tfoot-charge-val" style="color: #92400e; font-weight: 600;" th:text="${'₹ ' + @inr.format(premiumSubtotal)}">₹ 0.00</td>
-            </tr>
-            <tr class="tfoot-charge-row" th:if="${middleSubtotal != null && middleSubtotal > 0}">
-                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #0369a1;">✦ Middle Grade Subtotal</td>
-                <td class="text-right tfoot-charge-val" style="color: #0369a1; font-weight: 600;" th:text="${'₹ ' + @inr.format(middleSubtotal)}">₹ 0.00</td>
-            </tr>
-            <tr class="tfoot-charge-row" th:if="${economySubtotal != null && economySubtotal > 0}">
-                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label" style="color: #15803d;">☘ Economy Grade Subtotal</td>
-                <td class="text-right tfoot-charge-val" style="color: #15803d; font-weight: 600;" th:text="${'₹ ' + @inr.format(economySubtotal)}">₹ 0.00</td>
-            </tr>
+        <tfoot>
             <tr class="tfoot-charge-row" style="background: #f8fafc; font-weight: 600;">
-                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Combined Rooms Subtotal</td>
+                <td th:colspan="${8 + ((quote.showSize == null || quote.showSize) ? 1 : 0) + ((quote.showSqft == null || quote.showSqft) ? 1 : 0)}" class="text-right tfoot-charge-label">Total Amount</td>
                 <td class="text-right tfoot-charge-val" th:text="${'₹ ' + @inr.format(quote.subtotal != null ? quote.subtotal : 0)}">₹ 0.00</td>
             </tr>
             <!-- Accessories -->

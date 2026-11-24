@@ -275,9 +275,10 @@ public class ShowSqftSizeToggleSyncTest {
         String page2Text = extractPage2PdfText(pdfBytes);
         assertFalse(page2Text.contains("SIZE"), "PDF Page 2 must NOT contain SIZE header when toggle is OFF");
         assertFalse(page2Text.contains("5.00 \u00d7 3.00"), "PDF Page 2 must NOT contain size dimensions when toggle is OFF");
-        assertTrue(page2Text.contains("WORK CATEGORY"), "PDF Page 2 must retain other columns like WORK CATEGORY");
-        assertTrue(page2Text.contains("MATERIAL"), "PDF Page 2 must retain MATERIAL column");
-        assertTrue(page2Text.contains("TOTAL AMOUNT"), "PDF Page 2 must retain TOTAL AMOUNT column");
+        assertTrue(page2Text.toUpperCase().contains("WORK TYPE"), "PDF Page 2 must retain other columns like WORK TYPE");
+        assertTrue(page2Text.toUpperCase().contains("MATERIALS"), "PDF Page 2 must retain MATERIALS column");
+        assertTrue(page2Text.toUpperCase().contains("PRICE"), "PDF Page 2 must retain PRICE column");
+        assertTrue(page2Text.toUpperCase().contains("OFFER PRICE"), "PDF Page 2 must retain OFFER PRICE column");
     }
 
     @Test
@@ -500,7 +501,8 @@ public class ShowSqftSizeToggleSyncTest {
         String page2Text = extractPage2PdfText(pdfBytes);
         assertFalse(page2Text.contains("SIZE"), "PDF Page 2 must NOT contain SIZE header or column when toggle is OFF");
         assertFalse(page2Text.contains("SQ.FT"), "PDF Page 2 must NOT contain SQ.FT header or column when toggle is OFF");
-        assertTrue(page2Text.contains("FILES"), "PDF Page 2 must contain FILES under UNIT column");
-        assertTrue(page2Text.contains("TOTAL AMOUNT"), "PDF Page 2 must contain TOTAL AMOUNT header");
+        assertTrue(page2Text.toUpperCase().contains("FILES"), "PDF Page 2 must contain FILES under UNIT column");
+        assertTrue(page2Text.toUpperCase().contains("PRICE"), "PDF Page 2 must contain PRICE header");
+        assertTrue(page2Text.toUpperCase().contains("OFFER PRICE"), "PDF Page 2 must contain OFFER PRICE header");
     }
 }

@@ -172,7 +172,7 @@ public class QuotationPdfTypeMatchingGradeTest {
         assertFalse(page2Text.contains("ECONOMY GRADE QUOTATION"), "Large header title ECONOMY GRADE QUOTATION must be removed");
         assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Economy"), "Quotation Type must be Economy");
         assertTrue(page2Text.contains("Division:"), "Must contain Division field");
-        assertTrue(page2Text.contains("Economy Grade Subtotal"), "Footer must contain Economy Grade Subtotal");
+        assertTrue(page2Text.contains("Total Amount"), "Footer must contain Total Amount");
     }
 
     @Test
@@ -190,7 +190,7 @@ public class QuotationPdfTypeMatchingGradeTest {
         assertFalse(page2Text.contains("MIDDLE GRADE QUOTATION"), "Large header title MIDDLE GRADE QUOTATION must be removed");
         assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Middle / Standard"), "Quotation Type must be Middle / Standard");
         assertTrue(page2Text.contains("Division:"), "Must contain Division field");
-        assertTrue(page2Text.contains("Middle Grade Subtotal"), "Footer must contain Middle Grade Subtotal");
+        assertTrue(page2Text.contains("Total Amount"), "Footer must contain Total Amount");
     }
 
     @Test
@@ -208,7 +208,7 @@ public class QuotationPdfTypeMatchingGradeTest {
         assertFalse(page2Text.contains("PREMIUM GRADE QUOTATION"), "Large header title PREMIUM GRADE QUOTATION must be removed");
         assertTrue(page2Text.contains("Quotation Type:") && page2Text.contains("Premium"), "Quotation Type must be Premium");
         assertTrue(page2Text.contains("Division:"), "Must contain Division field");
-        assertTrue(page2Text.contains("Premium Grade Subtotal"), "Footer must contain Premium Grade Subtotal");
+        assertTrue(page2Text.contains("Total Amount"), "Footer must contain Total Amount");
     }
 
     @Test
