@@ -71,7 +71,7 @@ public class QuotationPdfService {
     private static final Color COLOR_HEADER_TEXT = new Color(245, 207, 83); // #F5CF53 Yellow/Gold header font
     private static final Color COLOR_LIGHT_BG = new Color(248, 250, 250);   // #F8FAFA Summary row fill & terms box
     private static final Color COLOR_ROW_ALT = new Color(245, 247, 247);    // #F5F7F7 Alternate table row fill
-    private static final Color COLOR_BORDER = new Color(185, 195, 195);     // #B9C3C3 Visible, crisp table & card borders
+    private static final Color COLOR_BORDER = new Color(226, 230, 230);     // Very light, subtle table grid & cell borders
     private static final Color COLOR_TEXT_DARK = new Color(25, 25, 25);      // #191919 Crisp main text
     private static final Color COLOR_TEXT_MUTED = new Color(70, 70, 70);     // #464646 Clear charcoal specifications & subtitles
 
@@ -198,8 +198,9 @@ public class QuotationPdfService {
             }
 
             ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            Document document = new Document(PageSize.A4, 25, 25, 20, 20);
+            Document document = new Document(PageSize.A4, 25, 25, 46, 20);
             PdfWriter writer = PdfWriter.getInstance(document, outputStream);
+            document.setMargins(25, 25, 46, 20);
             document.open();
 
             // ----------------------------------------------------
@@ -361,6 +362,12 @@ public class QuotationPdfService {
             Branch branch,
             PricingMode effectiveGrade
     ) throws Exception {
+
+        // For all subsequent continuation pages (pages 3, 4, etc.), apply a noticeably increased top margin (72pt = 1.0 inch)
+        // Note: The first quotation page has already opened with its existing 46pt top margin.
+        // Calling setMargins here configures nextMarginTop so every continuation page (both manual and automatic
+        // page breaks) starts noticeably further down with generous top white space.
+        document.setMargins(25, 25, 72f, 20);
 
         // ========================================================
         // 1. TOP HEADER TABLE (BRAND & ADDRESS ON LEFT, QUOTE INFO ON RIGHT)
@@ -729,7 +736,6 @@ public class QuotationPdfService {
 
         // --- RENDER TABLE ROWS: FLOOR -> CATEGORY -> WORK TYPE -> MATERIALS ---
         int serialNumber = 1;
-        boolean isAltRow = false;
         BigDecimal totalOriginalPrice = BigDecimal.ZERO;
         BigDecimal subtotalOfferPrice = BigDecimal.ZERO;
         boolean isFirstTable = true;
@@ -748,6 +754,7 @@ public class QuotationPdfService {
             for (java.util.Map.Entry<String, List<PdfItemData>> catEntry : floorEntry.getValue().entrySet()) {
                 String catName = catEntry.getKey();
                 boolean isCategoryStart = true;
+                int lastCategoryHeadingPage = -1;
 
                 // Group items under category by Work Type (preserving insertion order)
                 java.util.Map<String, List<PdfItemData>> workTypeGroups = new java.util.LinkedHashMap<>();
@@ -792,18 +799,16 @@ public class QuotationPdfService {
                             addBodyCell(sectionTable, formattedWorkType, Element.ALIGN_LEFT, false, false, groupSize, false);
                         }
 
-                        addMaterialCell(sectionTable, it.materialText, formatSpecificationForPdf(it.specification), it.imageUrl, isAltRow);
+                        addMaterialCell(sectionTable, it.materialText, formatSpecificationForPdf(it.specification), it.imageUrl, false);
                         if (showSize) {
-                            addBodyCell(sectionTable, it.sizeStr, Element.ALIGN_CENTER, isAltRow, false, 1, false);
+                            addBodyCell(sectionTable, it.sizeStr, Element.ALIGN_CENTER, false, false, 1, false);
                         }
                         if (showSqft) {
-                            addBodyCell(sectionTable, it.sqftStr, Element.ALIGN_CENTER, isAltRow, true, 1, false);
+                            addBodyCell(sectionTable, it.sqftStr, Element.ALIGN_CENTER, false, true, 1, false);
                         }
-                        addBodyCell(sectionTable, it.unitStr, Element.ALIGN_CENTER, isAltRow, true, 1, false);
-                        addRupeeCell(sectionTable, rupees(it.price), true, false, isAltRow, 2.0f, 10.0f);
-                        addRupeeCell(sectionTable, rupees(it.offerPrice), true, false, isAltRow, 6.0f, 4.0f);
-
-                        isAltRow = !isAltRow;
+                        addBodyCell(sectionTable, it.unitStr, Element.ALIGN_CENTER, false, true, 1, false);
+                        addRupeeCell(sectionTable, rupees(it.price), true, false, false, 2.0f, 10.0f);
+                        addRupeeCell(sectionTable, rupees(it.offerPrice), true, false, false, 6.0f, 4.0f);
                     }
 
                     serialNumber++;
@@ -817,18 +822,24 @@ public class QuotationPdfService {
                     float fullPageHeight = document.top() - document.bottom();
 
                     // If insufficient space is available on current page, move to next page
-                    if (availableSpace < sectionHeight + 10f && availableSpace < fullPageHeight - 50f) {
+                    if (availableSpace < sectionHeight + 25f && availableSpace < fullPageHeight - 50f) {
                         document.newPage();
-                        // If this Work Type was not the start of the Category (continuation within the same Category onto a new page),
-                        // repeat the Category heading at the top of the new page to keep category association clear.
-                        if (!addedCategoryHeadingInThisSection) {
-                            PdfPTable contCatTable = createSectionTable(numColumns, columnWidths);
-                            addCategoryHeadingRow(contCatTable, catName);
-                            document.add(contCatTable);
-                        }
+                    }
+
+                    int currentPage = writer.getPageNumber();
+                    // If this Work Type was not the start of the Category (continuation within the same Category onto a new page),
+                    // repeat the Category heading at the top of the new page to keep category association clear.
+                    if (!addedCategoryHeadingInThisSection && currentPage > lastCategoryHeadingPage) {
+                        PdfPTable contCatTable = createSectionTable(numColumns, columnWidths);
+                        addCategoryHeadingRow(contCatTable, catName);
+                        document.add(contCatTable);
+                        lastCategoryHeadingPage = writer.getPageNumber();
                     }
 
                     document.add(sectionTable);
+                    if (addedCategoryHeadingInThisSection) {
+                        lastCategoryHeadingPage = currentPage;
+                    }
                 }
             }
         }
@@ -949,8 +960,8 @@ public class QuotationPdfService {
         summaryTable.setTotalWidth(document.right() - document.left());
         summaryTable.calculateHeights(true);
         float summaryTableHeight = summaryTable.getTotalHeight();
-        float wordsEstimatedHeight = 40f;
-        float safetyMargin = 25f;
+        float wordsEstimatedHeight = 22f;
+        float safetyMargin = 10f;
         float requiredBlockSpace = summaryTableHeight + wordsEstimatedHeight + safetyMargin;
         float availableSpace = tableEndY - document.bottom();
 
@@ -1098,6 +1109,9 @@ public class QuotationPdfService {
             cb.showTextAligned(Element.ALIGN_CENTER, "Page 2 of 7", PageSize.A4.getWidth() / 2f, 15f, 0);
             cb.endText();
         } catch (Exception ignored) {}
+
+        // Reset margins back to standard 46pt for subsequent template pages
+        document.setMargins(25, 25, 46f, 20);
     }
 
     // ============================================================
@@ -1248,10 +1262,8 @@ public class QuotationPdfService {
         cell.setPaddingLeft(2.5f);
         cell.setPaddingRight(2.5f);
         cell.setBorderColor(COLOR_BORDER);
-        cell.setBorderWidth(0.75f);
-        if (isAltRow) {
-            cell.setBackgroundColor(COLOR_ROW_ALT);
-        }
+        cell.setBorderWidth(0.5f);
+        cell.setBackgroundColor(Color.WHITE);
         table.addCell(cell);
     }
 
@@ -1260,8 +1272,8 @@ public class QuotationPdfService {
     }
 
     private void addMaterialCell(PdfPTable table, String materialName, String specification, String imageUrl, boolean isAltRow) {
-        Font mainFont = new Font(Font.HELVETICA, 10.5f, Font.NORMAL, COLOR_NAVY);
-        Font specFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, COLOR_TEXT_MUTED);
+        Font mainFont = new Font(Font.HELVETICA, 10.5f, Font.NORMAL, Color.BLACK);
+        Font specFont = new Font(Font.HELVETICA, 10.0f, Font.NORMAL, Color.BLACK);
 
         PdfPCell cell = new PdfPCell();
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
@@ -1271,10 +1283,8 @@ public class QuotationPdfService {
         cell.setPaddingLeft(3.0f);
         cell.setPaddingRight(3.0f);
         cell.setBorderColor(COLOR_BORDER);
-        cell.setBorderWidth(0.75f);
-        if (isAltRow) {
-            cell.setBackgroundColor(COLOR_ROW_ALT);
-        }
+        cell.setBorderWidth(0.5f);
+        cell.setBackgroundColor(Color.WHITE);
 
         Image itemImage = loadItemImage(imageUrl);
         boolean hasImage = (itemImage != null);
@@ -1464,10 +1474,8 @@ public class QuotationPdfService {
         cell.setPaddingLeft(paddingLeft);
         cell.setPaddingRight(paddingRight);
         cell.setBorderColor(COLOR_BORDER);
-        cell.setBorderWidth(0.75f);
-        if (isAltRow) {
-            cell.setBackgroundColor(COLOR_ROW_ALT);
-        }
+        cell.setBorderWidth(0.5f);
+        cell.setBackgroundColor(Color.WHITE);
         table.addCell(cell);
     }
 
@@ -1477,11 +1485,9 @@ public class QuotationPdfService {
             PdfPCell cell = new PdfPCell(new Phrase(" ", rupeeFont));
             cell.setNoWrap(true);
             cell.setBorderColor(COLOR_BORDER);
-            cell.setBorderWidth(0.75f);
+            cell.setBorderWidth(0.5f);
             cell.setPadding(4.0f);
-            if (isAltRow) {
-                cell.setBackgroundColor(COLOR_ROW_ALT);
-            }
+            cell.setBackgroundColor(Color.WHITE);
             table.addCell(cell);
         }
     }
@@ -1516,16 +1522,22 @@ public class QuotationPdfService {
     }
 
     private void addFloorHeadingRow(PdfPTable table, String floorName) {
-        Font floorFont = new Font(Font.HELVETICA, 12.0f, Font.NORMAL, COLOR_TEXT_DARK);
+        Font floorFont;
+        try {
+            BaseFont arialBold = BaseFont.createFont("C:/Windows/Fonts/arialbd.ttf", BaseFont.IDENTITY_H, BaseFont.EMBEDDED);
+            floorFont = new Font(arialBold, 12.0f, Font.NORMAL, COLOR_GOLD);
+        } catch (Exception e) {
+            floorFont = new Font(Font.HELVETICA, 12.0f, Font.BOLD, COLOR_GOLD);
+        }
         PdfPCell cell = new PdfPCell(new Phrase(formatSectionHeading(floorName), floorFont));
         cell.setColspan(table.getNumberOfColumns());
-        cell.setBackgroundColor(new Color(254, 240, 138)); // Light yellow #FEF08A
+        cell.setBackgroundColor(Color.WHITE);
         cell.setHorizontalAlignment(Element.ALIGN_CENTER);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingTop(7.0f);
         cell.setPaddingBottom(7.0f);
         cell.setBorderColor(COLOR_BORDER);
-        cell.setBorderWidth(0.75f);
+        cell.setBorderWidth(0.5f);
         table.addCell(cell);
     }
 
@@ -1539,14 +1551,14 @@ public class QuotationPdfService {
         }
         PdfPCell cell = new PdfPCell(new Phrase(formatSectionHeading(categoryName), catFont));
         cell.setColspan(table.getNumberOfColumns());
-        cell.setBackgroundColor(new Color(209, 213, 219)); // Grey #D1D5DB
+        cell.setBackgroundColor(Color.WHITE);
         cell.setHorizontalAlignment(Element.ALIGN_LEFT);
         cell.setVerticalAlignment(Element.ALIGN_MIDDLE);
         cell.setPaddingTop(7.0f);
         cell.setPaddingBottom(7.0f);
         cell.setPaddingLeft(12.0f);
         cell.setBorderColor(COLOR_BORDER);
-        cell.setBorderWidth(0.75f);
+        cell.setBorderWidth(0.5f);
         table.addCell(cell);
     }
 
@@ -1611,7 +1623,7 @@ public class QuotationPdfService {
         labelCell.setPaddingBottom(4.5f);
         labelCell.setPaddingRight(6f);
         labelCell.setBorderColor(COLOR_BORDER);
-        labelCell.setBorderWidth(0.75f);
+        labelCell.setBorderWidth(0.5f);
         labelCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(labelCell);
 
@@ -1626,7 +1638,7 @@ public class QuotationPdfService {
         priceCell.setPaddingLeft(2.0f);
         priceCell.setPaddingRight(10.0f);
         priceCell.setBorderColor(COLOR_BORDER);
-        priceCell.setBorderWidth(0.75f);
+        priceCell.setBorderWidth(0.5f);
         priceCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(priceCell);
 
@@ -1641,7 +1653,7 @@ public class QuotationPdfService {
         offerCell.setPaddingLeft(6.0f);
         offerCell.setPaddingRight(4.0f);
         offerCell.setBorderColor(COLOR_BORDER);
-        offerCell.setBorderWidth(0.75f);
+        offerCell.setBorderWidth(0.5f);
         offerCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(offerCell);
     }
@@ -1659,7 +1671,7 @@ public class QuotationPdfService {
         labelCell.setPaddingBottom(4.5f);
         labelCell.setPaddingRight(6f);
         labelCell.setBorderColor(COLOR_BORDER);
-        labelCell.setBorderWidth(0.75f);
+        labelCell.setBorderWidth(0.5f);
         labelCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(labelCell);
 
@@ -1673,7 +1685,7 @@ public class QuotationPdfService {
         valCell.setPaddingLeft(2.0f);
         valCell.setPaddingRight(4.0f);
         valCell.setBorderColor(COLOR_BORDER);
-        valCell.setBorderWidth(0.75f);
+        valCell.setBorderWidth(0.5f);
         valCell.setBackgroundColor(COLOR_LIGHT_BG);
         table.addCell(valCell);
     }
