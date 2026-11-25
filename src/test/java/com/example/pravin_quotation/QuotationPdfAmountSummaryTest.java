@@ -1072,4 +1072,287 @@ public class QuotationPdfAmountSummaryTest {
         assertTrue(new java.io.File(outDir, "Sample_Admin_Quotation.pdf").exists());
         assertTrue(new java.io.File(outDir, "Sample_Employee_Quotation.pdf").exists());
     }
+
+    @Test
+    @DisplayName("Verify Floor rows, Category rows, and Material rows have white background in Admin and Employee PDFs")
+    void testFloorCategoryAndMaterialRowsWhiteBackground() throws Exception {
+        // Create Quotation matching the screenshot scenario (14th Floor and Ground Floor)
+        Quotation q = new Quotation();
+        q.setQuotationNumber("QT-WHITE-BG-TEST");
+        q.setCustomer(customer);
+        q.setBranch(branch);
+        q.setPricingMode(PricingMode.ECONOMY);
+        q.setQuotationDate(LocalDate.now());
+        q.setEmployee(adminUser);
+        q.setStatus(QuotationStatus.WORKING);
+        q.setSubtotal(new BigDecimal("10448.60"));
+        q.setTotalAmount(new BigDecimal("28537.60"));
+        q.setOfferPercentage(BigDecimal.ZERO);
+        q.setOfferAmount(BigDecimal.ZERO);
+        q.setGrandTotal(new BigDecimal("28537.60"));
+        q = quotationRepository.save(q);
+
+        // Room 1: 14th Floor
+        QuotationRoom r1 = new QuotationRoom();
+        r1.setQuotation(q);
+        r1.setRoom("Kitchen");
+        r1.setFloor("14th Floor");
+        r1.setActive(true);
+        r1 = quotationRoomRepository.save(r1);
+
+        // Create Divisions for Work Types
+        Division wallCabDiv = new Division();
+        wallCabDiv.setName("Wall Cabinet");
+        wallCabDiv.setWorkCategory(category);
+        wallCabDiv.setActive(true);
+        wallCabDiv = divisionRepository.save(wallCabDiv);
+
+        Division ceilingDiv = new Division();
+        ceilingDiv.setName("Gypsum Ceiling");
+        ceilingDiv.setWorkCategory(category);
+        ceilingDiv.setActive(true);
+        ceilingDiv = divisionRepository.save(ceilingDiv);
+
+        // Work Type: Wall Cabinet with TWO materials (tests multi-material row background consistency)
+        QuotationItem item1 = new QuotationItem();
+        item1.setQuotationRoom(r1);
+        item1.setWorkCategory(category);
+        item1.setDivision(wallCabDiv);
+        item1.setMaterial(material);
+        item1.setMaterialOption(option);
+        item1.setLengthValue(new BigDecimal("23.00"));
+        item1.setHeightValue(new BigDecimal("43.00"));
+        item1.setCalculatedSqft(new BigDecimal("6.87"));
+        item1.setAmount(new BigDecimal("480.90"));
+        item1.setOfferPrice(new BigDecimal("480.90"));
+        item1.setActive(true);
+        quotationItemRepository.save(item1);
+
+        QuotationItem item2 = new QuotationItem();
+        item2.setQuotationRoom(r1);
+        item2.setWorkCategory(category);
+        item2.setDivision(wallCabDiv);
+        item2.setMaterial(material);
+        item2.setMaterialOption(option);
+        item2.setLengthValue(new BigDecimal("89.00"));
+        item2.setWidthValue(new BigDecimal("89.00"));
+        item2.setCalculatedSqft(new BigDecimal("55.01"));
+        item2.setAmount(new BigDecimal("3850.70"));
+        item2.setOfferPrice(new BigDecimal("3850.70"));
+        item2.setActive(true);
+        quotationItemRepository.save(item2);
+
+        // Room 2: Ground Floor
+        QuotationRoom r2 = new QuotationRoom();
+        r2.setQuotation(q);
+        r2.setRoom("Living Room");
+        r2.setFloor("Ground Floor");
+        r2.setActive(true);
+        r2 = quotationRoomRepository.save(r2);
+
+        QuotationItem item3 = new QuotationItem();
+        item3.setQuotationRoom(r2);
+        item3.setWorkCategory(category);
+        item3.setDivision(ceilingDiv);
+        item3.setMaterial(material);
+        item3.setMaterialOption(option);
+        item3.setLengthValue(new BigDecimal("67.00"));
+        item3.setHeightValue(new BigDecimal("23.00"));
+        item3.setCalculatedSqft(new BigDecimal("10.70"));
+        item3.setAmount(new BigDecimal("642.00"));
+        item3.setOfferPrice(new BigDecimal("642.00"));
+        item3.setActive(true);
+        quotationItemRepository.save(item3);
+
+        // 1. Admin PDF Generation
+        byte[] adminPdf = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(adminPdf);
+
+        // 2. Employee PDF Generation
+        q.setEmployee(employeeUser);
+        quotationRepository.save(q);
+        byte[] empPdf = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(empPdf);
+
+        // Save generated PDFs for inspection
+        java.io.File outDir = new java.io.File("target/test-output");
+        outDir.mkdirs();
+        java.nio.file.Files.write(new java.io.File(outDir, "Sample_Admin_Quotation_White_Rows.pdf").toPath(), adminPdf);
+        java.nio.file.Files.write(new java.io.File(outDir, "Sample_Employee_Quotation_White_Rows.pdf").toPath(), empPdf);
+
+        // Verify page 2 contains Floor heading with gold color (#A87B2E -> 0.6588... 0.4823... 0.1803...)
+        PdfReader adminReader = new PdfReader(adminPdf);
+        byte[] adminP2 = adminReader.getPageContent(2);
+        String adminP2Str = new String(adminP2, java.nio.charset.StandardCharsets.ISO_8859_1);
+        assertTrue(adminP2Str.contains("0.6588") || adminP2Str.contains("0.659"), "Admin PDF Page 2: Floor heading must use gold text color");
+        assertTrue(adminP2Str.contains("0.886") && adminP2Str.contains("0.901"), "Admin PDF Page 2: Table borders must use subtle light grey color");
+
+        // Verify PDF streams across all pages do not contain yellow (#FEF08A -> 0.996) or grey (#D1D5DB -> 0.819) or row-alt rg (#F5F7F7)
+        for (int p = 1; p <= adminReader.getNumberOfPages(); p++) {
+            byte[] pageContent = adminReader.getPageContent(p);
+            String contentStr = new String(pageContent, java.nio.charset.StandardCharsets.ISO_8859_1);
+            assertFalse(contentStr.contains("0.9960784") || contentStr.contains("0.9961"), "Floor yellow background #FEF08A must be absent");
+            assertFalse(contentStr.contains("0.8196") || contentStr.contains("0.819"), "Category grey background #D1D5DB must be absent");
+            assertFalse(contentStr.matches("(?s).*0\\.96078\\d*\\s+0\\.9686\\d*\\s+0\\.9686\\d*\\s+rg.*"),
+                    "Alternate row background fill operator (0.96078... rg) must be absent");
+        }
+        adminReader.close();
+
+        PdfReader empReader = new PdfReader(empPdf);
+        byte[] empP2 = empReader.getPageContent(2);
+        String empP2Str = new String(empP2, java.nio.charset.StandardCharsets.ISO_8859_1);
+        assertTrue(empP2Str.contains("0.6588") || empP2Str.contains("0.659"), "Employee PDF Page 2: Floor heading must use gold text color");
+        assertTrue(empP2Str.contains("0.886") && empP2Str.contains("0.901"), "Employee PDF Page 2: Table borders must use subtle light grey color");
+
+        for (int p = 1; p <= empReader.getNumberOfPages(); p++) {
+            byte[] pageContent = empReader.getPageContent(p);
+            String contentStr = new String(pageContent, java.nio.charset.StandardCharsets.ISO_8859_1);
+            assertFalse(contentStr.contains("0.9960784") || contentStr.contains("0.9961"), "Employee PDF: Floor yellow background must be absent");
+            assertFalse(contentStr.contains("0.8196") || contentStr.contains("0.819"), "Employee PDF: Category grey background must be absent");
+            assertFalse(contentStr.matches("(?s).*0\\.96078\\d*\\s+0\\.9686\\d*\\s+0\\.9686\\d*\\s+rg.*"),
+                    "Employee PDF: Alternate row background fill operator (0.96078... rg) must be absent");
+        }
+        empReader.close();
+    }
+
+    @Test
+    @DisplayName("Verify quotation spanning at least 3 pages has consistent continuation pages and admin/employee parity")
+    void testQuotationSpanningAtLeastThreePages_hasConsistentLayoutAndParity() throws Exception {
+        Quotation q = new Quotation();
+        q.setQuotationNumber("QT-MULTI-PAGE-01");
+        q.setPricingMode(PricingMode.MIDDLE);
+        q.setSelectedGrade(PricingMode.MIDDLE);
+        q.setEmployee(adminUser);
+        q.setCustomer(customer);
+        q.setBranch(branch);
+        q.setQuotationDate(LocalDate.now());
+        q.setValidUntil(LocalDate.now().plusMonths(1));
+        q.setShowSize(true);
+        q.setShowSqft(true);
+        q.setShowSqftSize(true);
+        q.setSubtotal(new BigDecimal("250000.00"));
+        q.setTotalAmount(new BigDecimal("250000.00"));
+        q.setGrandTotal(new BigDecimal("250000.00"));
+        q = quotationRepository.save(q);
+
+        QuotationRoom room1 = new QuotationRoom();
+        room1.setQuotation(q);
+        room1.setRoom("Kitchen & Dining");
+        room1.setFloor("Ground Floor");
+        room1.setActive(true);
+        room1 = quotationRoomRepository.save(room1);
+
+        QuotationRoom room2 = new QuotationRoom();
+        room2.setQuotation(q);
+        room2.setRoom("Living & Bedrooms");
+        room2.setFloor("First Floor");
+        room2.setActive(true);
+        room2 = quotationRoomRepository.save(room2);
+
+        WorkCategory kitchenCat = workCategoryRepository.findByNameIgnoreCase("Modular Kitchen").orElseGet(() -> {
+            WorkCategory c = new WorkCategory();
+            c.setName("Modular Kitchen");
+            c.setActive(true);
+            return workCategoryRepository.save(c);
+        });
+
+        WorkCategory wardrobeCat = workCategoryRepository.findByNameIgnoreCase("Wardrobe").orElseGet(() -> {
+            WorkCategory c = new WorkCategory();
+            c.setName("Wardrobe");
+            c.setActive(true);
+            return workCategoryRepository.save(c);
+        });
+
+        Division baseCabDiv = new Division();
+        baseCabDiv.setName("Base Cabinet");
+        baseCabDiv.setActive(true);
+        baseCabDiv.setWorkCategory(kitchenCat);
+        baseCabDiv = divisionRepository.save(baseCabDiv);
+
+        Division wallCabDiv = new Division();
+        wallCabDiv.setName("Wall Cabinet");
+        wallCabDiv.setActive(true);
+        wallCabDiv.setWorkCategory(kitchenCat);
+        wallCabDiv = divisionRepository.save(wallCabDiv);
+
+        Division tallUnitDiv = new Division();
+        tallUnitDiv.setName("Tall Unit Pantry");
+        tallUnitDiv.setActive(true);
+        tallUnitDiv.setWorkCategory(kitchenCat);
+        tallUnitDiv = divisionRepository.save(tallUnitDiv);
+
+        Material material = materialRepository.findAll().stream().findFirst().orElseGet(() -> {
+            Material m = new Material();
+            m.setName("BWP Marine Ply");
+            m.setPricingGrade(PricingMode.MIDDLE);
+            m.setActive(true);
+            return materialRepository.save(m);
+        });
+
+        MaterialOption option = materialOptionRepository.findAll().stream().findFirst().orElseGet(() -> {
+            MaterialOption o = new MaterialOption();
+            o.setName("18mm BWP");
+            o.setMaterial(material);
+            o.setActive(true);
+            return materialOptionRepository.save(o);
+        });
+
+        // Add 10 items each across 3 divisions (30 items total) to span at least 3 quotation pages
+        Division[] divisions = new Division[]{baseCabDiv, wallCabDiv, tallUnitDiv};
+
+        for (Division div : divisions) {
+            for (int i = 1; i <= 10; i++) {
+                QuotationItem item = new QuotationItem();
+                item.setQuotationRoom(room1);
+                item.setWorkCategory(kitchenCat);
+                item.setDivision(div);
+                item.setMaterial(material);
+                item.setMaterialOption(option);
+                item.setSpecification("Marine Ply 710 Grade, 16mm Thickness, Sleeka/Hettich hinges specification details and accessories with hydraulic soft close fittings and premium interior laminate finish line for " + div.getName() + " item " + i);
+                item.setLengthValue(new BigDecimal("40.00"));
+                item.setWidthValue(new BigDecimal("25.00"));
+                item.setHeightValue(new BigDecimal("30.00"));
+                item.setCalculatedSqft(new BigDecimal("15.00"));
+                item.setRate(new BigDecimal("1200.00"));
+                item.setAmount(new BigDecimal("18000.00"));
+                item.setOfferPrice(new BigDecimal("16500.00"));
+                item.setActive(true);
+                quotationItemRepository.save(item);
+            }
+        }
+
+        // Generate Admin PDF
+        byte[] adminPdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(adminPdfBytes);
+
+        PdfReader reader = new PdfReader(adminPdfBytes);
+        int totalPages = reader.getNumberOfPages();
+        // With 30 items across 3 divisions, the PDF spans at least 9 total pages (at least 3 quotation pages)
+        assertTrue(totalPages >= 9, "Expected at least 9 total pages for multi-item quotation (got " + totalPages + ")");
+
+        // Page 2: First page of quotation summary table
+        String page2Text = extractPageText(adminPdfBytes, 2);
+        assertTrue(page2Text.contains("Quote Summary"), "Page 2 must contain Quote Summary heading");
+        assertTrue(page2Text.contains("PRAVIN KITCHENS") && page2Text.contains("INTERIORS"), "Page 2 must contain company header");
+        assertTrue(page2Text.contains("Base Cabinet"), "Page 2 must contain Base Cabinet");
+
+        // Page 3: First continuation page
+        String page3Text = extractPageText(adminPdfBytes, 3);
+        assertFalse(page3Text.contains("WORK TYPE"), "Page 3 must NOT repeat the table header WORK TYPE");
+
+        // Page 4: Second continuation page
+        String page4Text = extractPageText(adminPdfBytes, 4);
+        assertFalse(page4Text.contains("WORK TYPE"), "Page 4 must NOT repeat the table header WORK TYPE");
+
+        // Employee parity check
+        q.setEmployee(employeeUser);
+        q = quotationRepository.save(q);
+        byte[] empPdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(empPdfBytes);
+        PdfReader empReader = new PdfReader(empPdfBytes);
+        assertEquals(totalPages, empReader.getNumberOfPages(), "Admin and Employee PDFs must have identical page count");
+
+        reader.close();
+        empReader.close();
+    }
 }
