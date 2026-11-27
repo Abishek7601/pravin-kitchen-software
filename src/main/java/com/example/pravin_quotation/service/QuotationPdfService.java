@@ -15,8 +15,10 @@ import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
 import com.lowagie.text.pdf.BaseFont;
 import com.lowagie.text.pdf.PdfContentByte;
+import com.lowagie.text.pdf.PdfImportedPage;
 import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.PdfWriter;
 import com.lowagie.text.pdf.draw.LineSeparator;
 
@@ -332,6 +334,35 @@ public class QuotationPdfService {
                             "Pravin Kitchens & Interiors"
                     },
                     7
+            );
+
+            // ----------------------------------------------------
+            // PAGE 8: WARRANTY EXCLUSIONS & WARRANTY CONDITIONS
+            // ----------------------------------------------------
+            document.newPage();
+            renderPdfTemplatePage(
+                    writer,
+                    document,
+                    "/pdf-templates/page_8.pdf",
+                    new String[]{
+                            "Warranty Exclusions",
+                            "The warranty does not cover damages arising from the following circumstances",
+                            "Damage to panels, cabinets, or furniture caused by water leakage or moisture infiltration",
+                            "Damage resulting from improper use, misuse, abuse, or negligence",
+                            "Damage caused by poor-quality building construction or structural defects",
+                            "Damage resulting from accidents, fire, flooding, wall dampness, pests",
+                            "Damage caused by lightning, natural disasters, or other unforeseen natural calamities",
+                            "Damage to handles, doors, hinges, or other components caused by excessive force, hanging on them, stepping on them",
+                            "Damage caused by using inappropriate cleaning agents or incorrect cleaning methods",
+                            "Any product that has been repaired, modified, or serviced by an unauthorized third-party technician",
+                            "Warranty conditions",
+                            "The customer is entitled to a warranty claim only against manufacturing defects",
+                            "Company will not replacing or repairing the entire unit as our coverage is limited only to the area of the product original damaged",
+                            "Warranty will be void if the completed certificate amount is not settled by client or any service amount is pending from the previous services",
+                            "To receive warranty service, the client has to submit their final completed certificate",
+                            "Terms and conditions",
+                            "Pravin Kitchens & Interiors"
+                    }
             );
 
             document.close();
@@ -1099,17 +1130,6 @@ public class QuotationPdfService {
             sigTable.writeSelectedRows(0, -1, document.left(), targetTopY, writer.getDirectContent());
         }
 
-        // Add Page 2 Footer
-        PdfContentByte cb = writer.getDirectContent();
-        try {
-            BaseFont bf = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
-            cb.beginText();
-            cb.setFontAndSize(bf, 8);
-            cb.setColorFill(COLOR_TEXT_MUTED);
-            cb.showTextAligned(Element.ALIGN_CENTER, "Page 2 of 7", PageSize.A4.getWidth() / 2f, 15f, 0);
-            cb.endText();
-        } catch (Exception ignored) {}
-
         // Reset margins back to standard 46pt for subsequent template pages
         document.setMargins(25, 25, 46f, 20);
     }
@@ -1153,18 +1173,6 @@ public class QuotationPdfService {
             } catch (Exception ignored) {}
         }
 
-        // Add footer page number for template pages 3 to 7
-        if (pageNumber > 1) {
-            try {
-                BaseFont bf = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
-                cb.beginText();
-                cb.setFontAndSize(bf, 8);
-                cb.setColorFill(COLOR_TEXT_MUTED);
-                cb.showTextAligned(Element.ALIGN_CENTER, "Page " + pageNumber + " of 7", PageSize.A4.getWidth() / 2f, 15f, 0);
-                cb.endText();
-            } catch (Exception ignored) {}
-        }
-
         writer.setPageEmpty(false);
     }
 
@@ -1175,6 +1183,74 @@ public class QuotationPdfService {
             }
         } catch (Exception ignored) {}
         return null;
+    }
+
+    private void renderPdfTemplatePage(
+            PdfWriter writer,
+            Document doc,
+            String pdfPath,
+            String[] searchableKeywords
+    ) {
+        byte[] bytes;
+        try (InputStream is = getClass().getResourceAsStream(pdfPath)) {
+            if (is == null) {
+                throw new IllegalStateException("Required PDF template resource not found: " + pdfPath);
+            }
+            bytes = is.readAllBytes();
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load PDF template resource: " + pdfPath, e);
+        }
+
+        try {
+            PdfReader reader = new PdfReader(bytes);
+            if (reader.getNumberOfPages() < 1) {
+                throw new IllegalStateException("PDF template has no pages: " + pdfPath);
+            }
+
+            PdfImportedPage importedPage = writer.getImportedPage(reader, 1);
+            Rectangle pageSize = doc.getPageSize();
+            Rectangle importedSize = reader.getPageSizeWithRotation(1);
+
+            float scaleX = pageSize.getWidth() / importedSize.getWidth();
+            float scaleY = pageSize.getHeight() / importedSize.getHeight();
+            float scale = Math.min(scaleX, scaleY);
+
+            float offsetX = (pageSize.getWidth() - (importedSize.getWidth() * scale)) / 2f;
+            float offsetY = (pageSize.getHeight() - (importedSize.getHeight() * scale)) / 2f;
+
+            PdfContentByte cb = writer.getDirectContentUnder();
+            int rotation = reader.getPageRotation(1);
+            if (rotation == 90) {
+                cb.addTemplate(importedPage, 0, -scale, scale, 0, offsetX, offsetY + importedSize.getHeight() * scale);
+            } else if (rotation == 180) {
+                cb.addTemplate(importedPage, -scale, 0, 0, -scale, offsetX + importedSize.getWidth() * scale, offsetY + importedSize.getHeight() * scale);
+            } else if (rotation == 270) {
+                cb.addTemplate(importedPage, 0, scale, -scale, 0, offsetX + importedSize.getWidth() * scale, offsetY);
+            } else {
+                cb.addTemplate(importedPage, scale, 0, 0, scale, offsetX, offsetY);
+            }
+
+            // Add selectable / searchable text layer
+            if (searchableKeywords != null && searchableKeywords.length > 0) {
+                try {
+                    BaseFont bf = BaseFont.createFont(BaseFont.HELVETICA, BaseFont.CP1252, false);
+                    cb.beginText();
+                    cb.setFontAndSize(bf, 9);
+                    cb.setTextRenderingMode(3); // RenderMode 3 = Invisible
+                    float y = 780;
+                    for (String kw : searchableKeywords) {
+                        cb.showTextAligned(Element.ALIGN_LEFT, kw, 40, y, 0);
+                        y -= 16;
+                    }
+                    cb.endText();
+                    cb.setTextRenderingMode(0);
+                } catch (Exception ignored) {}
+            }
+
+            writer.setPageEmpty(false);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to render PDF template page: " + pdfPath, e);
+        }
     }
 
     // ============================================================

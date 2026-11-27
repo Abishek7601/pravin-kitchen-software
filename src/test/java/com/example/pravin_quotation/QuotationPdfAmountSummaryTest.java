@@ -846,8 +846,8 @@ public class QuotationPdfAmountSummaryTest {
         PdfReader reader = new PdfReader(adminPdfBytes);
         int totalPages = reader.getNumberOfPages();
         // Since there are 9 items with rich specifications across multiple floors and categories,
-        // the quotation table spans across 2 pages (Page 2 and Page 3), making total pages >= 8
-        assertTrue(totalPages >= 8, "Multi-page quotation should have at least 8 pages (got " + totalPages + ")");
+        // the quotation table spans across 2 pages (Page 2 and Page 3), making total pages >= 9
+        assertTrue(totalPages >= 9, "Multi-page quotation should have at least 9 pages (got " + totalPages + ")");
 
         // Page 2: First page of quotation
         String page2Text = extractPageText(adminPdfBytes, 2);
@@ -1018,7 +1018,7 @@ public class QuotationPdfAmountSummaryTest {
 
         PdfReader reader = new PdfReader(adminPdfBytes);
         int totalPages = reader.getNumberOfPages();
-        assertTrue(totalPages >= 8, "Expected at least 8 total pages (got " + totalPages + ")");
+        assertTrue(totalPages >= 9, "Expected at least 9 total pages (got " + totalPages + ")");
 
         // Page 2: First page of quotation summary table
         String page2Text = extractPageText(adminPdfBytes, 2);
@@ -1327,8 +1327,8 @@ public class QuotationPdfAmountSummaryTest {
 
         PdfReader reader = new PdfReader(adminPdfBytes);
         int totalPages = reader.getNumberOfPages();
-        // With 30 items across 3 divisions, the PDF spans at least 9 total pages (at least 3 quotation pages)
-        assertTrue(totalPages >= 9, "Expected at least 9 total pages for multi-item quotation (got " + totalPages + ")");
+        // With 30 items across 3 divisions, the PDF spans at least 10 total pages (at least 3 quotation pages)
+        assertTrue(totalPages >= 10, "Expected at least 10 total pages for multi-item quotation (got " + totalPages + ")");
 
         // Page 2: First page of quotation summary table
         String page2Text = extractPageText(adminPdfBytes, 2);
@@ -1353,6 +1353,55 @@ public class QuotationPdfAmountSummaryTest {
         assertEquals(totalPages, empReader.getNumberOfPages(), "Admin and Employee PDFs must have identical page count");
 
         reader.close();
+        empReader.close();
+    }
+
+    @Test
+    public void testPage8WarrantyPageAppendedAndParity() throws Exception {
+        Quotation q = createQuotationWithItems("QT-WARRANTY-8888", adminUser, new BigDecimal("50000.00"), BigDecimal.ZERO);
+
+        // Generate Admin PDF
+        byte[] adminPdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(adminPdfBytes);
+        PdfReader adminReader = new PdfReader(adminPdfBytes);
+        assertEquals(8, adminReader.getNumberOfPages(), "Admin PDF must have exactly 8 pages");
+
+        // Verify Page 8 content
+        String page8Text = extractPageText(adminPdfBytes, 8);
+        assertTrue(page8Text.contains("Warranty Exclusions"), "Page 8 must contain 'Warranty Exclusions'");
+        assertTrue(page8Text.contains("Warranty conditions"), "Page 8 must contain 'Warranty conditions'");
+        assertTrue(page8Text.contains("Terms and conditions"), "Page 8 must contain 'Terms and conditions'");
+        assertTrue(page8Text.contains("Pravin Kitchens & Interiors"), "Page 8 must contain 'Pravin Kitchens & Interiors'");
+
+        // Verify no printed page numbers on ANY page of Admin PDF
+        for (int p = 1; p <= 8; p++) {
+            String pText = extractPageText(adminPdfBytes, p);
+            assertFalse(pText.contains("Page " + p + " of"), "Page " + p + " must NOT contain 'Page " + p + " of'");
+            assertFalse(pText.contains("Page 2 of 7"), "Page " + p + " must not contain 'Page 2 of 7'");
+            assertFalse(pText.contains("Page 2 of 8"), "Page " + p + " must not contain 'Page 2 of 8'");
+        }
+
+        // Generate Employee PDF
+        q.setEmployee(employeeUser);
+        q = quotationRepository.save(q);
+        byte[] empPdfBytes = quotationPdfService.generateQuotationPdf(q.getId());
+        assertNotNull(empPdfBytes);
+        PdfReader empReader = new PdfReader(empPdfBytes);
+        assertEquals(8, empReader.getNumberOfPages(), "Employee PDF must have exactly 8 pages");
+
+        String empPage8Text = extractPageText(empPdfBytes, 8);
+        assertTrue(empPage8Text.contains("Warranty Exclusions"), "Employee Page 8 must contain 'Warranty Exclusions'");
+        assertTrue(empPage8Text.contains("Warranty conditions"), "Employee Page 8 must contain 'Warranty conditions'");
+
+        // Verify no printed page numbers on ANY page of Employee PDF
+        for (int p = 1; p <= 8; p++) {
+            String pText = extractPageText(empPdfBytes, p);
+            assertFalse(pText.contains("Page " + p + " of"), "Employee Page " + p + " must NOT contain 'Page " + p + " of'");
+            assertFalse(pText.contains("Page 2 of 7"), "Employee Page " + p + " must not contain 'Page 2 of 7'");
+            assertFalse(pText.contains("Page 2 of 8"), "Employee Page " + p + " must not contain 'Page 2 of 8'");
+        }
+
+        adminReader.close();
         empReader.close();
     }
 }

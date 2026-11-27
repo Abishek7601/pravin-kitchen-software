@@ -148,9 +148,18 @@ public class QuotationPdf7PageTest {
 
     private String extractPageText(byte[] pdfBytes, int pageNum) throws Exception {
         PdfReader reader = new PdfReader(pdfBytes);
-        byte[] pageContent = reader.getPageContent(pageNum);
+        String text = null;
+        try {
+            com.lowagie.text.pdf.parser.PdfTextExtractor extractor = new com.lowagie.text.pdf.parser.PdfTextExtractor(reader);
+            text = extractor.getTextFromPage(pageNum);
+        } catch (Exception ignored) {
+        }
+        if (text == null || text.isBlank()) {
+            byte[] pageContent = reader.getPageContent(pageNum);
+            text = pageContent != null ? new String(pageContent, StandardCharsets.ISO_8859_1) : "";
+        }
         reader.close();
-        return pageContent != null ? new String(pageContent, StandardCharsets.ISO_8859_1) : "";
+        return text != null ? text : "";
     }
 
     @Test
@@ -200,9 +209,9 @@ public class QuotationPdf7PageTest {
         java.nio.file.Files.createDirectories(java.nio.file.Path.of("target"));
         java.nio.file.Files.write(java.nio.file.Path.of("target/sample_quotation.pdf"), pdfBytes);
 
-        // Verify Page Count is EXACTLY 7
+        // Verify Page Count is EXACTLY 8
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages(), "Quotation PDF must have exactly 7 pages");
+        assertEquals(8, reader.getNumberOfPages(), "Quotation PDF must have exactly 8 pages");
         byte[] p2Content = reader.getPageContent(2);
         if (p2Content != null) {
             java.nio.file.Files.write(java.nio.file.Path.of("target/page2_stream.txt"), p2Content);
@@ -216,13 +225,12 @@ public class QuotationPdf7PageTest {
 
         // Verify Page 2 (Dynamic Marketing Quotation) contains live quotation details
         String page2 = extractPageText(pdfBytes, 2);
-        assertTrue(page2.contains("MARKETING QUOTATION"), "Page 2 must contain MARKETING QUOTATION header");
+        assertTrue(page2.contains("Quote Summary"), "Page 2 must contain Quote Summary header");
         assertTrue(page2.contains("QT-ADM-7001"), "Page 2 must contain quotation number");
         assertTrue(page2.contains("Anand Kumar"), "Page 2 must contain customer name");
         assertTrue(page2.contains("Race Course") || page2.contains("42 Palm Meadows"), "Page 2 must contain customer address");
-        assertTrue(page2.contains("MODULAR") || page2.contains("KITCHEN"), "Page 2 must contain work category");
-        assertTrue(page2.contains("KITCHEN") && page2.contains("AREA"), "Page 2 must contain room");
-        assertTrue(page2.contains("GROUND") && page2.contains("FLOOR"), "Page 2 must contain floor");
+        assertTrue(page2.contains("Modular Kitchen"), "Page 2 must contain work category");
+        assertTrue(page2.contains("Ground Floor"), "Page 2 must contain floor");
         assertTrue(page2.contains("BWP") && page2.contains("MARINE PLY"), "Page 2 must contain material name");
         assertTrue(page2.contains("18MM"), "Page 2 must contain material option");
         assertTrue(page2.contains("SQ.FT"), "Page 2 must contain unit");
@@ -243,7 +251,7 @@ public class QuotationPdf7PageTest {
         assertTrue(page2.contains("35% Part Payment:"), "Page 2 must contain 35% Part Payment");
         assertTrue(page2.contains("5% Final Payment:"), "Page 2 must contain 5% Final Payment");
         assertTrue(page2.contains("Customer Signature"), "Page 2 must contain customer signature");
-        assertTrue(page2.contains("Page 2 of 7"), "Page 2 must contain footer page numbering");
+        assertFalse(page2.contains("Page 2 of"), "Page 2 must not contain footer page numbering");
 
         // Verify Page 3 contains Payment Terms & Why Choose Us
         String page3 = extractPageText(pdfBytes, 3);
@@ -332,21 +340,21 @@ public class QuotationPdf7PageTest {
         String page2_1 = extractPageText(pdf1, 2);
         String page2_2 = extractPageText(pdf2, 2);
 
-        // Verify PDF 1 has Anand and Living Room, but NOT Bala or Master Bedroom
+        // Verify PDF 1 has Anand and 1st Floor / Modular Kitchen, but NOT Bala or 2nd Floor
         assertTrue(page2_1.contains("Anand Kumar"));
         assertTrue(page2_1.contains("QT-CUST-1001"));
-        assertTrue(page2_1.contains("LIVING") && page2_1.contains("ROOM"));
+        assertTrue(page2_1.contains("1st Floor"));
         assertFalse(page2_1.contains("Bala Subramanian"));
         assertFalse(page2_1.contains("QT-CUST-2002"));
-        assertFalse(page2_1.contains("MASTER"));
+        assertFalse(page2_1.contains("2nd Floor"));
 
-        // Verify PDF 2 has Bala and Master Bedroom, but NOT Anand or Living Room
+        // Verify PDF 2 has Bala and 2nd Floor / Wardrobe, but NOT Anand or 1st Floor
         assertTrue(page2_2.contains("Bala Subramanian"));
         assertTrue(page2_2.contains("QT-CUST-2002"));
-        assertTrue(page2_2.contains("MASTER") && page2_2.contains("BEDROOM"));
+        assertTrue(page2_2.contains("2nd Floor"));
         assertFalse(page2_2.contains("Anand Kumar"));
         assertFalse(page2_2.contains("QT-CUST-1001"));
-        assertFalse(page2_2.contains("LIVING"));
+        assertFalse(page2_2.contains("1st Floor"));
     }
 
     @Test
@@ -384,7 +392,7 @@ public class QuotationPdf7PageTest {
         assertNotNull(pdfBytes);
 
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages(), "Employee quotation must generate exactly 7 pages");
+        assertEquals(8, reader.getNumberOfPages(), "Employee quotation must generate exactly 8 pages");
         reader.close();
 
         String page2 = extractPageText(pdfBytes, 2);
@@ -434,7 +442,7 @@ public class QuotationPdf7PageTest {
         assertNotNull(pdfBytes);
 
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages(), "PDF with requirements and notes must still have exactly 7 pages");
+        assertEquals(8, reader.getNumberOfPages(), "PDF with requirements and notes must still have exactly 8 pages");
         reader.close();
 
         String page2 = extractPageText(pdfBytes, 2);
