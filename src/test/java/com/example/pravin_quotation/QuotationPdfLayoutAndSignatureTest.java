@@ -163,10 +163,10 @@ public class QuotationPdfLayoutAndSignatureTest {
 
         byte[] pdfBytes = quotationPdfService.generateQuotationPdf(100L);
         assertNotNull(pdfBytes);
-        assertTrue(pdfBytes.length > 10000, "PDF should have substantial size with 7 pages");
+        assertTrue(pdfBytes.length > 10000, "PDF should have substantial size with 8 pages");
 
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages(), "Quotation PDF must have exactly 7 pages");
+        assertEquals(8, reader.getNumberOfPages(), "Quotation PDF must have exactly 8 pages");
 
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
@@ -224,8 +224,8 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertTrue(page2Text.contains("Customer Signature"), "Page 2 must contain 'Customer Signature'");
         assertTrue(page2Text.contains("For Pravin KITCHENS & INTERIORS"), "Page 2 must contain 'For Pravin KITCHENS & INTERIORS'");
 
-        // 9. Footer
-        assertTrue(page2Text.contains("Page 2 of 7"), "Page 2 must contain footer 'Page 2 of 7'");
+        // 9. Footer - page number removed
+        assertFalse(page2Text.contains("Page 2 of"), "Page 2 must not contain footer 'Page 2 of 7'");
 
         reader.close();
     }
@@ -313,7 +313,7 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertNotNull(pdfBytes);
 
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages());
+        assertEquals(8, reader.getNumberOfPages());
 
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
@@ -429,7 +429,7 @@ public class QuotationPdfLayoutAndSignatureTest {
         assertNotNull(pdfBytes);
 
         PdfReader reader = new PdfReader(pdfBytes);
-        assertEquals(7, reader.getNumberOfPages(), "Even with 5 items, PDF should stay at 7 pages");
+        assertEquals(8, reader.getNumberOfPages(), "Even with 5 items, PDF should stay at 8 pages");
 
         PdfTextExtractor extractor = new PdfTextExtractor(reader);
         String page2Text = extractor.getTextFromPage(2);
